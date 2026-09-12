@@ -185,6 +185,10 @@ test("no network is a failure state, not a stack trace", (t) => {
   // which is the honest way to take the network away from a real run. Where
   // it is unavailable (not Linux, or user namespaces disabled) this test is
   // skipped rather than faked.
+  if (process.platform !== "linux") {
+    t.skip("Linux-only: no network is a failure state, not a stack trace (unshare -rn)")
+    return
+  }
   const probe = spawnSync("unshare", ["-rn", "true"], { encoding: "utf8" })
   if (probe.status !== 0) {
     t.skip("unshare -rn is not available here")

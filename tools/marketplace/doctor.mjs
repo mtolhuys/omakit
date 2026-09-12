@@ -50,6 +50,24 @@ async function latestOnRegistry(name) {
   }
 }
 
+/** Full pin evidence for machines; human output deliberately keeps short hashes. */
+export function pinFreshness(identity, head) {
+  const current = head.commit === identity.commit
+  return {
+    id: "pin.freshness",
+    state: current ? "ok" : "advice",
+    detail: current
+      ? `the pin is the marketplace's current ${head.branch || "default"}-branch HEAD`
+      : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${head.branch || "default"} branch is now at ${head.commit.slice(0, 7)}`,
+    action: current ? null : "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you.",
+    evidence: {
+      pinCommit: identity.commit,
+      marketplaceHead: head.commit,
+      branch: head.branch || "default",
+    },
+  }
+}
+
 /**
  * @param {{ repoRoot: string, offline?: boolean }} options
  */
@@ -58,7 +76,13 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
   // affects the result.
   const phase = onPhase || (() => {})
   const checks = []
-  const add = (id, state, detail, action = null) => checks.push({ id, state, detail, action })
+  const add = (id, state, detail, action = null, evidence = null) => checks.push({
+    id,
+    state,
+    detail,
+    action,
+    ...(evidence ? { evidence } : {}),
+  })
 
   const self = tool(repoRoot)
   add("omakit.version", "info", `${self.name} ${self.version}`)
@@ -88,15 +112,11 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
     phase("reading the marketplace's current default-branch HEAD")
     try {
       const head = await defaultBranchHead(MARKETPLACE_PIN.repository)
-      const current = head.commit === identity.commit
-      add("pin.freshness", current ? "ok" : "advice",
-        current
-          ? `the pin is the marketplace's current ${head.branch || "default"}-branch HEAD`
-          : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${head.branch || "default"} branch is now at ${head.commit.slice(0, 7)}`,
-        current ? null : "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you.")
+      checks.push(pinFreshness(identity, head))
     } catch (error) {
       add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`,
-        error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null)
+        error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null,
+        { pinCommit: identity.commit, marketplaceHead: null, branch: null })
     }
 
     phase("asking the npm registry for the newest published version")

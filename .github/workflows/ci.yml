@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Ubuntu · Node 22
+            os: ubuntu-latest
+            node: 22
+          - label: Ubuntu · Node 24
+            os: ubuntu-latest
+            node: 24
+          - label: macOS portable · Node 22
+            os: macos-latest
+            node: 22
+
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+
+      - name: Install every completion parser
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes zsh fish
+
+      - name: Read the immutable pin identity
+        id: pin
+        shell: bash
+        run: |
+          commit=$(node --input-type=module --eval 'import { MARKETPLACE_PIN } from "./tools/marketplace/pin.mjs"; process.stdout.write(MARKETPLACE_PIN.commit)')
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "MARKETPLACE_PIN.commit is not a full commit: $commit" >&2
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      # The key has no date or restore prefix: a pin is an exact immutable
+      # commit, so a cache hit for this OS and commit stays permanently valid.
+      - name: Restore the pinned marketplace checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/omakit/marketplace
+          key: omakit-marketplace-${{ runner.os }}-${{ steps.pin.outputs.commit }}
+
+      - name: Fetch or verify the marketplace pin
+        run: ./bin/omakit pin
+
+      - name: Name the portable-suite skip
+        if: runner.os == 'macOS'
+        run: |
+          echo "::notice title=Portable test skip::Skipped: no network is a failure state, not a stack trace — Linux-only (unshare -rn)"
+
+      - name: Run the dependency-free suite
+        id: suite
+        shell: bash
+        run: |
+          set -o pipefail
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/tests.tap"
+          status=${PIPESTATUS[0]}
+          set -e
+          named_tests=$(grep -hEc '^test\(' tests/unit/*.test.mjs | awk '{ total += $1 } END { print total }')
+          test_files=$(node --input-type=module --eval 'import { readdirSync } from "node:fs"; process.stdout.write(String(readdirSync("tests/unit").filter((name) => name.endsWith(".test.mjs")).length))')
+          echo "named-tests=$named_tests" >> "$GITHUB_OUTPUT"
+          echo "test-files=$test_files" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Assert the publishable artifact
+        id: package
+        if: always()
+        shell: bash
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/npm-pack.json"
+          result=$(node tests/package-assert.mjs "$RUNNER_TEMP/npm-pack.json")
+          echo "$result"
+          {
+            echo "files=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(String(value.fileCount))' "$result")"
+            echo "bytes=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(String(value.packedBytes))' "$result")"
+            echo "ceiling=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(String(value.ceilingBytes))' "$result")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Summarise the proof
+        if: always()
+        shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          NAMED_TESTS: ${{ steps.suite.outputs.named-tests }}
+          TEST_FILES: ${{ steps.suite.outputs.test-files }}
+          PACKAGE_OUTCOME: ${{ steps.package.outcome }}
+          PACKAGE_FILES: ${{ steps.package.outputs.files }}
+          PACKAGE_BYTES: ${{ steps.package.outputs.bytes }}
+          PACKAGE_CEILING: ${{ steps.package.outputs.ceiling }}
+          PIN_COMMIT: ${{ steps.pin.outputs.commit }}
+        run: |
+          skipped="none"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            skipped="no network is a failure state, not a stack trace — Linux-only (unshare -rn)"
+          elif ! unshare -rn true >/dev/null 2>&1; then
+            skipped="no network is a failure state, not a stack trace — unshare -rn unavailable"
+          fi
+          if ! command -v ttfx >/dev/null 2>&1; then
+            effect="with the real ttfx, the pinned effect finishes inside its stated budget — ttfx not installed"
+            skipped=$([[ "$skipped" == "none" ]] && echo "$effect" || echo "$skipped; $effect")
+          fi
+          {
+            echo "### ${{ matrix.label }}"
+            echo
+            echo "| Measure | Result |"
+            echo "| --- | --- |"
+            echo "| Suite | ${SUITE_OUTCOME:-not run} |"
+            echo "| Named tests | ${NAMED_TESTS:-unknown} across ${TEST_FILES:-unknown} files |"
+            echo "| Package | ${PACKAGE_OUTCOME:-not run}; ${PACKAGE_FILES:-unknown} files; ${PACKAGE_BYTES:-unknown} bytes; ${PACKAGE_CEILING:-unknown}-byte ceiling |"
+            echo "| Marketplace pin | \`${PIN_COMMIT:-unknown}\` |"
+            echo "| Skipped | $skipped |"
+          } >> "$GITHUB_STEP_SUMMARY"

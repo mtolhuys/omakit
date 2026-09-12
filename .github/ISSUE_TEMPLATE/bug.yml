@@ -1,0 +1,52 @@
+name: Bug report
+description: Report behaviour that is broken or inconsistent.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for making the failure reproducible. Remove credentials and private repository contents before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: Omakit version and pin
+      description: Paste the omakit.version and pin.checkout rows from `omakit doctor --json`.
+      placeholder: omakit 0.1.0; 40-character pin
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Node version and installation method.
+      placeholder: Arch Linux; Node 22; AUR
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: Include the exact command, exit status, stdout and stderr.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Give the smallest ordered sequence that reproduces the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials and private repository contents.
+          required: true

@@ -1,0 +1,419 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prove and prepare the tagged release
+    if: github.repository == 'mtolhuys/omakit'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      npm-file: ${{ steps.meta.outputs.npm-file }}
+      source-file: ${{ steps.meta.outputs.source-file }}
+      source-sha256: ${{ steps.meta.outputs.source-sha256 }}
+
+    steps:
+      - name: Check out the tagged revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Use Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Verify the tag is the package version on main
+        id: version
+        shell: bash
+        run: |
+          version=$(node --input-type=module --eval 'import pkg from "./package.json" with { type: "json" }; process.stdout.write(pkg.version)')
+          commit=$(git rev-parse "$GITHUB_SHA^{commit}")
+          git fetch --quiet origin main
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "tag $GITHUB_REF_NAME does not match package version $version" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$commit" origin/main; then
+            echo "tag commit $commit is not on origin/main" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Install every completion parser
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes zsh fish
+
+      - name: Read the immutable pin identity
+        id: pin
+        shell: bash
+        run: |
+          commit=$(node --input-type=module --eval 'import { MARKETPLACE_PIN } from "./tools/marketplace/pin.mjs"; process.stdout.write(MARKETPLACE_PIN.commit)')
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "MARKETPLACE_PIN.commit is not a full commit: $commit" >&2
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      # An exact commit is immutable, so this cache key needs neither a date
+      # nor a restore prefix. `omakit pin` still verifies it after restoration.
+      - name: Restore the pinned marketplace checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/omakit/marketplace
+          key: omakit-marketplace-${{ runner.os }}-${{ steps.pin.outputs.commit }}
+
+      - name: Prove the tagged revision
+        run: |
+          ./bin/omakit pin
+          npm test
+
+      - name: Build both release tarballs and measured metadata
+        id: meta
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+        run: |
+          set -o pipefail
+          mkdir -p release-assets/aur
+          npm pack --ignore-scripts --json --pack-destination release-assets > "$RUNNER_TEMP/npm-pack.json"
+          node tests/package-assert.mjs "$RUNNER_TEMP/npm-pack.json"
+          npm_file=$(node --input-type=module --eval 'const doc=JSON.parse(await (await import("node:fs/promises")).readFile(process.argv[1], "utf8")); process.stdout.write(doc[0].filename)' "$RUNNER_TEMP/npm-pack.json")
+          npm_integrity=$(node --input-type=module --eval 'const doc=JSON.parse(await (await import("node:fs/promises")).readFile(process.argv[1], "utf8")); process.stdout.write(doc[0].integrity)' "$RUNNER_TEMP/npm-pack.json")
+          source_file="omakit-${VERSION}.tar.gz"
+          git archive --format=tar --prefix="omakit-${VERSION}/" "$COMMIT" | gzip -n > "release-assets/$source_file"
+          cp packaging/aur/PKGBUILD packaging/aur/.SRCINFO release-assets/aur/
+          sed -i -E "s/^pkgver=.*/pkgver=${VERSION}/; s/^pkgrel=.*/pkgrel=1/; s/^sha256sums=.*/sha256sums=('PENDING')/" release-assets/aur/PKGBUILD
+          source_sha256=$(sha256sum "release-assets/$source_file" | cut -d ' ' -f 1)
+          sed -i "s/sha256sums=('PENDING')/sha256sums=('${source_sha256}')/" release-assets/aur/PKGBUILD
+          sed -i -E \
+            -e "s/^([[:space:]]*)pkgver = .*/\\1pkgver = ${VERSION}/" \
+            -e "s#^([[:space:]]*)source = .*#\\1source = omakit-${VERSION}.tar.gz::https://github.com/mtolhuys/omakit/releases/download/v${VERSION}/omakit-${VERSION}.tar.gz#" \
+            -e "s/^([[:space:]]*)sha256sums = .*/\\1sha256sums = ${source_sha256}/" \
+            release-assets/aur/.SRCINFO
+          grep -Fx "pkgver=${VERSION}" release-assets/aur/PKGBUILD
+          grep -Fx "sha256sums=('${source_sha256}')" release-assets/aur/PKGBUILD
+          grep -Fx $'\tpkgver = '"${VERSION}" release-assets/aur/.SRCINFO
+          grep -Fx $'\tsha256sums = '"${source_sha256}" release-assets/aur/.SRCINFO
+          bash -n release-assets/aur/PKGBUILD
+          printf '%s\n' "$npm_integrity" > release-assets/npm-integrity.txt
+          (
+            cd release-assets
+            sha256sum "$npm_file" "$source_file" > SHA256SUMS
+          )
+          npm_sha256=$(sha256sum "release-assets/$npm_file" | cut -d ' ' -f 1)
+          {
+            echo "Both attached archives were built from commit \`$COMMIT\`."
+            echo
+            echo "## SHA-256"
+            echo
+            echo "| Asset | SHA-256 |"
+            echo "| --- | --- |"
+            echo "| \`$source_file\` | \`$source_sha256\` |"
+            echo "| \`$npm_file\` | \`$npm_sha256\` |"
+            echo
+            echo "The AUR metadata uses the measured checksum of \`$source_file\`."
+          } > release-assets/release-body.md
+          {
+            echo "version=$VERSION"
+            echo "npm-file=$npm_file"
+            echo "source-file=$source_file"
+            echo "source-sha256=$source_sha256"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Store the exact release inputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish the exact npm tarball
+    if: github.repository == 'mtolhuys/omakit'
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Use Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Retrieve the exact release inputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets
+
+      - name: Verify the cross-job archive and npm client
+        shell: bash
+        run: |
+          (cd release-assets && sha256sum --check SHA256SUMS)
+          npm_version=$(npm --version)
+          node --input-type=module --eval 'const [major,minor]=process.argv[1].split(".").map(Number); if (major < 11 || (major === 11 && minor < 5)) throw new Error("npm " + process.argv[1] + " cannot use trusted publishing; need npm >=11.5.1")' "$npm_version"
+
+      - name: Inspect an existing npm version without credentials
+        id: registry
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          local_integrity=$(cat release-assets/npm-integrity.txt)
+          set +e
+          remote_json=$(npm view "omakit@$VERSION" dist.integrity --json 2> "$RUNNER_TEMP/npm-view.err")
+          status=$?
+          set -e
+          if [[ "$status" -eq 0 ]]; then
+            remote_integrity=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(Array.isArray(value) ? value[0] : value)' "$remote_json")
+            if [[ "$remote_integrity" != "$local_integrity" ]]; then
+              echo "omakit@$VERSION exists with different package integrity" >&2
+              exit 1
+            fi
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "omakit@$VERSION already has the exact package integrity"
+          elif grep -Eq 'E404|404 Not Found|is not in this registry' "$RUNNER_TEMP/npm-view.err"; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            cat "$RUNNER_TEMP/npm-view.err" >&2
+            exit "$status"
+          fi
+
+      # Preferred: configure npm Trusted Publishing for this repository and
+      # release.yml, then leave NPM_TOKEN absent. For the first package publish,
+      # or if OIDC is unavailable, a package-scoped granular NPM_TOKEN is the
+      # fallback. The secret reaches this one step only; npm tries OIDC first.
+      - name: Publish with provenance
+        if: steps.registry.outputs.publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_FILE: ${{ needs.prepare.outputs.npm-file }}
+        run: npm publish "release-assets/$NPM_FILE" --ignore-scripts --provenance --access public
+
+  github-release:
+    name: Publish the GitHub Release without replacement
+    if: github.repository == 'mtolhuys/omakit'
+    needs:
+      - prepare
+      - publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Retrieve the exact release inputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets
+
+      - name: Create once, or prove an existing release is identical
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NPM_FILE: ${{ needs.prepare.outputs.npm-file }}
+          SOURCE_FILE: ${{ needs.prepare.outputs.source-file }}
+        run: |
+          (cd release-assets && sha256sum --check SHA256SUMS)
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            is_draft=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+            [[ "$is_draft" == "false" ]] || { echo "existing release is still a draft" >&2; exit 1; }
+            mkdir -p "$RUNNER_TEMP/existing-release"
+            gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/existing-release" --pattern "$NPM_FILE"
+            gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/existing-release" --pattern "$SOURCE_FILE"
+            cmp "release-assets/$NPM_FILE" "$RUNNER_TEMP/existing-release/$NPM_FILE"
+            cmp "release-assets/$SOURCE_FILE" "$RUNNER_TEMP/existing-release/$SOURCE_FILE"
+            expected_body=$(cat release-assets/release-body.md)
+            actual_body=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json body --jq .body)
+            [[ "$actual_body" == "$expected_body" ]] || { echo "existing release body differs" >&2; exit 1; }
+            echo "release already exists with byte-identical assets and body"
+          else
+            gh release create "$GITHUB_REF_NAME" "release-assets/$SOURCE_FILE" "release-assets/$NPM_FILE" --repo "$GITHUB_REPOSITORY" --verify-tag --title "Omakit $GITHUB_REF_NAME" --notes-file release-assets/release-body.md
+          fi
+
+  aur-metadata-pr:
+    name: Open the reviewable AUR metadata pull request
+    if: github.repository == 'mtolhuys/omakit'
+    needs:
+      - prepare
+      - github-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out main with current-repository credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Retrieve the measured AUR metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets
+
+      - name: Update one branch and one pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE_SHA256: ${{ needs.prepare.outputs.source-sha256 }}
+        run: |
+          expected_origin="https://github.com/${GITHUB_REPOSITORY}"
+          actual_origin=$(git remote get-url origin)
+          if [[ "$actual_origin" != "$expected_origin" && "$actual_origin" != "${expected_origin}.git" ]]; then
+            echo "refusing to push to unexpected origin $actual_origin" >&2
+            exit 1
+          fi
+          branch="automation/aur-v${VERSION}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$branch:refs/remotes/origin/$branch"
+            git switch --create "$branch" --track "origin/$branch"
+          else
+            git switch --create "$branch" origin/main
+          fi
+          cp release-assets/aur/PKGBUILD packaging/aur/PKGBUILD
+          cp release-assets/aur/.SRCINFO packaging/aur/.SRCINFO
+          grep -Fx "pkgver=${VERSION}" packaging/aur/PKGBUILD
+          grep -Fx "sha256sums=('${SOURCE_SHA256}')" packaging/aur/PKGBUILD
+          grep -Fx $'\tpkgver = '"${VERSION}" packaging/aur/.SRCINFO
+          grep -Fx $'\tsha256sums = '"${SOURCE_SHA256}" packaging/aur/.SRCINFO
+          git diff --check
+          if ! git diff --quiet -- packaging/aur/PKGBUILD packaging/aur/.SRCINFO; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add packaging/aur/PKGBUILD packaging/aur/.SRCINFO
+            git commit -m "Pin AUR v${VERSION} source to ${SOURCE_SHA256}"
+            git push --set-upstream origin "$branch"
+          fi
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > "$RUNNER_TEMP/pulls.json"
+          jq --arg branch "$branch" --arg repo "$GITHUB_REPOSITORY" '[.[][] | select(.head.ref == $branch and .head.repo.full_name == $repo)]' "$RUNNER_TEMP/pulls.json" > "$RUNNER_TEMP/matches.json"
+          count=$(jq length "$RUNNER_TEMP/matches.json")
+          if [[ "$count" -gt 1 ]]; then
+            echo "found $count pull requests for $branch; refusing to choose" >&2
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          Updates the AUR metadata for v${VERSION} to the measured source-archive SHA-256:
+
+          \`${SOURCE_SHA256}\`
+
+          The release workflow built and attached that exact archive before opening this pull request.
+          EOF
+          if [[ "$count" -eq 0 ]]; then
+            if git diff --quiet origin/main...HEAD; then
+              echo "main already carries the exact AUR metadata"
+              exit 0
+            fi
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "Pin AUR metadata for v${VERSION}" --body-file "$RUNNER_TEMP/pr-body.md"
+          else
+            number=$(jq -r '.[0].number' "$RUNNER_TEMP/matches.json")
+            state=$(jq -r '.[0].state' "$RUNNER_TEMP/matches.json")
+            merged_at=$(jq -r '.[0].merged_at // empty' "$RUNNER_TEMP/matches.json")
+            if [[ -n "$merged_at" ]]; then
+              echo "pull request $number is already merged"
+            else
+              if [[ "$state" == "closed" ]]; then
+                gh pr reopen "$number" --repo "$GITHUB_REPOSITORY"
+              fi
+              gh pr edit "$number" --repo "$GITHUB_REPOSITORY" --title "Pin AUR metadata for v${VERSION}" --body-file "$RUNNER_TEMP/pr-body.md"
+            fi
+          fi
+
+  aur-publish:
+    name: Optionally publish the same metadata to AUR
+    if: github.repository == 'mtolhuys/omakit'
+    needs:
+      - prepare
+      - aur-metadata-pr
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Retrieve the measured AUR metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets
+
+      - name: Publish only when an AUR key is present
+        shell: bash
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE_SHA256: ${{ needs.prepare.outputs.source-sha256 }}
+        run: |
+          if [[ -z "$AUR_SSH_PRIVATE_KEY" ]]; then
+            echo "AUR_SSH_PRIVATE_KEY is absent; optional AUR publishing is disabled." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ssh_dir="$RUNNER_TEMP/aur-ssh"
+          key="$ssh_dir/key"
+          known_hosts="$ssh_dir/known_hosts"
+          install -d -m 700 "$ssh_dir"
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$key"
+          chmod 600 "$key"
+          trap 'rm -f "$key"' EXIT
+          ssh-keyscan -t ed25519 aur.archlinux.org > "$known_hosts"
+          fingerprint=$(ssh-keygen -lf "$known_hosts" -E sha256 | awk '{ print $2 }' | sort -u)
+          published_fingerprint="SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4"
+          if [[ "$fingerprint" != "$published_fingerprint" ]]; then
+            echo "AUR host fingerprint did not match the published Ed25519 fingerprint" >&2
+            exit 1
+          fi
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$known_hosts"
+          git -c init.defaultBranch=master clone ssh://aur@aur.archlinux.org/omakit.git "$RUNNER_TEMP/aur-repository"
+          cd "$RUNNER_TEMP/aur-repository"
+          if [[ -f PKGBUILD && -f .SRCINFO ]] && cmp -s PKGBUILD "$GITHUB_WORKSPACE/release-assets/aur/PKGBUILD" && cmp -s .SRCINFO "$GITHUB_WORKSPACE/release-assets/aur/.SRCINFO"; then
+            echo "AUR already contains the exact v${VERSION} metadata." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ -f PKGBUILD ]]; then
+            current_version=$(sed -n 's/^pkgver=//p' PKGBUILD)
+            if [[ "$current_version" == "$VERSION" ]]; then
+              echo "AUR already has v${VERSION} with different metadata; refusing to overwrite it" >&2
+              exit 1
+            fi
+            oldest=$(printf '%s\n%s\n' "$current_version" "$VERSION" | sort -V | head -n 1)
+            if [[ "$oldest" == "$VERSION" ]]; then
+              echo "AUR has newer version $current_version; refusing to publish older v${VERSION}" >&2
+              exit 1
+            fi
+          fi
+          cp "$GITHUB_WORKSPACE/release-assets/aur/PKGBUILD" PKGBUILD
+          cp "$GITHUB_WORKSPACE/release-assets/aur/.SRCINFO" .SRCINFO
+          git diff --check
+          git config user.name "omakit-release"
+          git config user.email "noreply@github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Release omakit ${VERSION} (${SOURCE_SHA256})"
+          git push origin master
+          echo "Published AUR metadata for v${VERSION} at measured source checksum ${SOURCE_SHA256}." >> "$GITHUB_STEP_SUMMARY"

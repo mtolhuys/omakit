@@ -8,7 +8,7 @@ pkgbase = omakit
 	depends = nodejs>=22
 	depends = git
 	optdepends = ttfx: animate the setup wordmark
-	source = omakit-0.1.0.tar.gz::https://github.com/mtolhuys/omakit/archive/refs/tags/v0.1.0.tar.gz
+	source = omakit-0.1.0.tar.gz::https://github.com/mtolhuys/omakit/releases/download/v0.1.0/omakit-0.1.0.tar.gz
 	sha256sums = SKIP
 
 pkgname = omakit
