@@ -23,9 +23,9 @@ import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
-import { banner, bannerEnabled } from "./banner.mjs"
+import { banner, bannerEnabled, fitsOnScreen } from "./banner.mjs"
 import { progress } from "./progress.mjs"
-import { renderUsage, TAGLINE } from "./usage.mjs"
+import { renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -192,16 +192,22 @@ if (command === "setup") {
     }
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
   } else {
-    // The scan, then the usage. It is short enough (banner.mjs: BUDGET_MS) that
-    // the text is there by the time a reader's eyes have left the wordmark,
-    // which is the whole reason the schedule is derived from a budget.
-    // The banner already says the name and the tagline; printing the same
-    // sentence again directly underneath is just noise.
+    // A bare `omakit` is the front door and gets the short list; `omakit help`
+    // is the reference and gets all of it. The banner already says the name and
+    // the tagline, so the heading underneath would repeat it.
     const drew = bannerEnabled()
-    await banner({ tagline: TAGLINE })
-    process.stdout.write(renderUsage({ heading: !drew }))
+    const text = command === undefined
+      ? renderSummary({ heading: !drew })
+      : renderUsage({ heading: !drew })
+    // And the scan only runs when what follows fits on the screen. Animating a
+    // wordmark that the next 50 lines will immediately scroll off the top is
+    // decoration nobody sees, and it is the reason a bare `omakit` looked
+    // static: the reference is 53 lines and a terminal is not 60 rows tall.
+    await banner({ tagline: TAGLINE, animate: fitsOnScreen(text) })
+    process.stdout.write(text)
   }
 } else {
-  process.stderr.write(`unknown command: ${command}\n\n${renderUsage({ colour: false })}`)
+  // The short list on a typo, not 53 lines of reference.
+  process.stderr.write(`unknown command: ${command}\n\n${renderSummary({ colour: false })}`)
   process.exit(2)
 }

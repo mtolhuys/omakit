@@ -126,6 +126,29 @@ export function paintSignature(signature, c) {
 }
 
 /**
+ * The front door: the commands and nothing else.
+ *
+ * The measured reason this exists. The full reference is 53 lines, a wordmark
+ * is 7 more, and a terminal is not 60 rows tall, so a bare `omakit` printed a
+ * banner that scrolled off the top of the screen before anyone could read it.
+ * A list of what you can run fits, which means the wordmark above it stays on
+ * screen, and the reference is one command away.
+ *
+ * @param {{ colour?: boolean, heading?: boolean }} [options]
+ */
+export function renderSummary({ colour = colourEnabled(), heading = true } = {}) {
+  const c = styler(colour)
+  const out = heading ? [`${c("cyan.bold", "omakit")}${c("grey", ":")} ${TAGLINE}`, ""] : []
+  for (const command of COMMANDS) {
+    out.push(`  ${paintSignature([].concat(command.signature)[0], c)}`)
+  }
+  out.push("")
+  out.push(`  ${paintProse("`omakit help` is the same list with what each command does, and", c)}`)
+  out.push(`  ${paintProse("what it reads. `omakit setup` is the one to run first.", c)}`)
+  return `${out.join("\n")}\n`
+}
+
+/**
  * @param {{ colour?: boolean, heading?: boolean }} [options] `heading: false`
  *   when the banner has already said the name and the tagline, so the same
  *   sentence is not printed twice.

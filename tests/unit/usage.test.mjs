@@ -2,7 +2,7 @@
 // and so a terminal and a pipe get the same words.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { renderUsage, AUTHENTICATION, COMMANDS, ENVIRONMENT, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
+import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, ENVIRONMENT, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
 import { paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
 
 test("colour changes nothing about the words", () => {
@@ -66,4 +66,24 @@ test("a signature is coloured by token: typed cyan, replaceable yellow", () => {
 
 test("the usage carries no pinned colour", () => {
   assert.doesNotMatch(renderUsage({ colour: true }), /38;[25];|48;/)
+})
+
+test("the front door fits on a screen, and names every command once", () => {
+  // The measured reason for a second, shorter rendering: the reference is over
+  // 50 lines and a wordmark is 7 more, so a bare `omakit` used to print a
+  // banner that the rest of the output scrolled off the top of the screen
+  // before anyone could read it.
+  const summary = renderSummary({ colour: false })
+  const lines = summary.split("\n").length
+  assert.ok(lines <= 20, `the front door is ${lines} lines; it has to fit`)
+  assert.ok(renderUsage({ colour: false }).split("\n").length > lines * 2)
+  for (const command of COMMANDS) {
+    const first = [].concat(command.signature)[0]
+    assert.ok(summary.includes(first), `missing: ${first}`)
+    // Only the signature: the descriptions are what `omakit help` is for.
+    assert.ok(!summary.includes(command.lines[0]), `${first} brought its description along`)
+  }
+  // And it says where the rest is.
+  assert.match(summary, /omakit help/)
+  assert.equal(plain(renderSummary({ colour: true })), summary)
 })

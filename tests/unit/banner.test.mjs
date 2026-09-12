@@ -4,7 +4,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { banner, bannerEnabled, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
+import { banner, bannerEnabled, fitsOnScreen, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const plain = (text) => String(text).replace(/\[[0-9;]*m/g, "")
@@ -132,4 +132,19 @@ test("a short terminal gets the finished wordmark and no cursor-up at all", asyn
   const all = written.join("")
   assert.doesNotMatch(all, /\u001b\[\d+A/, "no frame is redrawn, so nothing can be stranded")
   assert.match(all, /\u2588/, "the wordmark is still drawn")
+})
+
+test("the scan runs only when the wordmark will still be on screen after it", () => {
+  // Animating into a terminal that is about to scroll spends the budget on
+  // something nobody sees, and it is what made a bare `omakit` look static: the
+  // reference printed under it is 53 lines, which no terminal is tall enough
+  // to hold beneath a 7-line banner.
+  const short = "one\ntwo\nthree\n"
+  assert.equal(fitsOnScreen(short, { rows: 40 }), true)
+  assert.equal(fitsOnScreen(short, { rows: 10 }), false)
+  assert.equal(fitsOnScreen("x\n".repeat(53), { rows: 48 }), false)
+  // A pty with no window size (which is what `script` hands a program) reports
+  // 0 rows. Unknown geometry is not room.
+  assert.equal(fitsOnScreen(short, { rows: 0 }), false)
+  assert.equal(fitsOnScreen(short, {}), false)
 })

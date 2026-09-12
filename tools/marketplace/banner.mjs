@@ -124,6 +124,26 @@ export function schedule(width, budget = BUDGET_MS) {
   return { stride, shineStride, delay, frames, total: frames * delay }
 }
 
+/**
+ * Is there room on screen for the wordmark and the text that follows it?
+ *
+ * The scan is only worth running when the answer is yes. A terminal that has to
+ * scroll takes the wordmark off the top of the screen the moment the next lines
+ * arrive, so animating into it spends a quarter of a second on something nobody
+ * ever sees, and a redraw that races a scroll is what strands a row of an
+ * earlier frame above the letters.
+ *
+ * @param {string} following the text that will be printed under the wordmark
+ * @param {{ rows?: number }} [stream]
+ */
+export function fitsOnScreen(following, stream = process.stdout) {
+  const rows = Number.isFinite(stream?.rows) && stream.rows > 0 ? stream.rows : 0
+  if (!rows) return false
+  // The five glyph rows, the rule, the tagline, the blank line after it, and
+  // the prompt line that was already on screen before any of this.
+  return rows >= GLYPH_ROWS + 4 + String(following).split("\n").length
+}
+
 export function bannerEnabled(stream = process.stdout, env = process.env) {
   if (env.NO_COLOR !== undefined && env.NO_COLOR !== "") return false
   if (env.TERM === "dumb") return false
@@ -194,21 +214,28 @@ export async function banner(options = {}) {
   const animate = options.animate !== false && rowsAvailable >= GLYPH_ROWS + 4
 
   const { stride, shineStride, delay } = schedule(width, options.budgetMs)
-  const paint = (lines) => lines.map((line) => `${ESC}2K${line}`)
-  const write = (lines) => stream.write(`${paint(lines).join("\n")}\n`)
-  const up = () => stream.write(`${ESC}${GLYPH_ROWS}A`)
+  const paint = (lines) => lines.map((line) => `${ESC}2K${line}`).join("\n")
+  // A frame is written without a trailing newline, and the cursor walks back up
+  // four rows and to column 0. That is not a detail: a newline written while the
+  // cursor is on the last row of the screen scrolls the screen, so a frame that
+  // ends in one scrolls once per frame when the prompt happens to sit at the
+  // bottom, which it usually does. Twenty-six of those leave the partial frames
+  // in the scrollback and a stray row of one of them directly above the
+  // wordmark. Ending inside the block instead means the screen scrolls exactly
+  // once, for the very first frame, before any cursor-up is issued.
+  const redraw = (lines) => stream.write(`${paint(lines)}${ESC}${GLYPH_ROWS - 1}A\r`)
+  const finish = (lines) => stream.write(`${paint(lines)}\n`)
 
   if (!animate) {
-    write(frame(layout, -2, width + 2))
+    finish(frame(layout, -2, width + 2))
   } else {
-    // Claim the five rows first, so any scrolling happens before a single
-    // cursor-up is issued and the geometry cannot shift mid-animation.
-    write(frame(layout, -2, -2))
-    up()
+    // Claim the five rows first, so whatever scrolling has to happen happens
+    // here, before a single cursor-up is issued and while the geometry can
+    // still shift harmlessly.
+    redraw(frame(layout, -2, -2))
     const step = async (band, revealed, delay) => {
-      write(frame(layout, band, revealed))
       await new Promise((resolve) => setTimeout(resolve, delay))
-      up()
+      redraw(frame(layout, band, revealed))
     }
     for (let band = 0; band <= width; band += stride) await step(band, band, delay)
     // One return pass over the finished wordmark. Two looked better and cost
@@ -221,7 +248,7 @@ export async function banner(options = {}) {
         await step(forward ? offset : width - offset, width + 2, delay)
       }
     }
-    write(frame(layout, -2, width + 2))
+    finish(frame(layout, -2, width + 2))
   }
   stream.write(`${rule}\n`)
   if (tagline) stream.write(`${tagline}\n`)
