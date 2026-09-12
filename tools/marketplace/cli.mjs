@@ -225,7 +225,11 @@ if (command === "setup") {
     }
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
   } else {
-    await banner({ tagline: "marketplace submit preflight for Omarchy Quattro plugins" })
+    // The wordmark, drawn at once. `help` is what you run because you want to
+    // read something now, and the scan costs 1.4 seconds before the first line
+    // of usage appears. Only `omakit setup` animates it: that command is a first
+    // run, it is fetching 16 MB anyway, and nobody is waiting on a line of text.
+    await banner({ animate: false, tagline: "marketplace submit preflight for Omarchy Quattro plugins" })
     process.stdout.write(USAGE)
   }
 } else {

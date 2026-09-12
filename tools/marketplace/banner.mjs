@@ -14,6 +14,11 @@
 // name, lighting it as it passes. Nothing here imitates anyone else's logo,
 // character or product; the letters are generated from the small font below, so
 // renaming the tool is a change to one string and not a redrawing job.
+//
+// It only animates where nothing is waiting on it. `omakit setup` is a first run
+// that fetches 16 MB regardless, so a second of scan costs nothing. `help` and
+// `doctor` draw the finished wordmark at once, because the scan is 1.4 seconds
+// and both of those commands exist to put text on the screen now.
 
 const ESC = "\u001b["
 const RESET = `${ESC}0m`

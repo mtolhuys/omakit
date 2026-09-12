@@ -6,7 +6,7 @@ them again from the committed scenes and captures produces byte-identical files.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
-| `banner.gif` | the wordmark scanning in, then two shine passes | a terminal session with timings |
+| `banner.gif` | the wordmark scanning in, then two shine passes, as `omakit setup` draws it | a terminal session with timings |
 | `setup.gif` | `omakit setup` on a machine with no pin yet | a terminal session with timings |
 | `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
 | `watch.gif` | `omakit watch` on a real open submission with a stale pin | stdout, revealed line by line |
@@ -70,6 +70,10 @@ redrawn block is complete, and after rendering it asserts that each frame is a
 block of lines the program actually wrote in one go. Without that check the
 replay happily assembled a frame from two different redraws, which looked like a
 wordmark with its bottom row missing and an `I` that read as a `T`.
+
+The scan is what `omakit setup` draws. `help` and `doctor` print the finished
+wordmark at once, because the scan takes 1.4 seconds and both of those commands
+exist to put text on the screen now.
 
 `render.py` is documentation tooling, not part of omakit: it needs Pillow and
 ffmpeg, which omakit itself does not. It cannot draw a character that is not in

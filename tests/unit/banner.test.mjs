@@ -74,3 +74,17 @@ test("the banner appears on the front door only", () => {
     assert.ok(!text.includes("banner.mjs"), `${module} imports the banner; it must not`)
   }
 })
+
+test("only setup animates; nothing that prints content waits on the scan", () => {
+  // Measured: the scan is 28 columns of reveal plus two shine passes, about
+  // 1.4 seconds before the first line of usage would appear. `setup` is a first
+  // run that fetches 16 MB anyway; `help` and `doctor` exist to put text on the
+  // screen now.
+  const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
+  for (const call of cli.match(/banner\(\{[^}]*\}\)/g) || []) {
+    assert.match(call, /animate:\s*false/, `${call} animates inside the CLI; only setup may`)
+  }
+  const setup = readFileSync(join(REPO_ROOT, "tools/marketplace/setup.mjs"), "utf8")
+  assert.match(setup, /banner\(\{[^}]*\}\)/, "setup draws the banner")
+  assert.doesNotMatch(setup, /animate:\s*false/, "setup is the one place the scan belongs")
+})
