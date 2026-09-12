@@ -9,10 +9,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdtempSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { ARROW, COLUMNS, DENSITY, plain } from "../../tools/marketplace/style.mjs"
+import { ARROW, COLUMNS, DENSITY, GUTTER, overflows, plain } from "../../tools/marketplace/style.mjs"
 import { materialise, GOOD } from "../fixtures/plugins.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
@@ -59,9 +59,38 @@ test("nothing a command prints is wider than eighty columns", () => {
       if (own.includes(from)) own = own.slice(0, own.indexOf(from)) + own.slice(own.indexOf(to))
     }
     for (const line of own.split("\n")) {
-      assert.ok(line.length <= COLUMNS, `${args.join(" ")}: ${line.length} columns: ${JSON.stringify(line)}`)
+      assert.ok(!overflows(line), `${args.join(" ")}: ${line.length} columns: ${JSON.stringify(line)}`)
     }
   }
+})
+
+test("the eighty-column rule does not depend on where the checkout lives", () => {
+  // Measured before this test existed: `doctor` prints the pinned checkout's
+  // absolute path, so from a 91-column clone path the suite was red and from
+  // a 60-column one it was green. The checkout is given a path wider than the
+  // whole terminal here (a symlink to the real pin, so nothing is copied), and
+  // the rule has to hold: the path is the only thing wider than eighty, it is
+  // printed whole on a line of its own, and it is never broken or elided,
+  // because an agent reads that line for the path.
+  const deep = join(mkdtempSync(join(tmpdir(), "omakit-deep-")), "a/".repeat((COLUMNS - GUTTER) / 2), "marketplace")
+  mkdirSync(join(deep, ".."), { recursive: true })
+  symlinkSync(requirePinForTests(), deep)
+  assert.ok(deep.length > COLUMNS, `the path is deliberately wider than the terminal: ${deep.length}`)
+
+  const { code, out, err } = run(["doctor", "--offline"], { OMAKIT_MARKETPLACE_PIN: deep })
+  assert.equal(code, 0, err)
+  const lines = out.split("\n")
+  assert.ok(lines.includes(`${" ".repeat(GUTTER)}${deep}`), `the path is whole, on its own line, in the gutter:\n${out}`)
+  for (const line of lines) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
+  const wide = lines.filter((line) => line.length > COLUMNS)
+  assert.deepEqual(wide.map((line) => line.trim()), [deep], "nothing but the path is wider than eighty")
+
+  // And the failure state that names a missing checkout holds to the same rule.
+  const missing = join(deep, "..", "missing")
+  const failure = run(["verify", good.dir], { OMAKIT_MARKETPLACE_PIN: missing })
+  assert.equal(failure.code, 1)
+  assertFailureState(failure.err, "marketplace-unavailable", "omakit pin")
+  assert.ok(failure.err.includes(missing), "the missing path is named whole")
 })
 
 function assertFailureState(err, code, remedy) {
@@ -70,7 +99,7 @@ function assertFailureState(err, code, remedy) {
   assert.ok(lines.length >= 3, "what it means, under it")
   assert.ok(lines.some((line) => line.trimStart().startsWith(`${ARROW} `) && line.includes(remedy)), `the one command that fixes it: ${remedy}\n${err}`)
   assert.doesNotMatch(err, /^\s+at /m, "no stack trace")
-  for (const line of lines) assert.ok(line.length <= COLUMNS, `${line.length} columns: ${line}`)
+  for (const line of lines) assert.ok(!overflows(line), `${line.length} columns: ${line}`)
 }
 
 test("a missing pin is a failure state naming `omakit pin`, in every command that needs it", () => {

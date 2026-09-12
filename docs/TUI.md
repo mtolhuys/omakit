@@ -119,10 +119,27 @@ line and reached 207; an upgrade refusal 124; the watch header 99; one help
 line 83.
 
 `wrap()` now counts its indent as part of the width. A word longer than the
-room it has (a URL, a 40-character sha) is left whole on a line of its own,
-never broken. A `backticked span` is one word, so `omakit pin` is never split
-across a line break, and the backticks themselves never reach the terminal: the
-span is tinted cyan instead, because it is the thing you could type.
+room it has (a URL, a 40-character sha, an absolute path) is left whole on a
+line of its own, never broken and never elided. A `backticked span` is one
+word, so `omakit pin` is never split across a line break, and the backticks
+themselves never reach the terminal: the span is tinted cyan instead, because
+it is the thing you could type.
+
+So the rule is over what omakit composes, not over every word it is handed,
+and the measurement says so: a line is over width when it is wider than eighty
+and omakit had a choice about it, which is any line with more than one word on
+it. `overflows()` in `style.mjs` is that measurement, and both test files use
+it rather than their own. Measured before this was settled: `doctor` prints
+the pinned checkout's absolute path, and from a checkout at a 91-column path
+the suite was red while from a 60-column one it was green, so whether the rule
+held depended on where the repository was cloned. The other way out, eliding
+the path to `~/…` or with a middle ellipsis, was rejected: stdout is an API, an
+agent reads that line for the path, `~` is not a path it can pass back to
+`OMAKIT_MARKETPLACE_PIN`, and an ellipsis is not a path at all. The same
+holds for every directory the tool names, in the missing-pin failure, the
+`pin.size` remedy and the upgrade refusal. `tests/unit/cli.test.mjs` runs
+`doctor` against a checkout at a path wider than the terminal and asserts that
+the path is the only thing over eighty and that it is printed whole.
 
 Two things are exempt, and both are somebody else's text quoted verbatim: the
 marketplace's own baseline report, and the issue body, whose checklist

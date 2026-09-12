@@ -8,7 +8,7 @@ import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import {
   ARROW, COLUMNS, DENSITY, GUTTER, LABEL, MARK_WIDTH, MOTION, PALETTE, STATUS, STEP,
-  action, colourEnabled, field, labelled, mark, motionEnabled, plain, section, styler, verdict, width, wrap,
+  action, colourEnabled, field, labelled, mark, motionEnabled, overflows, plain, section, styler, verdict, width, wrap,
 } from "../../tools/marketplace/style.mjs"
 import { renderDoctor, renderSubmit, renderWatch } from "../../tools/marketplace/report.mjs"
 import { renderSummary, renderUsage } from "../../tools/marketplace/usage.mjs"
@@ -42,7 +42,7 @@ function ownLines(text, exempt = "") {
 
 function assertWidth(text, label, exempt = "") {
   for (const line of ownLines(text, exempt)) {
-    assert.ok(line.length <= COLUMNS, `${label}: ${line.length} columns: ${JSON.stringify(line)}`)
+    assert.ok(!overflows(line), `${label}: ${line.length} columns: ${JSON.stringify(line)}`)
   }
 }
 
@@ -217,7 +217,7 @@ test("the composition helpers keep the words and drop the colour", () => {
     const colourLines = coloured[index]()
     assert.deepEqual(colourLines.map(plain), plainLines)
     assert.notDeepEqual(colourLines, plainLines, "colour is applied")
-    for (const line of plainLines) assert.ok(line.length <= COLUMNS)
+    for (const line of plainLines) assert.ok(!overflows(line))
   }
   // The arrow line is the only line that starts with an arrow, and it starts
   // in the gutter.

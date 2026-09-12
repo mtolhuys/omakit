@@ -69,6 +69,9 @@ export const PALETTE = Object.freeze({ ...SGR })
  * and tests/unit/style.test.mjs renders every report and measures. The one
  * thing exempt is the marketplace's own baseline report, which is printed
  * verbatim because rewrapping somebody else's attestation would be editing it.
+ *
+ * The rule is over what omakit composes, not over every word it is handed.
+ * `overflows` below is the measurement, and it is the one both test files use.
  */
 export const COLUMNS = 80
 
@@ -216,6 +219,34 @@ export function plain(text) {
 /** Visible width of a line, escapes excluded. */
 export function width(text) {
   return plain(text).length
+}
+
+/**
+ * Whether a finished line breaks the eighty-column rule. This is the
+ * measurement the tests make over the binary's own output, so it is defined
+ * here, next to the rule, rather than in each test.
+ *
+ * A line is over width when it is wider than COLUMNS and omakit had a choice
+ * about it. A line whose whole content, after its indent, is one word is a line
+ * `wrap()` was handed a word wider than the room and put on a line of its own,
+ * which is the rule: a path, a URL or a sha is never broken and never elided.
+ * Measured before this was decided: `doctor` prints the pinned checkout's
+ * absolute path, and from a checkout at a 91-column path the suite was red
+ * while from a 60-column one it was green, so the rule depended on where the
+ * repository was cloned. Eliding the path instead (`~/`, or a middle ellipsis)
+ * was the other option and was rejected because stdout is an API: an agent
+ * reads that line for the path, `~` is not a path it can pass back to
+ * `OMAKIT_MARKETPLACE_PIN`, and an ellipsis is not a path at all. The same
+ * holds for the missing-pin message, the `pin.size` remedy and the upgrade
+ * refusal, all of which name a directory.
+ *
+ * @param {string} line one line, escapes allowed
+ * @param {number} [total]
+ */
+export function overflows(line, total = COLUMNS) {
+  const text = plain(line)
+  if (text.length <= total) return false
+  return /\s/.test(text.trim())
 }
 
 // --- composition ------------------------------------------------------------
