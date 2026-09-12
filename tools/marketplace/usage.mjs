@@ -41,8 +41,8 @@ export const COMMANDS = Object.freeze([
     signature: "omakit watch <issue-url> [--json]",
     lines: [
       "Compare the commit the marketplace validated on a submission issue with",
-      "the plugin repository's current default-branch HEAD, and say what moves",
-      "the pin. Read-only.",
+      "the plugin repository's current default-branch HEAD, and say what makes",
+      "it validate a newer one. Read-only.",
     ],
   },
   {
