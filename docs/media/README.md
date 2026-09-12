@@ -49,7 +49,7 @@ The two animated ones are recorded with their timings:
 ```bash
 script -q --log-out docs/media/captures/banner.out \
           --log-timing docs/media/captures/banner.tim \
-  -c 'stty rows 12 cols 60; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"marketplace submit preflight for Omarchy Quattro plugins\" })"'
+  -c 'stty rows 12 cols 40; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"the safe place to find out\" })"'
 
 rm -rf .cache/marketplace   # so setup has something to do
 which ttfx                  # on PATH, so the wordmark plays its effect first

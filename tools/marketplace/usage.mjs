@@ -9,7 +9,13 @@ import { UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { MARKETPLACE_PIN } from "./pin.mjs"
 import { colourEnabled, paintProse, STEP, styler } from "./style.mjs"
 
-export const TAGLINE = "marketplace submit preflight for Omarchy Quattro plugins"
+/**
+ * "Safe" means one thing, everywhere it appears: this runs on your own
+ * machine, posts nothing, opens no issue and spends nobody's attention. It is
+ * never a claim about the security of a plugin or a submission; the baseline's
+ * outcome is reported verbatim and is never restated as one.
+ */
+export const TAGLINE = "the safe place to find out"
 
 /** The shells `omakit completion` has a script for; completion.mjs holds the scripts. */
 export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])

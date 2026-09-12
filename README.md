@@ -3,8 +3,13 @@
 </p>
 
 <p align="center">
-  <strong>Everything knowable about an Omarchy Quattro plugin submission, before
-  you post it. And afterwards, why it is sitting still.</strong>
+  <strong>The safe place to find out.</strong><br>
+  Everything knowable about an Omarchy Quattro plugin submission, checked
+  before you post it: the tree, the manifest, the form, the commit, and the
+  marketplace's own security baseline with its outcome reported as it is. A submission is judged at one exact commit
+  and drifts from it the moment you push; <code>watch</code> says when that
+  has happened. All of it runs on your own machine and publishes nothing: no
+  issue, no comment, no label, nobody's attention spent until you choose to.
 </p>
 
 ![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
