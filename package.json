@@ -1,0 +1,29 @@
+{
+  "name": "omakit",
+  "version": "0.1.0",
+  "description": "Marketplace submit preflight for Omarchy Quattro plugins. Agent-first, read-only, zero dependencies.",
+  "license": "MIT",
+  "author": "Maarten Tolhuijs",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "omakit": "bin/omakit"
+  },
+  "scripts": {
+    "pin": "node tools/marketplace/cli.mjs pin",
+    "test": "node --test tests/unit/*.test.mjs",
+    "parity": "node tools/marketplace/cli.mjs parity --count 30"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtolhuys/omakit.git"
+  },
+  "files": [
+    "bin",
+    "tools",
+    "skills",
+    "docs"
+  ]
+}

@@ -1,0 +1,10 @@
+# The pinned marketplace checkout and every local cache. Never committed: the
+# pin is identified by commit in tools/marketplace/pin.mjs and fetched with
+# `omakit pin`.
+.cache/
+
+# Editor and OS files
+.DS_Store
+*.swp
+*.swo
+*~

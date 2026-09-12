@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+// The single executable entry point. No build step, no dependencies.
+import "../tools/marketplace/cli.mjs"
