@@ -80,4 +80,5 @@ else.
 | `docs/MEASUREMENTS.md` | every number, its method and its limits |
 | `docs/UPSTREAM_CONTRACT.md` | the seam, the pin, the boundaries |
 | `docs/MARKETPLACE.md` | who this actually helps, stated honestly |
+| `docs/TUI.md` | the visual system: one vocabulary, one scale, and the tests that hold them |
 | `tools/marketplace/README.md` | the module map |

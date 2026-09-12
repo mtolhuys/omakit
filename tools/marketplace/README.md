@@ -22,8 +22,12 @@ local commit through the transport seam the marketplace tests itself
 | `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. |
 | `watch.mjs` | The pin watch: validated commit versus current default-branch HEAD, and the one action that refreshes it. |
 | `github.mjs` | Read-only GitHub access. GET only. The token comes from the environment and is never written anywhere. |
-| `report.mjs` | Text rendering for the agent that runs this tool. |
-| `cli.mjs` | The one entry point behind `bin/omakit`. |
+| `style.mjs` | The visual system, defined once: the palette, the status vocabulary, the block ramp, the columns, the motion budgets, and the composition helpers every command draws with. `docs/TUI.md` explains it. |
+| `report.mjs` | Text rendering of submit, watch and doctor for the agent that runs this tool, and the person reading over its shoulder. |
+| `usage.mjs` | The help text, as data. |
+| `banner.mjs` | The wordmark, on the front door only. |
+| `progress.mjs` | The progress line, on stderr, only when a person is looking. |
+| `cli.mjs` | The one entry point behind `bin/omakit`, and the one register every failure is reported in. |
 
 ```text
 omakit pin
