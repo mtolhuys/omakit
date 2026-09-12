@@ -67,6 +67,11 @@ omakit doctor        # what is installed, what is pinned, and what has moved
 omakit help --agent  # the operating instructions, for the agent running this
 ```
 
+While `submit` works, a scanner sweeps across a progress line naming the step it
+is on. It is drawn on stderr and only when stderr is a terminal, so a piped run
+gives an agent exactly the bytes it gave before, and `NO_COLOR` or
+`OMAKIT_NO_PROGRESS` turns it off.
+
 ## Updating
 
 There is deliberately no `omakit upgrade`, because two different things could
