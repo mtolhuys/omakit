@@ -1,6 +1,6 @@
 {
   "title": "omakit watch",
-  "width": 100,
+  "width": 88,
   "rows": 26,
   "steps": [
     {
@@ -10,11 +10,11 @@
       "pace": 10,
       "pauses": [
         [
-          9,
+          11,
           160
         ],
         [
-          19,
+          22,
           240
         ]
       ],

@@ -2,7 +2,8 @@
 
 All four are real, unedited program output. Nothing in them was typed by hand,
 reordered or rewritten, and they are reproducible from this repository: rendering
-them again from the committed scenes and captures produces byte-identical files.
+them again from the committed scenes and captures, with the same Pillow,
+FreeType and ffmpeg, produces byte-identical files.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
@@ -77,21 +78,33 @@ replay happily assembled a frame from two different redraws, which looked like a
 wordmark with its bottom row missing and an `I` that read as a `T`.
 
 The scan is what every front-door command draws, `help` and `doctor` included.
-It is on a budget (`BUDGET_MS` in `tools/marketplace/banner.mjs`, 220ms), so the
-GIF is brisk because the program is: the first version took 1.4 seconds, which
-is long enough to be in the way of someone who ran `help` to read a flag.
+It is on a budget (`MOTION.bannerBudgetMs` in `tools/marketplace/style.mjs`,
+220ms), so the GIF is brisk because the program is: the first version took 1.4
+seconds, which is long enough to be in the way of someone who ran `help` to
+read a flag.
 
-`render.py` is documentation tooling, not part of omakit: it needs Pillow and
-ffmpeg, which omakit itself does not. It cannot draw a character that is not in
-the capture. Its line height is set to the exact height of a full block glyph, so
-block-drawn letters join up instead of breaking into a dot matrix, and it slices
-the capture by the byte counts the timing log records rather than by characters,
-because a block character is three bytes and slicing by characters tears escape
-sequences in half.
+`render.py` is documentation tooling, not part of omakit: it needs Pillow, ffmpeg
+and DejaVu Sans Mono, which omakit itself does not (`OMAKIT_RENDER_FONTS` names
+a directory to find the font in if it is not where the distribution keeps it).
+It cannot draw a character that is not in the capture. It slices the capture by
+the byte counts the timing log records rather than by characters, because a
+block character is three bytes and slicing by characters tears escape sequences
+in half.
+
+The block elements (`█ ▓ ▒ ░ ▁`) are drawn by the renderer as cells, not taken
+from the font, which is what a terminal does too: Alacritty, kitty, foot and
+Ghostty all rasterise that range themselves, because a font's block glyphs are
+sized to its em box and not to the cell. Measured: DejaVu's dark shade stops one
+pixel short of the cell on every side, so the wordmark's shaded `oma` rendered
+as a stipple with grid lines through it. A scene with `"wordmark": true` has
+its finished wordmark measured before the GIF is written: for every lit cell
+with a lit cell under it, the pixel rows on both sides of the boundary must
+carry ink, and the render refuses otherwise. `banner.gif` reports the count
+(`wordmark joins at 30 cell boundaries`).
 
 ## The one thing that is left out
 
-`submit.gif` omits 40 lines in the middle: the marketplace's own baseline report
+`submit.gif` omits 34 lines in the middle: the marketplace's own baseline report
 for that commit, which is long. The GIF says so on screen, in place, with a dim
 line naming what was cut. Nothing else is removed, and the full output is what
 `omakit submit` prints.

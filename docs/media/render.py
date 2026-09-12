@@ -15,7 +15,8 @@ Usage:
     python3 docs/media/render.py <scene.json> <out.gif>
 
 A scene file is {"title", "width", "rows", "steps": [{"command", "capture",
-"hold"}]}.
+"hold"}]}. A scene with "wordmark": true has its finished wordmark measured for
+vertical seams before the GIF is written (see verify_wordmark).
 """
 
 import codecs
@@ -29,8 +30,28 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-FONT_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
-FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+# DejaVu Sans Mono, wherever the distribution keeps it. OMAKIT_RENDER_FONTS
+# names a directory to look in first, for a machine that has the font
+# somewhere else (a Python environment that bundles it, for instance).
+FONT_DIRS = [
+    *([Path(p) for p in [__import__("os").environ.get("OMAKIT_RENDER_FONTS", "")] if p]),
+    Path("/usr/share/fonts/truetype/dejavu"),
+    Path("/usr/share/fonts/TTF"),
+    Path("/usr/share/fonts/dejavu"),
+    Path("/usr/share/fonts/dejavu-sans-mono-fonts"),
+]
+
+
+def font_path(name):
+    for directory in FONT_DIRS:
+        candidate = directory / name
+        if candidate.exists():
+            return str(candidate)
+    sys.exit(f"render: {name} not found in {', '.join(str(d) for d in FONT_DIRS)}; set OMAKIT_RENDER_FONTS")
+
+
+FONT_REGULAR = font_path("DejaVuSansMono.ttf")
+FONT_BOLD = font_path("DejaVuSansMono-Bold.ttf")
 FONT_SIZE = 14
 # A full block at 14px is 18px tall. The line height matches it exactly, so
 # block-drawn letters join up instead of breaking into a dot matrix. Any looser
@@ -109,6 +130,60 @@ def measure(font, text):
     return font.getlength(text)
 
 
+# The block elements are drawn here, not taken from the font, which is what a
+# terminal does too: Alacritty, kitty, foot and Ghostty all rasterise the
+# box-drawing and block-element range themselves, because a font's block glyphs
+# are sized to the font's em box and not to the terminal's cell, and the seams
+# show. DejaVu Sans Mono's dark shade stops one pixel short of the cell on every
+# side, so the wordmark's shaded prefix rendered as a stipple with grid lines
+# through it. The four densities below fill the whole cell, so the letters join.
+BLOCKS = {
+    "\u2588": "full",
+    "\u2593": "dark",
+    "\u2592": "medium",
+    "\u2591": "light",
+    "\u2581": "floor",
+}
+
+
+def block(draw, x, y, width, height, kind, colour):
+    """Draw one block-element cell at (x, y) with the given cell size."""
+    x0, y0 = int(round(x)), int(y)
+    x1, y1 = int(round(x + width)), int(y + height)
+    if kind == "full":
+        draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=colour)
+        return
+    if kind == "floor":
+        # The lower one-eighth block: a floor line at the bottom of the cell.
+        draw.rectangle([x0, y1 - max(2, height // 8), x1 - 1, y1 - 1], fill=colour)
+        return
+    # A regular dither, at a two-pixel pitch so it survives the GIF palette.
+    # dark keeps three cells in four, medium one in two, light one in four.
+    for py in range(y0, y1):
+        for px in range(x0, x1):
+            odd_row = (py // 2) % 2
+            odd_col = (px // 2) % 2
+            lit = {
+                "dark": not (odd_row and odd_col),
+                "medium": odd_row == odd_col,
+                "light": odd_row and odd_col,
+            }[kind]
+            if lit:
+                draw.point((px, py), fill=colour)
+
+
+def _runs(text):
+    """Split text into (is_block, run) pairs."""
+    out = []
+    for char in text:
+        is_block = char in BLOCKS
+        if out and out[-1][0] == is_block:
+            out[-1] = (is_block, out[-1][1] + char)
+        else:
+            out.append((is_block, char))
+    return out
+
+
 def frame(title, cols, rows, lines, cursor=None, size=FONT_SIZE, chrome=True):
     """Draw one frame: optional window chrome plus `rows` rows of `lines`."""
     regular = ImageFont.truetype(FONT_REGULAR, size)
@@ -133,13 +208,22 @@ def frame(title, cols, rows, lines, cursor=None, size=FONT_SIZE, chrome=True):
             fill=ANSI[90],
         )
 
+    cell = measure(regular, "M")
     for row, line in enumerate(lines[-rows:]):
         y = pad_top + row * line_height
         x = PAD_X
         for text, colour, is_bold in spans(line):
             font = bold if is_bold else regular
-            draw.text((x, y), text, font=font, fill=BRIGHT if is_bold and colour == FG else colour)
-            x += measure(font, text)
+            fill = BRIGHT if is_bold and colour == FG else colour
+            # Runs of block elements are drawn as cells; everything else is text.
+            for is_block, run in _runs(text):
+                if is_block:
+                    for char in run:
+                        block(draw, x, y, cell, line_height, BLOCKS[char], fill)
+                        x += cell
+                else:
+                    draw.text((x, y), run, font=font, fill=fill)
+                    x += measure(font, run)
         if cursor is not None and row == len(lines[-rows:]) - 1 and cursor:
             draw.rectangle([x + 1, y + 2, x + int(measure(regular, "M")), y + line_height - 3], fill=FG)
     return image
@@ -307,6 +391,56 @@ def verify(frames, data, animated_until):
             )
 
 
+WORDMARK_INK = "\u2588\u2593"
+
+
+def verify_wordmark(image, lines, size, chrome):
+    """The wordmark's block rows must join: no seam between a cell and the one below it.
+
+    The wordmark carries its oma/kit split by density (a shaded block against a
+    full one) rather than by colour, because on a monochrome theme colour says
+    nothing. A shade glyph is a pattern, and a pattern only reads as a letter if
+    the font tiles it to the edge of the cell. This measures the rendered image:
+    for every lit cell with a lit cell directly under it, the pixel rows on both
+    sides of the boundary must contain ink inside the cell's span. A seam there
+    would turn the letters into a dot matrix, and the render refuses to ship it.
+    """
+    regular = ImageFont.truetype(FONT_REGULAR, size)
+    line_height = regular.getbbox("\u2588")[3] + 1
+    cell = measure(regular, "M")
+    pad_top = PAD_TOP if chrome else 14
+    pixels = image.load()
+    plain = [SGR.sub("", line) for line in lines]
+    rows = [row for row, text in enumerate(plain) if any(ch in WORDMARK_INK for ch in text)]
+    if not rows:
+        raise SystemExit("render: the wordmark scene has no block rows to verify")
+
+    def inked(x0, x1, y):
+        return any(pixels[x, y] != BG for x in range(int(x0), int(x1)))
+
+    checked = 0
+    for row in rows:
+        below = row + 1
+        if below >= len(plain):
+            continue
+        for column, char in enumerate(plain[row]):
+            if char not in WORDMARK_INK or column >= len(plain[below]) or plain[below][column] not in WORDMARK_INK:
+                continue
+            x0 = PAD_X + column * cell
+            x1 = x0 + cell
+            boundary = pad_top + below * line_height
+            for y in (boundary - 1, boundary):
+                if not inked(x0, x1, y):
+                    raise SystemExit(
+                        f"render: the wordmark does not join vertically at row {row}, column {column} "
+                        f"({char!r} over {plain[below][column]!r}): pixel row {y} inside the cell is empty"
+                    )
+            checked += 1
+    if not checked:
+        raise SystemExit("render: the wordmark has no vertically adjacent block cells to verify")
+    return checked
+
+
 def build(scene, out_path):
     cols, rows = scene["width"], scene["rows"]
     title = scene["title"]
@@ -358,6 +492,11 @@ def build(scene, out_path):
             shot(hold)
         shot(step.get("hold", 260))
         screen.append("")
+
+    if scene.get("wordmark"):
+        # The last frame is the finished wordmark. Measured, not trusted.
+        joins = verify_wordmark(frames[-1][0], screen, size, chrome)
+        print(f"{out_path}: wordmark joins at {joins} cell boundaries")
 
     with tempfile.TemporaryDirectory() as work:
         listing = Path(work) / "frames.txt"
