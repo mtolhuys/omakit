@@ -88,10 +88,7 @@ test("it never touches the pin, and says so", () => {
   }
   assert.match(source, /--ff-only/, "fast-forward only")
   assert.ok(!source.includes('"rebase"') && !source.includes('"reset"'), "no history rewriting")
-  // Assembled, so the repository-wide scan in read-only.test.mjs does not find
-  // the literal here and flag this file for mentioning it.
-  const remoteWrite = `"${["pu", "sh"].join("")}"`
-  assert.ok(!source.includes(remoteWrite), "nothing is written to a remote")
+  assert.ok(!source.includes('"push"'), "nothing is written to a remote")
 })
 
 test("the successful path: it fast-forwards, reports, and is idempotent", async () => {

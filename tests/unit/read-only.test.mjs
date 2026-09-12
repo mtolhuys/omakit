@@ -68,6 +68,11 @@ test("no git verb that writes to a remote", () => {
   ])
   for (const { path, text } of sources) {
     for (const token of ["push", "send-pack", "request-pull", "am", "apply"]) {
+      // The tool is held to this strictly. A test fixture that pushes into a
+      // throwaway bare repository it created itself is not the tool reaching
+      // out, and `omakit upgrade` can only be driven end to end against a local
+      // remote, so tests/ is exempt for exactly this.
+      if (path.startsWith("tests/")) continue
       assert.ok(
         !new RegExp(`["'\`]${token}["'\`]`).test(text),
         `${path} mentions the git verb "${token}"`,
