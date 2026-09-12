@@ -104,7 +104,6 @@ export async function submissionContract(options = {}) {
   )
 
   const contract = {
-    pin: { repository: undefined, commit: undefined },
     formPath: SUBMIT_FORM_PATH,
     titleTemplate,
     titlePrefix: titleTemplate.trimEnd(),

@@ -60,6 +60,5 @@ export function inspectTree({ dir, entries }) {
     pluginName: typeof manifest?.name === "string" ? manifest.name.trim() : "",
     readmeMentionsInstall: INSTALL_PATTERN.test(readmeText),
     readmeMentionsRemoval: REMOVAL_PATTERN.test(readmeText),
-    readmeBytes: readme?.size ?? 0,
   }
 }

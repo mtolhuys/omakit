@@ -72,8 +72,6 @@ const corpus = parityCorpus(pinDir, count, offset)
 const rows = []
 const ruleTotals = {}
 const capabilityTotals = {}
-let localRuleIds = []
-let localCapabilityIds = []
 let mismatches = 0
 let failures = 0
 
@@ -99,10 +97,13 @@ for (const target of corpus) {
     row.localDigest = digest(local.result)
     // Rule and capability ids are counted in the summary, unattributed; they are
     // deliberately not recorded against this repository.
-    localRuleIds = (local.result.findings || []).map((finding) => finding.ruleId || finding.id).filter(Boolean)
-    localCapabilityIds = (local.result.capabilities || []).map((capability) => capability.id).filter(Boolean)
-    for (const id of localRuleIds) ruleTotals[id] = (ruleTotals[id] || 0) + 1
-    for (const id of localCapabilityIds) capabilityTotals[id] = (capabilityTotals[id] || 0) + 1
+    for (const finding of local.result.findings || []) {
+      const id = finding.ruleId || finding.id
+      if (id) ruleTotals[id] = (ruleTotals[id] || 0) + 1
+    }
+    for (const capability of local.result.capabilities || []) {
+      if (capability.id) capabilityTotals[capability.id] = (capabilityTotals[capability.id] || 0) + 1
+    }
     try {
       const github = await runBaseline({
         repoRoot,

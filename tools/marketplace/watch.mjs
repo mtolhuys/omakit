@@ -128,9 +128,10 @@ export async function pinWatch({ repoRoot, issueUrl }) {
 
   const comparable = Boolean(validated?.commit && head?.commit)
   const stale = comparable ? validated.commit !== head.commit : null
+  const lastReviewAt = Date.parse(maintainerComments.at(-1)?.created_at || "")
+  const headAt = Date.parse(head?.committedAt || "")
   const pushedAfterReview = Boolean(
-    stale && head?.committedAt && maintainerComments.length
-      && Date.parse(head.committedAt) > Date.parse(maintainerComments.at(-1).created_at || 0),
+    stale && Number.isFinite(lastReviewAt) && Number.isFinite(headAt) && headAt > lastReviewAt,
   )
 
   return {
