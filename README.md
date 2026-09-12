@@ -40,12 +40,14 @@ Three commands. The third one is the tool doing its job.
 ```bash
 git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
 ln -s ~/.local/share/omakit/bin/omakit ~/.local/bin/omakit
-omakit pin
+omakit setup
 ```
 
-`omakit pin` fetches the marketplace checkout that every rule is read from. It
-takes about 2 seconds and 16 MB, because it fetches only the seven files omakit
-reads out of it rather than the 325 MB the repository is at that commit. Then:
+`omakit setup` checks the environment, fetches the marketplace checkout that
+every rule is read from, and tells you what to try first. It is idempotent. The
+fetch takes about 2 seconds and 16 MB, because it takes only the seven files
+omakit reads out of that repository rather than the 325 MB it is at that commit.
+Then:
 
 ```bash
 omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
@@ -65,6 +67,7 @@ omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
 ```bash
 omakit doctor        # what is installed, what is pinned, and what has moved
 omakit help --agent  # the operating instructions, for the agent running this
+omakit pin           # what setup does for the pin, on its own
 ```
 
 While `submit` works, a scanner sweeps across a progress line naming the step it

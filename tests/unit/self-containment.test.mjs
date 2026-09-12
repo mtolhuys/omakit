@@ -84,7 +84,7 @@ test("the command surface is exactly the submission scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["pin", "doctor", "marketplace-pin", "submit", "watch", "verify", "parity", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "marketplace-pin", "submit", "watch", "verify", "parity", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately

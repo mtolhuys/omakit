@@ -21,11 +21,17 @@ import { submitPreflight } from "./submit.mjs"
 import { pinWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
+import { setup } from "./setup.mjs"
+import { banner } from "./banner.mjs"
 import { progress } from "./progress.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
 const USAGE = `omakit: marketplace submit preflight for Omarchy Quattro plugins
+
+  omakit setup
+      First run, in one command: check the environment, fetch the pinned
+      marketplace checkout, and say what to try first. Idempotent.
 
   omakit pin
       Fetch or verify the pinned marketplace checkout in .cache/marketplace.
@@ -133,7 +139,15 @@ async function cmdWatch(args) {
   process.exit(result.verdict.state === "unknown" ? 2 : 0)
 }
 
+async function cmdSetup() {
+  const result = await setup({ repoRoot: ROOT, entryPoint: resolve(ROOT, "bin/omakit") })
+  process.exit(result.ok ? 0 : 1)
+}
+
 async function cmdDoctor(args) {
+  // The wordmark without the scan: doctor is run repeatedly, and an animation
+  // you have already seen is a delay.
+  if (!args.includes("--json")) await banner({ animate: false })
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline") })
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
   process.exit(result.problems ? 1 : 0)
@@ -176,7 +190,9 @@ async function cmdParity(args) {
 }
 
 const [command, ...rest] = process.argv.slice(2)
-if (command === "pin" || command === "marketplace-pin") {
+if (command === "setup") {
+  await cmdSetup()
+} else if (command === "pin" || command === "marketplace-pin") {
   try {
     ensurePin(ROOT, (line) => process.stdout.write(`${line}\n`))
   } catch (error) {
@@ -209,6 +225,7 @@ if (command === "pin" || command === "marketplace-pin") {
     }
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
   } else {
+    await banner({ tagline: "marketplace submit preflight for Omarchy Quattro plugins" })
     process.stdout.write(USAGE)
   }
 } else {
