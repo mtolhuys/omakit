@@ -14,7 +14,6 @@ test("a piped run gets no banner at all, not even a plain one", async () => {
   assert.deepEqual(written, [])
   assert.equal(bannerEnabled({ isTTY: false }, {}), false)
   assert.equal(bannerEnabled({ isTTY: true }, { TERM: "dumb" }), false)
-  assert.equal(bannerEnabled({ isTTY: true }, { OMAKIT_NO_BANNER: "1" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, {}), true)
 })
 

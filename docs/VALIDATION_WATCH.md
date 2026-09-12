@@ -56,8 +56,9 @@ request. The one action that re-runs validation is the author's to take, and the
 command says so in the marketplace's own register.
 
 Authenticated it reads the default branch through the REST API. The credential
-comes from your `gh` login, or from `GITHUB_TOKEN` if you set one, in that order
-of preference and with the variable winning. Without either it falls back to the
+comes from your `gh` login, and only from there; `gh` itself honours a token
+in `GH_TOKEN` or `GITHUB_TOKEN`, so an agent with one in its environment is
+covered without omakit reading it. Without a login it falls back to the
 repository's public commit feed, which does not consume the 60-requests-per-hour
 unauthenticated allowance. Nothing is written anywhere: the credential is read
 when a request is about to be made, used for GET, and discarded with the

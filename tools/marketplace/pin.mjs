@@ -50,9 +50,9 @@ export const PIN_PATHS = Object.freeze([
   "/.github/ISSUE_TEMPLATE/",
 ])
 
+/** The one place the checkout lives: under the tool itself. No variable moves it. */
 export function marketplacePinDir(repoRoot) {
-  const configured = process.env.OMAKIT_MARKETPLACE_PIN
-  return configured ? resolve(configured) : join(resolve(repoRoot), ".cache/marketplace")
+  return join(resolve(repoRoot), ".cache/marketplace")
 }
 
 function git(dir, args, options = {}) {

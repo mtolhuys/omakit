@@ -6,8 +6,8 @@
 // same bytes it always got; the recordings in docs/media/ capture stdout and are
 // unaffected. Nothing downstream has to strip anything.
 //
-// It only draws when stderr is a terminal, and OMAKIT_NO_PROGRESS turns it off.
-// NO_COLOR removes the tint and nothing else: a progress line in the
+// It only draws when stderr is a terminal; a pipe or TERM=dumb is what turns
+// it off, and omakit has no switch of its own. NO_COLOR removes the tint and nothing else: a progress line in the
 // terminal's own foreground still says what is happening, and saying what is
 // happening is the point.
 //
@@ -42,7 +42,6 @@ export function headAt(step, track = TRACK, head = HEAD) {
 }
 
 export function progressEnabled(stream = process.stderr, env = process.env) {
-  if (env.OMAKIT_NO_PROGRESS) return false
   return motionEnabled(stream, env)
 }
 

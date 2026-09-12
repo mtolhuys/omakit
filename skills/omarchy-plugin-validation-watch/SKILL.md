@@ -31,8 +31,8 @@ omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number
 
 Read-only. It does not comment, label, or edit anything, and it cannot. It reads
 the default branch through the REST API when a credential is available, taking
-it from the operator's `gh` login or from `GITHUB_TOKEN`; without either it
-falls back to the public commit feed. Never ask the operator for a token: run
+it from the operator's `gh` login (which itself honours `GH_TOKEN` and
+`GITHUB_TOKEN`); without one it falls back to the public commit feed. Never ask the operator for a token: run
 `omakit doctor` and read the `github.auth` line, which names the source.
 
 ## Acting on each verdict

@@ -39,7 +39,7 @@ FORCE_COLOR=1 ./bin/omakit submit "$(cat /tmp/subject)" \
   > docs/media/captures/submit-refused.ansi 2>&1
 
 # watch, on a real open submission whose validated commit had fallen behind
-FORCE_COLOR=1 GITHUB_TOKEN=... ./bin/omakit watch \
+FORCE_COLOR=1 ./bin/omakit watch \
   https://github.com/omacom/omarchy-plugin-marketplace/issues/4403 \
   > docs/media/captures/watch-stale.ansi 2>&1
 ```

@@ -74,8 +74,6 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   const auth = credential({ refresh: true })
   if (auth.source === "gh") {
     step("pass", "GitHub: your `gh` login, read-only. omakit stores nothing.")
-  } else if (auth.source) {
-    step("pass", `GitHub: ${auth.source}, read-only. Never written to disk.`)
   } else {
     step("info", `no GitHub login. \`submit\` and \`verify\` need none at all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without one.`)
     fix("`gh auth login` is enough; omakit reads it read-only and stores nothing.")

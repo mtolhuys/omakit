@@ -27,8 +27,11 @@ const USER_AGENT = "omakit-marketplace-submit (read-only; https://github.com/mto
  * an issue; the overlap between them and people with `gh auth login` already
  * done is most of them. Asking them instead to mint a personal access token,
  * for a tool that only ever issues GET, is a bad trade: it is friction for the
- * honest case and a new long-lived secret on disk for the dishonest one. An
- * explicit GITHUB_TOKEN still wins, because someone who sets it meant it.
+ * honest case and a new long-lived secret on disk for the dishonest one. And
+ * `gh` is the only source: it honours GH_TOKEN and GITHUB_TOKEN itself
+ * (measured: `gh auth token` prints an environment token straight back), so
+ * an agent with a token in its environment is covered through the same one
+ * call, and omakit reads no variable of its own.
  *
  * Borrowing `gh`'s credential means borrowing whatever scopes that login has,
  * which is usually enough to write. This repository keeps that safe the only
@@ -72,14 +75,10 @@ export function ghCredential({ run = execFileSync } = {}) {
 }
 
 /**
- * @param {{ env?: Record<string, string|undefined>, gh?: () => string|null }} [options]
- * @returns {{ value: string|null, source: "GITHUB_TOKEN"|"GH_TOKEN"|"gh"|null, detail: string }}
+ * @param {{ gh?: () => string|null }} [options]
+ * @returns {{ value: string|null, source: "gh"|null, detail: string }}
  */
-export function resolveCredential({ env = process.env, gh = ghCredential } = {}) {
-  for (const name of ["GITHUB_TOKEN", "GH_TOKEN"]) {
-    const value = String(env[name] || "").trim()
-    if (value) return { value, source: name, detail: `${name} is set` }
-  }
+export function resolveCredential({ gh = ghCredential } = {}) {
   const borrowed = gh()
   if (borrowed) return { value: borrowed, source: "gh", detail: "read from your `gh` login" }
   return {

@@ -107,19 +107,18 @@ const DESCRIPTION = " ".repeat(STEP * 3)
 export const TARGET_NOTE = "<target> is a local Git repository path, or <https url>@<40-char sha>."
 
 /**
- * Said before the variables, because the answer to "what do I have to set up?"
- * is "nothing", and a bare list of two environment variables says the opposite.
+ * The answer to "what do I have to set up?" is "nothing", and it is said in
+ * so many words. There is no environment section because omakit reads no
+ * variable of its own: `gh` is the one credential source and honours
+ * GH_TOKEN and GITHUB_TOKEN itself, the pinned checkout has one place, and
+ * the terminal's own conventions (a pipe, TERM=dumb, NO_COLOR) are what turn
+ * colour and motion off.
  */
 export const AUTHENTICATION = Object.freeze([
-  "Read-only, and optional. omakit uses your `gh` login if you have one, then",
-  "GITHUB_TOKEN, and otherwise goes unauthenticated. `submit` and `verify` need",
-  `no network at all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour`,
-  "without a login. omakit never writes a credential anywhere.",
-])
-
-export const ENVIRONMENT = Object.freeze([
-  ["GITHUB_TOKEN", "Used instead of your `gh` login, if you set it."],
-  ["OMAKIT_MARKETPLACE_PIN", "Keep the pinned checkout somewhere else."],
+  "Read-only, and optional. omakit uses your `gh` login if you have one, and",
+  "otherwise goes unauthenticated. `submit` and `verify` need no network at",
+  `all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without a`,
+  "login. omakit never writes a credential anywhere.",
 ])
 
 /**
@@ -195,11 +194,5 @@ export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
   out.push("")
   out.push(c("heading", "GitHub access:"))
   for (const line of AUTHENTICATION) out.push(`${INDENT}${paintProse(line, c)}`)
-  out.push("")
-  out.push(c("heading", "Environment:"))
-  const width = Math.max(...ENVIRONMENT.map(([name]) => name.length))
-  for (const [name, description] of ENVIRONMENT) {
-    out.push(`${INDENT}${c("variable", name.padEnd(width))}  ${paintProse(description, c)}`)
-  }
   return `${out.join("\n")}\n`
 }

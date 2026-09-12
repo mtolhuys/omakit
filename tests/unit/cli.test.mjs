@@ -9,7 +9,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ARROW, COLUMNS, DENSITY, GUTTER, overflows, plain } from "../../tools/marketplace/style.mjs"
@@ -18,12 +18,25 @@ import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 requirePinForTests()
 
-function run(args, env = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+function run(args, env = {}, root = REPO_ROOT) {
+  const result = spawnSync(process.execPath, [join(root, "bin/omakit"), ...args], {
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
   })
   return { code: result.status, out: result.stdout, err: result.stderr }
+}
+
+/**
+ * The tool, copied somewhere else: bin/, tools/ and package.json, and no
+ * checkout unless one is linked in. omakit reads no environment variable, so
+ * the only way to run it against a different or missing pin is to run a
+ * different copy of it, which is also the honest way: it is what a second
+ * install is.
+ */
+function copyOfTool(parent, name = "omakit") {
+  const root = join(parent, name)
+  for (const entry of ["bin", "tools", "package.json"]) cpSync(join(REPO_ROOT, entry), join(root, entry), { recursive: true })
+  return root
 }
 
 const good = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
@@ -72,12 +85,15 @@ test("the eighty-column rule does not depend on where the checkout lives", () =>
   // the rule has to hold: the path is the only thing wider than eighty, it is
   // printed whole on a line of its own, and it is never broken or elided,
   // because an agent reads that line for the path.
-  const deep = join(mkdtempSync(join(tmpdir(), "omakit-deep-")), "a/".repeat((COLUMNS - GUTTER) / 2), "marketplace")
-  mkdirSync(join(deep, ".."), { recursive: true })
+  const parent = join(mkdtempSync(join(tmpdir(), "omakit-deep-")), "a/".repeat((COLUMNS - GUTTER) / 2))
+  mkdirSync(parent, { recursive: true })
+  const root = copyOfTool(parent)
+  const deep = join(root, ".cache/marketplace")
+  mkdirSync(join(root, ".cache"))
   symlinkSync(requirePinForTests(), deep)
   assert.ok(deep.length > COLUMNS, `the path is deliberately wider than the terminal: ${deep.length}`)
 
-  const { code, out, err } = run(["doctor", "--offline"], { OMAKIT_MARKETPLACE_PIN: deep })
+  const { code, out, err } = run(["doctor", "--offline"], {}, root)
   assert.equal(code, 0, err)
   const lines = out.split("\n")
   assert.ok(lines.includes(`${" ".repeat(GUTTER)}${deep}`), `the path is whole, on its own line, in the gutter:\n${out}`)
@@ -86,8 +102,9 @@ test("the eighty-column rule does not depend on where the checkout lives", () =>
   assert.deepEqual(wide.map((line) => line.trim()), [deep], "nothing but the path is wider than eighty")
 
   // And the failure state that names a missing checkout holds to the same rule.
-  const missing = join(deep, "..", "missing")
-  const failure = run(["verify", good.dir], { OMAKIT_MARKETPLACE_PIN: missing })
+  const bare = copyOfTool(parent, "omakit-without-a-pin")
+  const missing = join(bare, ".cache/marketplace")
+  const failure = run(["verify", good.dir], {}, bare)
   assert.equal(failure.code, 1)
   assertFailureState(failure.err, "marketplace-unavailable", "omakit pin")
   assert.ok(failure.err.includes(missing), "the missing path is named whole")
@@ -103,19 +120,19 @@ function assertFailureState(err, code, remedy) {
 }
 
 test("a missing pin is a failure state naming `omakit pin`, in every command that needs it", () => {
-  const nowhere = mkdtempSync(join(tmpdir(), "omakit-nopin-"))
+  const nowhere = copyOfTool(mkdtempSync(join(tmpdir(), "omakit-nopin-")))
   for (const args of [
     ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"],
     ["watch", "https://github.com/omacom/omarchy-plugin-marketplace/issues/1"],
     ["verify", good.dir],
   ]) {
-    const { code, out, err } = run(args, { OMAKIT_MARKETPLACE_PIN: nowhere })
+    const { code, out, err } = run(args, {}, nowhere)
     assert.equal(code, 1, args.join(" "))
     assert.equal(out, "", "nothing on stdout")
     assertFailureState(err, "marketplace-unavailable", "omakit pin")
   }
   // doctor reports it as a problem rather than stopping, with the same remedy.
-  const { code, out } = run(["doctor", "--offline"], { OMAKIT_MARKETPLACE_PIN: nowhere })
+  const { code, out } = run(["doctor", "--offline"], {}, nowhere)
   assert.equal(code, 1)
   assert.ok(out.includes(`${DENSITY.full} FAIL  pin.checkout`))
   assert.ok(out.includes(`${ARROW} omakit pin`))

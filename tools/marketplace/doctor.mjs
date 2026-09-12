@@ -122,14 +122,12 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
   add("github.auth", auth.value ? "ok" : "info",
     auth.source === "gh"
       ? `read-only, from your \`gh\` login${cli ? ` (${cli})` : ""}; omakit stores nothing`
-      : auth.source
-        ? `${auth.source} is set; used read-only and never written to disk`
-        : `${auth.detail}. \`submit\` and \`verify\` need none at all; \`watch\` and \`parity\` are capped without one`,
+      : `${auth.detail}. \`submit\` and \`verify\` need none at all; \`watch\` and \`parity\` are capped without one`,
     auth.value
       ? null
       : cli
         ? "`gh auth login` is enough. omakit reads that login for GET requests only and never copies it anywhere."
-        : "Install GitHub's `gh` CLI and run `gh auth login`, or set GITHUB_TOKEN. Either is read-only here.")
+        : "Install GitHub's `gh` CLI and run `gh auth login`. omakit reads that login for GET requests only.")
 
   return { checks, problems: checks.filter((check) => check.state === "problem").length }
 }

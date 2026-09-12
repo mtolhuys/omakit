@@ -58,10 +58,11 @@ omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
 | 16 MB on disk | the pinned checkout, in `.cache/` beside the tool |
 
 There is nothing to authenticate. If you have `gh auth login` done, omakit
-reads that credential for GET requests and stores nothing; `GITHUB_TOKEN`
-overrides it if you would rather be explicit; with neither, `watch` and `parity`
-share GitHub's 60-requests-an-hour unauthenticated allowance and `submit` and
-`verify` do not touch the network at all. `omakit doctor` says which of the
+reads that credential for GET requests and stores nothing (a token in `GH_TOKEN`
+or `GITHUB_TOKEN` reaches it the same way, because `gh` honours those itself);
+without a login, `watch` and `parity` share GitHub's 60-requests-an-hour
+unauthenticated allowance and `submit` and `verify` do not touch the network at
+all. omakit reads no environment variable of its own. `omakit doctor` says which of the
 three you are on.
 
 ```bash
@@ -78,8 +79,8 @@ from, until it is there.
 
 While `submit` works, a scanner sweeps across a progress line naming the step it
 is on. It is drawn on stderr and only when stderr is a terminal, so a piped run
-gives an agent exactly the bytes it gave before, and `NO_COLOR` or
-`OMAKIT_NO_PROGRESS` turns it off.
+gives an agent exactly the bytes it gave before; `NO_COLOR` takes its tint
+away and `TERM=dumb` or a pipe removes it.
 
 Every colour omakit prints is an ANSI palette entry, never a 24-bit or
 256-colour escape, so your Omarchy theme decides what they look like and

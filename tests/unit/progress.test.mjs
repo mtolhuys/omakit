@@ -7,7 +7,6 @@ test("it draws only for a terminal, and never when asked not to", () => {
   assert.equal(progressEnabled({ isTTY: true }, {}), true)
   assert.equal(progressEnabled({ isTTY: false }, {}), false)
   assert.equal(progressEnabled({ isTTY: true }, { TERM: "dumb" }), false)
-  assert.equal(progressEnabled({ isTTY: true }, { OMAKIT_NO_PROGRESS: "1" }), false)
   // NO_COLOR is about colour: the line still says what is happening, untinted.
   assert.equal(progressEnabled({ isTTY: true }, { NO_COLOR: "1" }), true)
 })

@@ -5,9 +5,10 @@
 // that output gets pasted into issues and read by agents, and a banner there
 // costs a reader lines and costs a submission credibility.
 //
-// Two more gates. It draws only when stdout is a terminal, so `omakit help |
-// less` and `omakit help --agent` stay plain text. And OMAKIT_NO_BANNER turns
-// it off for a person who wants none of it. NO_COLOR does what it says and no
+// One more gate. It draws only when stdout is a terminal, so `omakit help |
+// less` and `omakit help --agent` stay plain text; there is no switch of
+// omakit's own, because a pipe and TERM=dumb are the terminal's way of saying
+// the same thing. NO_COLOR does what it says and no
 // more: the wordmark is still drawn, in the terminal's own foreground, because
 // a person who turned colour off did not ask for a different program. The
 // same words arrive either way; a piped run gets them without the wordmark.
@@ -167,7 +168,6 @@ export function fitsOnScreen(following, stream = process.stdout) {
 }
 
 export function bannerEnabled(stream = process.stdout, env = process.env) {
-  if (env.OMAKIT_NO_BANNER) return false
   return motionEnabled(stream, env)
 }
 

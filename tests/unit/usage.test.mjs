@@ -2,7 +2,7 @@
 // and so a terminal and a pipe get the same words.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, ENVIRONMENT, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
+import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
 import { code, paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
 
 test("colour changes nothing about the words", () => {
@@ -20,21 +20,18 @@ test("every command is listed, with its own description", () => {
     for (const line of [].concat(command.signature)) assert.ok(off.includes(line), `missing: ${line}`)
     for (const line of command.lines) assert.ok(off.includes(line), `missing: ${line}`)
   }
-  for (const [name, description] of ENVIRONMENT) {
-    assert.ok(off.includes(name), `missing: ${name}`)
-    assert.ok(off.includes(description.replace(/`/g, "")), `missing: ${description}`)
-  }
 })
 
-test("what a person has to set up is answered before the variables are listed", () => {
-  // The measured complaint this fixes: a bare list of two environment variables
-  // under the heading "Environment" reads as two things you must configure. The
-  // answer is that you configure neither: a `gh` login is enough, and most of
-  // this audience already has one.
+test("what a person has to set up is answered in a sentence, and there is no variable to list", () => {
+  // The measured complaint this fixes: a bare list of environment variables
+  // under the heading "Environment" read as things you must configure. The
+  // answer is that you configure nothing: a `gh` login is enough, most of this
+  // audience already has one, and omakit reads no variable of its own, so the
+  // list is gone rather than explained.
   const off = renderUsage({ colour: false })
-  const access = off.indexOf("GitHub access:")
-  const environment = off.indexOf("Environment:")
-  assert.ok(access > 0 && environment > access, "the sentence comes before the list")
+  assert.ok(off.includes("GitHub access:"))
+  assert.ok(!off.includes("Environment:"), "no environment section")
+  assert.doesNotMatch(off, /\b(?:GITHUB_TOKEN|GH_TOKEN|OMAKIT_[A-Z_]+)\b/, "no variable named anywhere in the help")
   assert.ok(AUTHENTICATION.join(" ").includes("`gh` login"), "it names the thing they already have")
   assert.ok(AUTHENTICATION.join(" ").includes("optional"), "and says it is optional")
 })

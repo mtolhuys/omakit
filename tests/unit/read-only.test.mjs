@@ -149,10 +149,13 @@ test("nothing creates an issue, comment, label or pull request", () => {
   }
 })
 
-test("the credential is read from the environment or gh, and never written down", () => {
-  const github = sources.find((source) => source.path === "tools/marketplace/github.mjs")
-  assert.ok(github)
-  assert.match(github.text, /\["GITHUB_TOKEN", "GH_TOKEN"\]/, "the environment is still the first source")
+test("the credential is read from gh alone, and never written down", () => {
+  // gh honours GH_TOKEN and GITHUB_TOKEN itself, so omakit reads neither:
+  // one credential source, one frozen spawn, and no variable of its own.
+  for (const { path, text } of sources) {
+    if (path.startsWith("tests/")) continue
+    assert.doesNotMatch(text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""), /env\.(?:GITHUB_TOKEN|GH_TOKEN)|"(?:GITHUB_TOKEN|GH_TOKEN)"/, `${path} reads a token from the environment`)
+  }
   for (const { path, text } of sources) {
     for (const writer of ["writeFileSync", "appendFileSync", "writeFile", "appendFile", "createWriteStream"]) {
       assert.doesNotMatch(

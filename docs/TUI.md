@@ -21,8 +21,9 @@ issue. So:
   terminal run of `omakit` drew the wordmark, a `NO_COLOR` run printed a text
   heading in its place and fell silent during `submit`. That is a different
   program, not a different palette. Now the wordmark and the progress line are
-  drawn without a single escape, and `TERM=dumb`, a pipe, `OMAKIT_NO_BANNER`
-  and `OMAKIT_NO_PROGRESS` are the things that remove them.
+  drawn without a single escape, and `TERM=dumb` and a pipe are the things
+  that remove them; omakit has no switch of its own, because it reads no
+  environment variable.
 - Every colour is an ANSI palette index (30–37, 39, 90–97, bold). No truecolor,
   no 256-colour, no background. The Omarchy theme decides what blue is.
 - Colour is named by role at every call site and by hue in exactly one
@@ -168,8 +169,8 @@ the pinned checkout's absolute path, and from a checkout at a 91-column path
 the suite was red while from a 60-column one it was green, so whether the rule
 held depended on where the repository was cloned. The other way out, eliding
 the path to `~/…` or with a middle ellipsis, was rejected: stdout is an API, an
-agent reads that line for the path, `~` is not a path it can pass back to
-`OMAKIT_MARKETPLACE_PIN`, and an ellipsis is not a path at all. The same
+agent reads that line for the path, `~` is not a path it can open, and an
+ellipsis is not a path at all. The same
 holds for every directory the tool names, in the missing-pin failure, the
 `pin.size` remedy and the upgrade refusal. `tests/unit/cli.test.mjs` runs
 `doctor` against a checkout at a path wider than the terminal and asserts that

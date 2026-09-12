@@ -4,41 +4,43 @@
 // to a GitHub-hosted marketplace by opening an issue, so `gh auth login` is
 // already done on most of their machines, while a personal access token minted
 // for a read-only preflight is friction in the honest case and a new long-lived
-// secret on disk in every case. So `gh` is the first source, an explicit
-// GITHUB_TOKEN still wins, and the absence of both is not an error.
+// secret on disk in every case. So `gh` is the only source: it honours
+// GH_TOKEN and GITHUB_TOKEN itself, so omakit reads no variable of its own,
+// and the absence of a login is not an error.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { delimiter, join } from "node:path"
 import {
   GH_ARGS, UNAUTHENTICATED_LIMIT, credential, ghCredential, resolveCredential,
 } from "../../tools/marketplace/github.mjs"
+import { REPO_ROOT } from "./helpers.mjs"
 
 const TOKEN = "ghp_0123456789abcdefghijABCDEF"
-const never = () => {
-  throw new Error("gh must not be spawned when the environment already answers")
-}
 
-test("an explicit token wins over the gh login, because setting one means it", () => {
-  assert.deepEqual(
-    resolveCredential({ env: { GITHUB_TOKEN: ` ${TOKEN} ` }, gh: never }),
-    { value: TOKEN, source: "GITHUB_TOKEN", detail: "GITHUB_TOKEN is set" },
-  )
-  assert.equal(resolveCredential({ env: { GH_TOKEN: TOKEN }, gh: never }).source, "GH_TOKEN")
-  // An empty variable is not a credential, and must not shadow a real login.
-  assert.equal(resolveCredential({ env: { GITHUB_TOKEN: "  " }, gh: () => TOKEN }).source, "gh")
+test("gh is the only source: a token in the environment is gh's to honour, not omakit's to read", () => {
+  // Measured: `GH_TOKEN=x gh auth token` prints x, and so does GITHUB_TOKEN.
+  // So the environment reaches omakit through the one frozen gh call, and no
+  // source file reads either variable itself.
+  const resolved = resolveCredential({ gh: () => TOKEN })
+  assert.equal(resolved.source, "gh")
+  const sources = readdirSync(join(REPO_ROOT, "tools/marketplace")).filter((name) => name.endsWith(".mjs"))
+  for (const name of sources) {
+    const text = readFileSync(join(REPO_ROOT, "tools/marketplace", name), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.doesNotMatch(text, /env\.(?:GITHUB_TOKEN|GH_TOKEN)|\["GITHUB_TOKEN"|"GH_TOKEN"\]/, `${name} reads a token from the environment`)
+  }
 })
 
-test("the gh login is used when nothing is set, and named as the source", () => {
-  const resolved = resolveCredential({ env: {}, gh: () => TOKEN })
+test("the gh login is used, and named as the source", () => {
+  const resolved = resolveCredential({ gh: () => TOKEN })
   assert.equal(resolved.value, TOKEN)
   assert.equal(resolved.source, "gh")
   assert.match(resolved.detail, /gh/)
 })
 
 test("no login at all is a fact to report, not a failure", () => {
-  const resolved = resolveCredential({ env: {}, gh: () => null })
+  const resolved = resolveCredential({ gh: () => null })
   assert.equal(resolved.value, null)
   assert.equal(resolved.source, null)
   // The number is the reason the command is limited, so it is in the sentence.
@@ -91,7 +93,7 @@ test("resolution happens once per process, and refresh is explicit", () => {
   const first = credential({ refresh: true })
   const second = credential()
   assert.equal(first, second, "the same resolution is reused")
-  const counted = resolveCredential({ env: {}, gh: () => { calls += 1; return null } })
+  const counted = resolveCredential({ gh: () => { calls += 1; return null } })
   assert.equal(calls, 1)
   assert.equal(counted.value, null)
 })

@@ -231,8 +231,9 @@ export function colourEnabled(stream = process.stdout, env = process.env) {
  * cannot, and a dumb terminal cannot move its cursor. NO_COLOR is deliberately
  * not consulted: it turns colour off, and a wordmark drawn in the terminal's
  * own foreground or a progress line without a tint is exactly what it asks
- * for. Each animation has its own opt-out (OMAKIT_NO_BANNER, OMAKIT_NO_PROGRESS)
- * for a person who wants none of it.
+ * for. There is no opt-out of omakit's own: the tool reads no environment
+ * variable, and a pipe or TERM=dumb is how a person who wants no motion
+ * says so.
  */
 export function motionEnabled(stream, env = process.env) {
   if (env.TERM === "dumb") return false
@@ -294,8 +295,8 @@ export function width(text) {
  * while from a 60-column one it was green, so the rule depended on where the
  * repository was cloned. Eliding the path instead (`~/`, or a middle ellipsis)
  * was the other option and was rejected because stdout is an API: an agent
- * reads that line for the path, `~` is not a path it can pass back to
- * `OMAKIT_MARKETPLACE_PIN`, and an ellipsis is not a path at all. The same
+ * reads that line for the path, `~` is not a path it can open, and an
+ * ellipsis is not a path at all. The same
  * holds for the missing-pin message, the `pin.size` remedy and the upgrade
  * refusal, all of which name a directory.
  *
