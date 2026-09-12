@@ -22,54 +22,12 @@ import { pinWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
-import { banner } from "./banner.mjs"
+import { banner, bannerEnabled } from "./banner.mjs"
 import { progress } from "./progress.mjs"
+import { renderUsage, TAGLINE } from "./usage.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
-const USAGE = `omakit: marketplace submit preflight for Omarchy Quattro plugins
-
-  omakit setup
-      First run, in one command: check the environment, fetch the pinned
-      marketplace checkout, and say what to try first. Idempotent.
-
-  omakit pin
-      Fetch or verify the pinned marketplace checkout in .cache/marketplace.
-      Read-only, exact commit ${MARKETPLACE_PIN.commit}.
-
-  omakit submit <target> --category <c> --tags <a,b> [--notes <text>]
-                        [--suggest-tag <t>] [--name <n>] [--offline]
-                        [--allow-dirty] [--json] [--out <file>]
-      Every check that is knowable before submitting, the resolved commit, and
-      the exact issue title and body. Prints them. Never posts anything.
-
-  omakit watch <issue-url> [--json]
-      Compare the commit the marketplace validated on a submission issue with
-      the plugin repository's current default-branch HEAD, and say what moves
-      the pin. Read-only.
-
-  omakit verify <target> [--allow-dirty] [--out <file>]
-      The official marketplace security baseline over the local Git transport,
-      reported verbatim beside the pin identity.
-
-  omakit help --agent
-      The operating instructions for a coding agent, printed from skills/, so an
-      agent can read the contract out of the tool instead of the repository.
-
-  omakit doctor [--offline] [--json]
-      What is installed, what is pinned, and what has moved since. Reads and
-      prints; it installs nothing and never moves the pin.
-
-  omakit parity [--count <n>] [--offset <n>]
-      The official baseline over GitHub versus the local transport on real
-      listed repositories; writes docs/evidence/parity/<date>-local-vs-github.json.
-
-  <target> is a local Git repository path, or <https url>@<40-char sha>.
-
-Environment:
-  GITHUB_TOKEN            Optional, read-only. Never written to disk.
-  OMAKIT_MARKETPLACE_PIN  Override the pinned checkout location.
-`
 
 function fail(code, message, exit = 1) {
   process.stderr.write(`${code}: ${message}\n`)
@@ -229,10 +187,13 @@ if (command === "setup") {
     // read something now, and the scan costs 1.4 seconds before the first line
     // of usage appears. Only `omakit setup` animates it: that command is a first
     // run, it is fetching 16 MB anyway, and nobody is waiting on a line of text.
-    await banner({ animate: false, tagline: "marketplace submit preflight for Omarchy Quattro plugins" })
-    process.stdout.write(USAGE)
+    // The banner already says the name and the tagline; printing the same
+    // sentence again directly underneath is just noise.
+    const drew = bannerEnabled()
+    await banner({ animate: false, tagline: TAGLINE })
+    process.stdout.write(renderUsage({ heading: !drew }))
   }
 } else {
-  process.stderr.write(`unknown command: ${command}\n\n${USAGE}`)
+  process.stderr.write(`unknown command: ${command}\n\n${renderUsage({ colour: false })}`)
   process.exit(2)
 }

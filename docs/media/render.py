@@ -288,7 +288,11 @@ def verify(frames, data, animated_until):
     """
     if not animated_until:
         return
+    # Normalise the controls the screen model consumes rather than stores: the
+    # pty's carriage returns, and the per-line erase the animation writes before
+    # each row. What is left is the content the program put on screen.
     text = data.decode("utf-8", "replace").replace("\r\n", "\n")
+    text = text.replace("\x1b[2K", "").replace("\r", "")
     height = 0
     for match in re.finditer(r"\x1b\[([0-9]*)A", text):
         height = max(height, int(match.group(1) or 1))

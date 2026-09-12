@@ -9,21 +9,25 @@
 // less` and `omakit help --agent` stay plain text. And it respects NO_COLOR and
 // a dumb TERM like everything else here.
 //
+// Only `omakit setup` animates it. `help` and `doctor` draw the finished
+// wordmark at once, because the scan takes about 1.4 seconds and both of those
+// commands exist to put text on the screen now.
+//
+// `oma` and `kit` are tinted differently on purpose: the prefix is the
+// ecosystem's, the suffix is this tool's. Both tints are ANSI palette entries,
+// so an Omarchy theme decides what they actually look like.
+//
 // The animation is the tool's own motif rather than an ornament: the same
 // scanner that sweeps the progress line during a baseline run sweeps across the
-// name, lighting it as it passes. Nothing here imitates anyone else's logo,
-// character or product; the letters are generated from the small font below, so
-// renaming the tool is a change to one string and not a redrawing job.
-//
-// It only animates where nothing is waiting on it. `omakit setup` is a first run
-// that fetches 16 MB regardless, so a second of scan costs nothing. `help` and
-// `doctor` draw the finished wordmark at once, because the scan is 1.4 seconds
-// and both of those commands exist to put text on the screen now.
+// name. Nothing here imitates anyone else's logo, character or product; the
+// letters come from the small font below, so renaming the tool is a change to
+// one string and not a redrawing job.
 
 const ESC = "\u001b["
 const RESET = `${ESC}0m`
 const HEAD = `${ESC}96m`
-const LIT = `${ESC}36m`
+const PREFIX = `${ESC}36m`
+const SUFFIX = `${ESC}39m`
 const FLOOR = `${ESC}90m`
 
 const BLOCK = "\u2588"
@@ -48,11 +52,14 @@ export const GLYPHS = Object.freeze({
 
 export const GLYPH_ROWS = 5
 
+/** How many leading letters take the prefix tint. */
+export const PREFIX_LETTERS = 3
+
 /**
- * Lay a word out as five rows of "#" and " ".
+ * Lay a word out as five rows plus the column span of each letter.
  * Throws on a letter the font does not have, rather than dropping it silently.
  */
-export function wordmarkRows(word) {
+export function wordmarkLayout(word) {
   const letters = [...String(word).toLowerCase()]
   const missing = letters.filter((letter) => !GLYPHS[letter])
   if (missing.length) {
@@ -62,7 +69,19 @@ export function wordmarkRows(word) {
   for (let row = 0; row < GLYPH_ROWS; row += 1) {
     rows.push(letters.map((letter) => GLYPHS[letter][row]).join(" "))
   }
-  return rows
+  const spans = []
+  let column = 0
+  for (const [index, letter] of letters.entries()) {
+    const width = GLYPHS[letter][0].length
+    spans.push({ letter, index, from: column, to: column + width - 1 })
+    column += width + 1
+  }
+  return { rows, spans, width: rows[0].length }
+}
+
+/** Kept for the simple case: just the five rows. */
+export function wordmarkRows(word) {
+  return wordmarkLayout(word).rows
 }
 
 export function bannerEnabled(stream = process.stdout, env = process.env) {
@@ -72,17 +91,22 @@ export function bannerEnabled(stream = process.stdout, env = process.env) {
   return Boolean(stream && stream.isTTY)
 }
 
+function tintFor(spans, column) {
+  const span = spans.find((entry) => column >= entry.from && column <= entry.to)
+  if (!span) return SUFFIX
+  return span.index < PREFIX_LETTERS ? PREFIX : SUFFIX
+}
+
 /**
  * One frame of the scan.
  *
  * `band` is where the bright head sits. `revealed` is how far the wordmark has
  * been drawn at all; columns beyond it are blank. The reveal pass moves both
- * together, and the shine pass afterwards moves the band across a wordmark that
- * is already complete. Defaulting `revealed` to `band` keeps the reveal-only
- * call shape.
+ * together; the shine pass afterwards moves the band across a wordmark that is
+ * already complete.
  */
-export function frame(rows, band, revealed = band) {
-  const width = Math.max(...rows.map((row) => row.length))
+export function frame(layout, band, revealed = band) {
+  const { rows, spans, width } = layout
   return rows.map((row) => {
     let out = ""
     let tint = ""
@@ -96,7 +120,7 @@ export function frame(rows, band, revealed = band) {
         out += " "
         continue
       }
-      const wanted = column >= band - 1 && column <= band ? HEAD : LIT
+      const wanted = column >= band - 1 && column <= band ? HEAD : tintFor(spans, column)
       if (tint !== wanted) { out += wanted; tint = wanted }
       out += BLOCK
     }
@@ -106,14 +130,14 @@ export function frame(rows, band, revealed = band) {
 
 /**
  * @param {{ word?: string, tagline?: string, stream?: NodeJS.WriteStream,
- *           enabled?: boolean, animate?: boolean }} [options]
+ *           enabled?: boolean, animate?: boolean, shines?: number }} [options]
  */
 export async function banner(options = {}) {
   const stream = options.stream || process.stdout
   const enabled = options.enabled ?? bannerEnabled(stream)
   const word = options.word || "omakit"
-  const rows = wordmarkRows(word)
-  const width = Math.max(...rows.map((row) => row.length))
+  const layout = wordmarkLayout(word)
+  const { width } = layout
   const rule = FLOOR + RULE.repeat(width) + RESET
   const tagline = options.tagline ? `${FLOOR}${options.tagline}${RESET}` : null
 
@@ -122,21 +146,30 @@ export async function banner(options = {}) {
   // and a piped run should differ from a watched one only in decoration.
   if (!enabled) return
 
-  const write = (lines) => stream.write(`${lines.join("\n")}\n`)
+  // A five-row animation redrawn with cursor-up needs five rows that stay put.
+  // In a terminal with no room the screen scrolls under the animation, the
+  // cursor-up lands a line off, and a row from an earlier frame is left stranded
+  // above the wordmark. Rather than animate into that, draw it at once.
+  const rowsAvailable = Number.isFinite(stream.rows) ? stream.rows : Infinity
+  const animate = options.animate !== false && rowsAvailable >= GLYPH_ROWS + 4
+
+  const paint = (lines) => lines.map((line) => `${ESC}2K${line}`)
+  const write = (lines) => stream.write(`${paint(lines).join("\n")}\n`)
   const up = () => stream.write(`${ESC}${GLYPH_ROWS}A`)
 
-  if (options.animate === false) {
-    write(frame(rows, -2, width + 2))
+  if (!animate) {
+    write(frame(layout, -2, width + 2))
   } else {
+    // Claim the five rows first, so any scrolling happens before a single
+    // cursor-up is issued and the geometry cannot shift mid-animation.
+    write(frame(layout, -2, -2))
+    up()
     const step = async (band, revealed, delay) => {
-      write(frame(rows, band, revealed))
+      write(frame(layout, band, revealed))
       await new Promise((resolve) => setTimeout(resolve, delay))
       up()
     }
-    // Pass one: the scanner builds the name as it crosses.
     for (let band = 0; band <= width; band += 1) await step(band, band, 22)
-    // Then it passes back and forth over the finished name, which is the same
-    // sweep the progress line uses while the baseline runs.
     const shines = options.shines ?? 2
     for (let pass = 0; pass < shines; pass += 1) {
       const from = pass % 2 === 0 ? width : 0
@@ -146,7 +179,7 @@ export async function banner(options = {}) {
         await step(band, width + 2, 14)
       }
     }
-    write(frame(rows, -2, width + 2))
+    write(frame(layout, -2, width + 2))
   }
   stream.write(`${rule}\n`)
   if (tagline) stream.write(`${tagline}\n`)

@@ -4,7 +4,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { banner, bannerEnabled, frame, wordmarkRows, GLYPHS, GLYPH_ROWS } from "../../tools/marketplace/banner.mjs"
+import { banner, bannerEnabled, frame, wordmarkRows, wordmarkLayout, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const plain = (text) => String(text).replace(/\[[0-9;]*m/g, "")
@@ -18,6 +18,19 @@ test("a piped run gets no banner at all, not even a plain one", async () => {
   assert.equal(bannerEnabled({ isTTY: true }, { TERM: "dumb" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, { OMAKIT_NO_BANNER: "1" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, {}), true)
+})
+
+test("oma and kit are tinted differently, and both tints are palette entries", () => {
+  const layout = wordmarkLayout("omakit")
+  const drawn = frame(layout, -2, layout.width + 2).join("\n")
+  // The prefix is the ecosystem's, the suffix is this tool's.
+  assert.match(drawn, /\u001b\[36m/, "oma takes the prefix tint")
+  assert.match(drawn, /\u001b\[39m/, "kit takes the suffix tint")
+  assert.equal(PREFIX_LETTERS, 3)
+  // Nothing here may pin an actual colour: the theme decides.
+  assert.doesNotMatch(drawn, /38;[25];|48;/, "a wordmark must not use truecolor or a colour cube")
+  const prefixSpans = layout.spans.filter((span) => span.index < PREFIX_LETTERS).map((span) => span.letter)
+  assert.deepEqual(prefixSpans, ["o", "m", "a"])
 })
 
 test("the font covers the name, and refuses a letter it does not have", () => {
@@ -35,10 +48,11 @@ test("the font covers the name, and refuses a letter it does not have", () => {
 })
 
 test("the scan reveals left to right and ends complete", () => {
-  const rows = wordmarkRows("omakit")
-  const width = rows[0].length
-  const early = frame(rows, 3).map(plain)
-  const done = frame(rows, width + 2).map(plain)
+  const layout = wordmarkLayout("omakit")
+  const rows = layout.rows
+  const width = layout.width
+  const early = frame(layout, 3).map(plain)
+  const done = frame(layout, -2, width + 2).map(plain)
   assert.ok(early.join("").trim().length > 0, "something is drawn early")
   assert.ok(done.join("").length > early.join("").trim().length, "the finished frame has more")
   for (const [index, line] of done.entries()) {
@@ -46,13 +60,13 @@ test("the scan reveals left to right and ends complete", () => {
       "every # in the font ends up drawn")
   }
   // Nothing is drawn to the right of the head.
-  for (const line of frame(rows, 5).map(plain)) {
+  for (const line of frame(layout, 5).map(plain)) {
     assert.equal(line.slice(7).trim(), "", "columns beyond the head stay blank")
   }
 })
 
 test("a frame emits no colour code it does not use", () => {
-  for (const line of frame(wordmarkRows("omakit"), 12)) {
+  for (const line of frame(wordmarkLayout("omakit"), 12)) {
     const codes = line.match(/\[[0-9;]*m/g) || []
     const blocks = (line.match(/█/g) || []).length
     assert.ok(codes.length <= blocks * 2, "more escapes than blocks means stray codes")

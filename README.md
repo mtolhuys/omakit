@@ -64,6 +64,13 @@ is on. It is drawn on stderr and only when stderr is a terminal, so a piped run
 gives an agent exactly the bytes it gave before, and `NO_COLOR` or
 `OMAKIT_NO_PROGRESS` turns it off.
 
+Every colour omakit prints is an ANSI palette entry, never a 24-bit or
+256-colour escape, so your Omarchy theme decides what they look like and
+recolouring the tool means recolouring the terminal. Green passed, red blocking,
+yellow your attention, cyan something you type, grey where a rule came from. The
+words never change: stripping the colour from a coloured run gives the piped run
+back character for character, and a test asserts it.
+
 ![omakit watch reporting that a review pin has gone stale](docs/media/watch.gif)
 
 ```bash

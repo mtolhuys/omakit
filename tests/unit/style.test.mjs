@@ -1,7 +1,10 @@
 // Colour is for people, not for the agent reading piped output.
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readdirSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 import { colourEnabled, styler, plain } from "../../tools/marketplace/style.mjs"
+import { REPO_ROOT } from "./helpers.mjs"
 import { renderSubmit, renderWatch } from "../../tools/marketplace/report.mjs"
 
 test("colour follows the terminal, NO_COLOR and FORCE_COLOR", () => {
@@ -65,4 +68,26 @@ test("a failing check and a stale pin are marked, not merely printed", () => {
   assert.match(on, /\[31;1mFAIL/)
   assert.match(on, /\[32mok/)
   assert.match(renderWatch(watch, { colour: true }), /\[31;1mPIN STALE/)
+})
+
+test("nothing anywhere pins an actual colour", () => {
+  // The Omarchy theme sets the terminal palette, so every colour this tool emits
+  // is an ANSI palette index and the theme decides what it looks like. A
+  // truecolor or 256-colour escape would look identical on every theme, which
+  // means looking wrong on most of them.
+  const SKIP = new Set([".git", ".cache", "node_modules"])
+  const walk = (dir, out = []) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (SKIP.has(entry.name)) continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path, out)
+      else if (entry.name.endsWith(".mjs")) out.push(path)
+    }
+    return out
+  }
+  for (const path of walk(REPO_ROOT)) {
+    const text = readFileSync(path, "utf8")
+    assert.doesNotMatch(text, /\[38;[25];|\\u001b\[38;[25];|\[38;[25];/, `${path} uses a truecolor or 256-colour escape`)
+    assert.doesNotMatch(text, /\\u001b\[48;|\[48;/, `${path} sets a background colour`)
+  }
 })
