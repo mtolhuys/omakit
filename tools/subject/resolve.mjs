@@ -4,6 +4,7 @@
 //                   .cache/subjects/<owner>__<repo>/ and never executed.
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync } from "node:fs"
+import { homedir } from "node:os"
 import { join, resolve } from "node:path"
 
 export class SubjectError extends Error {
@@ -35,7 +36,20 @@ export function parseTarget(target) {
   const m = text.match(/^(https:\/\/[^@\s]+)@([0-9a-fA-F]{40})$/)
   if (m) return { mode: "reviewer", url: m[1], commit: m[2].toLowerCase() }
   if (/^https?:\/\//.test(text)) throw new SubjectError("usage", "reviewer targets are <https url>@<40-char sha>")
-  return { mode: "author", path: resolve(text) }
+  return { mode: "author", path: resolve(expandHome(text)) }
+}
+
+/**
+ * A leading `~` or `~/` is the home directory. The shell does this for an
+ * unquoted argument; a quoted one, or one an agent assembled, arrives as the
+ * literal character, and `resolve()` then glued it onto the working directory
+ * and refused a path that does not exist. `~user` needs a password database
+ * and is left alone; a `~` anywhere later in the path is not special.
+ */
+function expandHome(text) {
+  if (text === "~") return homedir()
+  if (text.startsWith("~/")) return join(homedir(), text.slice(2))
+  return text
 }
 
 /**
