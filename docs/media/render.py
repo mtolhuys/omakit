@@ -16,7 +16,8 @@ Usage:
 
 A scene file is {"title", "width", "rows", "steps": [{"command", "capture",
 "hold"}]}. A scene with "wordmark": true has its finished wordmark measured for
-vertical seams before the GIF is written (see verify_wordmark).
+vertical seams, and its shaded cells for being one flat tone, before the GIF
+is written (see verify_wordmark).
 """
 
 import codecs
@@ -137,6 +138,17 @@ def measure(font, text):
 # show. DejaVu Sans Mono's dark shade stops one pixel short of the cell on every
 # side, so the wordmark's shaded prefix rendered as a stipple with grid lines
 # through it. The four densities below fill the whole cell, so the letters join.
+#
+# A shade is a solid fill of the foreground at partial coverage, because that
+# is what the terminal Omarchy ships draws. Measured, 2026-09-12, the banner
+# in all four terminals on one Omarchy desktop: Alacritty, foot and Ghostty
+# each fill the cell flat, and only kitty dithers. In Alacritty's source
+# (builtin_font.rs) the dark shade is a fill at 192/255, medium 128/255, light
+# 64/255; foot's box-drawing.c uses 0xc000, 0x8000 and 0x4000 of 0xffff, the
+# same three quarters, half and quarter. The renderer's earlier dither at a
+# two-pixel pitch was a pattern no terminal draws, and at the README's 620px it
+# rasterised into a screen door: the first thing anyone saw of the project
+# read as a broken render rather than a second tone.
 BLOCKS = {
     "\u2588": "full",
     "\u2593": "dark",
@@ -144,32 +156,24 @@ BLOCKS = {
     "\u2591": "light",
     "\u2581": "floor",
 }
+COVERAGE = {"full": 255, "dark": 192, "medium": 128, "light": 64}
+
+
+def shade(colour, kind, background=BG):
+    """The foreground blended into the background at the shade's coverage."""
+    alpha = COVERAGE[kind]
+    return tuple((c * alpha + b * (255 - alpha)) // 255 for c, b in zip(colour, background))
 
 
 def block(draw, x, y, width, height, kind, colour):
     """Draw one block-element cell at (x, y) with the given cell size."""
     x0, y0 = int(round(x)), int(y)
     x1, y1 = int(round(x + width)), int(y + height)
-    if kind == "full":
-        draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=colour)
-        return
     if kind == "floor":
         # The lower one-eighth block: a floor line at the bottom of the cell.
         draw.rectangle([x0, y1 - max(2, height // 8), x1 - 1, y1 - 1], fill=colour)
         return
-    # A regular dither, at a two-pixel pitch so it survives the GIF palette.
-    # dark keeps three cells in four, medium one in two, light one in four.
-    for py in range(y0, y1):
-        for px in range(x0, x1):
-            odd_row = (py // 2) % 2
-            odd_col = (px // 2) % 2
-            lit = {
-                "dark": not (odd_row and odd_col),
-                "medium": odd_row == odd_col,
-                "light": odd_row and odd_col,
-            }[kind]
-            if lit:
-                draw.point((px, py), fill=colour)
+    draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=shade(colour, kind))
 
 
 def _runs(text):
@@ -438,6 +442,28 @@ def verify_wordmark(image, lines, size, chrome):
             checked += 1
     if not checked:
         raise SystemExit("render: the wordmark has no vertically adjacent block cells to verify")
+
+    # And the shaded prefix is a tone, not a pattern: every pixel of a dark
+    # shade cell is one colour, and that colour is neither the background nor
+    # the full block's. The two-pixel dither this replaced fails here, because
+    # a dithered cell holds both the foreground and the background.
+    tones = set()
+    for row in rows:
+        for column, char in enumerate(plain[row]):
+            if char != "\u2593":
+                continue
+            x0 = PAD_X + column * cell
+            y0 = pad_top + row * line_height
+            seen = {pixels[x, y] for x in range(int(round(x0)), int(round(x0 + cell))) for y in range(y0, y0 + line_height)}
+            if len(seen) != 1:
+                raise SystemExit(
+                    f"render: the shade cell at row {row}, column {column} is {len(seen)} colours, not one tone"
+                )
+            tones |= seen
+    full = {pixels[int(round(PAD_X + column * cell)) + 1, pad_top + row * line_height + 1]
+            for row in rows for column, char in enumerate(plain[row]) if char == "\u2588"}
+    if not tones or tones & (full | {BG}):
+        raise SystemExit("render: the shade tone is not distinct from the full block and the background")
     return checked
 
 

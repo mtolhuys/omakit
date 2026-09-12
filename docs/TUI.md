@@ -89,6 +89,25 @@ has its finished wordmark measured for seams before the GIF is written (30 cell
 boundaries in `banner.gif`, all joined). In a real terminal the same holds
 because the terminal, not the font, draws the cell.
 
+The second trade-off is what a shade cell is filled with. The renderer's first
+version dithered it, three pixels lit in four at a two-pixel pitch, which is a
+pattern no terminal Omarchy ships draws: at the 903 pixels the GIF is rendered
+at it was a visible dot grid, and at the 620 the README shows it at it
+rasterised into a screen door, so the first thing anyone saw of the project
+read as a broken render rather than a second tone. Measured on one Omarchy
+desktop, the banner drawn in all four terminals: Alacritty, foot and Ghostty
+fill the cell flat with the foreground at partial coverage, and only kitty
+dithers, at a pitch finer than the GIF could carry. The coverage is in their
+source: Alacritty's `builtin_font.rs` fills `▓` at 192/255, `▒` at 128/255 and
+`░` at 64/255; foot's `box-drawing.c` at 0xc000, 0x8000 and 0x4000 of 0xffff,
+the same three quarters, half and quarter. The renderer now draws exactly that,
+the foreground blended into the background at those three coverages, so the
+GIF shows what Omarchy's default terminal shows. In the terminal nothing
+changed; the split was always a tone there. What is given up is kitty's
+texture, which the GIF does not show, and the seam check keeps its meaning:
+a flat cell has ink on every row, so a cell that failed to join would still be
+caught.
+
 ## One scale
 
 Three stops, in columns, and every line starts at one of them:

@@ -96,11 +96,15 @@ from the font, which is what a terminal does too: Alacritty, kitty, foot and
 Ghostty all rasterise that range themselves, because a font's block glyphs are
 sized to its em box and not to the cell. Measured: DejaVu's dark shade stops one
 pixel short of the cell on every side, so the wordmark's shaded `oma` rendered
-as a stipple with grid lines through it. A scene with `"wordmark": true` has
-its finished wordmark measured before the GIF is written: for every lit cell
-with a lit cell under it, the pixel rows on both sides of the boundary must
-carry ink, and the render refuses otherwise. `banner.gif` reports the count
-(`wordmark joins at 30 cell boundaries`).
+as a stipple with grid lines through it. A shade cell is a flat fill of the
+foreground at the coverage Alacritty and foot use (`▓` 192/255, `▒` 128/255,
+`░` 64/255), because that is what the terminal Omarchy ships draws; the
+renderer's earlier two-pixel dither was a pattern no terminal draws and at the
+README's 620px it read as a screen door. `docs/TUI.md` has the measurement.
+A scene with `"wordmark": true` has its finished wordmark measured before the
+GIF is written: for every lit cell with a lit cell under it, the pixel rows on
+both sides of the boundary must carry ink, and the render refuses otherwise.
+`banner.gif` reports the count (`wordmark joins at 30 cell boundaries`).
 
 ## The one thing that is left out
 
