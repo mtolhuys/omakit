@@ -46,9 +46,13 @@ export function isExpectedRemote(url, expected = REPOSITORY) {
 }
 
 /**
- * @param {{ repoRoot: string, stream?: NodeJS.WriteStream, dryRun?: boolean }} options
+ * @param {{ repoRoot: string, stream?: NodeJS.WriteStream, dryRun?: boolean,
+ *           expectedRemote?: string }} options `expectedRemote` exists so the
+ *   successful path can be tested end to end against a local remote; it is not
+ *   a way to point the command at somebody else's repository, because nothing
+ *   on the command line reaches it.
  */
-export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false }) {
+export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
   const refuse = (reason, action = null) => {
@@ -73,9 +77,9 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   } catch {
     return refuse("this checkout has no `origin` remote, so there is nowhere to update from.")
   }
-  if (!isExpectedRemote(remote)) {
+  if (!isExpectedRemote(remote, expectedRemote)) {
     return refuse(
-      `the \`origin\` of this checkout is ${remote}, not ${REPOSITORY}. Pulling code from somewhere else is not this command's business.`,
+      `the \`origin\` of this checkout is ${remote}, not ${expectedRemote}. Pulling code from somewhere else is not this command's business.`,
       `git -C ${repoRoot} pull`,
     )
   }

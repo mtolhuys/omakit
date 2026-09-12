@@ -93,3 +93,78 @@ test("it never touches the pin, and says so", () => {
   const remoteWrite = `"${["pu", "sh"].join("")}"`
   assert.ok(!source.includes(remoteWrite), "nothing is written to a remote")
 })
+
+test("the successful path: it fast-forwards, reports, and is idempotent", async () => {
+  // Against a local remote, because the real one cannot be both ahead of a
+  // checkout and known to it at the same time while this command is the newest
+  // thing in it.
+  const origin = mkdtempSync(join(tmpdir(), "omakit-origin-"))
+  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin])
+
+  const author = mkdtempSync(join(tmpdir(), "omakit-author-"))
+  const write = (...args) => execFileSync("git", ["-C", author, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  execFileSync("git", ["clone", "-q", origin, author])
+  write("config", "user.name", "t")
+  write("config", "user.email", "t@example.invalid")
+  writeFileSync(join(author, "f"), "one\n")
+  write("add", "-A")
+  write("commit", "-q", "-m", "one")
+  write("push", "-q", "origin", "main")
+
+  const clone = mkdtempSync(join(tmpdir(), "omakit-clone-"))
+  execFileSync("git", ["clone", "-q", origin, clone])
+  const behind = execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+
+  writeFileSync(join(author, "f"), "two\n")
+  write("commit", "-q", "-am", "two")
+  writeFileSync(join(author, "f"), "three\n")
+  write("commit", "-q", "-am", "three")
+  write("push", "-q", "origin", "main")
+
+  const dry = collect()
+  const preview = await upgrade({ repoRoot: clone, stream: dry.stream, dryRun: true, expectedRemote: origin })
+  assert.equal(preview.ok, true)
+  assert.equal(preview.changed, false)
+  assert.equal(preview.available, 2)
+  assert.match(dry.text(), /not applied \(--dry-run\)/)
+  assert.equal(execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(), behind,
+    "a dry run must not move anything")
+
+  const io = collect()
+  const result = await upgrade({ repoRoot: clone, stream: io.stream, expectedRemote: origin })
+  assert.equal(result.ok, true)
+  assert.equal(result.changed, true)
+  assert.equal(result.commits, 2)
+  assert.equal(result.from, behind)
+  assert.match(io.text(), /2 commit\(s\)/)
+  assert.match(io.text(), /The marketplace pin did not move/)
+  assert.equal(readFileSync(join(clone, "f"), "utf8"), "three\n", "the working tree is actually updated")
+
+  const again = collect()
+  const second = await upgrade({ repoRoot: clone, stream: again.stream, expectedRemote: origin })
+  assert.equal(second.changed, false)
+  assert.match(again.text(), /already current/)
+})
+
+test("it refuses a checkout that has diverged rather than merging it", async () => {
+  const origin = mkdtempSync(join(tmpdir(), "omakit-origin2-"))
+  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin])
+  const author = mkdtempSync(join(tmpdir(), "omakit-author2-"))
+  execFileSync("git", ["clone", "-q", origin, author])
+  const write = (...args) => execFileSync("git", ["-C", author, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  write("config", "user.name", "t"); write("config", "user.email", "t@example.invalid")
+  writeFileSync(join(author, "f"), "one\n"); write("add", "-A"); write("commit", "-q", "-m", "one"); write("push", "-q", "origin", "main")
+
+  const clone = mkdtempSync(join(tmpdir(), "omakit-clone2-"))
+  execFileSync("git", ["clone", "-q", origin, clone])
+  const local = (...args) => execFileSync("git", ["-C", clone, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  local("config", "user.name", "t"); local("config", "user.email", "t@example.invalid")
+  writeFileSync(join(clone, "g"), "mine\n"); local("add", "-A"); local("commit", "-q", "-m", "mine")
+
+  writeFileSync(join(author, "f"), "two\n"); write("commit", "-q", "-am", "two"); write("push", "-q", "origin", "main")
+
+  const io = collect()
+  const result = await upgrade({ repoRoot: clone, stream: io.stream, expectedRemote: origin })
+  assert.equal(result.ok, false)
+  assert.match(io.text(), /cannot be fast-forwarded/)
+})
