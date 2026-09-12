@@ -233,7 +233,10 @@ def frame(title, cols, rows, lines, cursor=None, size=FONT_SIZE, chrome=True):
     return image
 
 
-SEQ = re.compile(r"\x1b\[([0-9;]*)([A-Za-z])")
+SEQ = re.compile(r"\x1b\[(\??[0-9;]*)([A-Za-z])")
+# DECSC and DECRC, save and restore the cursor: the two-byte sequences ttfx
+# redraws each of its frames with (ESC 8, ESC 7, cursor-up, the rows).
+SAVE, RESTORE = "\x1b7", "\x1b8"
 
 
 def replay(out_path, timing_path, min_delay=3, max_delay=260):
@@ -241,9 +244,10 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
 
     The screen model is line oriented on purpose, because that is exactly how
     this tool draws: the wordmark rewrites its five rows in place and the
-    progress line rewrites itself. Carriage return, erase-line and cursor-up are
-    honoured; anything else is passed through into the line, where the SGR parser
-    that draws a frame handles it.
+    progress line rewrites itself. Carriage return, erase-line, cursor-up,
+    save and restore cursor (which ttfx frames its redraws with) and the
+    cursor-visibility toggles are honoured; anything else is passed through
+    into the line, where the SGR parser that draws a frame handles it.
 
     A frame is taken at a settled screen, never at a chunk boundary. In the
     animated region the settled moment is the cursor jumping back up, and that
@@ -274,6 +278,7 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
     # started or the next character would overwrite the colour code.
     lines, row, column, fresh = [""], 0, 0, True
     frames, at, held = [], 0, 0.0
+    saved = (0, 0)
 
     def screen():
         return list(lines)
@@ -288,10 +293,21 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
 
     def feed(text, boundary):
         """Feed one chunk. Calls `boundary` the moment a redraw block ends."""
-        nonlocal row, column, fresh
+        nonlocal row, column, fresh, saved
         index = 0
         while index < len(text):
             char = text[index]
+            if text.startswith(SAVE, index):
+                saved = (row, column)
+                index += len(SAVE)
+                continue
+            if text.startswith(RESTORE, index):
+                row, column = saved
+                fresh = column == 0
+                while len(lines) <= row:
+                    lines.append("")
+                index += len(RESTORE)
+                continue
             if char == "\n":
                 row += 1
                 column, fresh = 0, True
@@ -319,6 +335,9 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
                         boundary()
                         row = max(0, row - int(argument or 1))
                         column, fresh = 0, True
+                    elif argument.startswith("?"):
+                        # Cursor shown or hidden: nothing on screen changes.
+                        pass
                     continue
             lines[row] = char if fresh else lines[row] + char
             fresh = False
@@ -327,7 +346,7 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
 
     # A chunk can end in the middle of an escape sequence. Held over rather than
     # drawn, or it lands on screen as a literal "ESC[".
-    partial = re.compile(r"\x1b\[?[0-9;]*$")
+    partial = re.compile(r"\x1b\[?\??[0-9;]*$")
     pending = ""
 
     for delay, count in chunks:
@@ -381,6 +400,8 @@ def verify(frames, data, animated_until):
     # each row. What is left is the content the program put on screen.
     text = data.decode("utf-8", "replace").replace("\r\n", "\n")
     text = text.replace("\x1b[2K", "").replace("\r", "")
+    text = text.replace(SAVE, "").replace(RESTORE, "")
+    text = re.sub(r"\x1b\[\?[0-9;]*[hl]", "", text)
     height = 0
     for match in re.finditer(r"\x1b\[([0-9]*)A", text):
         height = max(height, int(match.group(1) or 1))
@@ -536,8 +557,15 @@ def build(scene, out_path):
 
         palette = Path(work) / "palette.png"
         run = lambda args: subprocess.run(args, check=True, capture_output=True)
+        # The palette is built over every pixel of every frame, not over what
+        # moves between them: with stats_mode=diff the colours of the animated
+        # region won the 32 entries, and a colour that first appears when the
+        # motion stops lost its own. Measured on setup.gif once the wordmark
+        # ran through ttfx: the repainted prefix, (46, 152, 161) in the frame
+        # the renderer drew, came out (112, 144, 127) in the GIF. With full
+        # statistics it is exact, and submit.gif grows by 4 KB.
         run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
-             "-vf", "palettegen=max_colors=32:stats_mode=diff", str(palette)])
+             "-vf", "palettegen=max_colors=32:stats_mode=full", str(palette)])
         run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-i", str(palette),
              "-lavfi", "paletteuse=dither=none:diff_mode=rectangle", "-loop", "0", str(out_path)])
     return len(frames), Path(out_path).stat().st_size

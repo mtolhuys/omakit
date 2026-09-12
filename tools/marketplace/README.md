@@ -27,6 +27,7 @@ local commit through the transport seam the marketplace tests itself
 | `usage.mjs` | The help text, as data. |
 | `completion.mjs` | A completion script for bash, zsh or fish, derived from the help data and the pin's form: the subcommands and flags are read out of `COMMANDS`, the categories and tags out of the pinned submission form, and the script says which pin it came from. |
 | `banner.mjs` | The wordmark, on the front door only. |
+| `effect.mjs` | The one text effect: the wordmark through `ttfx` in `setup`, with frozen arguments, a hard budget, no colour of its own, and nothing at all when `ttfx` is not there. |
 | `progress.mjs` | The progress line, on stderr, only when a person is looking. |
 | `cli.mjs` | The one entry point behind `bin/omakit`, and the one register every failure is reported in. |
 

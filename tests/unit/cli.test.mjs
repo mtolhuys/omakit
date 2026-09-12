@@ -186,3 +186,22 @@ test("no network is a failure state, not a stack trace", (t) => {
   assert.ok(doctor.out.includes(`${DENSITY.medium} ?     pin.freshness`))
   assert.ok(doctor.out.includes("--offline"))
 })
+
+test("every command's bytes are the same with and without ttfx on PATH", () => {
+  // The one text effect lives in `setup` and behind a terminal; nothing else
+  // may change by a byte because a binary happens to be installed.
+  const empty = mkdtempSync(join(tmpdir(), "omakit-no-ttfx-"))
+  const without = { PATH: `${empty}:${process.env.PATH}` }
+  const fake = mkdtempSync(join(tmpdir(), "omakit-fake-ttfx-"))
+  writeFileSync(join(fake, "ttfx"), "#!/bin/sh\necho 'ttfx 0.0.0-fake'\n", { mode: 0o755 })
+  const withFake = { PATH: `${fake}:${process.env.PATH}` }
+  for (const args of [["help"], [], ["doctor", "--offline"], ["completion", "bash"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"]]) {
+    for (const env of [{}, { FORCE_COLOR: "1" }]) {
+      const a = run(args, { ...env, ...without })
+      const b = run(args, { ...env, ...withFake })
+      assert.equal(b.out, a.out, `${args.join(" ")}: stdout changed with ttfx on PATH`)
+      assert.equal(b.err, a.err, `${args.join(" ")}: stderr changed with ttfx on PATH`)
+      assert.equal(b.code, a.code)
+    }
+  }
+})

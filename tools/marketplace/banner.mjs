@@ -48,6 +48,7 @@
 // one string and not a redrawing job.
 
 import { colourEnabled, DENSITY, motionEnabled, MOTION, rule as floorRule } from "./style.mjs"
+import { effectAvailable, playEffect } from "./effect.mjs"
 
 const ESC = "\u001b["
 const RESET = `${ESC}0m`
@@ -213,7 +214,10 @@ export function frame(layout, band, revealed = band, { colour = true } = {}) {
 
 /**
  * @param {{ word?: string, tagline?: string, stream?: NodeJS.WriteStream,
- *           enabled?: boolean, animate?: boolean, shines?: number }} [options]
+ *           enabled?: boolean, animate?: boolean, shines?: number,
+ *           effect?: boolean, env?: NodeJS.ProcessEnv }} [options]
+ *   `effect: true` runs the wordmark through `ttfx` when it is there (see
+ *   effect.mjs); `setup` passes it, nothing else does.
  */
 export async function banner(options = {}) {
   const stream = options.stream || process.stdout
@@ -255,9 +259,28 @@ export async function banner(options = {}) {
   const redraw = (lines) => stream.write(`${paint(lines)}${ESC}${GLYPH_ROWS - 1}A\r`)
   const finish = (lines) => stream.write(`${paint(lines)}\n`)
 
-  const draw = (band, revealed) => frame(layout, band, revealed, { colour })
+  const draw = (band, revealed, tinted = colour) => frame(layout, band, revealed, { colour: tinted })
 
-  if (!animate) {
+  // The text effect, where asked for and where `ttfx` is there. It draws the
+  // plain glyphs, whose density split is in the characters, and leaves the
+  // cursor hidden on the line under them; omakit walks back up over the five
+  // rows and paints the finished wordmark in its own tints. Absent, the scan
+  // below runs exactly as it would have, byte for byte.
+  const env = options.env || process.env
+  const played = animate && options.effect && effectAvailable(env)
+    ? await playEffect(draw(-2, width + 2, false), stream, { env })
+    : "absent"
+  if (played === "played") {
+    stream.write(`${ESC}${GLYPH_ROWS}A`)
+    finish(draw(-2, width + 2))
+    stream.write(`${ESC}?25h`)
+  } else if (played === "broken") {
+    // Something reached the screen and then the effect failed. The cursor is
+    // somewhere inside the rows, so the honest thing is to leave what is
+    // there, show the cursor, start a fresh line and draw the wordmark once.
+    stream.write(`${ESC}?25h\n`)
+    finish(draw(-2, width + 2))
+  } else if (!animate) {
     finish(draw(-2, width + 2))
   } else {
     // Claim the five rows first, so whatever scrolling has to happen happens

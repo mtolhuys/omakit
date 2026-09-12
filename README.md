@@ -36,6 +36,9 @@ omakit setup
 every rule is read from, and tells you what to try first. It is idempotent. The
 fetch takes about 2 seconds and 16 MB, because it takes only the seven files
 omakit reads out of that repository rather than the 325 MB it is at that commit.
+On an Omarchy machine with `ttfx` installed, the wordmark above plays in through
+it first, in omakit's own colours and inside a stated budget; without it, and
+everywhere else, `setup` is byte for byte the same tool.
 Then:
 
 ```bash

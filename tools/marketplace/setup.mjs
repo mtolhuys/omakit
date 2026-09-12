@@ -48,7 +48,9 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   // sits where the sentence does.
   const fix = (text, indent = GUTTER) => { for (const line of action(text, c, { indent })) out(line) }
 
-  await banner({ stream, tagline: TAGLINE })
+  // The one place the wordmark runs through `ttfx` (effect.mjs): a first run
+  // already spending seconds fetching the pin.
+  await banner({ stream, tagline: TAGLINE, effect: true })
 
   const node = process.versions.node
   const major = Number(node.split(".")[0])

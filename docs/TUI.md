@@ -205,6 +205,30 @@ else; the test fails on a literal interval anywhere else.
 - No command is silent while it works. `submit` and `setup` already narrated;
   `watch` (1.7s on the network), `doctor` (1.5s), `upgrade` (a fetch), `verify`
   (the baseline) and `pin` (the fetch) now do too.
+- One text effect, and only in `omakit setup`. Where `ttfx` (Omarchy's own
+  port of TerminalTextEffects, the thing its screensaver draws with) is on
+  PATH, `setup` runs the wordmark through its `expand` before the scan's
+  finished frame is painted: `effectFrameRate` (60) and `effectBudgetMs`
+  (1500, a hard timeout after which the process is killed) are in `MOTION`,
+  and the arguments are frozen in `effect.mjs` and asserted by the read-only
+  test: stdin only, no file, no path, one effect, one seed. Measured: 42
+  frames, 713ms. It lives in `setup` because that is a first run already
+  spending seconds fetching the pin; the front door keeps its 220ms scan,
+  because one wordmark has one identity and it does not change with what
+  happens to be installed. Absent, unexecutable or over budget, `setup` is
+  byte for byte what it was, and every other command is byte for byte the
+  same whether `ttfx` is there or not; the suite proves both with a fake
+  `ttfx` on PATH.
+
+  Colour stays omakit's, and there is no truecolor exception. Measured before
+  that was settled, the wordmark with omakit's own palette escapes piped
+  through `ttfx` in each of its `--existing-color-handling` modes: `ignore`
+  paints its own truecolor gradient; `always` and `dynamic` honour the input
+  tint but re-encode palette index 36 as the fixed truecolor 0;128;128 and
+  drop 39, so the theme no longer decides what cyan is; `--xterm-colors` does
+  the same in 256-colour. So the effect runs with `--no-color` over the plain
+  glyphs, whose `▓`/`█` split survives because it is in the characters, and
+  omakit walks back up the five rows and paints the finished wordmark itself.
 
 ## Failure states, in one register
 

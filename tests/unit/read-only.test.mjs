@@ -9,6 +9,8 @@ import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import { GH_ARGS } from "../../tools/marketplace/github.mjs"
+import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
+import { MOTION } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 // The filesystem, not `git ls-files`: an untracked file in the working tree can
@@ -68,6 +70,28 @@ test("the GitHub CLI is only ever asked for a token", () => {
         `${path} names a writing gh subcommand somewhere other than printed output: ${line.trim()}`)
       assert.doesNotMatch(line, /(?:execFile|execFileSync|spawn|spawnSync|exec|execSync)\s*\(/,
         `${path} spawns a writing gh subcommand`)
+    }
+  }
+})
+
+test("ttfx is only ever handed the wordmark on stdin, with frozen arguments", () => {
+  // The one text effect is an enhancement in `setup`, and `ttfx` is a binary
+  // that reads files and runs a random effect if asked. So the arguments are
+  // frozen here: stdin only, no input file, no path, no `--random-effect`, one
+  // pinned effect and one seed, so the recorded GIF stays reproducible.
+  assert.deepEqual([...TTFX_PROBE], ["--version"])
+  assert.deepEqual([...TTFX_ARGS], ["--no-color", "--no-restore-cursor", "--seed", "1", "--frame-rate", String(MOTION.effectFrameRate), "expand"])
+  assert.ok(!TTFX_ARGS.some((arg) => /^-i$|^--input-file$|^-R$|^--random-effect$|\/|\./.test(arg)), "no input file, no random effect, no path")
+  for (const { path, text } of sources) {
+    for (const [call, args] of [...text.matchAll(/\w+\s*\(\s*(?:["'`]ttfx["'`]|TTFX)\s*,\s*(\[[^\]]*\])/g)]
+      .map((match) => [match[0], match[1]])) {
+      assert.match(args.replace(/\s+/g, ""), /^\[\.\.\.(TTFX_ARGS|TTFX_PROBE)\]$/, `${path} spawns ttfx as ${call}`)
+    }
+    // Tests may name the binary: they put a fake one on PATH. The tool may not,
+    // outside effect.mjs; a comment may explain it.
+    if (!path.startsWith("tests/") && path !== "tools/marketplace/effect.mjs") {
+      const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+      assert.doesNotMatch(code, /["'`]ttfx["'`]/, `${path} names the ttfx binary; only effect.mjs may spawn it`)
     }
   }
 })

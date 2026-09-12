@@ -8,7 +8,7 @@ FreeType and ffmpeg, produces byte-identical files.
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
 | `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it | a terminal session with timings |
-| `setup.gif` | `omakit setup` on a machine with no pin yet | a terminal session with timings |
+| `setup.gif` | `omakit setup` on a machine with no pin yet, the wordmark through `ttfx` first | a terminal session with timings |
 | `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
 | `watch.gif` | `omakit watch` on a real open submission whose validated commit has fallen behind | stdout, revealed line by line |
 
@@ -52,6 +52,7 @@ script -q --log-out docs/media/captures/banner.out \
   -c 'stty rows 12 cols 60; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"marketplace submit preflight for Omarchy Quattro plugins\" })"'
 
 rm -rf .cache/marketplace   # so setup has something to do
+which ttfx                  # on PATH, so the wordmark plays its effect first
 script -q --log-out docs/media/captures/setup.out \
           --log-timing docs/media/captures/setup.tim \
   -c "stty rows 28 cols 100; NODE_NO_WARNINGS=1 ./bin/omakit setup"
@@ -86,6 +87,12 @@ read a flag.
 `render.py` is documentation tooling, not part of omakit: it needs Pillow, ffmpeg
 and DejaVu Sans Mono, which omakit itself does not (`OMAKIT_RENDER_FONTS` names
 a directory to find the font in if it is not where the distribution keeps it).
+The `setup` capture also needs `ttfx` on PATH when it is recorded, because
+`setup` runs the wordmark through it when it is there: the committed capture was
+made with `ttfx 0.3.2`, with the effect and seed frozen in
+`tools/marketplace/effect.mjs`, so the same version replays the same 42 frames.
+Re-recording without it produces the scan instead, which is also real output,
+and a different GIF.
 It cannot draw a character that is not in the capture. It slices the capture by
 the byte counts the timing log records rather than by characters, because a
 block character is three bytes and slicing by characters tears escape sequences

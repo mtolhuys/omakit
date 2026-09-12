@@ -149,10 +149,21 @@ export const MARK_WIDTH = Math.max(...Object.values(STATUS).map((s) => `${s.glyp
  * progress line has no duration of its own, it lasts as long as the work does,
  * so its budget is a frame rate: one redraw per 70ms is smooth on a terminal
  * and cheap on a pty.
+ *
+ * The one text effect, `ttfx` over the wordmark in `omakit setup`, has a frame
+ * rate the arguments are frozen to and a budget that is a hard timeout, after
+ * which the process is killed and the wordmark is drawn at once. Measured on
+ * this machine, the pinned effect at 60 frames a second: 42 frames, 713ms on a
+ * pipe and 720ms on a pty, so the budget is twice that. It runs in `setup`
+ * only, which is a first run already spending seconds fetching the pin; the
+ * front door keeps its 220ms scan, because one wordmark has one identity and
+ * it does not change with what happens to be installed.
  */
 export const MOTION = Object.freeze({
   bannerBudgetMs: 220,
   progressFrameMs: 70,
+  effectFrameRate: 60,
+  effectBudgetMs: 1500,
 })
 
 // --- enabling -----------------------------------------------------------------
