@@ -228,7 +228,11 @@ else; the test fails on a literal interval anywhere else.
   drop 39, so the theme no longer decides what cyan is; `--xterm-colors` does
   the same in 256-colour. So the effect runs with `--no-color` over the plain
   glyphs, whose `▓`/`█` split survives because it is in the characters, and
-  omakit walks back up the five rows and paints the finished wordmark itself.
+  omakit walks back up the five rows, paints the finished wordmark itself and
+  ends it the way the front door ends: the same shine pass, frame for frame,
+  on the scan's schedule (about 110ms). `ttfx` has a `highlight` of its own,
+  and it was measured: with colour off, 128 of its 129 frames are identical
+  to the finished wordmark, because the highlight is carried by colour alone.
 
 ## Failure states, in one register
 

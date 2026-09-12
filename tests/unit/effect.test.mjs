@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process"
 import { chmodSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { banner, frame, GLYPH_ROWS, wordmarkLayout } from "../../tools/marketplace/banner.mjs"
+import { banner, frame, GLYPH_ROWS, schedule, wordmarkLayout } from "../../tools/marketplace/banner.mjs"
 import { effectAvailable, playEffect, TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION, plain } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -67,14 +67,22 @@ test("a played effect is relayed, then the wordmark is repainted in omakit's tin
   assert.ok(text.includes(`${ESC}?25h`), "the cursor is shown again")
   assert.match(text, /\[36m/, "the prefix tint is omakit's own")
   assert.doesNotMatch(text, /\[38;[25];/, "no truecolor and no 256-colour anywhere")
-  // What follows the walk up is the finished wordmark, the rule and the
-  // tagline exactly as the scan would have painted them, plus the one escape
-  // that shows the cursor again.
-  const painted = `${frame(layout, -2, layout.width + 2, { colour: true }).map((row) => `${ESC}2K${row}`).join("\n")}\n`
+  // What follows the walk up is the finished wordmark in omakit's tints, then
+  // the front door's own shine pass over it, frame for frame the scan's, then
+  // the finished wordmark, the rule and the tagline exactly as the scan paints
+  // them, plus the one escape that shows the cursor again.
+  const up = `${ESC}${GLYPH_ROWS - 1}A\r`
+  const finished = frame(layout, -2, layout.width + 2, { colour: true }).map((row) => `${ESC}2K${row}`).join("\n")
   const control = capture()
   await banner({ stream: control, tagline: "t", enabled: true, colour: true, env: NO_TTFX })
-  const after = control.text.slice(control.text.lastIndexOf(painted) + painted.length)
-  assert.equal(text.slice(effectEnd), `${ESC}${GLYPH_ROWS}A${painted}${ESC}?25h${after}`)
+  const frames = control.text.split(up)
+  const { shineStride } = schedule(layout.width)
+  const shineFrames = Math.ceil(layout.width / shineStride) + 1
+  const shine = frames.slice(-1 - shineFrames, -1)
+  const after = frames.at(-1).slice(`${finished}\n`.length)
+  assert.equal(shine.length, shineFrames)
+  assert.notEqual(shine[0], finished, "the shine starts with the head on the wordmark")
+  assert.equal(text.slice(effectEnd), `${ESC}${GLYPH_ROWS}A${finished}${up}${shine.join(up)}${up}${finished}\n${ESC}?25h${after}`)
 })
 
 test("a ttfx that fails, hangs or prints nothing never leaves the tool worse than without it", async () => {

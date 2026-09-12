@@ -270,8 +270,30 @@ export async function banner(options = {}) {
   const played = animate && options.effect && effectAvailable(env)
     ? await playEffect(draw(-2, width + 2, false), stream, { env })
     : "absent"
+  // The one return pass over the finished wordmark, the front door's shine,
+  // on the scan's own schedule. Two looked better and cost twice the budget,
+  // and the budget is the point.
+  const step = async (band, revealed, delay) => {
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    redraw(draw(band, revealed))
+  }
+  const shine = async () => {
+    const shines = options.shines ?? 1
+    for (let pass = 0; pass < shines; pass += 1) {
+      const forward = pass % 2 === 1
+      for (let step_ = 0; step_ <= Math.ceil(width / shineStride); step_ += 1) {
+        const offset = step_ * shineStride
+        await step(forward ? offset : width - offset, width + 2, delay)
+      }
+    }
+  }
+
   if (played === "played") {
+    // Back up over the effect's plain rows, paint the wordmark in omakit's
+    // tints, and end it the way the front door ends: with the shine.
     stream.write(`${ESC}${GLYPH_ROWS}A`)
+    redraw(draw(-2, width + 2))
+    await shine()
     finish(draw(-2, width + 2))
     stream.write(`${ESC}?25h`)
   } else if (played === "broken") {
@@ -287,21 +309,8 @@ export async function banner(options = {}) {
     // here, before a single cursor-up is issued and while the geometry can
     // still shift harmlessly.
     redraw(draw(-2, -2))
-    const step = async (band, revealed, delay) => {
-      await new Promise((resolve) => setTimeout(resolve, delay))
-      redraw(draw(band, revealed))
-    }
     for (let band = 0; band <= width; band += stride) await step(band, band, delay)
-    // One return pass over the finished wordmark. Two looked better and cost
-    // twice the budget, and the budget is the point.
-    const shines = options.shines ?? 1
-    for (let pass = 0; pass < shines; pass += 1) {
-      const forward = pass % 2 === 1
-      for (let step_ = 0; step_ <= Math.ceil(width / shineStride); step_ += 1) {
-        const offset = step_ * shineStride
-        await step(forward ? offset : width - offset, width + 2, delay)
-      }
-    }
+    await shine()
     finish(draw(-2, width + 2))
   }
   stream.write(`${rule}\n`)
