@@ -50,3 +50,9 @@ the registry recorded so the corpus always contains repositories that are not
 `passed`. Results land in `docs/evidence/parity/`, recording a digest of each
 side rather than the findings themselves. The GitHub side uses `GITHUB_TOKEN`
 from the environment when present, read-only.
+
+`parity` and `watch` are the only commands that reach the network, and they do it
+with Node's built-in `fetch`, which does not read proxy environment variables by
+default. Behind a proxy, run them with `NODE_USE_ENV_PROXY=1`. `submit` and
+`verify` need no network at all beyond fetching a reviewer-mode subject, and
+`tests/parity/offline.mjs` proves it.
