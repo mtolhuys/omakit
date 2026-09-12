@@ -23,7 +23,8 @@
 import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { colourEnabled, paintProse, styler } from "./style.mjs"
+import { progress } from "./progress.mjs"
+import { action, colourEnabled, GUTTER, mark, styler, verdict, wrap } from "./style.mjs"
 
 export const REPOSITORY = "https://github.com/mtolhuys/omakit"
 
@@ -55,14 +56,14 @@ export function isExpectedRemote(url, expected = REPOSITORY) {
 export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
-  const refuse = (reason, action = null) => {
-    out(`${c("red.bold", "REFUSED")} ${reason}`)
-    if (action) {
-      out()
-      out(c("cyan", `    ${action}`))
-    }
+  const lines = (list) => { for (const line of list) out(line) }
+  const refuse = (reason, fix = null) => {
+    lines(verdict("fail", "REFUSED", reason, c))
+    if (fix) lines(action(fix, c, { indent: 0 }))
     return { ok: false, reason }
   }
+  const note = (text) => out(`${mark("advisory", c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
+  const ok = (text) => out(`${mark("pass", c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
 
   if (!existsSync(join(repoRoot, ".git"))) {
     return refuse(
@@ -97,14 +98,26 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
     return refuse("this checkout is on a detached HEAD, so there is no branch to fast-forward.")
   }
 
-  git(repoRoot, ["fetch", "--quiet", "origin", branch])
+  const spinner = progress({ stream: stream === process.stdout ? process.stderr : stream })
+  spinner.phase(`fetching origin/${branch}`)
+  try {
+    git(repoRoot, ["fetch", "--quiet", "origin", branch])
+  } catch (error) {
+    spinner.done()
+    const reason = String(error?.stderr || "").trim().split("\n").filter((line) => /^fatal:/.test(line)).pop()
+      || "git fetch failed"
+    return refuse(
+      `origin could not be fetched: ${reason.replace(/^fatal:\s*/, "")}`,
+      "Connect to the network, then run `omakit upgrade` again.",
+    )
+  }
+  spinner.done()
   const target = git(repoRoot, ["rev-parse", `origin/${branch}`])
 
   if (target === before) {
-    out(`${c("green", "ok")}  already current at ${c("bold", before.slice(0, 7))} on ${branch}`)
+    ok(`already current at ${before.slice(0, 7)} on ${branch}`)
     out()
-    out(paintProse("The marketplace pin is a separate thing and is never touched here.", c))
-    out(paintProse("`omakit doctor` says whether it is behind.", c))
+    lines(wrap("The marketplace pin is a separate thing and is never touched here. `omakit doctor` says whether it is behind.", {}, c))
     return { ok: true, changed: false, commit: before }
   }
 
@@ -122,24 +135,25 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   const log = git(repoRoot, ["log", "--oneline", `${before}..${target}`]).split("\n").filter(Boolean)
   // A commit subject is the one thing a person actually reads here, so the sha
   // takes the emphasis and the subject keeps the terminal's own foreground.
+  const body = " ".repeat(GUTTER)
   const subject = (line) => {
     const split = line.match(/^(\S+)\s+([\s\S]*)$/)
-    return split ? `      ${c("bold", split[1])} ${c("default", split[2])}` : `      ${c("default", line)}`
+    return split ? `${body}${c("bold", split[1])} ${c("default", split[2])}` : `${body}${c("default", line)}`
   }
   if (dryRun) {
-    out(`${c("yellow", "note")} ${log.length} commit(s) available, not applied (--dry-run)`)
+    note(`${log.length} commit(s) available, not applied (--dry-run)`)
     for (const line of log) out(subject(line))
+    out()
+    lines(action("omakit upgrade", c, { indent: 0 }))
     return { ok: true, changed: false, commit: before, available: log.length }
   }
 
   git(repoRoot, ["merge", "--ff-only", `origin/${branch}`])
   const after = git(repoRoot, ["rev-parse", "HEAD"])
 
-  out(`${c("green", "ok")}  ${c("bold", before.slice(0, 7))} to ${c("bold", after.slice(0, 7))} on ${branch}, ${log.length} commit(s)`)
+  ok(`${before.slice(0, 7)} to ${after.slice(0, 7)} on ${branch}, ${log.length} commit(s)`)
   for (const line of log) out(subject(line))
   out()
-  out(paintProse("The marketplace pin did not move: this updated the tool, not the", c))
-  out(paintProse("commit its rules are read from. `omakit doctor` says whether that pin", c))
-  out(paintProse("is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", c))
+  lines(wrap("The marketplace pin did not move: this updated the tool, not the commit its rules are read from. `omakit doctor` says whether that pin is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", {}, c))
   return { ok: true, changed: true, from: before, to: after, commits: log.length }
 }

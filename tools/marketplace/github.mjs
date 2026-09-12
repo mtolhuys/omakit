@@ -111,7 +111,17 @@ async function get(url, { accept = "application/vnd.github+json" } = {}) {
   const headers = { accept, "user-agent": USER_AGENT }
   const auth = token()
   if (auth) headers.authorization = `Bearer ${auth}`
-  const response = await fetch(url, { method: "GET", headers, redirect: "follow" })
+  let response
+  try {
+    response = await fetch(url, { method: "GET", headers, redirect: "follow" })
+  } catch (error) {
+    // Node reports every transport failure as "fetch failed" with the real
+    // reason in `cause`. A person needs the reason, and the CLI keys its
+    // remedy on the code, so both are carried out of here.
+    const cause = error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"
+    const { host, pathname } = new URL(url)
+    throw new GitHubError("network-unavailable", `${host} did not answer (${cause}) while reading ${pathname}`)
+  }
   if (!response.ok) {
     const remaining = response.headers.get("x-ratelimit-remaining")
     const hint = response.status === 403 && remaining === "0"

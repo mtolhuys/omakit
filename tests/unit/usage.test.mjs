@@ -10,7 +10,7 @@ test("colour changes nothing about the words", () => {
   const on = renderUsage({ colour: true })
   assert.notEqual(on, off)
   assert.equal(plain(on), off)
-  assert.equal(//.test(off), false)
+  assert.equal(/\u001b/.test(off), false)
 })
 
 test("every command is listed, with its own description", () => {
@@ -57,10 +57,10 @@ test("prose keeps the terminal's foreground; only what you could type is tinted"
 test("a signature is coloured by token: typed cyan, replaceable yellow", () => {
   const c = styler(true)
   const painted = paintSignature("omakit submit <target> --category <c> [--json]", c)
-  assert.match(painted, /\[36;1momakit\[0m/, "the command name")
-  assert.match(painted, /\[33m<target>\[0m/, "a placeholder")
-  assert.match(painted, /\[36m--category\[0m/, "a flag")
-  assert.match(painted, /\[90m\[\[0m/, "grouping brackets stay out of the way")
+  assert.match(painted, /\u001b\[36;1momakit\u001b\[0m/, "the command name")
+  assert.match(painted, /\u001b\[33m<target>\u001b\[0m/, "a placeholder")
+  assert.match(painted, /\u001b\[36m--category\u001b\[0m/, "a flag")
+  assert.match(painted, /\u001b\[90m\[\u001b\[0m/, "grouping brackets stay out of the way")
   assert.equal(plain(painted), "omakit submit <target> --category <c> [--json]")
 })
 

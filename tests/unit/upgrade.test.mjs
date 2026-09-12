@@ -77,6 +77,31 @@ test("it refuses a detached HEAD", async () => {
   assert.match(io.text(), /detached HEAD/)
 })
 
+test("an origin that cannot be reached is a refusal with a remedy, not a stack trace", async () => {
+  // Measured: with the network down, `omakit upgrade` died in git's own error
+  // with a Node stack under it. A remote that does not exist fails the same
+  // fetch the same way, without needing the network taken away.
+  const gone = join(mkdtempSync(join(tmpdir(), "omakit-gone-")), "nowhere.git")
+  const { dir } = repo(gone)
+  const io = collect()
+  const result = await upgrade({ repoRoot: dir, stream: io.stream, expectedRemote: gone })
+  assert.equal(result.ok, false)
+  assert.match(io.text(), /REFUSED  origin could not be fetched/)
+  assert.match(io.text(), /→ Connect to the network, then run omakit upgrade again/)
+  assert.doesNotMatch(io.text(), /^\s+at /m)
+  for (const line of io.text().split("\n")) assert.ok(line.length <= 80, `${line.length} columns: ${line}`)
+})
+
+test("every refusal is in the one register, and fits", async () => {
+  const { dir } = repo("https://github.com/someone-else/omakit")
+  const io = collect()
+  await upgrade({ repoRoot: dir, stream: io.stream })
+  const lines = io.text().split("\n")
+  assert.match(lines[0], /^█ REFUSED  /)
+  assert.ok(lines.some((line) => line.startsWith("→ git -C ")), "the one command to run")
+  for (const line of lines) assert.ok(line.length <= 80, `${line.length} columns: ${line}`)
+})
+
 test("it never touches the pin, and says so", () => {
   const file = readFileSync(join(REPO_ROOT, "tools/marketplace/upgrade.mjs"), "utf8")
   // Comments stripped: the header explains the distinction in prose, and the

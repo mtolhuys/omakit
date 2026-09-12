@@ -17,7 +17,8 @@ import { banner } from "./banner.mjs"
 import { credential, UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
-import { colourEnabled, paintProse, styler } from "./style.mjs"
+import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
+import { TAGLINE } from "./usage.mjs"
 
 function version(command) {
   try {
@@ -40,66 +41,74 @@ export function onPath(name = "omakit", env = process.env) {
 export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
+  // A step is a status line: the mark, then the fact, wrapped under itself.
+  const step = (state, text) => out(`${mark(state, c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
+  // The one action under a step sits in the step's body; under a sentence it
+  // sits where the sentence does.
+  const fix = (text, indent = GUTTER) => { for (const line of action(text, c, { indent })) out(line) }
 
-  await banner({ stream, tagline: "marketplace submit preflight for Omarchy Quattro plugins" })
+  await banner({ stream, tagline: TAGLINE })
 
   const node = process.versions.node
   const major = Number(node.split(".")[0])
   if (major < 22) {
-    out(`${c("red.bold", "PROBLEM")} node ${node} is too old; omakit needs 22 or newer.`)
+    step("fail", `node ${node} is too old; omakit needs 22 or newer.`)
+    fix("Install Node 22 or newer, then run `omakit setup` again.")
     return { ok: false }
   }
-  out(`${c("green", "ok")}  node ${node}`)
+  step("pass", `node ${node}`)
 
   const git = version("git")
   if (!git) {
-    out(`${c("red.bold", "PROBLEM")} git was not found on PATH. omakit needs it for the pin and for reading a commit's tree.`)
+    step("fail", "git was not found on PATH. omakit needs it for the pin and for reading a commit's tree.")
+    fix("Install git, then run `omakit setup` again.")
     return { ok: false }
   }
-  out(`${c("green", "ok")}  ${git}`)
+  step("pass", git)
 
   // GitHub access, before the pin, because this is the one step a newcomer might
   // otherwise think they have to prepare a token for. They do not.
   const auth = credential({ refresh: true })
   if (auth.source === "gh") {
-    out(`${c("green", "ok")}  GitHub: your \`gh\` login, read-only. omakit stores nothing.`)
+    step("pass", "GitHub: your `gh` login, read-only. omakit stores nothing.")
   } else if (auth.source) {
-    out(`${c("green", "ok")}  GitHub: ${auth.source}, read-only. Never written to disk.`)
+    step("pass", `GitHub: ${auth.source}, read-only. Never written to disk.`)
   } else {
-    out(`${c("yellow", "note")} No GitHub login. \`submit\` and \`verify\` need none at all;`)
-    out(`      \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without one.`)
-    out(`      ${c("cyan", "gh auth login")} is enough; omakit reads it read-only and stores nothing.`)
+    step("info", `no GitHub login. \`submit\` and \`verify\` need none at all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without one.`)
+    fix("`gh auth login` is enough; omakit reads it read-only and stores nothing.")
   }
 
   const dir = marketplacePinDir(repoRoot)
   const spinner = progress()
   let identity
   try {
-    spinner.phase("fetching the pinned marketplace checkout")
-    identity = ensurePin(repoRoot).identity
+    identity = ensurePin(repoRoot, (line) => {
+      if (line.state === "fetching") spinner.phase(line.text)
+    }).identity
   } catch (error) {
     spinner.done()
-    out(`${c("red.bold", "PROBLEM")} ${error.message}`)
+    step("fail", error.message)
+    fix(error.code === "network-unavailable"
+      ? "Connect to the network, then run `omakit setup` again."
+      : "Remove the checkout, then run `omakit setup` again.")
     return { ok: false }
   }
   spinner.done()
-  out(`${c("green", "ok")}  marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}), ${pinDiskUsage(dir)}`)
+  step("pass", `marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}), ${pinDiskUsage(dir)}`)
   out()
-  out(paintProse("Every rule omakit checks is read from that checkout, at that exact commit.", c))
-  out(paintProse("It never moves on its own. `omakit doctor` says when it is behind.", c))
+  for (const line of wrap("Every rule omakit checks is read from that checkout, at that exact commit. It never moves on its own. `omakit doctor` says when it is behind.", {}, c)) out(line)
   out()
 
   if (!onPath()) {
-    out(`${c("yellow", "note")} \`omakit\` is not on your PATH yet. This puts it there:`)
-    out()
-    out(`    ln -s ${entryPoint} ~/.local/bin/omakit`)
+    step("info", "`omakit` is not on your PATH yet. This puts it there:")
+    fix(`ln -s ${entryPoint} ~/.local/bin/omakit`)
     out()
   }
 
   out("Try it on a plugin you have checked out:")
   out()
-  out(c("cyan", "    omakit submit <plugin-repo> --category Widgets --tags bar,quickshell"))
+  fix("omakit submit <plugin-repo> --category Widgets --tags bar,quickshell", 0)
   out()
-  out(paintProse("It prints the issue title and body. It never posts anything.", c))
+  for (const line of wrap("It prints the issue title and body. It never posts anything.", {}, c)) out(line)
   return { ok: true }
 }

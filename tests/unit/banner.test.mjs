@@ -4,36 +4,62 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { banner, bannerEnabled, fitsOnScreen, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
+import { banner, bannerEnabled, fitsOnScreen, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, INK, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
+import { DENSITY, MOTION, plain } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
-
-const plain = (text) => String(text).replace(/\[[0-9;]*m/g, "")
 
 test("a piped run gets no banner at all, not even a plain one", async () => {
   const written = []
   await banner({ stream: { isTTY: false, write: (s) => written.push(s) } })
   assert.deepEqual(written, [])
   assert.equal(bannerEnabled({ isTTY: false }, {}), false)
-  assert.equal(bannerEnabled({ isTTY: true }, { NO_COLOR: "1" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, { TERM: "dumb" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, { OMAKIT_NO_BANNER: "1" }), false)
   assert.equal(bannerEnabled({ isTTY: true }, {}), true)
 })
 
-test("oma and kit differ in tint and in weight, and both tints are palette entries", () => {
+test("NO_COLOR takes the colour off the wordmark and leaves the wordmark", async () => {
+  // Measured divergence: with NO_COLOR a terminal run of `omakit` printed a
+  // text heading where a colour run drew the wordmark. NO_COLOR is a request
+  // about colour, so the wordmark is still drawn, without a single escape.
+  assert.equal(bannerEnabled({ isTTY: true }, { NO_COLOR: "1" }), true)
+  const written = []
+  await banner({ stream: { isTTY: true, rows: 40, columns: 80, write: (s) => written.push(s) }, enabled: true, colour: false, tagline: "t" })
+  const all = written.join("")
+  assert.doesNotMatch(all, /\u001b\[[0-9;]*m/, "no SGR at all")
+  assert.match(all, /\u2588/, "the name is drawn")
+  assert.match(all, /\u2593/, "and so is the prefix")
+})
+
+test("oma and kit differ in density first and in tint second", () => {
+  // The measured problem: on Omarchy's Matte Black every ANSI hue resolves to
+  // nearly the same grey, so a wordmark whose halves differ only in tint is
+  // one flat word there, and bold does not help because a block glyph has no
+  // stroke to thicken. Density is ink, and every terminal draws ink.
   const layout = wordmarkLayout("omakit")
+  const mono = frame(layout, -2, layout.width + 2, { colour: false }).join("\n")
+  assert.doesNotMatch(mono, /\u001b/, "with colour off there is no escape at all")
+  assert.equal(INK.prefix, DENSITY.dark)
+  assert.equal(INK.suffix, DENSITY.full)
+  // Every lit cell of the prefix is the shade; every lit cell of the name is
+  // the full block; and both appear, so the split is visible in ink alone.
+  const prefixEnd = layout.spans[PREFIX_LETTERS - 1].to
+  for (const row of mono.split("\n")) {
+    assert.doesNotMatch(row.slice(0, prefixEnd + 1), /\u2588/, "no full block inside the prefix")
+    assert.doesNotMatch(row.slice(prefixEnd + 1), /\u2593/, "no shade inside the name")
+  }
+  assert.match(mono, /\u2593/)
+  assert.match(mono, /\u2588/)
+  // With colour on, the tints are palette entries and go on top of the ink.
   const drawn = frame(layout, -2, layout.width + 2).join("\n")
-  // The prefix is the ecosystem's, the suffix is this tool's.
-  assert.match(drawn, /\u001b\[1;36m/, "oma takes the prefix tint, in bold")
-  assert.match(drawn, /\u001b\[39m/, "kit takes the suffix tint")
-  // Weight, not only hue: on a monochrome theme every ANSI hue resolves to the
-  // same grey, and a wordmark separated by tint alone renders flat there.
-  assert.match(drawn, /\u001b\[1;/, "the prefix is distinguishable without colour resolution")
-  assert.equal(PREFIX_LETTERS, 3)
-  // Nothing here may pin an actual colour: the theme decides.
+  assert.match(drawn, /\u001b\[36m\u2593/, "the prefix takes the ecosystem's cyan on the shade")
+  assert.match(drawn, /\u001b\[39m\u2588/, "the name keeps the foreground on the full block")
   assert.doesNotMatch(drawn, /38;[25];|48;/, "a wordmark must not use truecolor or a colour cube")
-  const prefixSpans = layout.spans.filter((span) => span.index < PREFIX_LETTERS).map((span) => span.letter)
-  assert.deepEqual(prefixSpans, ["o", "m", "a"])
+  assert.equal(PREFIX_LETTERS, 3)
+  assert.deepEqual(layout.spans.filter((span) => span.index < PREFIX_LETTERS).map((span) => span.letter), ["o", "m", "a"])
+  // And the scanner's head is the one bright, solid thing, over either half.
+  const scanning = frame(layout, 3, layout.width + 2).join("\n")
+  assert.match(scanning, /\u001b\[1;96m\u2588/, "the head is a full block in bright cyan")
 })
 
 test("the font covers the name, and refuses a letter it does not have", () => {
@@ -70,10 +96,10 @@ test("the scan reveals left to right and ends complete", () => {
 
 test("a frame emits no colour code it does not use", () => {
   for (const line of frame(wordmarkLayout("omakit"), 12)) {
-    const codes = line.match(/\[[0-9;]*m/g) || []
-    const blocks = (line.match(/█/g) || []).length
+    const codes = line.match(/\u001b\[[0-9;]*m/g) || []
+    const blocks = (line.match(/[█▓]/g) || []).length
     assert.ok(codes.length <= blocks * 2, "more escapes than blocks means stray codes")
-    assert.ok(!/\[9?6m /.test(line), "a colour code is never followed by a blank")
+    assert.ok(!/\u001b\[(?!0m)[0-9;]*m /.test(line), "a colour code is never followed by a blank")
   }
 })
 
@@ -98,6 +124,7 @@ test("the whole scan fits in one glance, on any name the font can draw", () => {
   // long enough to be in the way of someone who ran `help` to read a flag. The
   // schedule is derived from the budget now, so a longer name buys a quicker
   // step instead of a longer wait.
+  assert.equal(BUDGET_MS, MOTION.bannerBudgetMs, "the budget is stated once, in style.mjs")
   assert.ok(BUDGET_MS <= 300, `a ${BUDGET_MS}ms scan is an interruption, not a flourish`)
   for (const word of ["omakit", "omascan", "omakitt"]) {
     const { width } = wordmarkLayout(word)

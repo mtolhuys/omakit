@@ -13,6 +13,15 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 
+/** Raised for every way the pin can be missing or wrong; the code is what the CLI keys its remedy on. */
+export class PinError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "PinError"
+    this.code = "marketplace-unavailable"
+  }
+}
+
 export const MARKETPLACE_PIN = Object.freeze({
   repository: "https://github.com/omacom/omarchy-plugin-marketplace",
   commit: "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
@@ -67,49 +76,74 @@ function readPinIdentity(dir) {
 export function requirePin(repoRoot) {
   const dir = marketplacePinDir(repoRoot)
   if (!existsSync(join(dir, "scripts/security-baseline-scanner.mjs"))) {
-    throw new Error(`marketplace-unavailable: no pinned marketplace checkout at ${dir}; run ./bin/omakit marketplace-pin`)
+    throw new PinError(`no pinned marketplace checkout at ${dir}. Every rule omakit checks is read from that checkout, so nothing can run without it.`)
   }
   const identity = readPinIdentity(dir)
   if (identity.commit !== MARKETPLACE_PIN.commit) {
-    throw new Error(`marketplace-unavailable: ${dir} is at ${identity.commit}, expected pin ${MARKETPLACE_PIN.commit}`)
+    throw new PinError(`${dir} is at ${identity.commit}, expected pin ${MARKETPLACE_PIN.commit}`)
   }
   if (identity.dirty) {
-    throw new Error(`marketplace-unavailable: ${dir} has local modifications; the pin must stay unmodified`)
+    throw new PinError(`${dir} has local modifications; the pin must stay unmodified`)
   }
   return { dir, identity }
+}
+
+/** A checkout that was initialised but never fetched (a run that lost the network) has a .git and no HEAD. */
+function hasCommit(dir) {
+  try {
+    git(dir, ["rev-parse", "--verify", "-q", "HEAD"])
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
  * Reproducible setup: fetch exactly the pinned commit (depth 1) into
  * .cache/marketplace and check it out detached. Idempotent; never rewrites
  * an existing checkout that already sits at the pin.
+ *
+ * `log` is told what is happening as `{ state, text }`: a `pass` or `info`
+ * line to keep, or `fetching` for the slow step about to start, which the CLI
+ * draws as a progress line rather than a line of output.
  */
 export function ensurePin(repoRoot, log = () => {}) {
   const dir = marketplacePinDir(repoRoot)
-  if (existsSync(join(dir, ".git"))) {
+  if (existsSync(join(dir, ".git")) && hasCommit(dir)) {
     const identity = readPinIdentity(dir)
     if (identity.commit === MARKETPLACE_PIN.commit && !identity.dirty) {
-      log(`ok - marketplace pin present at ${dir} (${identity.commit})`)
+      log({ state: "pass", text: `marketplace pin ${identity.commit.slice(0, 7)} present at ${dir}` })
       return { dir, identity, fetched: false }
     }
-    if (identity.dirty) throw new Error(`marketplace-unavailable: ${dir} has local modifications; remove the directory and run again`)
-    log(`fetch - ${dir} is at ${identity.commit}; fetching ${MARKETPLACE_PIN.commit}`)
-  } else {
+    if (identity.dirty) throw new PinError(`${dir} has local modifications; remove the directory and run again`)
+    log({ state: "info", text: `${dir} is at ${identity.commit}, not the pin` })
+  } else if (!existsSync(join(dir, ".git"))) {
     mkdirSync(dir, { recursive: true })
     execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
     git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
-    log(`clone - ${MARKETPLACE_PIN.repository} @ ${MARKETPLACE_PIN.commit} into ${dir}`)
   }
+  log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 16 MB` })
   // Written as plumbing rather than through `git sparse-checkout`, so the
   // result does not depend on the git version's cone-mode defaults.
   git(dir, ["config", "core.sparseCheckout", "true"])
   mkdirSync(join(dir, ".git/info"), { recursive: true })
   writeFileSync(join(dir, ".git/info/sparse-checkout"), `${PIN_PATHS.join("\n")}\n`)
-  git(dir, ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", MARKETPLACE_PIN.commit], { stdio: ["ignore", "pipe", "inherit"] })
+  try {
+    // git's own stderr is captured, not inherited: a network failure ends up
+    // as one failure state in the tool's register, not two voices on stderr.
+    git(dir, ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", MARKETPLACE_PIN.commit])
+  } catch (error) {
+    const reason = String(error?.stderr || error?.message || "").trim().split("\n").filter((line) => /^fatal:/.test(line)).pop()
+      || String(error?.message || "git fetch failed").trim().split("\n")[0]
+    const offline = /unable to access|Could not resolve|Could not connect|Connection refused|Network is unreachable/i.test(reason)
+    const failure = new PinError(`the pinned marketplace checkout could not be fetched: ${reason.replace(/^fatal:\s*/, "")}`)
+    if (offline) failure.code = "network-unavailable"
+    throw failure
+  }
   git(dir, ["checkout", "-q", "--detach", MARKETPLACE_PIN.commit])
   const identity = readPinIdentity(dir)
-  if (identity.commit !== MARKETPLACE_PIN.commit) throw new Error(`marketplace-unavailable: checkout ended at ${identity.commit}`)
-  log(`ok - marketplace pin ${identity.commit} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}, ${pinDiskUsage(dir)}`)
+  if (identity.commit !== MARKETPLACE_PIN.commit) throw new PinError(`checkout ended at ${identity.commit}`)
+  log({ state: "pass", text: `marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}, ${pinDiskUsage(dir)}` })
   return { dir, identity, fetched: true }
 }
 

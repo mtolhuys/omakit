@@ -252,7 +252,11 @@ export async function submitPreflight(options) {
           ? `local commit ${subject.commit} is the current ${head.branch || "default"}-branch HEAD`
           : `local commit ${subject.commit} is not the current ${head.branch || "default"}-branch HEAD (${head.commit})`
         : `could not read the default-branch HEAD (${headError?.code || "unknown"}): ${headError?.message || ""}`,
-    remedy: pinnedMatches === false ? "Push this commit to the default branch before submitting, then run submit again." : null,
+    remedy: pinnedMatches === false
+      ? "Push this commit to the default branch before submitting, then run submit again."
+      : headError
+        ? "Connect to the network and run submit again, or pass --offline to skip this one check."
+        : null,
   }))
 
   // --- the baseline preflight ----------------------------------------------

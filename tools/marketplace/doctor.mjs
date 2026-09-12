@@ -52,7 +52,10 @@ async function latestOnRegistry(name) {
 /**
  * @param {{ repoRoot: string, offline?: boolean }} options
  */
-export async function doctor({ repoRoot, offline = false }) {
+export async function doctor({ repoRoot, offline = false, onPhase }) {
+  // Optional: told what is being read while the network answers. Never
+  // affects the result.
+  const phase = onPhase || (() => {})
   const checks = []
   const add = (id, state, detail, action = null) => checks.push({ id, state, detail, action })
 
@@ -77,10 +80,11 @@ export async function doctor({ repoRoot, offline = false }) {
     add("pin.size", sparse ? "ok" : "advice", `${pinDiskUsage(dir)}${sparse ? ", sparse" : ", full checkout"}`,
       sparse ? null : `This checkout predates the sparse fetch and is far larger than it needs to be. Remove ${dir} and run \`omakit pin\` to refetch only what omakit reads.`)
   } catch (error) {
-    add("pin.checkout", "problem", error.message, "Run `omakit pin`.")
+    add("pin.checkout", "problem", error.message, "omakit pin")
   }
 
   if (!offline && identity) {
+    phase("reading the marketplace's current default-branch HEAD")
     try {
       const head = await defaultBranchHead(MARKETPLACE_PIN.repository)
       const current = head.commit === identity.commit
@@ -90,9 +94,11 @@ export async function doctor({ repoRoot, offline = false }) {
           : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${head.branch || "default"} branch is now at ${head.commit.slice(0, 7)}`,
         current ? null : "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you.")
     } catch (error) {
-      add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`)
+      add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`,
+        error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null)
     }
 
+    phase("asking the npm registry for the newest published version")
     const latest = await latestOnRegistry(self.name)
     if (latest) {
       const current = latest === self.version
@@ -110,6 +116,7 @@ export async function doctor({ repoRoot, offline = false }) {
   // names the source every time.
   // Just "gh version 2.62.0": the build date gh prints after it would nest a
   // second parenthetical inside this line.
+  phase("reading the GitHub credential from gh")
   const cli = version("gh")?.replace(/\s*\(.*\)\s*$/, "") || null
   const auth = credential({ refresh: true })
   add("github.auth", auth.value ? "ok" : "info",

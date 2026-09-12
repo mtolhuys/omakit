@@ -107,7 +107,10 @@ export function validationCommentCommit(comments) {
 /**
  * @param {{ repoRoot: string, issueUrl: string }} options
  */
-export async function pinWatch({ repoRoot, issueUrl }) {
+export async function pinWatch({ repoRoot, issueUrl, onPhase }) {
+  // Optional: told the name of the step about to run, so a terminal can say
+  // what is happening while the network answers. Never affects the result.
+  const phase = onPhase || (() => {})
   const { dir: pinDir } = requirePin(repoRoot)
   const target = parseIssueUrl(issueUrl)
   if (`${target.owner}/${target.repository}`.toLowerCase() !== MARKETPLACE_SLUG) {
@@ -119,7 +122,9 @@ export async function pinWatch({ repoRoot, issueUrl }) {
 
   const record = await loadRecord(pinDir)
 
+  phase(`reading issue #${target.number}`)
   const subject = await issue(target.owner, target.repository, target.number)
+  phase(`reading the comments on issue #${target.number}`)
   const comments = await issueComments(target.owner, target.repository, target.number)
 
   const read = await repositoryFor(pinDir, subject)
@@ -156,6 +161,7 @@ export async function pinWatch({ repoRoot, issueUrl }) {
   let head = null
   let headError = null
   if (repositoryUrl) {
+    phase("reading the plugin repository's default-branch HEAD")
     try {
       head = await defaultBranchHead(repositoryUrl)
     } catch (error) {

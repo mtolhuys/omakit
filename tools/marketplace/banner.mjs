@@ -1,28 +1,45 @@
 // The wordmark, and the one place decoration is allowed.
 //
-// It is drawn on the front door only: `omakit`, `omakit help` and `omakit setup`.
-// Never in `submit`, `watch` or `verify` output, because that output gets pasted
-// into issues and read by agents, and a banner there costs a reader lines and
-// costs a submission credibility.
+// It is drawn on the front door only: `omakit`, `omakit help`, `omakit doctor`
+// and `omakit setup`. Never in `submit`, `watch` or `verify` output, because
+// that output gets pasted into issues and read by agents, and a banner there
+// costs a reader lines and costs a submission credibility.
 //
 // Two more gates. It draws only when stdout is a terminal, so `omakit help |
-// less` and `omakit help --agent` stay plain text. And it respects NO_COLOR and
-// a dumb TERM like everything else here.
+// less` and `omakit help --agent` stay plain text. And OMAKIT_NO_BANNER turns
+// it off for a person who wants none of it. NO_COLOR does what it says and no
+// more: the wordmark is still drawn, in the terminal's own foreground, because
+// a person who turned colour off did not ask for a different program. The
+// same words arrive either way; a piped run gets them without the wordmark.
 //
 // Every front-door command animates it, and the animation is on a budget: the
-// whole scan is BUDGET_MS, about a quarter of a second, so the first line of
-// help is on the screen before a person has finished looking at the wordmark.
-// The first version of this took 1.4 seconds, which is long enough to be in the
-// way of someone who only wanted to read the flags. The schedule below is
-// derived from the budget rather than from taste, so the wordmark can grow a
-// letter without the scan growing a delay.
+// whole scan is MOTION.bannerBudgetMs, about a quarter of a second, so the
+// first line of help is on the screen before a person has finished looking at
+// the wordmark. The first version of this took 1.4 seconds, which is long
+// enough to be in the way of someone who only wanted to read the flags. The
+// schedule below is derived from the budget rather than from taste, so the
+// wordmark can grow a letter without the scan growing a delay.
 //
-// `oma` and `kit` differ in two ways, not one: a different tint, and a
-// different weight. Tint alone disappears on a deliberately monochrome theme
-// like Matte Black, where every ANSI hue resolves to the same grey and a
-// two-tone wordmark renders flat. Weight survives that, because bold is the one
-// attribute a monochrome palette still has to honour. Both tints are ANSI
-// palette entries, so an Omarchy theme decides what they actually look like.
+// How `oma` and `kit` are told apart, and why it is not by colour.
+//
+// The measured problem: on Omarchy's Matte Black theme every ANSI hue resolves
+// to nearly the same grey, so a wordmark whose two halves differ in tint
+// renders as one flat word, and bold does not rescue it, because a block glyph
+// has no stroke for a bold face to thicken and most terminals no longer
+// brighten bold text. What a monochrome terminal does still draw is ink. So
+// the two halves differ in density: `oma`, the ecosystem's prefix, is drawn in
+// the dark shade (▓), and `kit`, this tool's own name, in the full block (█).
+// The prefix recedes into texture and the name stands solid, on any theme, and
+// under NO_COLOR, where there is no escape sequence at all. The tint is still
+// applied on top when colour is on, cyan on the prefix and the foreground on
+// the name, so a colour theme gets both cues and a monochrome one gets the one
+// it can show.
+//
+// The trade-off is the shade glyph itself: ▓ is a pattern, and a pattern only
+// reads as a letter when adjacent cells tile without a seam. Every monospace
+// font ships it as a tiling glyph, and docs/media/render.py measures the
+// rendered wordmark and refuses to produce a GIF in which the shaded rows do
+// not join.
 //
 // The animation is the tool's own motif rather than an ornament: the same
 // scanner that sweeps the progress line during a baseline run sweeps across the
@@ -30,19 +47,18 @@
 // letters come from the small font below, so renaming the tool is a change to
 // one string and not a redrawing job.
 
+import { colourEnabled, DENSITY, motionEnabled, MOTION, rule as floorRule } from "./style.mjs"
+
 const ESC = "\u001b["
 const RESET = `${ESC}0m`
-const HEAD = `${ESC}1;96m`
-const PREFIX = `${ESC}1;36m`
-const SUFFIX = `${ESC}39m`
-// The rule and the tagline sit under the wordmark and are still meant to be
-// read, so neither is dim: on a low-contrast theme grey-on-near-black is a
-// decoration nobody can see.
-const FLOOR = `${ESC}36m`
-const TAGLINE = `${ESC}39m`
-
-const BLOCK = "\u2588"
-const RULE = "\u2581"
+// The tints, applied only when colour is on. The head of the scanner is the
+// one bright thing; the prefix takes the ecosystem's cyan; the name keeps the
+// terminal's foreground.
+const TINT = Object.freeze({
+  head: `${ESC}1;96m`,
+  prefix: `${ESC}36m`,
+  suffix: `${ESC}39m`,
+})
 
 // A five-row pixel font, "#" lit and " " blank, one blank column between
 // letters. Only the letters the name needs are defined; adding one is adding one
@@ -63,8 +79,11 @@ export const GLYPHS = Object.freeze({
 
 export const GLYPH_ROWS = 5
 
-/** How many leading letters take the prefix tint. */
+/** How many leading letters are the prefix: drawn in the shade, and tinted cyan when colour is on. */
 export const PREFIX_LETTERS = 3
+
+/** The two densities: the prefix is texture, the name is solid. */
+export const INK = Object.freeze({ prefix: DENSITY.dark, suffix: DENSITY.full, head: DENSITY.full })
 
 /**
  * Lay a word out as five rows plus the column span of each letter.
@@ -96,11 +115,12 @@ export function wordmarkRows(word) {
 }
 
 /**
- * The whole animation, in milliseconds. Not a taste parameter: `help` exists to
- * put text on the screen, so the scan has to be over before it is in the way.
- * A quarter of a second is about one glance.
+ * The whole animation, in milliseconds, stated once in style.mjs beside every
+ * other budget. Not a taste parameter: `help` exists to put text on the
+ * screen, so the scan has to be over before it is in the way. A quarter of a
+ * second is about one glance.
  */
-export const BUDGET_MS = 220
+export const BUDGET_MS = MOTION.bannerBudgetMs
 
 // How many columns the head jumps per frame. Two for the reveal keeps the sweep
 // continuous, because the head is two columns wide; three for the return pass
@@ -145,16 +165,13 @@ export function fitsOnScreen(following, stream = process.stdout) {
 }
 
 export function bannerEnabled(stream = process.stdout, env = process.env) {
-  if (env.NO_COLOR !== undefined && env.NO_COLOR !== "") return false
-  if (env.TERM === "dumb") return false
   if (env.OMAKIT_NO_BANNER) return false
-  return Boolean(stream && stream.isTTY)
+  return motionEnabled(stream, env)
 }
 
-function tintFor(spans, column) {
+function isPrefix(spans, column) {
   const span = spans.find((entry) => column >= entry.from && column <= entry.to)
-  if (!span) return SUFFIX
-  return span.index < PREFIX_LETTERS ? PREFIX : SUFFIX
+  return Boolean(span) && span.index < PREFIX_LETTERS
 }
 
 /**
@@ -164,8 +181,12 @@ function tintFor(spans, column) {
  * been drawn at all; columns beyond it are blank. The reveal pass moves both
  * together; the shine pass afterwards moves the band across a wordmark that is
  * already complete.
+ *
+ * With `colour` off no escape is written at all: the head is a full block over
+ * the shaded prefix, which is still visible as a change in density, and over
+ * the solid name it is simply the name.
  */
-export function frame(layout, band, revealed = band) {
+export function frame(layout, band, revealed = band, { colour = true } = {}) {
   const { rows, spans, width } = layout
   return rows.map((row) => {
     let out = ""
@@ -180,9 +201,11 @@ export function frame(layout, band, revealed = band) {
         out += " "
         continue
       }
-      const wanted = column >= band - 1 && column <= band ? HEAD : tintFor(spans, column)
+      const atHead = column >= band - 1 && column <= band
+      const prefix = isPrefix(spans, column)
+      const wanted = colour ? (atHead ? TINT.head : prefix ? TINT.prefix : TINT.suffix) : ""
       if (tint !== wanted) { out += wanted; tint = wanted }
-      out += BLOCK
+      out += atHead ? INK.head : prefix ? INK.prefix : INK.suffix
     }
     return tint ? out + RESET : out
   })
@@ -195,11 +218,17 @@ export function frame(layout, band, revealed = band) {
 export async function banner(options = {}) {
   const stream = options.stream || process.stdout
   const enabled = options.enabled ?? bannerEnabled(stream)
+  const colour = options.colour ?? colourEnabled(stream)
   const word = options.word || "omakit"
   const layout = wordmarkLayout(word)
   const { width } = layout
-  const rule = FLOOR + RULE.repeat(width) + RESET
-  const tagline = options.tagline ? `${TAGLINE}${options.tagline}${RESET}` : null
+  // The rule and the tagline sit under the wordmark and are still meant to be
+  // read, so neither is dim: on a low-contrast theme grey-on-near-black is a
+  // decoration nobody can see. The rule takes the prefix tint, the tagline the
+  // foreground.
+  const c = (name, text) => (colour ? `${ESC}${name}m${text}${RESET}` : text)
+  const rule = floorRule((_name, text) => c("36", text), { width })
+  const tagline = options.tagline ? c("39", options.tagline) : null
 
   // Nothing at all when it is not a terminal. There is no plain-text substitute
   // to print: `help` and `setup` already say the name and what it does in words,
@@ -226,16 +255,18 @@ export async function banner(options = {}) {
   const redraw = (lines) => stream.write(`${paint(lines)}${ESC}${GLYPH_ROWS - 1}A\r`)
   const finish = (lines) => stream.write(`${paint(lines)}\n`)
 
+  const draw = (band, revealed) => frame(layout, band, revealed, { colour })
+
   if (!animate) {
-    finish(frame(layout, -2, width + 2))
+    finish(draw(-2, width + 2))
   } else {
     // Claim the five rows first, so whatever scrolling has to happen happens
     // here, before a single cursor-up is issued and while the geometry can
     // still shift harmlessly.
-    redraw(frame(layout, -2, -2))
+    redraw(draw(-2, -2))
     const step = async (band, revealed, delay) => {
       await new Promise((resolve) => setTimeout(resolve, delay))
-      redraw(frame(layout, band, revealed))
+      redraw(draw(band, revealed))
     }
     for (let band = 0; band <= width; band += stride) await step(band, band, delay)
     // One return pass over the finished wordmark. Two looked better and cost
@@ -248,7 +279,7 @@ export async function banner(options = {}) {
         await step(forward ? offset : width - offset, width + 2, delay)
       }
     }
-    finish(frame(layout, -2, width + 2))
+    finish(draw(-2, width + 2))
   }
   stream.write(`${rule}\n`)
   if (tagline) stream.write(`${tagline}\n`)

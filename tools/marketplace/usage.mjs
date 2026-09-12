@@ -7,7 +7,7 @@
 
 import { UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { MARKETPLACE_PIN } from "./pin.mjs"
-import { colourEnabled, paintProse, styler } from "./style.mjs"
+import { colourEnabled, paintProse, STEP, styler } from "./style.mjs"
 
 export const TAGLINE = "marketplace submit preflight for Omarchy Quattro plugins"
 
@@ -78,10 +78,15 @@ export const COMMANDS = Object.freeze([
     signature: "omakit parity [--count <n>] [--offset <n>]",
     lines: [
       "The official baseline over GitHub versus the local transport on real",
-      "listed repositories; writes docs/evidence/parity/<date>-local-vs-github.json.",
+      "listed repositories; writes its evidence under docs/evidence/parity/.",
     ],
   },
 ])
+
+// A command sits one STEP in from the heading; what it does sits one STEP in
+// from the command's name, which starts after "omakit ".
+const INDENT = " ".repeat(STEP)
+const DESCRIPTION = " ".repeat(STEP * 3)
 
 export const TARGET_NOTE = "<target> is a local Git repository path, or <https url>@<40-char sha>."
 
@@ -140,11 +145,11 @@ export function renderSummary({ colour = colourEnabled(), heading = true } = {})
   const c = styler(colour)
   const out = heading ? [`${c("cyan.bold", "omakit")}${c("grey", ":")} ${TAGLINE}`, ""] : []
   for (const command of COMMANDS) {
-    out.push(`  ${paintSignature([].concat(command.signature)[0], c)}`)
+    out.push(`${INDENT}${paintSignature([].concat(command.signature)[0], c)}`)
   }
   out.push("")
-  out.push(`  ${paintProse("`omakit help` is the same list with what each command does, and", c)}`)
-  out.push(`  ${paintProse("what it reads. `omakit setup` is the one to run first.", c)}`)
+  out.push(`${INDENT}${paintProse("`omakit help` is the same list with what each command does, and", c)}`)
+  out.push(`${INDENT}${paintProse("what it reads. `omakit setup` is the one to run first.", c)}`)
   return `${out.join("\n")}\n`
 }
 
@@ -159,23 +164,23 @@ export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
 
   for (const command of COMMANDS) {
     for (const line of [].concat(command.signature)) {
-      out.push(`  ${paintSignature(line, c)}`)
+      out.push(`${INDENT}${paintSignature(line, c)}`)
     }
     for (const line of command.lines) {
-      out.push(`      ${c("default", line)}`)
+      out.push(`${DESCRIPTION}${c("default", line)}`)
     }
     out.push("")
   }
 
-  out.push(`  ${paintSignature(TARGET_NOTE, c)}`)
+  out.push(`${INDENT}${paintSignature(TARGET_NOTE, c)}`)
   out.push("")
   out.push(c("bold", "GitHub access:"))
-  for (const line of AUTHENTICATION) out.push(`  ${paintProse(line, c)}`)
+  for (const line of AUTHENTICATION) out.push(`${INDENT}${paintProse(line, c)}`)
   out.push("")
   out.push(c("bold", "Environment:"))
   const width = Math.max(...ENVIRONMENT.map(([name]) => name.length))
   for (const [name, description] of ENVIRONMENT) {
-    out.push(`  ${c("green", name.padEnd(width))}  ${paintProse(description, c)}`)
+    out.push(`${INDENT}${c("green", name.padEnd(width))}  ${paintProse(description, c)}`)
   }
   return `${out.join("\n")}\n`
 }

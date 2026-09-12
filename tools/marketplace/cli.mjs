@@ -26,13 +26,47 @@ import { upgrade } from "./upgrade.mjs"
 import { banner, bannerEnabled, fitsOnScreen } from "./banner.mjs"
 import { progress } from "./progress.mjs"
 import { renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
+import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
+/**
+ * The one action for each way a command can stop. A failure state says what
+ * happened (the code), what it means (the message the module raised) and the
+ * single command that fixes it, in that order, every time. A code with no
+ * entry here gets the first two and no arrow, which is the honest rendering of
+ * a state nobody has written a fix for yet.
+ */
+const REMEDY = Object.freeze({
+  "usage": "omakit help",
+  "marketplace-unavailable": "omakit pin",
+  "dirty-worktree": "Commit the changes, or pass --allow-dirty to check the tree as it is.",
+  "subject-not-found": "Pass a local Git repository path, or <https url>@<40-char sha>.",
+  "not-a-git-repository": "Pass a local Git repository path, or <https url>@<40-char sha>.",
+  "commit-not-found": "Commit first; the checks read the tree at an exact commit, never the working copy.",
+  "network-unavailable": "Connect to the network, then run it again.",
+  "github-unavailable": "Wait for GitHub, then run it again. `gh auth login` raises the rate limit if that is what ran out.",
+  "not-found": "Check the issue URL: it has to be an existing issue on the marketplace repository.",
+  "head-unreadable": "Check that the plugin repository is public and its URL is right.",
+})
 
+/**
+ * Every failure, in one register, on stderr. `usage` errors carry the
+ * signature that was expected, so the remedy is the reference and not a
+ * restatement of the message.
+ */
 function fail(code, message, exit = 1) {
-  process.stderr.write(`${code}: ${message}\n`)
+  const c = styler(colourEnabled(process.stderr))
+  const lines = [`${mark("fail", c)}${c("bold", code)}`, ...wrap(message, { indent: GUTTER }, c)]
+  if (REMEDY[code]) lines.push(...action(REMEDY[code], c))
+  process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)
+}
+
+/** A thrown error becomes a failure state when it carries a code; anything else is a bug and keeps its stack. */
+function failFrom(error) {
+  if (error?.code && typeof error.code === "string") fail(error.code, error.message, error.code === "usage" ? 2 : 1)
+  throw error
 }
 
 function option(args, name) {
@@ -50,7 +84,8 @@ function emit(args, text) {
   if (out) {
     mkdirSync(dirname(resolve(out)), { recursive: true })
     writeFileSync(resolve(out), text.endsWith("\n") ? text : `${text}\n`)
-    process.stdout.write(`ok - wrote ${resolve(out)}\n`)
+    const c = styler(colourEnabled())
+    process.stdout.write(`${mark("pass", c)}wrote ${resolve(out)}\n`)
   } else {
     process.stdout.write(text.endsWith("\n") ? text : `${text}\n`)
   }
@@ -58,7 +93,7 @@ function emit(args, text) {
 
 async function cmdSubmit(args) {
   const target = positionals(args)[0]
-  if (!target) fail("usage", "submit <target> --category <c> --tags <a,b>", 2)
+  if (!target) fail("usage", "submit needs a target: `omakit submit <target> --category <c> --tags <a,b>`", 2)
   const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   let result
   try {
@@ -76,8 +111,7 @@ async function cmdSubmit(args) {
     })
   } catch (error) {
     spinner.done()
-    if (error?.code) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
-    throw error
+    failFrom(error)
   }
   spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderSubmit(result))
@@ -86,14 +120,16 @@ async function cmdSubmit(args) {
 
 async function cmdWatch(args) {
   const issueUrl = positionals(args)[0]
-  if (!issueUrl) fail("usage", "watch <issue-url>", 2)
+  if (!issueUrl) fail("usage", "watch needs an issue: `omakit watch <issue-url>`", 2)
+  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   let result
   try {
-    result = await pinWatch({ repoRoot: ROOT, issueUrl })
+    result = await pinWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
   } catch (error) {
-    if (error?.code) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
-    throw error
+    spinner.done()
+    failFrom(error)
   }
+  spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderWatch(result))
   process.exit(result.verdict.state === "unknown" ? 2 : 0)
 }
@@ -113,14 +149,16 @@ async function cmdDoctor(args) {
   // repeating it on a command people run repeatedly costs a fraction of a
   // second rather than the second and a half the first version took.
   if (!args.includes("--json")) await banner()
-  const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline") })
+  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
+  const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
+  spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
   process.exit(result.problems ? 1 : 0)
 }
 
 async function cmdVerify(args) {
   const target = positionals(args)[0]
-  if (!target) fail("usage", "verify <path | https-url@sha>", 2)
+  if (!target) fail("usage", "verify needs a target: `omakit verify <path | https-url@sha>`", 2)
   let subject
   try {
     subject = resolveSubject(target, { cacheRoot: resolve(ROOT, ".cache"), allowDirty: args.includes("--allow-dirty") })
@@ -128,12 +166,16 @@ async function cmdVerify(args) {
     if (error instanceof SubjectError) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
     throw error
   }
+  const spinner = progress()
   let section
   try {
+    spinner.phase("running the official security baseline over a local snapshot")
     section = await marketplaceBaselineSection({ repoRoot: ROOT, subject })
   } catch (error) {
-    fail("marketplace-unavailable", error.message)
+    spinner.done()
+    fail(error?.code === "marketplace-unavailable" ? error.code : "baseline-unavailable", error.message)
   }
+  spinner.done()
   emit(args, `${JSON.stringify({
     subject: {
       repository: subject.repository,
@@ -158,11 +200,20 @@ const [command, ...rest] = process.argv.slice(2)
 if (command === "setup") {
   await cmdSetup()
 } else if (command === "pin" || command === "marketplace-pin") {
+  const c = styler(colourEnabled())
+  const spinner = progress()
   try {
-    ensurePin(ROOT, (line) => process.stdout.write(`${line}\n`))
+    ensurePin(ROOT, (line) => {
+      // ensurePin narrates: a state line to keep, then a fetch it is about to
+      // start. The fetch is the slow part, so it gets the progress line.
+      if (line.state === "fetching") spinner.phase(line.text)
+      else process.stdout.write(`${mark(line.state, c)}${wrap(line.text, { indent: GUTTER }, c).join("\n").trimStart()}\n`)
+    })
   } catch (error) {
-    fail("marketplace-unavailable", error.message)
+    spinner.done()
+    fail(error?.code || "marketplace-unavailable", error.message)
   }
+  spinner.done()
 } else if (command === "submit") {
   await cmdSubmit(rest)
 } else if (command === "upgrade") {
@@ -207,7 +258,15 @@ if (command === "setup") {
     process.stdout.write(text)
   }
 } else {
-  // The short list on a typo, not 53 lines of reference.
-  process.stderr.write(`unknown command: ${command}\n\n${renderSummary({ colour: false })}`)
+  // The short list on a typo, not 53 lines of reference, in the same register
+  // as every other failure: what happened, what it means, what to run.
+  const c = styler(colourEnabled(process.stderr))
+  process.stderr.write([
+    `${mark("fail", c)}${c("bold", "unknown command")}`,
+    ...wrap(`\`${command}\` is not something omakit does. The commands it has are listed below.`, { indent: GUTTER }, c),
+    ...action("omakit help", c),
+    "",
+    renderSummary({ colour: colourEnabled(process.stderr), heading: false }),
+  ].join("\n"))
   process.exit(2)
 }
