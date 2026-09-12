@@ -53,6 +53,47 @@ async function loadSubmission(pinDir) {
   return import(pathToFileURL(join(pinDir, "scripts/submission.mjs")).href)
 }
 
+async function loadVerification(pinDir) {
+  return import(pathToFileURL(join(pinDir, "scripts/plugin-verification-request.mjs")).href)
+}
+
+/**
+ * Which repository an issue is about.
+ *
+ * The marketplace has two issue forms and they are not interchangeable. A
+ * `[Plugin]:` submission is read by `extractRepositoryUrl`; a `[Verify]:` update
+ * request has its own headings, and feeding it to the submission parser fails
+ * in a misleading way, because "Repository URL" is a heading both forms use and
+ * the submission parser then runs the section on until the next heading it
+ * happens to recognise. So each form is read by the parser the marketplace
+ * itself uses for it, and the issue says which one it is.
+ */
+async function repositoryFor(pinDir, subject) {
+  const submission = await loadSubmission(pinDir)
+  const verification = await loadVerification(pinDir)
+  const title = String(subject.title || "")
+  const attempts = title.startsWith("[Verify]")
+    ? [
+      ["verify", () => verification.parsePluginVerificationIssue(subject.body).repoUrl],
+      ["verify-legacy", () => verification.parseLegacyListedSnapshotVerificationIssue(subject.body).repoUrl],
+      ["submission", () => submission.extractRepositoryUrl(subject.body)],
+    ]
+    : [
+      ["submission", () => submission.extractRepositoryUrl(subject.body)],
+      ["verify", () => verification.parsePluginVerificationIssue(subject.body).repoUrl],
+    ]
+  const errors = []
+  for (const [kind, read] of attempts) {
+    try {
+      const url = read()
+      if (url) return { url, kind, error: null }
+    } catch (error) {
+      errors.push(`${kind}: ${error.message}`)
+    }
+  }
+  return { url: null, kind: null, error: errors.join("; ") }
+}
+
 /** The short commit the validation comment reports, as a fallback when no baseline marker exists. */
 export function validationCommentCommit(comments) {
   const validation = (comments || [])
@@ -77,18 +118,14 @@ export async function pinWatch({ repoRoot, issueUrl }) {
   }
 
   const record = await loadRecord(pinDir)
-  const submission = await loadSubmission(pinDir)
 
   const subject = await issue(target.owner, target.repository, target.number)
   const comments = await issueComments(target.owner, target.repository, target.number)
 
-  let repositoryUrl = null
-  let repositoryError = null
-  try {
-    repositoryUrl = submission.extractRepositoryUrl(subject.body)
-  } catch (error) {
-    repositoryError = error.message
-  }
+  const read = await repositoryFor(pinDir, subject)
+  const repositoryUrl = read.url
+  const repositoryError = read.error
+  const issueKind = read.kind
 
   let validated = null
   let baselineError = null
@@ -152,7 +189,7 @@ export async function pinWatch({ repoRoot, issueUrl }) {
       lastMaintainerCommentAt: maintainerComments.at(-1)?.created_at || null,
       authenticated: Boolean(token()),
     },
-    plugin: { repository: repositoryUrl, repositoryError },
+    plugin: { repository: repositoryUrl, repositoryError, form: issueKind },
     validated,
     validationCommentFallback: fallback,
     baselineError,
@@ -162,7 +199,7 @@ export async function pinWatch({ repoRoot, issueUrl }) {
   }
 }
 
-export function pinVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview }) {
+export function pinVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl = "unknown" }) {
   if (baselineError) {
     return {
       state: "unknown",
@@ -177,6 +214,13 @@ export function pinVerdict({ comparable, stale, validated, head, fallback, basel
         ? `No security-baseline marker on this issue. Validation reported commit ${fallback.short}, which is too short to compare reliably.`
         : "No automated validation or security baseline has run on this issue yet, so there is no pinned commit.",
       action: fallback ? REFRESH_ACTION : "Wait for the automated validation to run, or edit the issue body to trigger it.",
+    }
+  }
+  if (!repositoryUrl) {
+    return {
+      state: "unknown",
+      summary: `The validated commit is ${validated.commit}, but no plugin repository could be read from this issue, so there is nothing to compare it with.`,
+      action: null,
     }
   }
   if (headError || !head) {

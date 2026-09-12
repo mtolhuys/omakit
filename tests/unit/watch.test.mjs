@@ -5,6 +5,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { pinVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
+import { readFileSync } from "node:fs"
 
 const A = "a".repeat(40)
 const B = "b".repeat(40)
@@ -91,4 +92,28 @@ test("the short commit is read out of the validation comment as a fallback", () 
   assert.deepEqual(validationCommentCommit(comments), { short: "f16bb9b", createdAt: "2026-09-01T00:00:00Z" })
   assert.equal(validationCommentCommit([{ body: "no marker" }]), null)
   assert.equal(validationCommentCommit([]), null)
+})
+
+test("a missing repository URL is reported as that, not as an unreadable HEAD", () => {
+  const verdict = pinVerdict({
+    comparable: false, stale: null, validated: { commit: A }, head: null, fallback: null,
+    baselineError: null, headError: null, pushedAfterReview: false, repositoryUrl: null,
+  })
+  assert.equal(verdict.state, "unknown")
+  assert.match(verdict.summary, /no plugin repository could be read from this issue/)
+  assert.doesNotMatch(verdict.summary, /HEAD could not be read/)
+})
+
+test("the two marketplace issue forms are read by their own parser", () => {
+  // `[Verify]:` update requests share the "Repository URL" heading with the
+  // submission form but not the rest, so the submission parser runs that section
+  // on until the next heading it recognises and rejects the result. Measured on
+  // two real open update requests, which reported PIN UNKNOWN until each form
+  // was read with the parser the marketplace uses for it.
+  const source = readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8")
+  assert.match(source, /parsePluginVerificationIssue/)
+  assert.match(source, /parseLegacyListedSnapshotVerificationIssue/)
+  assert.match(source, /extractRepositoryUrl/)
+  // And the form actually used is reported, so nobody has to guess which parser won.
+  assert.match(source, /form: issueKind/)
 })

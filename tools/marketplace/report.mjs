@@ -91,6 +91,9 @@ export function renderWatch(result, { width = 78, colour = colourEnabled() } = {
   out.push(`${c("grey", "title       ")} ${result.read.title}`)
   if (result.read.labels.length) out.push(`${c("grey", "labels      ")} ${result.read.labels.join(", ")}`)
   out.push(`${c("grey", "plugin repo ")} ${result.plugin.repository || `unreadable: ${result.plugin.repositoryError}`}`)
+  if (result.plugin.form === "verify" || result.plugin.form === "verify-legacy") {
+    out.push(`${c("grey", "form        ")} plugin update request, read with the marketplace's verification parser`)
+  }
   out.push("")
   if (result.validated) {
     out.push(`${c("grey", "validated   ")} ${c("bold", result.validated.commit)}`)
