@@ -1,29 +1,26 @@
 # omakit
 
-Everything knowable about an Omarchy Quattro plugin submission, before you post
-it. And, afterwards, why it is sitting still.
+**Everything knowable about an Omarchy Quattro plugin submission, before you
+post it. And afterwards, why it is sitting still.**
 
-Agent-first: the expected user is a coding agent submitting a plugin on an
-owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
-Read-only against the marketplace, and it never posts anything.
+![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
 
 ```bash
 omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
 ```
 
-![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
+Fifteen checks, each naming its source and, when it fails, the measured reason it
+exists. A blocking failure produces no submission body at all, because a refusal
+that still hands you the body is only a suggestion. The plugin above is fine
+except that it ships instruction files an agent will read once installed: 103
+marketplace issues mention exactly that, and no automated check reports it, so
+today an author finds out from a human review round.
 
-Fifteen checks. Every one names its source and, when it fails, the measured
-reason it exists. A blocking failure produces no submission body at all, because
-a refusal that still hands you the body is only a suggestion. Here the plugin is
-fine except that it ships instruction files an agent will read once installed:
-103 marketplace issues mention exactly that, and no automated check reports it.
+![omakit watch reporting that a review pin has gone stale](docs/media/watch.gif)
 
 ```bash
 omakit watch <submission-issue-url>
 ```
-
-![omakit watch reporting that a review pin has gone stale](docs/media/watch.gif)
 
 That submission passed validation and passed the security baseline with zero
 findings. It is stuck because the review is pinned to one exact commit, and the
@@ -31,6 +28,10 @@ only action that moves that pin is editing the issue body. Pushing the fix does
 nothing. Commenting "fixed in `abc123`" does nothing. **73% of the 464
 submissions parked in their author's court have a default-branch HEAD the
 marketplace never saw.**
+
+Agent-first: the expected user is a coding agent submitting a plugin on an
+owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
+Read-only against the marketplace, and it never posts anything.
 
 ## Install
 
