@@ -1,8 +1,16 @@
-// The one home of the marketplace pin (ADR-021, docs/MARKETPLACE.md rule 1).
-// The checkout is a read-only clone at this exact commit under
-// .cache/marketplace; `omakit marketplace-pin` creates or verifies it.
+// The one home of the marketplace pin (docs/MARKETPLACE.md). The checkout is a
+// read-only clone at this exact commit under .cache/marketplace; `omakit pin`
+// creates or verifies it.
+//
+// It fetches only what omakit reads. The marketplace at this commit is 325 MB,
+// of which 168 MB is preview imagery and 151 MB is history, and omakit reads
+// seven files out of it. A blob-filtered, sparsely checked out fetch of just
+// those paths is 16 MB and takes 2 seconds instead of 17. PIN_PATHS below is the
+// whole list, and tests/unit/pin.test.mjs fails if any module starts reading a
+// path outside it, because on a partial clone such a read would quietly reach
+// for the network instead of failing.
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 export const MARKETPLACE_PIN = Object.freeze({
@@ -12,6 +20,26 @@ export const MARKETPLACE_PIN = Object.freeze({
   baselineVersion: "3",
   enforcementMode: "selective",
 })
+
+/**
+ * Everything omakit reads out of the pinned checkout, as sparse-checkout
+ * patterns. Anything not listed here is never fetched.
+ *
+ *   /scripts/                     the official submission parser, baseline
+ *                                 scanner, policy, report and record modules,
+ *                                 and build-catalog.mjs read as text for the
+ *                                 reserved plugin-id namespace. Taken whole
+ *                                 because those modules import each other.
+ *   /registry.json                retired plugin ids, listed repositories
+ *   /site/catalog.json            listed plugin ids
+ *   /.github/ISSUE_TEMPLATE/      the submission form: the whole contract
+ */
+export const PIN_PATHS = Object.freeze([
+  "/scripts/",
+  "/registry.json",
+  "/site/catalog.json",
+  "/.github/ISSUE_TEMPLATE/",
+])
 
 export function marketplacePinDir(repoRoot) {
   const configured = process.env.OMAKIT_MARKETPLACE_PIN
@@ -72,10 +100,36 @@ export function ensurePin(repoRoot, log = () => {}) {
     git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
     log(`clone - ${MARKETPLACE_PIN.repository} @ ${MARKETPLACE_PIN.commit} into ${dir}`)
   }
-  git(dir, ["fetch", "-q", "--depth", "1", "origin", MARKETPLACE_PIN.commit], { stdio: ["ignore", "pipe", "inherit"] })
+  // Written as plumbing rather than through `git sparse-checkout`, so the
+  // result does not depend on the git version's cone-mode defaults.
+  git(dir, ["config", "core.sparseCheckout", "true"])
+  mkdirSync(join(dir, ".git/info"), { recursive: true })
+  writeFileSync(join(dir, ".git/info/sparse-checkout"), `${PIN_PATHS.join("\n")}\n`)
+  git(dir, ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", MARKETPLACE_PIN.commit], { stdio: ["ignore", "pipe", "inherit"] })
   git(dir, ["checkout", "-q", "--detach", MARKETPLACE_PIN.commit])
   const identity = readPinIdentity(dir)
   if (identity.commit !== MARKETPLACE_PIN.commit) throw new Error(`marketplace-unavailable: checkout ended at ${identity.commit}`)
-  log(`ok - marketplace pin ${identity.commit} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}`)
+  log(`ok - marketplace pin ${identity.commit} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}, ${pinDiskUsage(dir)}`)
   return { dir, identity, fetched: true }
+}
+
+/** Human-readable size of the pinned checkout, for `omakit pin` and `omakit doctor`. */
+export function pinDiskUsage(dir) {
+  try {
+    const output = execFileSync("du", ["-sk", dir], { encoding: "utf8" }).split(/\s+/)[0]
+    const mib = Number(output) / 1024
+    return `${mib < 10 ? mib.toFixed(1) : Math.round(mib)} MB on disk`
+  } catch {
+    return "size unknown"
+  }
+}
+
+/** True when the checkout was fetched with only PIN_PATHS, as a fresh one is. */
+export function pinIsSparse(dir) {
+  try {
+    const enabled = execFileSync("git", ["-C", dir, "config", "--get", "core.sparseCheckout"], { encoding: "utf8" }).trim()
+    return enabled === "true"
+  } catch {
+    return false
+  }
 }

@@ -14,7 +14,8 @@
   "scripts": {
     "pin": "node tools/marketplace/cli.mjs pin",
     "test": "node --test tests/unit/*.test.mjs",
-    "parity": "node tools/marketplace/cli.mjs parity --count 30"
+    "parity": "node tools/marketplace/cli.mjs parity --count 30",
+    "doctor": "node tools/marketplace/cli.mjs doctor"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,6 @@
   "files": [
     "bin",
     "tools",
-    "skills",
-    "docs"
+    "skills"
   ]
 }

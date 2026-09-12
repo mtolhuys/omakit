@@ -11,7 +11,7 @@
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
 // proves it.
 
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
@@ -19,7 +19,9 @@ import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
 import { pinWatch } from "./watch.mjs"
-import { renderSubmit, renderWatch } from "./report.mjs"
+import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
+import { doctor } from "./doctor.mjs"
+import { progress } from "./progress.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -43,6 +45,14 @@ const USAGE = `omakit: marketplace submit preflight for Omarchy Quattro plugins
   omakit verify <target> [--allow-dirty] [--out <file>]
       The official marketplace security baseline over the local Git transport,
       reported verbatim beside the pin identity.
+
+  omakit help --agent
+      The operating instructions for a coding agent, printed from skills/, so an
+      agent can read the contract out of the tool instead of the repository.
+
+  omakit doctor [--offline] [--json]
+      What is installed, what is pinned, and what has moved since. Reads and
+      prints; it installs nothing and never moves the pin.
 
   omakit parity [--count <n>] [--offset <n>]
       The official baseline over GitHub versus the local transport on real
@@ -84,11 +94,13 @@ function emit(args, text) {
 async function cmdSubmit(args) {
   const target = positionals(args)[0]
   if (!target) fail("usage", "submit <target> --category <c> --tags <a,b>", 2)
+  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   let result
   try {
     result = await submitPreflight({
       repoRoot: ROOT,
       target,
+      onPhase: spinner.phase,
       category: option(args, "--category"),
       tags: option(args, "--tags"),
       notes: option(args, "--notes"),
@@ -98,9 +110,11 @@ async function cmdSubmit(args) {
       offline: args.includes("--offline"),
     })
   } catch (error) {
+    spinner.done()
     if (error?.code) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
     throw error
   }
+  spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderSubmit(result))
   process.exit(result.ready ? 0 : 1)
 }
@@ -117,6 +131,12 @@ async function cmdWatch(args) {
   }
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderWatch(result))
   process.exit(result.verdict.state === "unknown" ? 2 : 0)
+}
+
+async function cmdDoctor(args) {
+  const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline") })
+  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
+  process.exit(result.problems ? 1 : 0)
 }
 
 async function cmdVerify(args) {
@@ -164,6 +184,8 @@ if (command === "pin" || command === "marketplace-pin") {
   }
 } else if (command === "submit") {
   await cmdSubmit(rest)
+} else if (command === "doctor") {
+  await cmdDoctor(rest)
 } else if (command === "watch") {
   await cmdWatch(rest)
 } else if (command === "verify") {
@@ -171,7 +193,24 @@ if (command === "pin" || command === "marketplace-pin") {
 } else if (command === "parity") {
   await cmdParity(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
-  process.stdout.write(USAGE)
+  if (rest.includes("--agent")) {
+    // The skills ship in the npm package, so this works from a global install
+    // with no repository checked out.
+    const dir = resolve(ROOT, "skills")
+    const parts = []
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const file = entry.isDirectory() ? resolve(dir, entry.name, "SKILL.md") : resolve(dir, entry.name)
+      if (!file.endsWith(".md")) continue
+      try {
+        parts.push(readFileSync(file, "utf8").trim())
+      } catch {
+        // A skill directory without a SKILL.md is not an error worth failing on.
+      }
+    }
+    process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
+  } else {
+    process.stdout.write(USAGE)
+  }
 } else {
   process.stderr.write(`unknown command: ${command}\n\n${USAGE}`)
   process.exit(2)

@@ -56,13 +56,22 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     for (const primitive of ["cpSync", "copyFileSync", "copyFile", "renameSync", "symlinkSync", "linkSync"]) {
       assert.ok(!new RegExp(`\\b${primitive}\\s*\\(`).test(text), `${path} uses ${primitive}`)
     }
-    // Writes are allowed only to an explicit --out path or to docs/evidence.
-    for (const match of text.matchAll(/writeFileSync\(\s*([^,]+),/g)) {
+    // Writes are allowed to an explicit --out path, to docs/evidence, and to the
+    // pinned checkout's own .git/info (the sparse-checkout file, which is how
+    // the pin fetches only what omakit reads). Nothing else, and never into a
+    // subject.
+    // The capture takes the rest of the line, because a target like
+    // join(dir, ".git/info/x") contains a comma of its own.
+    for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence/.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out nor an evidence path`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info/.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, nor the pin's own .git/info`,
       )
+    }
+    // And that allowance is only for the pin directory, not for any directory.
+    for (const match of text.matchAll(/writeFileSync\(join\((\w+), "\.git\/info/g)) {
+      assert.equal(match[1], "dir", `${path} writes a sparse-checkout file somewhere other than the pin directory`)
     }
     // And never into the subject's own directory.
     assert.doesNotMatch(text, /writeFileSync\([^)]*subject\.dir/, `${path} writes into the subject directory`)
@@ -75,8 +84,15 @@ test("the command surface is exactly the submission scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["pin", "marketplace-pin", "submit", "watch", "verify", "parity", "help", "--help", "-h"]),
+    new Set(["pin", "doctor", "marketplace-pin", "submit", "watch", "verify", "parity", "help", "--help", "-h"]),
   )
+  // doctor reports and prints. It must not be able to change anything, which is
+  // the difference between it and the `upgrade` command this tool deliberately
+  // does not have.
+  const doctorSource = readFileSync(join(REPO_ROOT, "tools/marketplace/doctor.mjs"), "utf8")
+  for (const name of ["writeFileSync", "mkdirSync", "rmSync", "ensurePin"]) {
+    assert.ok(!doctorSource.includes(name), `doctor.mjs uses ${name}; it must only read`)
+  }
   for (const forbidden of ["scaffold", "new", "init", "vendor", "template", "generate", "install"]) {
     assert.ok(!commands.includes(forbidden), `the CLI offers a ${forbidden} command`)
   }

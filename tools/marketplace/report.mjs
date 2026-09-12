@@ -122,3 +122,21 @@ export function renderWatch(result, { width = 78, colour = colourEnabled() } = {
   )))
   return out.join("\n")
 }
+
+const DOCTOR_MARK = { ok: "ok    ", advice: "note  ", problem: "PROBLEM", info: "      ", unknown: "?     " }
+
+export function renderDoctor(result, { width = 78, colour = colourEnabled() } = {}) {
+  const c = styler(colour)
+  const out = []
+  for (const check of result.checks) {
+    const tint = { ok: "green", advice: "yellow", problem: "red.bold", unknown: "yellow", info: "grey" }[check.state] || "grey"
+    out.push(`${c(tint, DOCTOR_MARK[check.state] || "      ")} ${c("bold", check.id)}`)
+    out.push(wrap(check.detail, width, "        "))
+    if (check.action) out.push(c("cyan", wrap(check.action, width, "        ")))
+    out.push("")
+  }
+  out.push(result.problems
+    ? c("red.bold", `${result.problems} problem(s) to fix before omakit can run.`)
+    : c("green", "Ready."))
+  return out.join("\n")
+}

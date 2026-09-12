@@ -51,10 +51,18 @@ function check(id, fields) {
  */
 export async function submitPreflight(options) {
   const { repoRoot } = options
+  // Optional: called with the name of the step about to run, so a terminal can
+  // say what is happening. Never affects what is produced.
+  const phase = options.onPhase || (() => {})
+
+  phase("verifying the pinned marketplace checkout")
   const { identity: pinIdentity } = requirePin(repoRoot)
+  phase("reading the submission contract from the pin")
   const contract = await submissionContract({ repoRoot })
+  phase("reading the listed and retired plugin ids")
   const universe = idUniverse({ repoRoot })
 
+  phase("resolving the subject commit")
   let subject
   try {
     subject = resolveSubject(options.target, {
@@ -66,6 +74,7 @@ export async function submitPreflight(options) {
     throw error
   }
 
+  phase("reading the installable tree at that commit")
   const entries = readTree(subject.dir, subject.commit)
   const tree = inspectTree({ dir: subject.dir, entries })
   const checks = []
@@ -223,6 +232,7 @@ export async function submitPreflight(options) {
   let head = null
   let headError = null
   if (!options.offline && subject.repository.url) {
+    phase("reading the repository's default-branch HEAD")
     try {
       head = await defaultBranchHead(subject.repository.url)
     } catch (error) {
@@ -247,7 +257,9 @@ export async function submitPreflight(options) {
 
   // --- the baseline preflight ----------------------------------------------
 
+  phase("running the official security baseline over a local snapshot")
   const preflight = await baselinePreflight({ repoRoot, subject })
+  phase("assembling the submission")
   const consequence = preflight.consequence
   const baselineBlocking = Boolean(consequence?.blocksApproval) || Boolean(preflight.refusal)
   checks.push(check("baseline.preflight", {

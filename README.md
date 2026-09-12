@@ -33,18 +33,55 @@ Agent-first: the expected user is a coding agent submitting a plugin on an
 owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 Read-only against the marketplace, and it never posts anything.
 
-## Install
+## Getting started
 
-Node 22 or newer, and `git`.
+Three commands. The third one is the tool doing its job.
 
 ```bash
-git clone https://github.com/mtolhuys/omakit
-cd omakit
-./bin/omakit pin      # fetches the pinned marketplace checkout into .cache/
-./bin/omakit help
+git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
+ln -s ~/.local/share/omakit/bin/omakit ~/.local/bin/omakit
+omakit pin
 ```
 
-`GITHUB_TOKEN` is optional, read-only, and never written to disk.
+`omakit pin` fetches the marketplace checkout that every rule is read from. It
+takes about 2 seconds and 16 MB, because it fetches only the seven files omakit
+reads out of it rather than the 325 MB the repository is at that commit. Then:
+
+```bash
+omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
+```
+
+| Needs | Why |
+| --- | --- |
+| Node 22 or newer | the tool is plain ESM with no dependencies and no build step |
+| `git` | the pin, and reading a subject's tree at an exact commit |
+| network, once | `omakit pin`. After that, `submit` and `verify` need none at all |
+| 16 MB on disk | the pinned checkout, in `.cache/` beside the tool |
+
+`GITHUB_TOKEN` is optional, read-only, and never written to disk. `watch` and
+`parity` use it to avoid GitHub's unauthenticated rate limit; `submit` and
+`verify` never touch the network.
+
+```bash
+omakit doctor        # what is installed, what is pinned, and what has moved
+omakit help --agent  # the operating instructions, for the agent running this
+```
+
+## Updating
+
+There is deliberately no `omakit upgrade`, because two different things could
+mean "upgrade" here and only one of them may ever move on its own.
+
+**The tool** updates the way it was installed: `git -C ~/.local/share/omakit
+pull`. Nothing in omakit fetches and executes its own replacement.
+
+**The pin** does not move by itself, ever. Bumping it changes where the
+submission contract and the baseline policy are read from, and the procedure in
+[docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) ends in re-proving
+transport parity and committing the evidence. `omakit doctor` tells you when the
+pin is behind the marketplace's current branch and then leaves it alone. That the
+pin can go stale unnoticed is the same defect class `omakit watch` reports, so it
+would be poor form to hide it here.
 
 ## What it is doing
 
