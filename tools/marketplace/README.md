@@ -21,7 +21,7 @@ local commit through the transport seam the marketplace tests itself
 | `issue.mjs` | Renders the issue the way the form would, then has the marketplace's own parser judge it. |
 | `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. |
 | `watch.mjs` | The validation watch: validated commit versus current default-branch HEAD, and the one action that refreshes it. |
-| `github.mjs` | Read-only GitHub access. GET only. The token comes from the environment and is never written anywhere. |
+| `github.mjs` | Read-only GitHub access. GET only. The credential is your `gh` login, read through one frozen `gh auth token` call, and is never written anywhere. |
 | `style.mjs` | The visual system, defined once: the palette, the status vocabulary, the block ramp, the columns, the motion budgets, and the composition helpers every command draws with. `docs/TUI.md` explains it. |
 | `report.mjs` | Text rendering of submit, watch and doctor for the agent that runs this tool, and the person reading over its shoulder. |
 | `usage.mjs` | The help text, as data. |

@@ -58,12 +58,12 @@ omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
 | 16 MB on disk | the pinned checkout, in `.cache/` beside the tool |
 
 There is nothing to authenticate. If you have `gh auth login` done, omakit
-reads that credential for GET requests and stores nothing (a token in `GH_TOKEN`
-or `GITHUB_TOKEN` reaches it the same way, because `gh` honours those itself);
-without a login, `watch` and `parity` share GitHub's 60-requests-an-hour
-unauthenticated allowance and `submit` and `verify` do not touch the network at
-all. omakit reads no environment variable of its own. `omakit doctor` says which of the
-three you are on.
+reads that credential for GET requests and stores nothing; a token in
+`GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
+those itself. Without a login, `watch` and `parity` share GitHub's
+60-requests-an-hour unauthenticated allowance, and `submit` and `verify` do
+not touch the network at all. omakit reads no environment variable of its own,
+and `omakit doctor` says which of the two you are on.
 
 ```bash
 omakit doctor        # what is installed, what is pinned, and what has moved
@@ -186,7 +186,7 @@ review writing. The rest of the benefit is the submitter's.
 ## Evidence, not claims
 
 ```bash
-npm test        # 130 tests, node --test, no dependencies
+npm test        # 150 tests, node --test, no dependencies
 ```
 
 | Claim | Proof |
