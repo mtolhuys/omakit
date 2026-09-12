@@ -30,7 +30,9 @@ const RULE = "\u2581"
 export const GLYPHS = Object.freeze({
   a: [" ## ", "#  #", "####", "#  #", "#  #"],
   c: [" ###", "#   ", "#   ", "#   ", " ###"],
-  i: ["#", "#", "#", "#", "#"],
+  // Three wide with bars, not a single stroke: a one-column i is ambiguous next
+  // to a k, and the wordmark reads as capitals anyway.
+  i: ["###", " # ", " # ", " # ", "###"],
   k: ["#  #", "# # ", "##  ", "# # ", "#  #"],
   m: ["#   #", "## ##", "# # #", "#   #", "#   #"],
   n: ["#  #", "## #", "# ##", "#  #", "#  #"],
@@ -66,11 +68,15 @@ export function bannerEnabled(stream = process.stdout, env = process.env) {
 }
 
 /**
- * One frame of the scan: columns left of the head are lit, the head is bright,
- * columns right of it are not yet revealed. `head` beyond the width returns the
- * finished wordmark.
+ * One frame of the scan.
+ *
+ * `band` is where the bright head sits. `revealed` is how far the wordmark has
+ * been drawn at all; columns beyond it are blank. The reveal pass moves both
+ * together, and the shine pass afterwards moves the band across a wordmark that
+ * is already complete. Defaulting `revealed` to `band` keeps the reveal-only
+ * call shape.
  */
-export function frame(rows, head) {
+export function frame(rows, band, revealed = band) {
   const width = Math.max(...rows.map((row) => row.length))
   return rows.map((row) => {
     let out = ""
@@ -79,13 +85,13 @@ export function frame(rows, head) {
       // Unrevealed columns, and blanks inside revealed ones, are plain spaces.
       // A colour code is only ever emitted for a block that is actually drawn,
       // so a frame carries no escape it does not use.
-      const lit = column <= head && row[column] === "#"
+      const lit = column <= revealed && row[column] === "#"
       if (!lit) {
         if (tint) { out += RESET; tint = "" }
         out += " "
         continue
       }
-      const wanted = column >= head - 1 ? HEAD : LIT
+      const wanted = column >= band - 1 && column <= band ? HEAD : LIT
       if (tint !== wanted) { out += wanted; tint = wanted }
       out += BLOCK
     }
@@ -115,15 +121,27 @@ export async function banner(options = {}) {
   const up = () => stream.write(`${ESC}${GLYPH_ROWS}A`)
 
   if (options.animate === false) {
-    write(frame(rows, width + 2))
+    write(frame(rows, -2, width + 2))
   } else {
-    for (let head = 0; head <= width + 1; head += 1) {
-      write(frame(rows, head))
-      if (head <= width) {
-        await new Promise((resolve) => setTimeout(resolve, 22))
-        up()
+    const step = async (band, revealed, delay) => {
+      write(frame(rows, band, revealed))
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      up()
+    }
+    // Pass one: the scanner builds the name as it crosses.
+    for (let band = 0; band <= width; band += 1) await step(band, band, 22)
+    // Then it passes back and forth over the finished name, which is the same
+    // sweep the progress line uses while the baseline runs.
+    const shines = options.shines ?? 2
+    for (let pass = 0; pass < shines; pass += 1) {
+      const from = pass % 2 === 0 ? width : 0
+      const to = pass % 2 === 0 ? 0 : width
+      const direction = from > to ? -1 : 1
+      for (let band = from; band !== to + direction; band += direction) {
+        await step(band, width + 2, 14)
       }
     }
+    write(frame(rows, -2, width + 2))
   }
   stream.write(`${rule}\n`)
   if (tagline) stream.write(`${tagline}\n`)

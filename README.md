@@ -1,7 +1,11 @@
-# omakit
+<p align="center">
+  <img src="docs/media/banner.gif" alt="omakit" width="620">
+</p>
 
-**Everything knowable about an Omarchy Quattro plugin submission, before you
-post it. And afterwards, why it is sitting still.**
+<p align="center">
+  <strong>Everything knowable about an Omarchy Quattro plugin submission, before
+  you post it. And afterwards, why it is sitting still.</strong>
+</p>
 
 ![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
 
@@ -42,6 +46,8 @@ git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
 ln -s ~/.local/share/omakit/bin/omakit ~/.local/bin/omakit
 omakit setup
 ```
+
+![omakit setup checking the environment and fetching the pinned checkout](docs/media/setup.gif)
 
 `omakit setup` checks the environment, fetches the marketplace checkout that
 every rule is read from, and tells you what to try first. It is idempotent. The

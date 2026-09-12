@@ -1,0 +1,16 @@
+{
+  "title": "omakit setup",
+  "width": 100,
+  "rows": 28,
+  "typing": 6,
+  "steps": [
+    {
+      "command": "omakit setup",
+      "replay": {
+        "out": "docs/media/captures/setup.out",
+        "timing": "docs/media/captures/setup.tim"
+      },
+      "hold": 380
+    }
+  ]
+}

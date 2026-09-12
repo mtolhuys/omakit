@@ -1,0 +1,16 @@
+{
+  "title": "omakit",
+  "width": 60,
+  "rows": 8,
+  "chrome": false,
+  "fontSize": 24,
+  "steps": [
+    {
+      "replay": {
+        "out": "docs/media/captures/banner.out",
+        "timing": "docs/media/captures/banner.tim"
+      },
+      "hold": 420
+    }
+  ]
+}

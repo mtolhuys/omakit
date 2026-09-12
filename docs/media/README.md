@@ -1,7 +1,23 @@
 # The GIFs in the README
 
-Both are real, unedited program output. Nothing in them was typed by hand,
-reordered or rewritten, and they are reproducible from this repository.
+All four are real, unedited program output. Nothing in them was typed by hand,
+reordered or rewritten, and they are reproducible from this repository: rendering
+them again from the committed scenes and captures produces byte-identical files.
+
+| GIF | What it is | How it was captured |
+| --- | --- | --- |
+| `banner.gif` | the wordmark scanning in, then two shine passes | a terminal session with timings |
+| `setup.gif` | `omakit setup` on a machine with no pin yet | a terminal session with timings |
+| `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
+| `watch.gif` | `omakit watch` on a real open submission with a stale pin | stdout, revealed line by line |
+
+Two capture kinds, because the two need different things. `submit` and `watch`
+print once and never redraw, so their stdout is enough and the renderer reveals
+it line by line at a readable pace. `banner` and `setup` animate in place with
+carriage returns and cursor-up, so they are recorded with `script --log-out
+--log-timing` and replayed against a small line-oriented screen model at the real
+recorded delays. That replay is why the scanner in `banner.gif` moves at the
+speed the program actually draws it.
 
 ## How they were made
 
@@ -27,16 +43,34 @@ FORCE_COLOR=1 GITHUB_TOKEN=... ./bin/omakit watch \
   > docs/media/captures/watch-stale.ansi 2>&1
 ```
 
+The two animated ones are recorded with their timings:
+
+```bash
+script -q --log-out docs/media/captures/banner.out \
+          --log-timing docs/media/captures/banner.tim \
+  -c 'node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"marketplace submit preflight for Omarchy Quattro plugins\" })"'
+
+rm -rf .cache/marketplace   # so setup has something to do
+script -q --log-out docs/media/captures/setup.out \
+          --log-timing docs/media/captures/setup.tim \
+  -c "NODE_NO_WARNINGS=1 ./bin/omakit setup"
+```
+
 Then, from the repository root:
 
 ```bash
-python3 docs/media/render.py docs/media/submit.scene.json docs/media/submit.gif
-python3 docs/media/render.py docs/media/watch.scene.json  docs/media/watch.gif
+for scene in banner setup submit watch; do
+  python3 docs/media/render.py docs/media/$scene.scene.json docs/media/$scene.gif
+done
 ```
 
 `render.py` is documentation tooling, not part of omakit: it needs Pillow and
-ffmpeg, which omakit itself does not. It types the command, reveals the captured
-lines, and scrolls. It cannot draw a character that is not in the capture.
+ffmpeg, which omakit itself does not. It cannot draw a character that is not in
+the capture. Its line height is set to the exact height of a full block glyph, so
+block-drawn letters join up instead of breaking into a dot matrix, and it slices
+the capture by the byte counts the timing log records rather than by characters,
+because a block character is three bytes and slicing by characters tears escape
+sequences in half.
 
 ## The one thing that is left out
 

@@ -88,7 +88,14 @@ test("every GIF in docs/media has the capture and scene it was rendered from", (
     assert.ok(files.includes(`docs/media/${name}.scene.json`), `${path} has no scene file`)
     const scene = JSON.parse(readFileSync(join(REPO_ROOT, `docs/media/${name}.scene.json`), "utf8"))
     for (const step of scene.steps) {
-      assert.ok(files.includes(step.capture), `${path} references a capture that is not committed: ${step.capture}`)
+      // Two kinds of step: a captured stdout revealed line by line, and a
+      // replayed terminal session with its own timing log. Both must be
+      // committed, or the recording stops being reproducible.
+      const referenced = step.replay ? [step.replay.out, step.replay.timing] : [step.capture]
+      for (const capture of referenced) {
+        assert.ok(capture, `${path} has a step with nothing to replay`)
+        assert.ok(files.includes(capture), `${path} references a capture that is not committed: ${capture}`)
+      }
     }
   }
   assert.ok(files.includes("docs/media/render.py"), "the renderer must be committed too")

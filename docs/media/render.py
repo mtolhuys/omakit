@@ -18,6 +18,7 @@ A scene file is {"title", "width", "rows", "steps": [{"command", "capture",
 "hold"}]}.
 """
 
+import codecs
 import json
 import re
 import shutil
@@ -31,7 +32,10 @@ from PIL import Image, ImageDraw, ImageFont
 FONT_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
 FONT_SIZE = 14
-LINE_HEIGHT = 19
+# A full block at 14px is 18px tall. The line height matches it exactly, so
+# block-drawn letters join up instead of breaking into a dot matrix. Any looser
+# and the wordmark stops reading as letters.
+LINE_HEIGHT = 18
 PAD_X = 18
 PAD_TOP = 34
 PAD_BOTTOM = 14
@@ -105,37 +109,157 @@ def measure(font, text):
     return font.getlength(text)
 
 
-def frame(title, cols, rows, lines, cursor=None):
-    """Draw one frame: window chrome plus `rows` rows of `lines`."""
-    regular = ImageFont.truetype(FONT_REGULAR, FONT_SIZE)
-    bold = ImageFont.truetype(FONT_BOLD, FONT_SIZE)
+def frame(title, cols, rows, lines, cursor=None, size=FONT_SIZE, chrome=True):
+    """Draw one frame: optional window chrome plus `rows` rows of `lines`."""
+    regular = ImageFont.truetype(FONT_REGULAR, size)
+    bold = ImageFont.truetype(FONT_BOLD, size)
+    line_height = ImageFont.truetype(FONT_REGULAR, size).getbbox("\u2588")[3] + 1
+    pad_top = PAD_TOP if chrome else 14
     width = int(PAD_X * 2 + measure(regular, "M" * cols))
-    height = PAD_TOP + rows * LINE_HEIGHT + PAD_BOTTOM
+    height = pad_top + rows * line_height + PAD_BOTTOM
     image = Image.new("RGB", (width, height), BG)
     draw = ImageDraw.Draw(image)
 
-    draw.rectangle([0, 0, width - 1, PAD_TOP - 10], fill=CHROME)
-    draw.line([(0, PAD_TOP - 10), (width, PAD_TOP - 10)], fill=BORDER)
-    for index, colour in enumerate(DOTS):
-        x = 14 + index * 16
-        draw.ellipse([x, 8, x + 9, 17], fill=colour)
-    draw.text(
-        (width // 2 - measure(regular, title) // 2, 5),
-        title,
-        font=ImageFont.truetype(FONT_REGULAR, 12),
-        fill=ANSI[90],
-    )
+    if chrome:
+        draw.rectangle([0, 0, width - 1, pad_top - 10], fill=CHROME)
+        draw.line([(0, pad_top - 10), (width, pad_top - 10)], fill=BORDER)
+        for index, colour in enumerate(DOTS):
+            x = 14 + index * 16
+            draw.ellipse([x, 8, x + 9, 17], fill=colour)
+        draw.text(
+            (width // 2 - measure(regular, title) // 2, 5),
+            title,
+            font=ImageFont.truetype(FONT_REGULAR, 12),
+            fill=ANSI[90],
+        )
 
     for row, line in enumerate(lines[-rows:]):
-        y = PAD_TOP + row * LINE_HEIGHT
+        y = pad_top + row * line_height
         x = PAD_X
         for text, colour, is_bold in spans(line):
             font = bold if is_bold else regular
             draw.text((x, y), text, font=font, fill=BRIGHT if is_bold and colour == FG else colour)
             x += measure(font, text)
         if cursor is not None and row == len(lines[-rows:]) - 1 and cursor:
-            draw.rectangle([x + 1, y + 2, x + int(measure(regular, "M")), y + LINE_HEIGHT - 3], fill=FG)
+            draw.rectangle([x + 1, y + 2, x + int(measure(regular, "M")), y + line_height - 3], fill=FG)
     return image
+
+
+SEQ = re.compile(r"\x1b\[([0-9;]*)([A-Za-z])")
+
+
+def replay(out_path, timing_path, min_delay=3, max_delay=260):
+    """Turn a `script --log-out --log-timing` capture into (screen, delay) frames.
+
+    The screen model is line oriented on purpose, because that is exactly how
+    this tool draws: the wordmark rewrites its five rows in place and the
+    progress line rewrites itself. Carriage return, erase-line and cursor-up are
+    honoured; anything else is passed through into the line, where the SGR parser
+    that draws a frame handles it. Consecutive identical screens are collapsed,
+    so one frame is one visible change, and the delays are the real ones the
+    capture recorded rather than a guess.
+    """
+    # The timing log counts BYTES, and a block character is three of them, so the
+    # capture is sliced as bytes and decoded incrementally. Slicing the decoded
+    # string instead drifts and tears escape sequences in half, which shows up as
+    # a wordmark that never finishes redrawing.
+    data = Path(out_path).read_bytes()
+    decoder = codecs.getincrementaldecoder("utf-8")("replace")
+    chunks = []
+    for line in Path(timing_path).read_text().splitlines():
+        delay, _, count = line.partition(" ")
+        try:
+            chunks.append((float(delay), int(count)))
+        except ValueError:
+            continue
+
+    # `fresh` is separate from the column on purpose: an SGR sequence writes no
+    # cell, so it must not advance the column, but the line must still count as
+    # started or the next character would overwrite the colour code.
+    lines, row, column, fresh = [""], 0, 0, True
+    frames, at = [], 0
+
+    def screen():
+        return list(lines)
+
+    def feed(text):
+        nonlocal row, column, fresh
+        index = 0
+        while index < len(text):
+            char = text[index]
+            if char == "\n":
+                row += 1
+                column, fresh = 0, True
+                while len(lines) <= row:
+                    lines.append("")
+                index += 1
+                continue
+            if char == "\r":
+                column, fresh = 0, True
+                index += 1
+                continue
+            if char == "\x1b":
+                match = SEQ.match(text, index)
+                if match:
+                    argument, final = match.group(1), match.group(2)
+                    index = match.end()
+                    if final == "m":
+                        lines[row] = match.group(0) if fresh else lines[row] + match.group(0)
+                        fresh = False
+                    elif final == "K":
+                        lines[row] = ""
+                        column, fresh = 0, True
+                    elif final == "A":
+                        row = max(0, row - int(argument or 1))
+                        column, fresh = 0, True
+                    continue
+            lines[row] = char if fresh else lines[row] + char
+            fresh = False
+            column += 1
+            index += 1
+
+    # A chunk can also end in the middle of an escape sequence. Held over to the
+    # next chunk rather than drawn, or it lands on screen as literal "ESC[".
+    partial = re.compile(r"\x1b\[?[0-9;]*$")
+    pending = ""
+
+    for delay, count in chunks:
+        text = pending + decoder.decode(data[at:at + count])
+        at += count
+        pending = ""
+        tail = partial.search(text)
+        if tail and tail.group(0):
+            pending = tail.group(0)
+            text = text[:tail.start()]
+        if not text:
+            continue
+        before = screen()
+        feed(text)
+        now = screen()
+        if now == before:
+            continue
+        centiseconds = max(min_delay, min(max_delay, round(delay * 100)))
+        frames.append((now, centiseconds))
+
+    # Whatever the timing log did not account for is still real output. Feeding
+    # the remainder guarantees the last frame is the program's final state.
+    remainder = pending + decoder.decode(data[at:], True)
+    if remainder:
+        before = screen()
+        feed(remainder)
+        if screen() != before:
+            frames.append((screen(), min_delay))
+    # `script` writes its own start and finish lines into the log. They are not
+    # program output, so they are dropped wherever they land.
+    footer = re.compile(r"^Script (done|started) on ")
+    cleaned = []
+    for captured, delay in frames:
+        kept = [line for line in captured if not footer.match(line)]
+        while kept and kept[-1] == "":
+            kept.pop()
+        if kept:
+            cleaned.append((kept, delay))
+    return cleaned
 
 
 def build(scene, out_path):
@@ -144,12 +268,26 @@ def build(scene, out_path):
     frames = []  # (image, centiseconds)
     screen = []
 
+    size = scene.get("fontSize", FONT_SIZE)
+    chrome = scene.get("chrome", True)
+
     def shot(delay, cursor=None):
-        frames.append((frame(title, cols, rows, screen or [""], cursor), delay))
+        frames.append((frame(title, cols, rows, screen or [""], cursor, size, chrome), delay))
 
     for step in scene["steps"]:
         prompt = "\x1b[32m$\x1b[0m "
-        command = step["command"]
+        command = step.get("command", "")
+        if step.get("replay"):
+            if step.get("command"):
+                screen.append(prompt + step["command"])
+                shot(70, cursor=True)
+            base = list(screen)
+            for captured, delay in replay(step["replay"]["out"], step["replay"]["timing"]):
+                screen[:] = base + captured
+                shot(delay)
+            shot(step.get("hold", 320))
+            screen.append("")
+            continue
         screen.append(prompt)
         # Type the command in bursts, so it reads as typing without spending a
         # frame per character or a second of the GIF on an empty screen.
