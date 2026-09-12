@@ -155,16 +155,24 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
     this tool draws: the wordmark rewrites its five rows in place and the
     progress line rewrites itself. Carriage return, erase-line and cursor-up are
     honoured; anything else is passed through into the line, where the SGR parser
-    that draws a frame handles it. Consecutive identical screens are collapsed,
-    so one frame is one visible change, and the delays are the real ones the
-    capture recorded rather than a guess.
+    that draws a frame handles it.
+
+    A frame is taken at a settled screen, never at a chunk boundary. In the
+    animated region the settled moment is the cursor jumping back up, and that
+    jump happens inside a chunk, so the snapshot is taken there rather than after
+    the chunk is finished. Taking it at the chunk boundary is how this renderer
+    once produced a wordmark with new rows above stale ones, where the bottom row
+    went missing and an I read as a T.
     """
-    # The timing log counts BYTES, and a block character is three of them, so the
-    # capture is sliced as bytes and decoded incrementally. Slicing the decoded
-    # string instead drifts and tears escape sequences in half, which shows up as
-    # a wordmark that never finishes redrawing.
     data = Path(out_path).read_bytes()
     decoder = codecs.getincrementaldecoder("utf-8")("replace")
+
+    # Where the animated region ends: after the last cursor-up, output is
+    # ordinary lines plus a single-line progress redraw, and the bottom line is
+    # settled enough to draw.
+    ups = list(re.finditer(rb"\x1b\[[0-9]*A", data))
+    animated_until = ups[-1].end() if ups else 0
+
     chunks = []
     for line in Path(timing_path).read_text().splitlines():
         delay, _, count = line.partition(" ")
@@ -177,12 +185,21 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
     # cell, so it must not advance the column, but the line must still count as
     # started or the next character would overwrite the colour code.
     lines, row, column, fresh = [""], 0, 0, True
-    frames, at = [], 0
+    frames, at, held = [], 0, 0.0
 
     def screen():
         return list(lines)
 
-    def feed(text):
+    def emit():
+        nonlocal held
+        now = screen()
+        if frames and frames[-1][0] == now:
+            return
+        frames.append((now, max(min_delay, min(max_delay, round(held * 100)))))
+        held = 0.0
+
+    def feed(text, boundary):
+        """Feed one chunk. Calls `boundary` the moment a redraw block ends."""
         nonlocal row, column, fresh
         index = 0
         while index < len(text):
@@ -210,6 +227,8 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
                         lines[row] = ""
                         column, fresh = 0, True
                     elif final == "A":
+                        # The block above is finished. Snapshot it here.
+                        boundary()
                         row = max(0, row - int(argument or 1))
                         column, fresh = 0, True
                     continue
@@ -218,37 +237,33 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
             column += 1
             index += 1
 
-    # A chunk can also end in the middle of an escape sequence. Held over to the
-    # next chunk rather than drawn, or it lands on screen as literal "ESC[".
+    # A chunk can end in the middle of an escape sequence. Held over rather than
+    # drawn, or it lands on screen as a literal "ESC[".
     partial = re.compile(r"\x1b\[?[0-9;]*$")
     pending = ""
 
     for delay, count in chunks:
         text = pending + decoder.decode(data[at:at + count])
+        start_at = at
         at += count
         pending = ""
         tail = partial.search(text)
         if tail and tail.group(0):
             pending = tail.group(0)
             text = text[:tail.start()]
+        held += delay
         if not text:
             continue
         before = screen()
-        feed(text)
-        now = screen()
-        if now == before:
-            continue
-        centiseconds = max(min_delay, min(max_delay, round(delay * 100)))
-        frames.append((now, centiseconds))
+        feed(text, emit)
+        if screen() != before and start_at > animated_until and row >= len(lines) - 1:
+            emit()
 
-    # Whatever the timing log did not account for is still real output. Feeding
-    # the remainder guarantees the last frame is the program's final state.
     remainder = pending + decoder.decode(data[at:], True)
     if remainder:
-        before = screen()
-        feed(remainder)
-        if screen() != before:
-            frames.append((screen(), min_delay))
+        feed(remainder, emit)
+    emit()
+
     # `script` writes its own start and finish lines into the log. They are not
     # program output, so they are dropped wherever they land.
     footer = re.compile(r"^Script (done|started) on ")
@@ -259,7 +274,33 @@ def replay(out_path, timing_path, min_delay=3, max_delay=260):
             kept.pop()
         if kept:
             cleaned.append((kept, delay))
+    verify(cleaned, data, animated_until)
     return cleaned
+
+
+def verify(frames, data, animated_until):
+    """Every frame of the animated region must be a block the program wrote.
+
+    Not a nicety: a frame assembled from two different redraws is exactly the
+    glitch this renderer had, where the wordmark lost its bottom row and an I
+    read as a T. The check is cheap and it runs on every render, so the failure
+    cannot come back quietly.
+    """
+    if not animated_until:
+        return
+    text = data.decode("utf-8", "replace").replace("\r\n", "\n")
+    height = 0
+    for match in re.finditer(r"\x1b\[([0-9]*)A", text):
+        height = max(height, int(match.group(1) or 1))
+    if not height:
+        return
+    for index, (screen, _) in enumerate(frames):
+        block = "\n".join(screen[:height])
+        if block not in text:
+            raise SystemExit(
+                f"render: frame {index} is not a block the program wrote; "
+                f"the replay assembled it from two different redraws"
+            )
 
 
 def build(scene, out_path):

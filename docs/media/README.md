@@ -64,6 +64,13 @@ for scene in banner setup submit watch; do
 done
 ```
 
+Every render verifies itself. In the animated region a frame is only taken at the
+moment the program jumps its cursor back up, which is the only point at which a
+redrawn block is complete, and after rendering it asserts that each frame is a
+block of lines the program actually wrote in one go. Without that check the
+replay happily assembled a frame from two different redraws, which looked like a
+wordmark with its bottom row missing and an `I` that read as a `T`.
+
 `render.py` is documentation tooling, not part of omakit: it needs Pillow and
 ffmpeg, which omakit itself does not. It cannot draw a character that is not in
 the capture. Its line height is set to the exact height of a full block glyph, so
