@@ -49,9 +49,12 @@ omakit submit ~/src/my-plugin --category Widgets --tags bar,quickshell
 | network, once | `omakit pin`. After that, `submit` and `verify` need none at all |
 | 16 MB on disk | the pinned checkout, in `.cache/` beside the tool |
 
-`GITHUB_TOKEN` is optional, read-only, and never written to disk. `watch` and
-`parity` use it to avoid GitHub's unauthenticated rate limit; `submit` and
-`verify` never touch the network.
+There is nothing to authenticate. If you have `gh auth login` done, omakit
+reads that credential for GET requests and stores nothing; `GITHUB_TOKEN`
+overrides it if you would rather be explicit; with neither, `watch` and `parity`
+share GitHub's 60-requests-an-hour unauthenticated allowance and `submit` and
+`verify` do not touch the network at all. `omakit doctor` says which of the
+three you are on.
 
 ```bash
 omakit doctor        # what is installed, what is pinned, and what has moved

@@ -42,7 +42,9 @@ export function renderSubmit(result, { width = 78, colour = colourEnabled() } = 
     if (check.verdict === "fail") {
       for (const path of check.paths) out.push(`       ${c("red", "-")} ${c("yellow", path)}`)
       if (check.remedy) out.push(c("cyan", wrap(`remedy: ${check.remedy}`, width, "       ")))
-      out.push(c("grey", wrap(`why this check exists: ${check.why}`, width, "       ")))
+      // The measured reason is the point of the check, so it is not dimmed. On
+      // a low-contrast theme grey prose is a line the reader skips.
+      out.push(wrap(`why this check exists: ${check.why}`, width, "       "))
     }
     out.push("")
   }
@@ -118,11 +120,11 @@ export function renderWatch(result, { width = 78, colour = colourEnabled() } = {
     out.push(c("cyan", wrap(result.verdict.action, width, "  ")))
   }
   out.push("")
-  out.push(c("grey", wrap(
+  out.push(wrap(
     `Read-only. This command did not comment, label or edit anything. Comments on the issue: ${result.read.comments} (${result.read.authorComments} from the author, ${result.read.maintainerComments} from a reviewer).`,
     width,
     "",
-  )))
+  ))
   return out.join("\n")
 }
 

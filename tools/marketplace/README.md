@@ -48,8 +48,8 @@ Parity is proven, not assumed: `omakit parity` compares both transports over rea
 listed repositories at their listing-validated commits, stratified on the outcome
 the registry recorded so the corpus always contains repositories that are not
 `passed`. Results land in `docs/evidence/parity/`, recording a digest of each
-side rather than the findings themselves. The GitHub side uses `GITHUB_TOKEN`
-from the environment when present, read-only.
+side rather than the findings themselves. The GitHub side uses whatever
+credential `github.mjs` resolves (a `gh` login, or `GITHUB_TOKEN`), read-only.
 
 `parity` and `watch` are the only commands that reach the network, and they do it
 with Node's built-in `fetch`, which does not read proxy environment variables by

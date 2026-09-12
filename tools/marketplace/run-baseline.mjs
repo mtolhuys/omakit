@@ -9,6 +9,7 @@ import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 import { createLocalTransport, ADAPTER_VERSION, ASSUMED_BY_ADAPTER } from "./local-transport.mjs"
 import { requirePin } from "./pin.mjs"
+import { token } from "./github.mjs"
 
 async function loadScanner(pinDir) {
   const url = pathToFileURL(join(pinDir, "scripts/security-baseline-scanner.mjs")).href
@@ -65,7 +66,7 @@ if (isMain) {
     commitSha: arg("commit"),
     transport,
     repoDir: arg("dir") ? resolve(arg("dir")) : undefined,
-    token: process.env.GITHUB_TOKEN,
+    token: token() ?? undefined,
   })
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`)
 }

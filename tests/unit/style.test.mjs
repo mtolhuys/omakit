@@ -7,6 +7,18 @@ import { colourEnabled, styler, plain } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 import { renderSubmit, renderWatch } from "../../tools/marketplace/report.mjs"
 
+const SKIP = new Set([".git", ".cache", "node_modules"])
+
+function walk(dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP.has(entry.name)) continue
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) walk(path, out)
+    else if (entry.name.endsWith(".mjs")) out.push(path)
+  }
+  return out
+}
+
 test("colour follows the terminal, NO_COLOR and FORCE_COLOR", () => {
   assert.equal(colourEnabled({ isTTY: true }, {}), true)
   assert.equal(colourEnabled({ isTTY: false }, {}), false)
@@ -75,19 +87,28 @@ test("nothing anywhere pins an actual colour", () => {
   // is an ANSI palette index and the theme decides what it looks like. A
   // truecolor or 256-colour escape would look identical on every theme, which
   // means looking wrong on most of them.
-  const SKIP = new Set([".git", ".cache", "node_modules"])
-  const walk = (dir, out = []) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (SKIP.has(entry.name)) continue
-      const path = join(dir, entry.name)
-      if (entry.isDirectory()) walk(path, out)
-      else if (entry.name.endsWith(".mjs")) out.push(path)
-    }
-    return out
-  }
   for (const path of walk(REPO_ROOT)) {
     const text = readFileSync(path, "utf8")
     assert.doesNotMatch(text, /\[38;[25];|\\u001b\[38;[25];|\[38;[25];/, `${path} uses a truecolor or 256-colour escape`)
     assert.doesNotMatch(text, /\\u001b\[48;|\[48;/, `${path} sets a background colour`)
+  }
+})
+
+test("no sentence is dimmed anywhere in the tool", () => {
+  // Omarchy ships deliberately low-contrast themes. On Matte Black, grey text
+  // on near-black is a line the reader's eye slides off, so the rule in
+  // style.mjs is that grey carries punctuation and labels and never prose. A
+  // sentence is taken to be a literal of four words or more ending in a full
+  // stop; the `--- section ---` separators are framing, not prose, and pass.
+  const sources = walk(join(REPO_ROOT, "tools"))
+  assert.ok(sources.length >= 10)
+  for (const path of sources) {
+    const text = readFileSync(path, "utf8")
+    for (const match of text.matchAll(/c\("(?:grey|dim)[^"]*",\s*(`[^`]*`|"[^"]*")/g)) {
+      const literal = match[1].slice(1, -1)
+      const words = literal.trim().split(/\s+/).length
+      assert.ok(!(words >= 4 && /\.$/.test(literal.trim())),
+        `${path} dims a sentence: ${literal}`)
+    }
   }
 })

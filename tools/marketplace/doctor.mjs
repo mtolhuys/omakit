@@ -21,7 +21,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
-import { defaultBranchHead, getJson, token, GitHubError } from "./github.mjs"
+import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
 
 function tool(repoRoot) {
   try {
@@ -104,8 +104,25 @@ export async function doctor({ repoRoot, offline = false }) {
     }
   }
 
-  add("github.token", token() ? "ok" : "info",
-    token() ? "GITHUB_TOKEN is set; it is used read-only and never written to disk" : "no GITHUB_TOKEN; submit and verify do not need one, watch and parity are rate-limited without it")
+  // Where the credential comes from, said out loud. Borrowing someone's `gh`
+  // login is the right default and a bad secret: a tool that quietly picks up a
+  // credential is a tool you cannot audit by reading its help text, so doctor
+  // names the source every time.
+  // Just "gh version 2.62.0": the build date gh prints after it would nest a
+  // second parenthetical inside this line.
+  const cli = version("gh")?.replace(/\s*\(.*\)\s*$/, "") || null
+  const auth = credential({ refresh: true })
+  add("github.auth", auth.value ? "ok" : "info",
+    auth.source === "gh"
+      ? `read-only, from your \`gh\` login${cli ? ` (${cli})` : ""}; omakit stores nothing`
+      : auth.source
+        ? `${auth.source} is set; used read-only and never written to disk`
+        : `${auth.detail}. \`submit\` and \`verify\` need none at all; \`watch\` and \`parity\` are capped without one`,
+    auth.value
+      ? null
+      : cli
+        ? "`gh auth login` is enough. omakit reads that login for GET requests only and never copies it anywhere."
+        : "Install GitHub's `gh` CLI and run `gh auth login`, or set GITHUB_TOKEN. Either is read-only here.")
 
   return { checks, problems: checks.filter((check) => check.state === "problem").length }
 }

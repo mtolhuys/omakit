@@ -54,10 +54,13 @@ It never edits the issue, never comments, never labels, never opens a pull
 request. The one action that refreshes the pin is the author's to take, and the
 command says so in the marketplace's own register.
 
-With `GITHUB_TOKEN` set it reads the default branch through the REST API. Without
-one it falls back to the repository's public commit feed, which does not consume
-the 60-requests-per-hour unauthenticated allowance. The token is read from the
-environment and never written anywhere.
+Authenticated it reads the default branch through the REST API. The credential
+comes from your `gh` login, or from `GITHUB_TOKEN` if you set one, in that order
+of preference and with the variable winning. Without either it falls back to the
+repository's public commit feed, which does not consume the 60-requests-per-hour
+unauthenticated allowance. Nothing is written anywhere: the credential is read
+when a request is about to be made, used for GET, and discarded with the
+process. `omakit doctor` names the source it found.
 
 ## Two real runs
 

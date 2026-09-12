@@ -28,9 +28,11 @@ push came after a review comment had also commented: engaged, and stuck.
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
 ```
 
-Read-only. It does not comment, label, or edit anything, and it cannot. Set
-`GITHUB_TOKEN` for a cleaner read of the default branch; without it the command
-falls back to the public commit feed.
+Read-only. It does not comment, label, or edit anything, and it cannot. It reads
+the default branch through the REST API when a credential is available, taking
+it from the operator's `gh` login or from `GITHUB_TOKEN`; without either it
+falls back to the public commit feed. Never ask the operator for a token: run
+`omakit doctor` and read the `github.auth` line, which names the source.
 
 ## Acting on each verdict
 

@@ -1,10 +1,12 @@
-// Read-only GitHub access. GET only, no mutation of any kind, and the token is
-// read from the environment and never written anywhere.
+// Read-only GitHub access. GET only, no mutation of any kind, and the
+// credential is borrowed, used for GET, and never written anywhere.
 //
 // Omakit is read-only against omacom/omarchy-plugin-marketplace at all times.
 // There is no code path in this repository that issues a POST, PATCH, PUT or
 // DELETE, and no code path that creates an issue, comment, label or pull
 // request. `omakit submit` prints a body for a person to post; it never posts.
+
+import { execFileSync } from "node:child_process"
 
 export class GitHubError extends Error {
   constructor(code, message, status) {
@@ -17,9 +19,92 @@ export class GitHubError extends Error {
 
 const USER_AGENT = "omakit-marketplace-submit (read-only; https://github.com/mtolhuys/omakit)"
 
+/**
+ * Where the read-only credential comes from, in order.
+ *
+ * `gh` is first among the things a person actually has. The audience for this
+ * tool is people who submit plugins to a GitHub-hosted marketplace by opening
+ * an issue; the overlap between them and people with `gh auth login` already
+ * done is most of them. Asking them instead to mint a personal access token,
+ * for a tool that only ever issues GET, is a bad trade: it is friction for the
+ * honest case and a new long-lived secret on disk for the dishonest one. An
+ * explicit GITHUB_TOKEN still wins, because someone who sets it meant it.
+ *
+ * Borrowing `gh`'s credential means borrowing whatever scopes that login has,
+ * which is usually enough to write. This repository keeps that safe the only
+ * way worth trusting, which is structurally rather than by intention: there is
+ * exactly one `fetch` call site in the whole tool, it is in this file, its
+ * method is the literal "GET", and tests/unit/read-only.test.mjs fails the
+ * suite if a second one appears anywhere, if any file spawns `gh` with
+ * arguments other than the four below, or if a credential is ever written to
+ * disk.
+ */
+export const GH_ARGS = Object.freeze(["auth", "token", "--hostname", "github.com"])
+
+/** GitHub's unauthenticated REST allowance, per hour, per IP. */
+export const UNAUTHENTICATED_LIMIT = 60
+
+// Long enough for a cold `gh` on a slow disk, short enough that a broken `gh`
+// cannot hold up a command that does not need a credential at all.
+const GH_TIMEOUT_MS = 4000
+
+// A token shape, not a token: enough to tell a credential from `gh`'s own
+// "not logged in" chatter, and it is never logged either way.
+const TOKEN_SHAPE = /^[A-Za-z0-9_.-]{20,255}$/
+
+/** The credential `gh` holds for github.com, or null if there is not one. */
+export function ghCredential({ run = execFileSync } = {}) {
+  let printed
+  try {
+    printed = run("gh", [...GH_ARGS], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: GH_TIMEOUT_MS,
+    })
+  } catch {
+    // Not installed, not signed in, or too slow to wait for. All three mean the
+    // same thing here, and none of them is an error worth reporting: every
+    // command that needs a credential works without one, just rate-limited.
+    return null
+  }
+  const value = String(printed || "").trim()
+  return TOKEN_SHAPE.test(value) ? value : null
+}
+
+/**
+ * @param {{ env?: Record<string, string|undefined>, gh?: () => string|null }} [options]
+ * @returns {{ value: string|null, source: "GITHUB_TOKEN"|"GH_TOKEN"|"gh"|null, detail: string }}
+ */
+export function resolveCredential({ env = process.env, gh = ghCredential } = {}) {
+  for (const name of ["GITHUB_TOKEN", "GH_TOKEN"]) {
+    const value = String(env[name] || "").trim()
+    if (value) return { value, source: name, detail: `${name} is set` }
+  }
+  const borrowed = gh()
+  if (borrowed) return { value: borrowed, source: "gh", detail: "read from your `gh` login" }
+  return {
+    value: null,
+    source: null,
+    detail: `no GitHub login found; GitHub allows ${UNAUTHENTICATED_LIMIT} unauthenticated requests an hour`,
+  }
+}
+
+let resolved = null
+
+/**
+ * The resolved credential, looked up once per process.
+ *
+ * Cached because resolving it may spawn `gh`, and `watch` asks for it on every
+ * request. `refresh` is for the two commands that report the answer to a person
+ * rather than use it.
+ */
+export function credential({ refresh = false } = {}) {
+  if (refresh || !resolved) resolved = resolveCredential()
+  return resolved
+}
+
 export function token() {
-  const value = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || ""
-  return value.trim() || null
+  return credential().value
 }
 
 async function get(url, { accept = "application/vnd.github+json" } = {}) {
@@ -30,7 +115,9 @@ async function get(url, { accept = "application/vnd.github+json" } = {}) {
   if (!response.ok) {
     const remaining = response.headers.get("x-ratelimit-remaining")
     const hint = response.status === 403 && remaining === "0"
-      ? " (GitHub rate limit exhausted; set GITHUB_TOKEN for read-only requests)"
+      ? (auth
+        ? " (GitHub rate limit exhausted even authenticated; it resets within the hour)"
+        : ` (GitHub rate limit exhausted at ${UNAUTHENTICATED_LIMIT} requests an hour; \`gh auth login\` raises it, and omakit reads that login read-only)`)
       : ""
     throw new GitHubError(
       response.status === 404 ? "not-found" : "github-unavailable",

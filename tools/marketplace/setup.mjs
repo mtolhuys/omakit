@@ -14,9 +14,10 @@ import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import { delimiter, join } from "node:path"
 import { banner } from "./banner.mjs"
+import { credential, UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
-import { colourEnabled, styler } from "./style.mjs"
+import { colourEnabled, paintProse, styler } from "./style.mjs"
 
 function version(command) {
   try {
@@ -57,6 +58,19 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   }
   out(`${c("green", "ok")}  ${git}`)
 
+  // GitHub access, before the pin, because this is the one step a newcomer might
+  // otherwise think they have to prepare a token for. They do not.
+  const auth = credential({ refresh: true })
+  if (auth.source === "gh") {
+    out(`${c("green", "ok")}  GitHub: your \`gh\` login, read-only. omakit stores nothing.`)
+  } else if (auth.source) {
+    out(`${c("green", "ok")}  GitHub: ${auth.source}, read-only. Never written to disk.`)
+  } else {
+    out(`${c("yellow", "note")} No GitHub login. \`submit\` and \`verify\` need none at all;`)
+    out(`      \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without one.`)
+    out(`      ${c("cyan", "gh auth login")} is enough; omakit reads it read-only and stores nothing.`)
+  }
+
   const dir = marketplacePinDir(repoRoot)
   const spinner = progress()
   let identity
@@ -71,8 +85,8 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   spinner.done()
   out(`${c("green", "ok")}  marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}), ${pinDiskUsage(dir)}`)
   out()
-  out(c("grey", "Every rule omakit checks is read from that checkout, at that exact commit."))
-  out(c("grey", "It never moves on its own. `omakit doctor` says when it is behind."))
+  out(paintProse("Every rule omakit checks is read from that checkout, at that exact commit.", c))
+  out(paintProse("It never moves on its own. `omakit doctor` says when it is behind.", c))
   out()
 
   if (!onPath()) {
@@ -86,6 +100,6 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   out()
   out(c("cyan", "    omakit submit <plugin-repo> --category Widgets --tags bar,quickshell"))
   out()
-  out(c("grey", "It prints the issue title and body. It never posts anything."))
+  out(paintProse("It prints the issue title and body. It never posts anything.", c))
   return { ok: true }
 }

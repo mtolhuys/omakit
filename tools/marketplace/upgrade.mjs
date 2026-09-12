@@ -23,7 +23,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { colourEnabled, styler } from "./style.mjs"
+import { colourEnabled, paintProse, styler } from "./style.mjs"
 
 export const REPOSITORY = "https://github.com/mtolhuys/omakit"
 
@@ -103,8 +103,8 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   if (target === before) {
     out(`${c("green", "ok")}  already current at ${c("bold", before.slice(0, 7))} on ${branch}`)
     out()
-    out(c("grey", "The marketplace pin is a separate thing and is never touched here."))
-    out(c("grey", "`omakit doctor` says whether it is behind."))
+    out(paintProse("The marketplace pin is a separate thing and is never touched here.", c))
+    out(paintProse("`omakit doctor` says whether it is behind.", c))
     return { ok: true, changed: false, commit: before }
   }
 
@@ -120,9 +120,15 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   }
 
   const log = git(repoRoot, ["log", "--oneline", `${before}..${target}`]).split("\n").filter(Boolean)
+  // A commit subject is the one thing a person actually reads here, so the sha
+  // takes the emphasis and the subject keeps the terminal's own foreground.
+  const subject = (line) => {
+    const split = line.match(/^(\S+)\s+([\s\S]*)$/)
+    return split ? `      ${c("bold", split[1])} ${c("default", split[2])}` : `      ${c("default", line)}`
+  }
   if (dryRun) {
     out(`${c("yellow", "note")} ${log.length} commit(s) available, not applied (--dry-run)`)
-    for (const line of log) out(`      ${c("grey", line)}`)
+    for (const line of log) out(subject(line))
     return { ok: true, changed: false, commit: before, available: log.length }
   }
 
@@ -130,10 +136,10 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   const after = git(repoRoot, ["rev-parse", "HEAD"])
 
   out(`${c("green", "ok")}  ${c("bold", before.slice(0, 7))} to ${c("bold", after.slice(0, 7))} on ${branch}, ${log.length} commit(s)`)
-  for (const line of log) out(`      ${c("grey", line)}`)
+  for (const line of log) out(subject(line))
   out()
-  out(c("grey", "The marketplace pin did not move: this updated the tool, not the"))
-  out(c("grey", "commit its rules are read from. `omakit doctor` says whether that pin"))
-  out(c("grey", "is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves."))
+  out(paintProse("The marketplace pin did not move: this updated the tool, not the", c))
+  out(paintProse("commit its rules are read from. `omakit doctor` says whether that pin", c))
+  out(paintProse("is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", c))
   return { ok: true, changed: true, from: before, to: after, commits: log.length }
 }

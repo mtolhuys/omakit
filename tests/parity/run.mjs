@@ -18,6 +18,7 @@ import { runBaseline } from "../../tools/marketplace/run-baseline.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { parityCorpus, strataSizes } from "./corpus.mjs"
 import { subjectSlug } from "../../tools/subject/resolve.mjs"
+import { token } from "../../tools/marketplace/github.mjs"
 
 const repoRoot = resolve(process.env.OMAKIT_ROOT || process.cwd())
 const pinDir = requirePin(repoRoot).dir
@@ -110,7 +111,7 @@ for (const target of corpus) {
         repoUrl: target.repo,
         commitSha: target.commit,
         transport: "github",
-        token: process.env.GITHUB_TOKEN,
+        token: token() ?? undefined,
       })
       row.githubOutcome = github.result.outcome
       row.githubDigest = digest(github.result)

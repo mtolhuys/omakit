@@ -5,8 +5,9 @@
 // token: what you type is cyan, what you replace is yellow, the brackets that
 // merely group them stay out of the way.
 
+import { UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { MARKETPLACE_PIN } from "./pin.mjs"
-import { colourEnabled, styler } from "./style.mjs"
+import { colourEnabled, paintProse, styler } from "./style.mjs"
 
 export const TAGLINE = "marketplace submit preflight for Omarchy Quattro plugins"
 
@@ -84,9 +85,20 @@ export const COMMANDS = Object.freeze([
 
 export const TARGET_NOTE = "<target> is a local Git repository path, or <https url>@<40-char sha>."
 
+/**
+ * Said before the variables, because the answer to "what do I have to set up?"
+ * is "nothing", and a bare list of two environment variables says the opposite.
+ */
+export const AUTHENTICATION = Object.freeze([
+  "Read-only, and optional. omakit uses your `gh` login if you have one, then",
+  "GITHUB_TOKEN, and otherwise goes unauthenticated. `submit` and `verify` need",
+  `no network at all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour`,
+  "without a login. omakit never writes a credential anywhere.",
+])
+
 export const ENVIRONMENT = Object.freeze([
-  ["GITHUB_TOKEN", "Optional, read-only. Never written to disk."],
-  ["OMAKIT_MARKETPLACE_PIN", "Override the pinned checkout location."],
+  ["GITHUB_TOKEN", "Used instead of your `gh` login, if you set it."],
+  ["OMAKIT_MARKETPLACE_PIN", "Keep the pinned checkout somewhere else."],
 ])
 
 /**
@@ -134,10 +146,13 @@ export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
 
   out.push(`  ${paintSignature(TARGET_NOTE, c)}`)
   out.push("")
+  out.push(c("bold", "GitHub access:"))
+  for (const line of AUTHENTICATION) out.push(`  ${paintProse(line, c)}`)
+  out.push("")
   out.push(c("bold", "Environment:"))
   const width = Math.max(...ENVIRONMENT.map(([name]) => name.length))
   for (const [name, description] of ENVIRONMENT) {
-    out.push(`  ${c("green", name.padEnd(width))}  ${c("grey", description)}`)
+    out.push(`  ${c("green", name.padEnd(width))}  ${paintProse(description, c)}`)
   }
   return `${out.join("\n")}\n`
 }

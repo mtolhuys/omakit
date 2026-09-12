@@ -10,14 +10,21 @@
 //
 // What each colour means, used the same way everywhere:
 //
-//   green    it passed, it is fine, nothing to do
+//   green    it passed, it is fine, nothing to do; and the name of an
+//            environment variable, which is a setting in the same register
 //   red      it failed, and it is blocking
 //   yellow   your attention: an advisory failure, a path at fault, a placeholder
 //            you are meant to replace
 //   cyan     something you type or run, and the one action that fixes things
 //   bold     a name: a check id, a heading, a commit you should read
-//   grey     context: where a rule came from, why a check exists, what was read
+//   grey     punctuation and grouping only: brackets, separators, a rule
 //   default  the sentence itself
+//
+// A sentence a person has to read is never grey and never dim. Omarchy ships
+// deliberately low-contrast themes (Matte Black among them) where grey on
+// near-black is a line nobody can see, and the fix is not a brighter grey, it is
+// not dimming prose in the first place. Emphasis inside a sentence comes from
+// bold, or from tinting the one word you could type.
 //
 // Colour is applied only when stdout is a terminal, and never under NO_COLOR or
 // a dumb TERM. The words never change: a piped run and a watched run say the
@@ -62,6 +69,21 @@ export function styler(enabled) {
     if (!codes.length) return String(text)
     return `\u001b[${codes.join(";")}m${text}\u001b[0m`
   }
+}
+
+/**
+ * Prose is prose: it keeps the terminal's own foreground colour, because a
+ * sentence a person has to read is not context to be dimmed. Only what they
+ * could type is tinted, and a name in `backticks` is exactly that.
+ *
+ * The backticks themselves are dropped: they are markup for a reader of the
+ * source, and a terminal that can colour the word does not need them.
+ */
+export function paintProse(line, c) {
+  return String(line)
+    .split(/`([^`]+)`/)
+    .map((part, index) => (index % 2 ? c("cyan", part) : c("default", part)))
+    .join("")
 }
 
 /** Strip every SGR sequence, so a width calculation counts characters a person sees. */
