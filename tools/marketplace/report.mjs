@@ -103,9 +103,9 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     return out.join("\n")
   }
 
-  const pinned = result.pinnedCommit.defaultBranchHead
-    ? `${result.pinnedCommit.local} is the ${result.pinnedCommit.branch || "default"}-branch HEAD, so it is the commit the review will be pinned to.`
-    : `${result.pinnedCommit.local} is the local commit; the review is pinned to the default-branch HEAD at validation time.`
+  const pinned = result.validationCommit.defaultBranchHead
+    ? `${result.validationCommit.local} is the ${result.validationCommit.branch || "default"}-branch HEAD, so it is the commit the review will be pinned to.`
+    : `${result.validationCommit.local} is the local commit; the review is pinned to the default-branch HEAD at validation time.`
   out.push(...verdict("pass", "READY", `every blocking check passed. ${pinned}`, c))
   out.push("")
   out.push(...section("issue title", c))

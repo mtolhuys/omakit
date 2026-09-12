@@ -239,20 +239,20 @@ export async function submitPreflight(options) {
       headError = { code: error.code || "head-unreadable", message: error.message }
     }
   }
-  const pinnedMatches = head ? head.commit === subject.commit.toLowerCase() : null
-  checks.push(check("submission.pinned-commit", {
+  const validationMatches = head ? head.commit === subject.commit.toLowerCase() : null
+  checks.push(check("submission.validation-commit", {
     source: "omakit",
     why: "The marketplace pins the review to the default-branch HEAD it resolves when the issue is validated, not to the commit checked here. 73% of the 464 submissions parked in the author's court have a HEAD ahead of their validated commit, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
     severity: options.offline ? "advisory" : "blocking",
-    verdict: options.offline ? true : pinnedMatches === true,
+    verdict: options.offline ? true : validationMatches === true,
     detail: options.offline
       ? `not checked (--offline). Local commit ${subject.commit}.`
       : head
-        ? pinnedMatches
+        ? validationMatches
           ? `local commit ${subject.commit} is the current ${head.branch || "default"}-branch HEAD`
           : `local commit ${subject.commit} is not the current ${head.branch || "default"}-branch HEAD (${head.commit})`
         : `could not read the default-branch HEAD (${headError?.code || "unknown"}): ${headError?.message || ""}`,
-    remedy: pinnedMatches === false
+    remedy: validationMatches === false
       ? "Push this commit to the default branch before submitting, then run submit again."
       : headError
         ? "Connect to the network and run submit again, or pass --offline to skip this one check."
@@ -308,11 +308,11 @@ export async function submitPreflight(options) {
       commit: subject.commit,
       cleanTree: subject.clean,
     },
-    pinnedCommit: {
+    validationCommit: {
       local: subject.commit,
       defaultBranchHead: head?.commit || null,
       branch: head?.branch || null,
-      matches: pinnedMatches,
+      matches: validationMatches,
       note: "The marketplace pins the review to the commit it resolves at validation time. After submitting, use `omakit watch <issue-url>` to see whether that pin has gone stale.",
     },
     plugin: { id: tree.pluginId, name: pluginName },

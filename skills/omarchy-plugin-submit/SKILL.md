@@ -54,7 +54,7 @@ so they leave the installable tree, and keep a recursive check in the release
 process so they cannot return. Do not simply rename one file and resubmit; the
 check is recursive for a reason.
 
-**`submission.pinned-commit`.** The marketplace pins its review to the commit it
+**`submission.validation-commit`.** The marketplace pins its review to the commit it
 resolves when the issue is validated, which is the pushed default-branch HEAD, not
 whatever is checked out locally. Push first, then submit. 73% of submissions
 parked in their author's court have a HEAD the marketplace never saw.

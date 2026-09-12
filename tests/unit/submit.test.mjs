@@ -28,7 +28,7 @@ test("a known-good plugin passes every check and produces a postable issue", asy
   assert.equal(result.ready, true, `blocking: ${result.blocking.join(", ")}`)
   assert.deepEqual(result.blocking, [])
   assert.equal(result.subject.commit, fixture.commit)
-  assert.equal(result.pinnedCommit.local, fixture.commit)
+  assert.equal(result.validationCommit.local, fixture.commit)
   assert.equal(result.plugin.id, "omakit-fixture.good")
   assert.equal(result.issue.title, "[Plugin]: Fixture Good")
   assert.ok(verifyAgainstOfficialParser(contract, result.issue).ok)
@@ -130,14 +130,14 @@ test("a dirty worktree is refused unless it is allowed explicitly", async () => 
   assert.equal(allowed.subject.cleanTree, false)
 })
 
-test("the offline flag makes the pinned-commit check advisory, never silent", async () => {
+test("the offline flag makes the validation-commit check advisory, never silent", async () => {
   const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
   const result = await submitPreflight({
     repoRoot: REPO_ROOT, target: fixture.dir, category: "Other", tags: "system", offline: true,
   })
-  const check = result.checks.find((entry) => entry.id === "submission.pinned-commit")
+  const check = result.checks.find((entry) => entry.id === "submission.validation-commit")
   assert.equal(check.severity, "advisory")
   assert.match(check.detail, /not checked \(--offline\)/)
-  assert.equal(result.pinnedCommit.matches, null)
-  assert.match(result.pinnedCommit.note, /watch/)
+  assert.equal(result.validationCommit.matches, null)
+  assert.match(result.validationCommit.note, /watch/)
 })

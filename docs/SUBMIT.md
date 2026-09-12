@@ -44,7 +44,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `submission.headings` | pin | The six form headings, in the form's order. |
 | `submission.checklist` | pin | All five checklist items, exact text, checked. |
 | `submission.official-parser` | pin | The marketplace's own `parseCurrentSubmission` accepts the rendered title and body. |
-| `submission.pinned-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually pin. |
+| `submission.validation-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually pin. |
 | `baseline.preflight` | pin | The official security baseline over a local snapshot, verbatim, plus what its outcome will cause. |
 
 Every one of them states its measured reason in the output when it fails, and in

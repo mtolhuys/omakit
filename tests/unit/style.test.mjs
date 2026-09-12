@@ -232,7 +232,7 @@ test("the composition helpers keep the words and drop the colour", () => {
 const result = {
   subject: { repository: "https://github.com/example/p", directory: "/tmp/p", commit: "a".repeat(40), cleanTree: true },
   pin: { commit: "b".repeat(40), baselineVersion: "3", enforcementMode: "selective" },
-  pinnedCommit: { local: "a".repeat(40), defaultBranchHead: null, branch: null, matches: null, note: "n" },
+  validationCommit: { local: "a".repeat(40), defaultBranchHead: null, branch: null, matches: null, note: "n" },
   checks: [
     { id: "one", source: "marketplace-pin", severity: "blocking", verdict: "pass", detail: "fine", paths: [], remedy: null, why: "because 1" },
     { id: "two", source: "omakit", severity: "blocking", verdict: "fail", detail: "broken", paths: ["a/b: reason"], remedy: "fix it", why: "because 2" },
@@ -258,7 +258,7 @@ const ready = {
   ready: true,
   blocking: [],
   advisory: [],
-  pinnedCommit: { local: "a".repeat(40), defaultBranchHead: "a".repeat(40), branch: "main", matches: true, note: "n" },
+  validationCommit: { local: "a".repeat(40), defaultBranchHead: "a".repeat(40), branch: "main", matches: true, note: "n" },
   issue: { title: "[Plugin]: Fixture Good", body: "### Repository URL\n\nhttps://github.com/example/p\n" },
   baseline: { invoked: false, skipReason: "none", statement: "s" },
 }

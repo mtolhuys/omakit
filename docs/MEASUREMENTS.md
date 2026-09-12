@@ -144,6 +144,6 @@ The mechanism, with `file:line`:
   `scripts/validate-submission.mjs` builds the *success* comment and contains it
   zero times. The success path is the path 97 of 100 parked submissions took.
 
-Used by: `omakit watch`, and `submission.pinned-commit` in `omakit submit`.
+Used by: `omakit watch`, and `submission.validation-commit` in `omakit submit`.
 The watch reads; it never edits, comments or labels. The action it names is the
 author's to take.

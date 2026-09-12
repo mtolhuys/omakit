@@ -176,7 +176,7 @@ test("no network is a failure state, not a stack trace", (t) => {
   // skips it.
   const submit = offline(["submit", good.dir, "--category", "Widgets", "--tags", "bar"])
   assert.equal(submit.code, 1)
-  assert.ok(submit.out.includes(`${DENSITY.full} FAIL  submission.pinned-commit`))
+  assert.ok(submit.out.includes(`${DENSITY.full} FAIL  submission.validation-commit`))
   assert.ok(submit.out.includes("--offline"))
   assert.doesNotMatch(submit.err, /^\s+at /m)
 
