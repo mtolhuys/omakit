@@ -90,14 +90,28 @@ Read-only against the marketplace, and it never posts anything.
 
 ## Updating
 
-There is deliberately no `omakit upgrade`, because two different things could
-mean "upgrade" here and only one of them may ever move on its own.
+Two different things could mean "upgrade" here, and only one of them may ever
+move on its own. That distinction is now enforced rather than argued.
 
-**The tool** updates the way it was installed: `git -C ~/.local/share/omakit
-pull`. Nothing in omakit fetches and executes its own replacement.
+**The tool:**
 
-**The pin** does not move by itself, ever. Bumping it changes where the
-submission contract and the baseline policy are read from, and the procedure in
+```bash
+omakit upgrade          # fast-forwards this checkout of omakit itself
+omakit upgrade --dry-run
+```
+
+It refuses a dirty tree, a detached HEAD, a remote that is not this repository,
+and anything that is not a fast-forward, and it names what to run yourself in
+each case. It is not a self-updater of the kind this repository warns other
+people about: it fast-forwards a Git checkout you cloned, from the remote you
+cloned it from, and it touches nothing else. On a package install it says so and
+prints `npm i -g omakit@latest`. `git -C ~/.local/share/omakit pull` still works
+and does the same thing.
+
+**The pin** does not move by itself, ever, and `omakit upgrade` does not move it
+either: a test asserts that its source does not so much as mention the pin or
+the cache. Bumping it changes where the submission contract and the baseline
+policy are read from, and the procedure in
 [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) ends in re-proving
 transport parity and committing the evidence. `omakit doctor` tells you when the
 pin is behind the marketplace's current branch and then leaves it alone. That the

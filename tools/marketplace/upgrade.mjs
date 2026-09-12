@@ -1,0 +1,135 @@
+// `omakit upgrade`: update the tool, and only the tool.
+//
+// This command exists against my earlier judgement, and the reason is worth
+// writing down. The objection to an upgrade command was that "upgrade" can mean
+// two things here and one of them must never happen on its own: bumping the
+// marketplace pin changes where the submission contract and the baseline policy
+// are read from, and the procedure for that ends in re-proving transport parity
+// and committing the evidence. That objection stands, and it is enforced below
+// rather than argued: this command fast-forwards the tool's own checkout and
+// touches nothing in .cache. The pin moves when a human edits MARKETPLACE_PIN,
+// never here.
+//
+// What changed my mind is the ordinary case. After a global install nobody
+// remembers where the checkout went, and a tool people cannot update is a tool
+// people run stale. That is a worse outcome than the one I was protecting
+// against.
+//
+// It is not a self-updater in the sense this repository warns other people
+// about. It does not fetch and execute arbitrary code: it fast-forwards a Git
+// checkout the user cloned themselves, from the remote they cloned it from, and
+// it refuses if any of that is not true.
+
+import { execFileSync } from "node:child_process"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
+import { colourEnabled, styler } from "./style.mjs"
+
+export const REPOSITORY = "https://github.com/mtolhuys/omakit"
+
+function git(dir, args) {
+  return execFileSync("git", ["-C", dir, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim()
+}
+
+/** Same repository, whatever spelling the remote uses. */
+export function isExpectedRemote(url, expected = REPOSITORY) {
+  const normalise = (value) => String(value || "")
+    .trim()
+    .replace(/^git@github\.com:/i, "https://github.com/")
+    .replace(/\.git$/i, "")
+    .replace(/\/+$/, "")
+    .toLowerCase()
+  return normalise(url) === normalise(expected)
+}
+
+/**
+ * @param {{ repoRoot: string, stream?: NodeJS.WriteStream, dryRun?: boolean }} options
+ */
+export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false }) {
+  const c = styler(colourEnabled(stream))
+  const out = (line = "") => stream.write(`${line}\n`)
+  const refuse = (reason, action = null) => {
+    out(`${c("red.bold", "REFUSED")} ${reason}`)
+    if (action) {
+      out()
+      out(c("cyan", `    ${action}`))
+    }
+    return { ok: false, reason }
+  }
+
+  if (!existsSync(join(repoRoot, ".git"))) {
+    return refuse(
+      "this is not a Git checkout, so there is nothing to fast-forward. It looks like a package install.",
+      "npm i -g omakit@latest",
+    )
+  }
+
+  let remote
+  try {
+    remote = git(repoRoot, ["remote", "get-url", "origin"])
+  } catch {
+    return refuse("this checkout has no `origin` remote, so there is nowhere to update from.")
+  }
+  if (!isExpectedRemote(remote)) {
+    return refuse(
+      `the \`origin\` of this checkout is ${remote}, not ${REPOSITORY}. Pulling code from somewhere else is not this command's business.`,
+      `git -C ${repoRoot} pull`,
+    )
+  }
+
+  if (git(repoRoot, ["status", "--porcelain"]).length) {
+    return refuse(
+      "this checkout has local changes. Updating would either lose them or leave you mid-merge; both are worse than stopping.",
+      `git -C ${repoRoot} status`,
+    )
+  }
+
+  const before = git(repoRoot, ["rev-parse", "HEAD"])
+  const branch = git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
+  if (branch === "HEAD") {
+    return refuse("this checkout is on a detached HEAD, so there is no branch to fast-forward.")
+  }
+
+  git(repoRoot, ["fetch", "--quiet", "origin", branch])
+  const target = git(repoRoot, ["rev-parse", `origin/${branch}`])
+
+  if (target === before) {
+    out(`${c("green", "ok")}  already current at ${c("bold", before.slice(0, 7))} on ${branch}`)
+    out()
+    out(c("grey", "The marketplace pin is a separate thing and is never touched here."))
+    out(c("grey", "`omakit doctor` says whether it is behind."))
+    return { ok: true, changed: false, commit: before }
+  }
+
+  // Fast-forward only. A merge or a rebase here would be this command deciding
+  // what to do with someone else's history.
+  try {
+    git(repoRoot, ["merge-base", "--is-ancestor", before, target])
+  } catch {
+    return refuse(
+      `this checkout at ${before.slice(0, 7)} is not an ancestor of origin/${branch} at ${target.slice(0, 7)}, so it cannot be fast-forwarded.`,
+      `git -C ${repoRoot} log --oneline HEAD..origin/${branch}`,
+    )
+  }
+
+  const log = git(repoRoot, ["log", "--oneline", `${before}..${target}`]).split("\n").filter(Boolean)
+  if (dryRun) {
+    out(`${c("yellow", "note")} ${log.length} commit(s) available, not applied (--dry-run)`)
+    for (const line of log) out(`      ${c("grey", line)}`)
+    return { ok: true, changed: false, commit: before, available: log.length }
+  }
+
+  git(repoRoot, ["merge", "--ff-only", `origin/${branch}`])
+  const after = git(repoRoot, ["rev-parse", "HEAD"])
+
+  out(`${c("green", "ok")}  ${c("bold", before.slice(0, 7))} to ${c("bold", after.slice(0, 7))} on ${branch}, ${log.length} commit(s)`)
+  for (const line of log) out(`      ${c("grey", line)}`)
+  out()
+  out(c("grey", "The marketplace pin did not move: this updated the tool, not the"))
+  out(c("grey", "commit its rules are read from. `omakit doctor` says whether that pin"))
+  out(c("grey", "is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves."))
+  return { ok: true, changed: true, from: before, to: after, commits: log.length }
+}

@@ -59,6 +59,14 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
+    signature: "omakit upgrade [--dry-run]",
+    lines: [
+      "Fast-forward this checkout of omakit itself. Refuses a dirty tree, an",
+      "unexpected remote and anything that is not a fast-forward. Never moves",
+      "the marketplace pin.",
+    ],
+  },
+  {
     signature: "omakit doctor [--offline] [--json]",
     lines: [
       "What is installed, what is pinned, and what has moved since. Reads and",

@@ -22,6 +22,7 @@ import { pinWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
+import { upgrade } from "./upgrade.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { progress } from "./progress.mjs"
 import { renderUsage, TAGLINE } from "./usage.mjs"
@@ -102,6 +103,11 @@ async function cmdSetup() {
   process.exit(result.ok ? 0 : 1)
 }
 
+async function cmdUpgrade(args) {
+  const result = await upgrade({ repoRoot: ROOT, dryRun: args.includes("--dry-run") })
+  process.exit(result.ok ? 0 : 1)
+}
+
 async function cmdDoctor(args) {
   // The wordmark without the scan: doctor is run repeatedly, and an animation
   // you have already seen is a delay.
@@ -158,6 +164,8 @@ if (command === "setup") {
   }
 } else if (command === "submit") {
   await cmdSubmit(rest)
+} else if (command === "upgrade") {
+  await cmdUpgrade(rest)
 } else if (command === "doctor") {
   await cmdDoctor(rest)
 } else if (command === "watch") {

@@ -62,6 +62,9 @@ test("no git verb that writes to a remote", () => {
   const ALLOWED = new Set([
     "-C", "init", "remote", "fetch", "checkout", "rev-parse", "rev-list", "status",
     "ls-tree", "ls-files", "cat-file", "show", "log", "config", "add", "commit",
+    // `omakit upgrade` fast-forwards the tool's own checkout. Local only: it
+    // reads the remote and moves a local branch, and never writes to a remote.
+    "merge", "merge-base",
   ])
   for (const { path, text } of sources) {
     for (const token of ["push", "send-pack", "request-pull", "am", "apply"]) {
