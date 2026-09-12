@@ -134,9 +134,13 @@ test("no status mark, glyph or arrow is typed anywhere but style.mjs", () => {
 
 test("no indent is a number anywhere but style.mjs", () => {
   // The scale has three stops, and a fourth cannot be introduced by typing
-  // six spaces into a template.
+  // six spaces into a template. completion.mjs is the one file that composes
+  // something other than terminal output: shell scripts, whose indentation is
+  // the script's own and never reaches a terminal (tests/unit/completion.test.mjs
+  // asserts each script carries no escape and is byte-identical under every
+  // colour setting).
   for (const { path, text } of sources) {
-    if (path === STYLE) continue
+    if (path === STYLE || path === "tools/marketplace/completion.mjs") continue
     assert.doesNotMatch(text, /" "\.repeat\(\d+\)/, `${path} repeats a literal number of spaces`)
     assert.doesNotMatch(text, /`\s{4,}\$\{/, `${path} starts a template with a hand-typed indent`)
     assert.doesNotMatch(text, /out(?:\.push)?\(`\s{2,}[^`]/, `${path} pushes a hand-indented line`)

@@ -60,7 +60,13 @@ three you are on.
 omakit doctor        # what is installed, what is pinned, and what has moved
 omakit help --agent  # the operating instructions, for the agent running this
 omakit pin           # what setup does for the pin, on its own
+omakit completion bash | zsh | fish   # a completion script, from the pin's own form
 ```
+
+The completion script knows the subcommands and their flags, completes a
+directory for `<target>`, and offers the categories and tags the pin's
+submission form actually has. `omakit setup` says where your shell loads it
+from, until it is there.
 
 While `submit` works, a scanner sweeps across a progress line naming the step it
 is on. It is drawn on stderr and only when stderr is a terminal, so a piped run

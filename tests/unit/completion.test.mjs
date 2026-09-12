@@ -1,0 +1,140 @@
+// `omakit completion`: a script on stdout and nothing else, derived from the
+// help data and the pin's form rather than retyped.
+import test from "node:test"
+import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { completionInstall, completionInstalled, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
+import { submissionContract, tagSlug } from "../../tools/marketplace/form.mjs"
+import { requirePin } from "../../tools/marketplace/pin.mjs"
+import { COMMANDS, COMPLETION_SHELLS } from "../../tools/marketplace/usage.mjs"
+import { DENSITY, plain } from "../../tools/marketplace/style.mjs"
+import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
+
+requirePinForTests()
+const contract = await submissionContract({ repoRoot: REPO_ROOT })
+const pin = requirePin(REPO_ROOT).identity.commit
+const scripts = Object.fromEntries(COMPLETION_SHELLS.map((shell) => [shell, renderCompletion(shell, { contract, pin })]))
+
+function run(args, env = {}) {
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+    encoding: "utf8",
+    env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
+  })
+  return { code: result.status, out: result.stdout, err: result.stderr }
+}
+
+test("every command, every flag, every category and tag, and the pin, in every script", () => {
+  // The structural guarantee: a command added to COMMANDS cannot be missing
+  // from completion, because completion is read out of COMMANDS.
+  const subcommands = subcommandsOf(COMMANDS)
+  assert.ok(subcommands.some((sub) => sub.name === "submit" && sub.target && sub.flags.some((f) => f.flag === "--category" && f.value === "category")))
+  for (const shell of COMPLETION_SHELLS) {
+    const script = scripts[shell]
+    for (const command of COMMANDS) {
+      const name = [].concat(command.signature)[0].match(/^omakit +([a-z-]+)/)[1]
+      assert.ok(new RegExp(`\\b${name}\\b`).test(script), `${shell}: ${name} is missing`)
+      for (const [flag] of [].concat(command.signature).join(" ").matchAll(/--[a-z-]+/g)) {
+        assert.ok(script.includes(shell === "fish" ? `-l ${flag.slice(2)}` : flag), `${shell}: ${name} ${flag} is missing`)
+      }
+    }
+    for (const category of contract.categories) assert.ok(script.includes(category.replace(/ /g, shell === "fish" ? "\\ " : " ")), `${shell}: category ${category}`)
+    for (const label of contract.tagLabels) assert.ok(script.includes(tagSlug(label)), `${shell}: tag ${label}`)
+    assert.ok(script.includes(`marketplace pin ${pin}`), `${shell}: names the pin`)
+    assert.ok(script.includes(`omakit completion ${shell}`), `${shell}: says how to regenerate`)
+    assert.doesNotMatch(script, /\u001b/, `${shell}: no escape`)
+  }
+})
+
+test("each script parses in its shell, where the shell is installed", (t) => {
+  const checks = { bash: ["bash", "-n"], zsh: ["zsh", "-n"], fish: ["fish", "--no-execute"] }
+  let checked = 0
+  for (const shell of COMPLETION_SHELLS) {
+    const [program, flag] = checks[shell]
+    if (spawnSync(program, ["--version"], { encoding: "utf8" }).error) {
+      t.diagnostic(`${program} is not installed here; its script was not parsed`)
+      continue
+    }
+    const file = join(mkdtempSync(join(tmpdir(), "omakit-completion-")), `omakit.${shell}`)
+    writeFileSync(file, scripts[shell])
+    const result = spawnSync(program, [flag, file], { encoding: "utf8" })
+    assert.equal(result.status, 0, `${program} ${flag}: ${result.stderr}`)
+    assert.equal(result.stdout + result.stderr, "", `${program} ${flag} is silent`)
+    checked += 1
+  }
+  assert.ok(checked >= 1, "at least bash is expected here")
+})
+
+test("the bash function completes commands, flags, controlled values and directories", (t) => {
+  if (spawnSync("bash", ["--version"], { encoding: "utf8" }).error) {
+    t.skip("bash is not installed here")
+    return
+  }
+  const dir = mkdtempSync(join(tmpdir(), "omakit-completion-"))
+  const script = join(dir, "omakit.bash")
+  writeFileSync(script, scripts.bash)
+  // Drive the completion function the way readline does: COMP_WORDS and
+  // COMP_CWORD set, the function called, COMPREPLY read back.
+  const complete = (...words) => {
+    const result = spawnSync("bash", ["-c", [
+      `source "$1"; shift`,
+      `COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); COMP_LINE="$*"; COMP_POINT=\${#COMP_LINE}`,
+      `_omakit; printf '%s\\n' "\${COMPREPLY[@]}"`,
+    ].join("\n"), "bash", script, ...words], { encoding: "utf8", cwd: REPO_ROOT })
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout.split("\n").filter(Boolean)
+  }
+  const names = subcommandsOf(COMMANDS).map((sub) => sub.name)
+  assert.deepEqual(complete("omakit", ""), names)
+  assert.deepEqual(complete("omakit", "sub"), ["submit"])
+  assert.deepEqual(complete("omakit", "submit", "--category", "Dev"), ["Developer\\ Tools"], "a value with a space is escaped for the shell")
+  assert.deepEqual(complete("omakit", "submit", "--tags", "bar,qu"), ["bar,quickshell"], "the segment after the last comma")
+  assert.deepEqual(complete("omakit", "submit", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").flags.map((f) => f.flag))
+  assert.deepEqual(complete("omakit", "submit", "doc"), ["docs"], "a target is a directory")
+  assert.deepEqual(complete("omakit", "completion", ""), [...COMPLETION_SHELLS])
+  assert.deepEqual(complete("omakit", "doctor", "--"), ["--offline", "--json"])
+})
+
+test("the command prints the script and nothing else, under every setting", () => {
+  for (const shell of COMPLETION_SHELLS) {
+    const piped = run(["completion", shell])
+    assert.equal(piped.code, 0)
+    assert.equal(piped.out, scripts[shell])
+    assert.equal(piped.err, "", "nothing on stderr")
+    for (const env of [{ FORCE_COLOR: "1" }, { NO_COLOR: "1" }, { TERM: "dumb" }]) {
+      const other = run(["completion", shell], env)
+      assert.equal(other.out, piped.out, `${shell}: ${JSON.stringify(env)} changed the script`)
+      assert.equal(other.err, "")
+    }
+    assert.doesNotMatch(piped.out, /\u001b/)
+    assert.equal(plain(piped.out), piped.out)
+  }
+})
+
+test("an unknown shell, or none, is a usage error naming the three it has", () => {
+  for (const args of [["completion"], ["completion", "powershell"]]) {
+    const { code, out, err } = run(args)
+    assert.equal(code, 2, args.join(" "))
+    assert.equal(out, "", "nothing on stdout")
+    assert.ok(err.startsWith(`${DENSITY.full} FAIL  usage`), err)
+    assert.ok(err.includes(`omakit completion ${COMPLETION_SHELLS.join("|")}`), err)
+  }
+})
+
+test("setup knows where each shell loads the script from, and whether it is there", () => {
+  const home = mkdtempSync(join(tmpdir(), "omakit-home-"))
+  assert.equal(completionInstall({ SHELL: "/bin/bash", HOME: home }).path, join(home, ".local/share/bash-completion/completions/omakit"))
+  assert.equal(completionInstall({ SHELL: "/bin/bash", HOME: home, XDG_DATA_HOME: "/x" }).path, "/x/bash-completion/completions/omakit")
+  assert.equal(completionInstall({ SHELL: "/usr/bin/fish", HOME: home }).path, join(home, ".config/fish/completions/omakit.fish"))
+  assert.equal(completionInstall({ SHELL: "/usr/bin/zsh", HOME: home }).path, join(home, ".zfunc/_omakit"))
+  assert.equal(completionInstall({ SHELL: "/usr/bin/zsh", HOME: home }).display, "~/.zfunc/_omakit")
+  assert.equal(completionInstall({ SHELL: "/bin/tcsh", HOME: home }), null, "no script, no hint")
+  assert.equal(completionInstall({ HOME: home }), null)
+  const env = { SHELL: "/usr/bin/fish", HOME: home }
+  assert.equal(completionInstalled(env), false)
+  mkdirSync(join(home, ".config/fish/completions"), { recursive: true })
+  writeFileSync(join(home, ".config/fish/completions/omakit.fish"), scripts.fish)
+  assert.equal(completionInstalled(env), true)
+})

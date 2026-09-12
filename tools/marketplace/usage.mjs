@@ -11,6 +11,9 @@ import { colourEnabled, paintProse, STEP, styler } from "./style.mjs"
 
 export const TAGLINE = "marketplace submit preflight for Omarchy Quattro plugins"
 
+/** The shells `omakit completion` has a script for; completion.mjs holds the scripts. */
+export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])
+
 export const COMMANDS = Object.freeze([
   {
     signature: "omakit setup",
@@ -72,6 +75,13 @@ export const COMMANDS = Object.freeze([
     lines: [
       "What is installed, what is pinned, and what has moved since. Reads and",
       "prints; it installs nothing and never moves the pin.",
+    ],
+  },
+  {
+    signature: `omakit completion ${COMPLETION_SHELLS.join("|")}`,
+    lines: [
+      "A completion script for your shell, on stdout, carrying the pin's own",
+      "categories and tags. Regenerate it if the pin is ever moved.",
     ],
   },
   {

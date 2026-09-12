@@ -19,6 +19,7 @@ import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 import { TAGLINE } from "./usage.mjs"
+import { completionInstall, completionInstalled } from "./completion.mjs"
 
 function version(command) {
   try {
@@ -102,6 +103,14 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   if (!onPath()) {
     step("info", "`omakit` is not on your PATH yet. This puts it there:")
     fix(`ln -s ${entryPoint} ~/.local/bin/omakit`)
+    out()
+  }
+
+  // Tab completion, for the shell in $SHELL, and only while it is not there.
+  const completion = completionInstall()
+  if (completion && !completionInstalled()) {
+    step("info", `Tab completion for ${completion.shell} is not installed yet. This puts it there${completion.note ? `, ${completion.note}` : ""}:`)
+    fix(`mkdir -p ${completion.display.slice(0, completion.display.lastIndexOf("/"))} && omakit completion ${completion.shell} > ${completion.display}`)
     out()
   }
 
