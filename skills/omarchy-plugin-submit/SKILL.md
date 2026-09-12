@@ -37,16 +37,16 @@ title and body. Exit code 1 means it refused, and no body was produced.
 
 Each check names a source. `[marketplace-pin]` is the marketplace's own rule, read
 from a pinned checkout. `[omakit]` is this tool's own check, derived from public
-issue data — do not describe those to the owner as marketplace requirements.
+issue data. Do not describe those to the owner as marketplace requirements.
 
 A failing check prints the failing paths, a remedy and the measured reason it
 exists. Fix the cause, do not work around the check.
 
 ## The two refusals people argue with
 
-**`tree.agent-control`.** Agent-control files anywhere in the installable tree —
-`AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `.mcp.json`, anything under `.claude/` or
-`.codex/`, instruction files under `skills/` — are a prompt-injection surface once
+**`tree.agent-control`.** Agent-control files anywhere in the installable tree
+(`AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `.mcp.json`, anything under `.claude/` or
+`.codex/`, instruction files under `skills/`) are a prompt-injection surface once
 the plugin is installed, and listing is blocked on them by a human reviewer after
 a long wait. 103 marketplace issues mention this. The remedy is to move the
 guidance to a non-agent filename such as `DEVELOPMENT.md`, untrack the originals
@@ -64,11 +64,11 @@ parked in their author's court have a HEAD the marketplace never saw.
 `baseline.preflight` runs the marketplace's own security baseline over a local
 snapshot of the exact commit and reports it verbatim.
 
-- `passed` — nothing in the baseline holds the submission back.
-- `review-required` — no findings, but one or more of the seven capabilities is
+- `passed`: nothing in the baseline holds the submission back.
+- `review-required`: no findings, but one or more of the seven capabilities is
   present, so a maintainer must look at this exact commit. Not a defect. Worth
   explaining in `--notes` rather than hiding.
-- `needs-fixes` — findings. Only `sudoers-dangerous-passwordless-command` and
+- `needs-fixes`: findings. Only `sudoers-dangerous-passwordless-command` and
   `privileged-process-control-from-shared-temp` block publication under the
   current enforcement mode; the rest a maintainer may accept for that commit.
   Fixing them first avoids a human round either way.

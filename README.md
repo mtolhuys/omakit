@@ -172,7 +172,7 @@ outcome or constructs the attestation marker the marketplace's bot posts.
 
 Every check names its source. `[marketplace-pin]` means the rule is the
 marketplace's, read from the pin. `[omakit]` means the check is this project's
-own, derived from public issue data — not marketplace policy, and it does not
+own, derived from public issue data, not marketplace policy, and it does not
 claim to be. Nothing here is endorsed by the marketplace's maintainers, and
 nothing in this tool asks them to install, configure or read anything.
 

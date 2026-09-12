@@ -23,7 +23,7 @@ import { renderSubmit, renderWatch } from "./report.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
-const USAGE = `omakit — marketplace submit preflight for Omarchy Quattro plugins
+const USAGE = `omakit: marketplace submit preflight for Omarchy Quattro plugins
 
   omakit pin
       Fetch or verify the pinned marketplace checkout in .cache/marketplace.

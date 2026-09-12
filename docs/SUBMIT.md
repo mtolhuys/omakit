@@ -74,8 +74,8 @@ policy says that result causes:
 
 | Outcome | What it causes |
 | --- | --- |
-| no findings, no capabilities | `passed` — nothing in the baseline holds the submission back |
-| no findings, one or more of the seven capabilities | `review-required` — a maintainer must look at this exact commit |
+| no findings, no capabilities | `passed`: nothing in the baseline holds the submission back |
+| no findings, one or more of the seven capabilities | `review-required`: a maintainer must look at this exact commit |
 | any finding | `needs-fixes`, but only `sudoers-dangerous-passwordless-command` and `privileged-process-control-from-shared-temp` block publication under the current `selective` enforcement mode; the other three carry a `review-required` disposition a maintainer may accept |
 
 The outcome derivation, the disposition, the blocking rule set and the

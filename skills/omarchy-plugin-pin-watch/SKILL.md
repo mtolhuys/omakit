@@ -20,7 +20,7 @@ So pushing a fix does nothing, and commenting "fixed in `abc123`" does nothing.
 Both feel like progress. Neither is. This is the single most common reason a
 submission sits still: of the 464 submissions parked in their author's court, 73%
 have a default-branch HEAD the marketplace never saw, and 82% of the authors whose
-push came after a review comment had also commented — engaged, and stuck.
+push came after a review comment had also commented: engaged, and stuck.
 
 ## Check it
 
@@ -34,20 +34,20 @@ falls back to the public commit feed.
 
 ## Acting on each verdict
 
-**`stale`** — the pin is behind. Tell the owner plainly: the marketplace has not
+**`stale`.** The pin is behind. Tell the owner plainly: the marketplace has not
 seen the newer commit, and the fix is to **edit the issue body** (any edit
 re-triggers validation and the baseline against the new commit). Do not advise
 them to push again, and do not advise them to comment. If you are asked to do it,
 that is an edit to their issue: get their explicit approval and do it yourself,
 outside this tool.
 
-**`current`** — the pin is the current HEAD. The submission is genuinely waiting
+**`current`.** The pin is the current HEAD. The submission is genuinely waiting
 on a person, or on a fix the reviewer asked for that has not been made. Read the
 review comments and address the substance. Do not edit the issue to "bump" it: a
 fresh validation clears the reviewer's human decision and costs him a complete
 re-read of the plugin.
 
-**`unknown`** — there is no validated commit to compare, the last baseline did not
+**`unknown`.** There is no validated commit to compare, the last baseline did not
 complete, or the repository's HEAD could not be read. The output says which. Never
 report this as `current`.
 

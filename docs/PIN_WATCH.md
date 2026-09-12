@@ -1,4 +1,4 @@
-# `omakit watch` — the review pin
+# `omakit watch`: the review pin
 
 ```
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
@@ -37,7 +37,7 @@ for a fresh validation never produced one; in the parked group, 77% never did.
 The instruction that would fix this exists. `scripts/submission-feedback.mjs`
 contains "edit the issue" 22 times, every one attached to a deterministic
 failure. `scripts/validate-submission.mjs` builds the success comment and
-contains it zero times — and the success path is the path 97 of 100 parked
+contains it zero times, and the success path is the path 97 of 100 parked
 submissions took. Full figures and method in [MEASUREMENTS.md](MEASUREMENTS.md).
 
 ## What it reads, and what it will not do
@@ -47,8 +47,8 @@ default-branch HEAD. The validated commit is not scraped out of prose: it is
 parsed with the marketplace's own `findLatestSecurityBaseline` and
 `parseSecurityBaselineMarker` from the pinned commit, so the commit compared is
 the one the marketplace itself attested. When no marker exists, the short commit
-from the validation comment is reported as what it is — too short to compare
-reliably — rather than guessed at.
+from the validation comment is reported as what it is, too short to compare
+reliably, rather than guessed at.
 
 It never edits the issue, never comments, never labels, never opens a pull
 request. The one action that refreshes the pin is the author's to take, and the

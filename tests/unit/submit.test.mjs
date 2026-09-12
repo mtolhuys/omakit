@@ -76,7 +76,7 @@ test("the crafted fixture is refused, and every measured failure class is named"
   }
 
   const agentControl = result.checks.find((check) => check.id === "tree.agent-control")
-  assert.deepEqual(agentControl.paths.map((path) => path.split(" — ")[0]), [
+  assert.deepEqual(agentControl.paths.map((path) => path.split(": ")[0]), [
     ".claude/settings.json",
     ".mcp.json",
     "AGENTS.md",

@@ -6,8 +6,8 @@ the refusals up front, in one pass, with the reason attached.
 
 Two skills cover the two jobs:
 
-- `skills/omarchy-plugin-submit/SKILL.md` — submitting a plugin.
-- `skills/omarchy-plugin-pin-watch/SKILL.md` — a submission that has gone quiet.
+- `skills/omarchy-plugin-submit/SKILL.md`: submitting a plugin.
+- `skills/omarchy-plugin-pin-watch/SKILL.md`: a submission that has gone quiet.
 
 Read the one you need. What follows applies to changing this repository itself.
 
@@ -17,7 +17,7 @@ Read the one you need. What follows applies to changing this repository itself.
 pull request, not as a side effect of anything. `omakit submit` prints a body; a
 person posts it, after the plugin owner has explicitly approved it. If you are
 asked to create the issue, ask for that approval first and then do it yourself
-with `gh` — not through this tool, which has no write path and must not grow one.
+with `gh`, not through this tool, which has no write path and must not grow one.
 `tests/unit/read-only.test.mjs` enforces this by reading every source file.
 
 **2. Never write down a marketplace rule.** Everything about the submission
@@ -50,7 +50,7 @@ primitive.
 They are also exactly what `tree.agent-control` refuses inside a plugin, and
 `tests/unit/self-containment.test.mjs` proves the check would catch them. If you
 ever add a code path that writes into a plugin tree, you have to add the test that
-proves no agent-control file can ride along with it — before the code path, not
+proves no agent-control file can ride along with it, before the code path, not
 after.
 
 ## Before you commit

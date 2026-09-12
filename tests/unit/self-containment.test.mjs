@@ -5,7 +5,7 @@
 // anything into a subject or plugin directory: there is no scaffolder, no
 // vendoring, no template writer, so nothing can carry an instruction file along.
 // Second, that if such a path were ever added, the agent-control check would
-// catch this repository's own files immediately — the check is run over this
+// catch this repository's own files immediately: the check is run over this
 // repository's tree and must flag them.
 import test from "node:test"
 import assert from "node:assert/strict"

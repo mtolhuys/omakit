@@ -30,14 +30,14 @@ label-event evidence rests on five requested timelines plus label combinations.
 One stratum, "closed but not listed" (667 issues), was not sampled and inherited
 the lower rate of the published group. W37 lead times are censored and too low.
 
-## M2 — The submission format costs round trips that a generated body cannot
+## M2. The submission format costs round trips that a generated body cannot
 
 | Measurement | Value |
 | --- | --- |
 | Submissions that fell out on the title prefix alone | 39 (14 still open, 7 rescued by hand) |
 | Open submissions malformed in the body | 11 |
 | Of those, distance from a valid submission | one case differs by the single word "Suggested" instead of "Suggest" |
-| What a malformed body produces | `❌ The validation result could not be published to the issue. A maintainer must review the workflow.` — which blames the maintainer for the author's mistake |
+| What a malformed body produces | `❌ The validation result could not be published to the issue. A maintainer must review the workflow.`, which blames the maintainer for the author's mistake |
 | Median submission-to-publication, 2026-W33 | 4.9 h |
 | Median submission-to-publication, 2026-W36 | 35.0 h (p90 101 h) |
 | Parked in the author's own court | 464 submissions, median 5.6 days since last activity |
@@ -56,7 +56,7 @@ the pin, and the rendered body is then handed to the marketplace's own
 form by one word reproduces exactly the failure above, so the form is the only
 source and the marketplace's own parser is the only judge.
 
-## M3 — Agent-control files are blocked by a human, and nothing warns first
+## M3. Agent-control files are blocked by a human, and nothing warns first
 
 | Measurement | Value |
 | --- | --- |
@@ -79,7 +79,7 @@ This is an Omakit check derived from public issue text. It is not marketplace
 policy and does not claim to be; its verdict is labelled `omakit`, not
 `marketplace-pin`.
 
-## M4 — The baseline decides whether a human has to look at all
+## M4. The baseline decides whether a human has to look at all
 
 From `registry.json` at the pin, across 2,990 listings:
 
@@ -111,7 +111,7 @@ The baseline performs no general data-flow analysis and is not a security
 review. This tool never says otherwise: it prints the marketplace's own two
 closing sentences, read out of the marketplace's own report builder at the pin.
 
-## M6 — The review pin goes stale silently, and that is the centre of this tool
+## M6. The review pin goes stale silently, and that is the centre of this tool
 
 After validation, the review is pinned to one exact commit.
 
@@ -119,7 +119,7 @@ After validation, the review is pinned to one exact commit.
 | --- | --- |
 | Parked submissions with a default-branch HEAD ahead of the validated commit | 73% of 464 |
 | Pushed after the maintainer's review without the marketplace ever seeing it | 47% |
-| Of those authors, who also commented | 82% — engaged and stuck, not gone |
+| Of those authors, who also commented | 82%, so they are engaged and stuck, not gone |
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a stale pin |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |

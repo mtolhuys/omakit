@@ -1,4 +1,4 @@
-// `omakit submit` — everything that is knowable before a submission is posted,
+// `omakit submit`: everything that is knowable before a submission is posted,
 // with the measured reason for every check stated next to the check.
 //
 // The command produces an issue title and body. It never posts them. Creating
@@ -6,9 +6,9 @@
 // also what the marketplace's own agent instructions require.
 //
 // Two sources of authority, never mixed:
-//   source: "marketplace-pin" — the rule is the marketplace's, read from the
+//   source: "marketplace-pin", the rule is the marketplace's, read from the
 //           pinned checkout at an exact commit. A pin update can change it.
-//   source: "omakit"          — the check is Omakit's own, derived from public
+//   source: "omakit",          the check is Omakit's own, derived from public
 //           issue text. It is not marketplace policy and never claims to be.
 
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
@@ -122,7 +122,7 @@ export async function submitPreflight(options) {
     detail: agentControl.length
       ? `${agentControl.length} agent-control file(s) in the installable tree`
       : "no agent-control files in the installable tree",
-    paths: agentControl.map((hit) => `${hit.path} — ${hit.reason}`),
+    paths: agentControl.map((hit) => `${hit.path}: ${hit.reason}`),
     remedy: AGENT_CONTROL_REMEDY.join(" "),
   }))
 
@@ -214,7 +214,7 @@ export async function submitPreflight(options) {
     detail: parsed
       ? parsed.ok
         ? `accepted: repo ${parsed.submission.repo}, category ${parsed.submission.category}, tags ${parsed.submission.tags.join(", ")}`
-        : `refused by the marketplace's own parser: ${parsed.code} — ${parsed.message}`
+        : `refused by the marketplace's own parser: ${parsed.code}, ${parsed.message}`
       : "not run: no body was rendered",
   }))
 
@@ -260,7 +260,7 @@ export async function submitPreflight(options) {
     // when one of the two selectively blocking rules fired.
     verdict: consequence?.outcome === "passed" || consequence?.outcome === "review-required",
     detail: preflight.refusal
-      ? `the official code refused the snapshot: ${preflight.refusal.code} — ${preflight.refusal.message}`
+      ? `the official code refused the snapshot: ${preflight.refusal.code}, ${preflight.refusal.message}`
       : preflight.invoked
         ? `${consequence.outcome} (disposition ${consequence.disposition}, enforcement ${consequence.enforcementMode}, blocksApproval ${consequence.blocksApproval}). ${consequence.meaning}`
         : `not run: ${preflight.skipReason}`,
