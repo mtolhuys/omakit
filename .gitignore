@@ -8,3 +8,6 @@
 *.swp
 *.swo
 *~
+
+# Python leaves these beside docs/media/render.py when it is run without -B.
+__pycache__/

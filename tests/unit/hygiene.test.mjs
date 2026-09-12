@@ -31,7 +31,10 @@ const files = walk(REPO_ROOT)
 // obvious what is banned and why; the point is vendor neutrality, not a blocklist
 // of products.
 const VENDOR = /(?:^|[/\s._-])(?:claude|chatgpt|openai|copilot|cursor|codex|gemini|anthropic)(?:[/\s._-]|$)/i
-const SCRATCH = /(?:^|\/)(?:outputs?|scratch|tmp|temp|untitled|new folder)(?:\/|$)/i
+// `__pycache__` is here because one was committed for four commits beside
+// docs/media/render.py before anything noticed: a compiled artefact of the
+// documentation tooling, named after nothing, and still not source.
+const SCRATCH = /(?:^|\/)(?:outputs?|scratch|tmp|temp|untitled|new folder|__pycache__)(?:\/|$)/i
 
 test("no path is named after anybody's tooling", () => {
   for (const path of files) {
