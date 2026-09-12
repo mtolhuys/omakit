@@ -6,7 +6,7 @@ them again from the committed scenes and captures produces byte-identical files.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
-| `banner.gif` | the wordmark scanning in, then two shine passes, as `omakit setup` draws it | a terminal session with timings |
+| `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it | a terminal session with timings |
 | `setup.gif` | `omakit setup` on a machine with no pin yet | a terminal session with timings |
 | `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
 | `watch.gif` | `omakit watch` on a real open submission with a stale pin | stdout, revealed line by line |
@@ -48,13 +48,18 @@ The two animated ones are recorded with their timings:
 ```bash
 script -q --log-out docs/media/captures/banner.out \
           --log-timing docs/media/captures/banner.tim \
-  -c 'node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"marketplace submit preflight for Omarchy Quattro plugins\" })"'
+  -c 'stty rows 12 cols 60; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"marketplace submit preflight for Omarchy Quattro plugins\" })"'
 
 rm -rf .cache/marketplace   # so setup has something to do
 script -q --log-out docs/media/captures/setup.out \
           --log-timing docs/media/captures/setup.tim \
-  -c "NODE_NO_WARNINGS=1 ./bin/omakit setup"
+  -c "stty rows 28 cols 100; NODE_NO_WARNINGS=1 ./bin/omakit setup"
 ```
+
+The `stty` is not decoration: `script` hands the program a pty with no window
+size, and the banner refuses to animate into a terminal whose height it cannot
+confirm, because five rows redrawn with cursor-up in a screen with no room to
+hold them strand a row of an earlier frame above the wordmark.
 
 Then, from the repository root:
 
@@ -71,9 +76,10 @@ block of lines the program actually wrote in one go. Without that check the
 replay happily assembled a frame from two different redraws, which looked like a
 wordmark with its bottom row missing and an `I` that read as a `T`.
 
-The scan is what `omakit setup` draws. `help` and `doctor` print the finished
-wordmark at once, because the scan takes 1.4 seconds and both of those commands
-exist to put text on the screen now.
+The scan is what every front-door command draws, `help` and `doctor` included.
+It is on a budget (`BUDGET_MS` in `tools/marketplace/banner.mjs`, 220ms), so the
+GIF is brisk because the program is: the first version took 1.4 seconds, which
+is long enough to be in the way of someone who ran `help` to read a flag.
 
 `render.py` is documentation tooling, not part of omakit: it needs Pillow and
 ffmpeg, which omakit itself does not. It cannot draw a character that is not in

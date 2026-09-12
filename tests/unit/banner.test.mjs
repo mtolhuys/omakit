@@ -4,7 +4,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { banner, bannerEnabled, frame, wordmarkRows, wordmarkLayout, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
+import { banner, bannerEnabled, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const plain = (text) => String(text).replace(/\[[0-9;]*m/g, "")
@@ -20,12 +20,15 @@ test("a piped run gets no banner at all, not even a plain one", async () => {
   assert.equal(bannerEnabled({ isTTY: true }, {}), true)
 })
 
-test("oma and kit are tinted differently, and both tints are palette entries", () => {
+test("oma and kit differ in tint and in weight, and both tints are palette entries", () => {
   const layout = wordmarkLayout("omakit")
   const drawn = frame(layout, -2, layout.width + 2).join("\n")
   // The prefix is the ecosystem's, the suffix is this tool's.
-  assert.match(drawn, /\u001b\[36m/, "oma takes the prefix tint")
+  assert.match(drawn, /\u001b\[1;36m/, "oma takes the prefix tint, in bold")
   assert.match(drawn, /\u001b\[39m/, "kit takes the suffix tint")
+  // Weight, not only hue: on a monochrome theme every ANSI hue resolves to the
+  // same grey, and a wordmark separated by tint alone renders flat there.
+  assert.match(drawn, /\u001b\[1;/, "the prefix is distinguishable without colour resolution")
   assert.equal(PREFIX_LETTERS, 3)
   // Nothing here may pin an actual colour: the theme decides.
   assert.doesNotMatch(drawn, /38;[25];|48;/, "a wordmark must not use truecolor or a colour cube")
@@ -89,16 +92,44 @@ test("the banner appears on the front door only", () => {
   }
 })
 
-test("only setup animates; nothing that prints content waits on the scan", () => {
-  // Measured: the scan is 28 columns of reveal plus two shine passes, about
-  // 1.4 seconds before the first line of usage would appear. `setup` is a first
-  // run that fetches 16 MB anyway; `help` and `doctor` exist to put text on the
-  // screen now.
+test("the whole scan fits in one glance, on any name the font can draw", () => {
+  // The first version was 28 columns of reveal at 22ms plus two shine passes at
+  // 14ms: about 1.4 seconds before the first line of usage appeared, which is
+  // long enough to be in the way of someone who ran `help` to read a flag. The
+  // schedule is derived from the budget now, so a longer name buys a quicker
+  // step instead of a longer wait.
+  assert.ok(BUDGET_MS <= 300, `a ${BUDGET_MS}ms scan is an interruption, not a flourish`)
+  for (const word of ["omakit", "omascan", "omakitt"]) {
+    const { width } = wordmarkLayout(word)
+    const plan = schedule(width)
+    assert.ok(plan.total <= BUDGET_MS, `${word}: ${plan.total}ms exceeds the budget`)
+    assert.ok(plan.delay >= 4, `${word}: ${plan.delay}ms a frame is below what a terminal can show`)
+    // Continuous: the head is two columns wide, so it may not jump further.
+    assert.ok(plan.stride <= 2, "the reveal would leave undrawn gaps behind the head")
+  }
+})
+
+test("every front-door command may animate, and no other command draws it at all", () => {
+  // The gate that matters is where the banner appears, not whether it moves;
+  // that one is asserted above. Both are read out of the CLI rather than
+  // trusted, because a banner in `submit` output costs a submission credibility.
   const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
-  for (const call of cli.match(/banner\(\{[^}]*\}\)/g) || []) {
-    assert.match(call, /animate:\s*false/, `${call} animates inside the CLI; only setup may`)
+  const calls = cli.match(/banner\(\{[^}]*\}\)|banner\(\)/g) || []
+  assert.ok(calls.length >= 2, "the front door draws the banner")
+  for (const call of calls) {
+    assert.doesNotMatch(call, /animate:\s*false/, `${call} opts out of the scan; the budget replaced that`)
   }
   const setup = readFileSync(join(REPO_ROOT, "tools/marketplace/setup.mjs"), "utf8")
   assert.match(setup, /banner\(\{[^}]*\}\)/, "setup draws the banner")
-  assert.doesNotMatch(setup, /animate:\s*false/, "setup is the one place the scan belongs")
+})
+
+test("a short terminal gets the finished wordmark and no cursor-up at all", async () => {
+  // Five rows redrawn with cursor-up in a terminal with no room to hold them
+  // means the screen scrolls under the animation and a row from an earlier
+  // frame is stranded above the wordmark.
+  const written = []
+  await banner({ stream: { isTTY: true, rows: 6, columns: 80, write: (s) => written.push(s) }, enabled: true })
+  const all = written.join("")
+  assert.doesNotMatch(all, /\u001b\[\d+A/, "no frame is redrawn, so nothing can be stranded")
+  assert.match(all, /\u2588/, "the wordmark is still drawn")
 })

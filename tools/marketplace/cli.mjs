@@ -109,9 +109,10 @@ async function cmdUpgrade(args) {
 }
 
 async function cmdDoctor(args) {
-  // The wordmark without the scan: doctor is run repeatedly, and an animation
-  // you have already seen is a delay.
-  if (!args.includes("--json")) await banner({ animate: false })
+  // The scan runs here too. It is on a budget now (banner.mjs: BUDGET_MS), so
+  // repeating it on a command people run repeatedly costs a fraction of a
+  // second rather than the second and a half the first version took.
+  if (!args.includes("--json")) await banner()
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline") })
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
   process.exit(result.problems ? 1 : 0)
@@ -191,14 +192,13 @@ if (command === "setup") {
     }
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
   } else {
-    // The wordmark, drawn at once. `help` is what you run because you want to
-    // read something now, and the scan costs 1.4 seconds before the first line
-    // of usage appears. Only `omakit setup` animates it: that command is a first
-    // run, it is fetching 16 MB anyway, and nobody is waiting on a line of text.
+    // The scan, then the usage. It is short enough (banner.mjs: BUDGET_MS) that
+    // the text is there by the time a reader's eyes have left the wordmark,
+    // which is the whole reason the schedule is derived from a budget.
     // The banner already says the name and the tagline; printing the same
     // sentence again directly underneath is just noise.
     const drew = bannerEnabled()
-    await banner({ animate: false, tagline: TAGLINE })
+    await banner({ tagline: TAGLINE })
     process.stdout.write(renderUsage({ heading: !drew }))
   }
 } else {

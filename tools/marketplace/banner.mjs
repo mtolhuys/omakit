@@ -9,13 +9,20 @@
 // less` and `omakit help --agent` stay plain text. And it respects NO_COLOR and
 // a dumb TERM like everything else here.
 //
-// Only `omakit setup` animates it. `help` and `doctor` draw the finished
-// wordmark at once, because the scan takes about 1.4 seconds and both of those
-// commands exist to put text on the screen now.
+// Every front-door command animates it, and the animation is on a budget: the
+// whole scan is BUDGET_MS, about a quarter of a second, so the first line of
+// help is on the screen before a person has finished looking at the wordmark.
+// The first version of this took 1.4 seconds, which is long enough to be in the
+// way of someone who only wanted to read the flags. The schedule below is
+// derived from the budget rather than from taste, so the wordmark can grow a
+// letter without the scan growing a delay.
 //
-// `oma` and `kit` are tinted differently on purpose: the prefix is the
-// ecosystem's, the suffix is this tool's. Both tints are ANSI palette entries,
-// so an Omarchy theme decides what they actually look like.
+// `oma` and `kit` differ in two ways, not one: a different tint, and a
+// different weight. Tint alone disappears on a deliberately monochrome theme
+// like Matte Black, where every ANSI hue resolves to the same grey and a
+// two-tone wordmark renders flat. Weight survives that, because bold is the one
+// attribute a monochrome palette still has to honour. Both tints are ANSI
+// palette entries, so an Omarchy theme decides what they actually look like.
 //
 // The animation is the tool's own motif rather than an ornament: the same
 // scanner that sweeps the progress line during a baseline run sweeps across the
@@ -25,10 +32,14 @@
 
 const ESC = "\u001b["
 const RESET = `${ESC}0m`
-const HEAD = `${ESC}96m`
-const PREFIX = `${ESC}36m`
+const HEAD = `${ESC}1;96m`
+const PREFIX = `${ESC}1;36m`
 const SUFFIX = `${ESC}39m`
-const FLOOR = `${ESC}90m`
+// The rule and the tagline sit under the wordmark and are still meant to be
+// read, so neither is dim: on a low-contrast theme grey-on-near-black is a
+// decoration nobody can see.
+const FLOOR = `${ESC}36m`
+const TAGLINE = `${ESC}39m`
 
 const BLOCK = "\u2588"
 const RULE = "\u2581"
@@ -82,6 +93,35 @@ export function wordmarkLayout(word) {
 /** Kept for the simple case: just the five rows. */
 export function wordmarkRows(word) {
   return wordmarkLayout(word).rows
+}
+
+/**
+ * The whole animation, in milliseconds. Not a taste parameter: `help` exists to
+ * put text on the screen, so the scan has to be over before it is in the way.
+ * A quarter of a second is about one glance.
+ */
+export const BUDGET_MS = 220
+
+// How many columns the head jumps per frame. Two for the reveal keeps the sweep
+// continuous, because the head is two columns wide; three for the return pass
+// is a highlight travelling over letters that are already drawn, where a gap
+// costs nothing.
+const REVEAL_STRIDE = 2
+const SHINE_STRIDE = 3
+
+/**
+ * Frames are spaced to fit the budget, not the other way round, so a longer
+ * name means a quicker step rather than a longer wait.
+ *
+ * @param {number} width
+ * @param {number} [budget]
+ */
+export function schedule(width, budget = BUDGET_MS) {
+  const stride = REVEAL_STRIDE
+  const shineStride = SHINE_STRIDE
+  const frames = Math.floor(width / stride) + 1 + Math.ceil(width / shineStride) + 1
+  const delay = Math.max(4, Math.floor(budget / frames))
+  return { stride, shineStride, delay, frames, total: frames * delay }
 }
 
 export function bannerEnabled(stream = process.stdout, env = process.env) {
@@ -139,7 +179,7 @@ export async function banner(options = {}) {
   const layout = wordmarkLayout(word)
   const { width } = layout
   const rule = FLOOR + RULE.repeat(width) + RESET
-  const tagline = options.tagline ? `${FLOOR}${options.tagline}${RESET}` : null
+  const tagline = options.tagline ? `${TAGLINE}${options.tagline}${RESET}` : null
 
   // Nothing at all when it is not a terminal. There is no plain-text substitute
   // to print: `help` and `setup` already say the name and what it does in words,
@@ -153,6 +193,7 @@ export async function banner(options = {}) {
   const rowsAvailable = Number.isFinite(stream.rows) ? stream.rows : Infinity
   const animate = options.animate !== false && rowsAvailable >= GLYPH_ROWS + 4
 
+  const { stride, shineStride, delay } = schedule(width, options.budgetMs)
   const paint = (lines) => lines.map((line) => `${ESC}2K${line}`)
   const write = (lines) => stream.write(`${paint(lines).join("\n")}\n`)
   const up = () => stream.write(`${ESC}${GLYPH_ROWS}A`)
@@ -169,14 +210,15 @@ export async function banner(options = {}) {
       await new Promise((resolve) => setTimeout(resolve, delay))
       up()
     }
-    for (let band = 0; band <= width; band += 1) await step(band, band, 22)
-    const shines = options.shines ?? 2
+    for (let band = 0; band <= width; band += stride) await step(band, band, delay)
+    // One return pass over the finished wordmark. Two looked better and cost
+    // twice the budget, and the budget is the point.
+    const shines = options.shines ?? 1
     for (let pass = 0; pass < shines; pass += 1) {
-      const from = pass % 2 === 0 ? width : 0
-      const to = pass % 2 === 0 ? 0 : width
-      const direction = from > to ? -1 : 1
-      for (let band = from; band !== to + direction; band += direction) {
-        await step(band, width + 2, 14)
+      const forward = pass % 2 === 1
+      for (let step_ = 0; step_ <= Math.ceil(width / shineStride); step_ += 1) {
+        const offset = step_ * shineStride
+        await step(forward ? offset : width - offset, width + 2, delay)
       }
     }
     write(frame(layout, -2, width + 2))
