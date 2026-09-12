@@ -1,0 +1,121 @@
+[90msubject     [0m https://github.com/example/omarchy-plugin-clockwork
+[90mcommit      [0m 59be5837842bd079c2872c42d472e0e5c2c9dd22
+[90mmarketplace [0m pin 38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6 (baseline 3, selective)
+
+[32mok  [0m [1mplugin.root-manifest[0m  [90m[marketplace-pin][0m
+       manifest.json declares id "clockwork.bar" and name "Clockwork"
+
+[32mok  [0m [1mplugin.root-readme[0m  [90m[marketplace-pin][0m
+       root README: README.md
+
+[32mok  [0m [1mplugin.root-license[0m  [90m[marketplace-pin][0m
+       root license: LICENSE
+
+[32mok  [0m [1mplugin.readme-install-removal[0m  [90m[omakit][0m
+       README mentions installation: yes; removal or uninstall: yes
+
+[31;1mFAIL[0m [1mtree.agent-control[0m  [90m[omakit][0m
+       5 agent-control file(s) in the installable tree
+       [31m-[0m [33m.claude/settings.json: inside an agent-control directory (.claude/)[0m
+       [31m-[0m [33m.mcp.json: agent-control file (.mcp.json)[0m
+       [31m-[0m [33mAGENTS.md: agent-control file (AGENTS.md)[0m
+       [31m-[0m [33mdocs/CLAUDE.md: agent-control file (CLAUDE.md)[0m
+       [31m-[0m [33mskills/publishing/SKILL.md: agent-control file (SKILL.md)[0m
+[36m       remedy: Move the guidance to a non-agent filename such as DEVELOPMENT.md.
+       Untrack the originals (git rm --cached) so they leave the installable tree,
+       and add them to .gitignore. Keep a recursive release check so they cannot
+       return.[0m
+[90m       why this check exists: 103 marketplace issues mention agent-control files, and
+       24 of 328 sampled maintainer review comments are about them: an instruction
+       file inside an installed plugin is treated as a prompt-injection surface and
+       listing is blocked on it. Nothing in the marketplace's automated baseline
+       detects them, so without this check an author learns about them only from a
+       human review round, which is the most expensive round there is.[0m
+
+[32mok  [0m [1midentity.available[0m  [90m[marketplace-pin][0m
+       id "clockwork.bar" is unused, outside the reserved omarchy.* namespace, and
+       the repository is not listed
+
+[32mok  [0m [1msubmission.title[0m  [90m[marketplace-pin][0m
+       title will be "[Plugin]: Clockwork"
+
+[32mok  [0m [1msubmission.category[0m  [90m[marketplace-pin][0m
+       category: Widgets
+
+[32mok  [0m [1msubmission.tags[0m  [90m[marketplace-pin][0m
+       tags: Bar, Quickshell
+
+[32mok  [0m [1msubmission.repository-url[0m  [90m[marketplace-pin][0m
+       https://github.com/example/omarchy-plugin-clockwork
+
+[32mok  [0m [1msubmission.headings[0m  [90m[marketplace-pin][0m
+       6 headings rendered in form order
+
+[32mok  [0m [1msubmission.checklist[0m  [90m[marketplace-pin][0m
+       5 items rendered with the form's exact text, all checked
+
+[32mok  [0m [1msubmission.official-parser[0m  [90m[marketplace-pin][0m
+       accepted: repo https://github.com/example/omarchy-plugin-clockwork, category
+       Widgets, tags bar, quickshell
+
+[32mok  [0m [1msubmission.pinned-commit[0m  [90m[omakit][0m
+       not checked (--offline). Local commit
+       59be5837842bd079c2872c42d472e0e5c2c9dd22.
+
+[31;1mFAIL[0m [1mbaseline.preflight[0m[33m (advisory)[0m  [90m[marketplace-pin][0m
+       needs-fixes (disposition review-required, enforcement selective,
+       blocksApproval false). Findings are present but none of them is selectively
+       blocking (sudoers-dangerous-passwordless-command,
+       privileged-process-control-from-shared-temp), so the disposition is
+       review-required: a maintainer may accept them for this exact commit.
+       [31m-[0m [33mcurl-pipe-shell: install.sh:2[0m
+[36m       remedy: These findings do not block publication under the current enforcement
+       mode, but a maintainer must accept them for this exact commit. Fixing them
+       first avoids that round.[0m
+[90m       why this check exists: The official baseline decides whether a human has to
+       look at all: of 2,990 listings it produced 1,697 `passed`, 1,226
+       `review-required` and 20 `needs-fixes`. It is the pinned marketplace code
+       itself, run over a local snapshot; Omakit adds no rule and renames no outcome.[0m
+
+[90m--- the marketplace's own baseline report for this commit ---[0m
+
+## Automated security baseline
+
+🟡 **Manual review required at commit `59be583…`.**
+
+Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
+
+### Findings requiring review
+
+#### Downloaded content is passed directly to a shell (`curl-pipe-shell`)
+
+The remote response is executed immediately and is not bound to the commit reviewed for this submission.
+
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/59be5837842bd079c2872c42d472e0e5c2c9dd22/install.sh#L2)
+
+      curl -fsSL https://example.invalid/setup.sh \| sh
+
+Accepted fixes:
+- Remove the download-and-execute installation path.
+- Use a trusted package manager or another installation path that does not execute downloaded content.
+
+### Capabilities detected
+
+#### Installer or setup path (`installer`)
+
+Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
+
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/59be5837842bd079c2872c42d472e0e5c2c9dd22/install.sh#L1)
+
+      Installer or setup file
+
+This deterministic baseline detects only its documented patterns and is not designed to stop a motivated attacker.
+
+This is not a security audit, certification, warranty, or endorsement.
+
+Official baseline preview over a local snapshot. The marketplace rescans the
+public commit itself. This is not approval, listing, verification or a
+security audit.
+
+[31;1mREFUSED: 1 blocking check(s) failed: tree.agent-control[0m
+No submission body is produced. Fix the failures above and run submit again.

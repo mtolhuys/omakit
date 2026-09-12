@@ -61,13 +61,15 @@ environment and never written anywhere.
 
 ## Two real runs
 
-Both verdicts, against real open submissions on 2026-09-12. The title and the
-author login are withheld here because they add nothing and name a person; the
-issue numbers and commits are public and make the run reproducible.
+Both verdicts, against real open submissions on 2026-09-12, verbatim. The
+command does not print the author's login: the text rendering ends up pasted into
+issues, reports and screenshots, and the login adds nothing that the repository
+URL does not already say. It is still in `--json` for callers that need it.
 
 ```console
 $ omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/4403
 issue        https://github.com/omacom/omarchy-plugin-marketplace/issues/4403  (open)
+title        [Plugin]: One-Time Codes
 labels       submission, needs-fixes, security-needs-fixes, security-review-required
 plugin repo  https://github.com/fooblahblah/omarchy-otp
 

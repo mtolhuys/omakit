@@ -9,7 +9,7 @@
 // use the same assistant should not find its name in the tree or in .gitignore.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 import { REPO_ROOT } from "./helpers.mjs"
 
@@ -59,13 +59,39 @@ test("no vendor name is baked into .gitignore either", () => {
   }
 })
 
-test("no binary assets are tracked", () => {
-  for (const path of files) {
-    assert.ok(
-      !/\.(?:gif|png|jpe?g|webp|mp4|mov|zip|tar|gz|pdf|so|node|wasm)$/i.test(path),
-      `${path} is a binary asset`,
-    )
+test("binary assets live in one place, are referenced, and are small", () => {
+  // D-25 was an accidental 352 KB GIF in a stray directory. The lesson was not
+  // "no images ever", it was that a binary nobody linked to and nobody noticed
+  // does not belong in a repository. So: one directory, referenced from tracked
+  // Markdown, and capped, and nowhere else.
+  const BINARY = /\.(?:gif|png|jpe?g|webp|mp4|mov|zip|tar|gz|pdf|so|node|wasm)$/i
+  const CAP_BYTES = 1024 * 1024
+  const markdown = files
+    .filter((path) => path.endsWith(".md"))
+    .map((path) => readFileSync(join(REPO_ROOT, path), "utf8"))
+    .join("\n")
+
+  for (const path of files.filter((entry) => BINARY.test(entry))) {
+    assert.ok(path.startsWith("docs/media/"), `${path} is a binary asset outside docs/media/`)
+    assert.ok(markdown.includes(path.slice("docs/".length)) || markdown.includes(path),
+      `${path} is a binary asset nothing links to`)
+    const bytes = statSync(join(REPO_ROOT, path)).size
+    assert.ok(bytes <= CAP_BYTES, `${path} is ${Math.round(bytes / 1024)} KB, over the ${CAP_BYTES / 1024} KB cap`)
   }
+})
+
+test("every GIF in docs/media has the capture and scene it was rendered from", () => {
+  // A recording nobody can reproduce is a claim, and this repository does not
+  // ship claims.
+  for (const path of files.filter((entry) => entry.startsWith("docs/media/") && entry.endsWith(".gif"))) {
+    const name = path.slice("docs/media/".length, -".gif".length)
+    assert.ok(files.includes(`docs/media/${name}.scene.json`), `${path} has no scene file`)
+    const scene = JSON.parse(readFileSync(join(REPO_ROOT, `docs/media/${name}.scene.json`), "utf8"))
+    for (const step of scene.steps) {
+      assert.ok(files.includes(step.capture), `${path} references a capture that is not committed: ${step.capture}`)
+    }
+  }
+  assert.ok(files.includes("docs/media/render.py"), "the renderer must be committed too")
 })
 
 test("every file is a candidate, whatever its extension", () => {

@@ -1,0 +1,35 @@
+{
+  "title": "omakit submit",
+  "width": 100,
+  "rows": 26,
+  "steps": [
+    {
+      "command": "omakit submit ~/src/omarchy-plugin-clockwork --category Widgets --tags bar,quickshell",
+      "capture": "docs/media/captures/submit-refused.ansi",
+      "reveal": 3,
+      "pace": 9,
+      "omit": [
+        [
+          80,
+          119,
+          "40 lines of the marketplace's own baseline report, left out for length"
+        ]
+      ],
+      "pauses": [
+        [
+          23,
+          170
+        ],
+        [
+          33,
+          220
+        ],
+        [
+          79,
+          140
+        ]
+      ],
+      "hold": 420
+    }
+  ]
+}

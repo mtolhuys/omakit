@@ -1,180 +1,36 @@
 # omakit
 
-One command that tells you whether an Omarchy Quattro plugin is ready to submit
-to the [plugin marketplace](https://github.com/omacom/omarchy-plugin-marketplace),
-and one that tells you why a submission has gone quiet.
+Everything knowable about an Omarchy Quattro plugin submission, before you post
+it. And, afterwards, why it is sitting still.
 
 Agent-first: the expected user is a coding agent submitting a plugin on an
-owner's behalf. Zero runtime dependencies, plain ESM, `node --test`, one
-executable entry point, no build step. Read-only against the marketplace at all
-times, and it never posts anything.
+owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
+Read-only against the marketplace, and it never posts anything.
 
-```console
-$ omakit pin
-ok - marketplace pin 38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6 (baseline 3, selective)
-
-$ omakit submit ~/src/omarchy-plugin-clock --category Widgets --tags bar,quickshell
-subject      https://github.com/example/omarchy-plugin-fixture-good
-commit       71d3e37a77f6bfd029c855785197d8b25d2ce3c6
-marketplace  pin 38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6 (baseline 3, selective)
-
-ok   plugin.root-manifest  [marketplace-pin]
-       manifest.json declares id "omakit-fixture.good" and name "Fixture Good"
-
-ok   plugin.root-readme  [marketplace-pin]
-       root README: README.md
-
-ok   plugin.root-license  [marketplace-pin]
-       root license: LICENSE
-
-ok   plugin.readme-install-removal  [omakit]
-       README mentions installation: yes; removal or uninstall: yes
-
-ok   tree.agent-control  [omakit]
-       no agent-control files in the installable tree
-
-ok   identity.available  [marketplace-pin]
-       id "omakit-fixture.good" is unused, outside the reserved omarchy.* namespace,
-       and the repository is not listed
-
-ok   submission.title  [marketplace-pin]
-       title will be "[Plugin]: Fixture Good"
-
-ok   submission.category  [marketplace-pin]
-       category: Widgets
-
-ok   submission.tags  [marketplace-pin]
-       tags: Bar, Quickshell
-
-ok   submission.repository-url  [marketplace-pin]
-       https://github.com/example/omarchy-plugin-fixture-good
-
-ok   submission.headings  [marketplace-pin]
-       6 headings rendered in form order
-
-ok   submission.checklist  [marketplace-pin]
-       5 items rendered with the form's exact text, all checked
-
-ok   submission.official-parser  [marketplace-pin]
-       accepted: repo https://github.com/example/omarchy-plugin-fixture-good,
-       category Widgets, tags bar, quickshell
-
-ok   submission.pinned-commit  [omakit]
-       local commit 71d3e37a77f6bfd029c855785197d8b25d2ce3c6 is the current
-       main-branch HEAD
-
-ok   baseline.preflight  [marketplace-pin]
-       passed (disposition clear, enforcement selective, blocksApproval false). No
-       findings and no capabilities. Nothing in the baseline holds this submission
-       back.
-
---- the marketplace's own baseline report for this commit ---
-
-## Automated security baseline
-
-✅ **Automated security baseline passed at commit `71d3e37…`.**
-
-No action is required.
-
-This deterministic baseline detects only its documented patterns and is not designed to stop a motivated attacker.
-
-This is not a security audit, certification, warranty, or endorsement.
-
-Official baseline preview over a local snapshot. The marketplace rescans the
-public commit itself. This is not approval, listing, verification or a
-security audit.
-
-Pinned commit: 71d3e37a77f6bfd029c855785197d8b25d2ce3c6
-  = main-branch HEAD (71d3e37a77f6bfd029c855785197d8b25d2ce3c6)
-
---- issue title ---
-[Plugin]: Fixture Good
-
---- issue body ---
-### Repository URL
-
-https://github.com/example/omarchy-plugin-fixture-good
-
-### Category
-
-Widgets
-
-### Tags
-
-Bar, Quickshell
-
-### Suggest a missing tag
-
-_No response_
-
-### Maintainer notes
-
-_No response_
-
-### Submission checklist
-
-- [X] The repository is public and contains installation and removal instructions.
-- [X] I have documented the plugin license and any external dependencies.
-- [X] I confirm that I own or have permission to submit this plugin and its preview assets.
-- [X] The plugin does not overwrite user configuration without explicit consent.
-- [X] I understand that approval is for listing and is not a security review.
-
-This is not posted. Ask the plugin owner to approve it, then create the
-issue yourself, for example:
-
-  gh issue create --repo omacom/omarchy-plugin-marketplace \
-    --title "[Plugin]: Fixture Good" \
-    --body-file <the body above>
-
-After it is created: Edit the issue body. That is the only action that re-runs
-validation and the security baseline against a new commit: a push does not, and
-a comment does not.
+```bash
+omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
 ```
 
-When a blocking check fails, the failing paths, a remedy and the measured reason
-are printed instead, and **no body is produced at all**.
+![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
 
-## Why this exists
+Fifteen checks. Every one names its source and, when it fails, the measured
+reason it exists. A blocking failure produces no submission body at all, because
+a refusal that still hands you the body is only a suggestion. Here the plugin is
+fine except that it ships instruction files an agent will read once installed:
+103 marketplace issues mention exactly that, and no automated check reports it.
 
-Two things, both measured on public marketplace data on 2026-09-12. Full figures
-and method in [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md).
-
-**Submissions fail on mechanics.** 39 fell out on the title prefix alone, 14 of
-them still open and 7 rescued by hand. 11 more open submissions are malformed in
-the body and get a validation error that blames the maintainer for the author's
-mistake; one of those differs from a valid submission by the single word
-"Suggested" instead of "Suggest". Separately, 103 issues mention agent-control
-files inside an installable plugin tree, which no automated check reports, so an
-author learns about them only from a human review round.
-
-**And then the review pin goes stale, silently.** After validation the review is
-pinned to one exact commit, and the only action that moves that pin is editing the
-issue body: there is no `issue_comment` trigger anywhere in the marketplace, so
-pushing a fix does nothing and commenting "fixed in `abc123`" does nothing. Of the
-464 submissions parked in their author's court, 73% have a default-branch HEAD the
-marketplace never saw; 47% pushed after the maintainer's review without the
-marketplace ever seeing it, and 82% of those authors also commented, so they are
-engaged and stuck rather than gone. Of 13 open submissions inspected with no
-labels left, 9 had passed validation and passed the security baseline with zero
-findings, and were blocked solely by a stale pin.
-
-```console
-$ omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
+```bash
+omakit watch <submission-issue-url>
 ```
 
-## What it does not claim
+![omakit watch reporting that a review pin has gone stale](docs/media/watch.gif)
 
-The baseline it runs is the marketplace's own code, imported unmodified from a
-read-only checkout pinned to an exact commit. It performs no data-flow analysis
-and is not a security review; this tool says so in the marketplace's own words,
-read out of the marketplace's own report builder, and never renames an official
-outcome or constructs the attestation marker the marketplace's bot posts.
-
-Every check names its source. `[marketplace-pin]` means the rule is the
-marketplace's, read from the pin. `[omakit]` means the check is this project's
-own, derived from public issue data, not marketplace policy, and it does not
-claim to be. Nothing here is endorsed by the marketplace's maintainers, and
-nothing in this tool asks them to install, configure or read anything.
+That submission passed validation and passed the security baseline with zero
+findings. It is stuck because the review is pinned to one exact commit, and the
+only action that moves that pin is editing the issue body. Pushing the fix does
+nothing. Commenting "fixed in `abc123`" does nothing. **73% of the 464
+submissions parked in their author's court have a default-branch HEAD the
+marketplace never saw.**
 
 ## Install
 
@@ -183,29 +39,69 @@ Node 22 or newer, and `git`.
 ```bash
 git clone https://github.com/mtolhuys/omakit
 cd omakit
-./bin/omakit pin     # fetches the pinned marketplace checkout into .cache/
+./bin/omakit pin      # fetches the pinned marketplace checkout into .cache/
 ./bin/omakit help
 ```
 
 `GITHUB_TOKEN` is optional, read-only, and never written to disk.
 
-## Evidence
+## What it is doing
+
+Nothing about the submission format is written down in this repository. The
+title prefix, the six form headings in order, the nine categories, the thirteen
+tags and the exact text of the five checklist items are all read from
+`.github/ISSUE_TEMPLATE/submit-plugin.yml` in a marketplace checkout pinned to an
+exact commit. The rendered body is then handed to the marketplace's own
+`parseCurrentSubmission` from that same commit. If it accepts the body here, it
+accepts it there, and no rule can drift.
+
+The security baseline is the marketplace's own code, imported unmodified and run
+over a local snapshot with no network. Omakit adds no rule, renames no outcome,
+and never restates the result as a safety claim: the baseline does no data-flow
+analysis and is not a security review, and the output says so in the
+marketplace's own words.
+
+Every check is labelled. `[marketplace-pin]` is the marketplace's rule, read from
+the pin. `[omakit]` is this project's own check, derived from public issue data.
+Those are not marketplace policy and do not claim to be.
+
+## Why it exists
+
+Four numbers, all measured on public marketplace data on 2026-09-12. Method,
+limits and the rest of the figures: [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md).
+
+| Measured | Consequence |
+| --- | --- |
+| 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
+| 1,226 of 2,990 listings needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
+| 103 issues mention agent-control files, which no automated check reports | submit refuses the tree and prints the paths and the remedy |
+| 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a read-only pin watch that names the one action which refreshes the review |
+
+It does not claim to unblock the maintainer. His review writing barely repeats,
+his median time from submission to publication is hours, and the queue waiting on
+him is a median half a day old. The honest size of what this saves him is the
+staleness paragraph he has written by hand on 358 issues, roughly 5.5% of his
+review writing. The rest of the benefit is the submitter's.
+[docs/MARKETPLACE.md](docs/MARKETPLACE.md) states that in full.
+
+## Evidence, not claims
+
+```bash
+npm test        # 60 tests, node --test, no dependencies
+```
 
 | Claim | Proof |
 | --- | --- |
-| The local transport produces the marketplace's own result | `omakit parity --count 30`, evidence in [docs/evidence/parity/](docs/evidence/parity/) |
-| A local run touches no network | `node tests/parity/offline.mjs <url@sha>` inside `unshare -rn`, evidence in [docs/evidence/offline/](docs/evidence/offline/) |
-| The generated body is well formed | the marketplace's own `parseCurrentSubmission` from the pin, in `tests/unit/issue.test.mjs` |
+| The local transport produces the marketplace's own result | 30 of 30 identical, [docs/evidence/parity/](docs/evidence/parity/) |
+| A local run touches no network | run inside `unshare -rn`, [docs/evidence/offline/](docs/evidence/offline/) |
+| The generated body is well formed | the marketplace's own parser, `tests/unit/issue.test.mjs` |
 | Nothing writes to the marketplace | `tests/unit/read-only.test.mjs`, over every source file |
 | No agent-control file can reach a plugin | `tests/unit/self-containment.test.mjs` |
+| The GIFs above are real output | captures and renderer in [docs/media/](docs/media/) |
 
 Committed evidence records a digest of each side rather than the results
 themselves: findings about a specific third-party plugin are not this project's
 to publish.
-
-```bash
-npm test
-```
 
 ## Documentation
 
@@ -215,9 +111,9 @@ npm test
 | [docs/PIN_WATCH.md](docs/PIN_WATCH.md) | the pin mechanism |
 | [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md) | every number, its method and its limits |
 | [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) | the seam, the pin, the boundaries |
-| [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | who this actually helps, stated honestly |
+| [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | who this actually helps |
 | [AGENTS.md](AGENTS.md) | changing this repository |
 
-MIT. This repository is derived work built on public data from
-`omacom/omarchy-plugin-marketplace`; it is not affiliated with or endorsed by
-that project.
+MIT. Derived work built on public data from
+`omacom/omarchy-plugin-marketplace`; not affiliated with or endorsed by that
+project.

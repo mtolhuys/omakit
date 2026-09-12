@@ -139,6 +139,8 @@ export async function pinWatch({ repoRoot, issueUrl }) {
       issue: `${MARKETPLACE_PIN.repository}/issues/${target.number}`,
       state: subject.state,
       title: subject.title,
+      // Kept in the JSON for callers that need it, not printed: the text
+      // rendering ends up pasted into issues, reports and screenshots.
       author: subject.user?.login || null,
       labels,
       createdAt: subject.created_at,

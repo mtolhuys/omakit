@@ -1,0 +1,24 @@
+{
+  "title": "omakit watch",
+  "width": 100,
+  "rows": 26,
+  "steps": [
+    {
+      "command": "omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/4403",
+      "capture": "docs/media/captures/watch-stale.ansi",
+      "reveal": 2,
+      "pace": 10,
+      "pauses": [
+        [
+          9,
+          160
+        ],
+        [
+          19,
+          240
+        ]
+      ],
+      "hold": 420
+    }
+  ]
+}
