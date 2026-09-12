@@ -30,6 +30,8 @@ import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage, TAGLINE } from
 import { renderCompletion } from "./completion.mjs"
 import { submissionContract } from "./form.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
+import { omakitCacheDir } from "./paths.mjs"
+import { parityOutput } from "./parity-output.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -58,17 +60,17 @@ const REMEDY = Object.freeze({
  * signature that was expected, so the remedy is the reference and not a
  * restatement of the message.
  */
-function fail(code, message, exit = 1) {
+function fail(code, message, exit = 1, remedy = REMEDY[code]) {
   const c = styler(colourEnabled(process.stderr))
   const lines = [`${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c)]
-  if (REMEDY[code]) lines.push(...action(REMEDY[code], c))
+  if (remedy) lines.push(...action(remedy, c))
   process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)
 }
 
 /** A thrown error becomes a failure state when it carries a code; anything else is a bug and keeps its stack. */
 function failFrom(error) {
-  if (error?.code && typeof error.code === "string") fail(error.code, error.message, error.code === "usage" ? 2 : 1)
+  if (error?.code && typeof error.code === "string") fail(error.code, error.message, error.code === "usage" ? 2 : 1, error.remedy || REMEDY[error.code])
   throw error
 }
 
@@ -164,7 +166,7 @@ async function cmdVerify(args) {
   if (!target) fail("usage", "verify needs a target: `omakit verify <path | https-url@sha>`", 2)
   let subject
   try {
-    subject = resolveSubject(target, { cacheRoot: resolve(ROOT, ".cache"), allowDirty: args.includes("--allow-dirty") })
+    subject = resolveSubject(target, { cacheRoot: omakitCacheDir(), allowDirty: args.includes("--allow-dirty") })
   } catch (error) {
     if (error instanceof SubjectError) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
     throw error
@@ -195,8 +197,19 @@ async function cmdParity(args) {
   const offset = option(args, "--offset")
   if (count) process.env.PARITY_COUNT = count
   if (offset) process.env.PARITY_OFFSET = offset
+  try {
+    const out = option(args, "--out")
+    process.env.PARITY_OUT = parityOutput({ repoRoot: ROOT, out })
+    if (out) process.env.PARITY_OUT_EXPLICIT = "1"
+  } catch (error) {
+    failFrom(error)
+  }
   process.env.OMAKIT_ROOT = ROOT
-  await import("../../tests/parity/run.mjs")
+  try {
+    await import("../../tests/parity/run.mjs")
+  } catch (error) {
+    failFrom(error)
+  }
 }
 
 /**
@@ -233,7 +246,7 @@ if (command === "setup") {
     })
   } catch (error) {
     spinner.done()
-    fail(error?.code || "marketplace-unavailable", error.message)
+    fail(error?.code || "marketplace-unavailable", error.message, 1, error?.remedy || REMEDY[error?.code])
   }
   spinner.done()
 } else if (command === "submit") {

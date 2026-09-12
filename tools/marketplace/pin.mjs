@@ -1,5 +1,5 @@
 // The one home of the marketplace pin (docs/MARKETPLACE.md). The checkout is a
-// read-only clone at this exact commit under .cache/marketplace; `omakit pin`
+// read-only clone at this exact commit in the user's XDG cache; `omakit pin`
 // creates or verifies it.
 //
 // It fetches only what omakit reads. The marketplace at this commit is 325 MB,
@@ -11,14 +11,16 @@
 // for the network instead of failing.
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
+import { omakitCacheDir } from "./paths.mjs"
 
 /** Raised for every way the pin can be missing or wrong; the code is what the CLI keys its remedy on. */
 export class PinError extends Error {
-  constructor(message) {
+  constructor(message, { code = "marketplace-unavailable", remedy = null } = {}) {
     super(message)
     this.name = "PinError"
-    this.code = "marketplace-unavailable"
+    this.code = code
+    this.remedy = remedy
   }
 }
 
@@ -50,9 +52,32 @@ export const PIN_PATHS = Object.freeze([
   "/.github/ISSUE_TEMPLATE/",
 ])
 
-/** The one place the checkout lives: under the tool itself. No variable moves it. */
-export function marketplacePinDir(repoRoot) {
+/** The user-writable pin location, with an explicit override for tests and unusual installs. */
+export function marketplacePinDir(_repoRoot, env = process.env) {
+  return env.OMAKIT_MARKETPLACE_PIN
+    ? resolve(env.OMAKIT_MARKETPLACE_PIN)
+    : omakitCacheDir("marketplace", env)
+}
+
+/** The location used before 0.1.0 packaging made the tool installable read-only. */
+export function legacyMarketplacePinDir(repoRoot) {
   return join(resolve(repoRoot), ".cache/marketplace")
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`
+}
+
+function pinMigration(repoRoot, env = process.env) {
+  if (env.OMAKIT_MARKETPLACE_PIN) return null
+  const oldDir = legacyMarketplacePinDir(repoRoot)
+  const newDir = marketplacePinDir(repoRoot, env)
+  if (!existsSync(join(oldDir, ".git")) || existsSync(newDir)) return null
+  const remedy = `mkdir -p -- ${shellQuote(dirname(newDir))} && mv -- ${shellQuote(oldDir)} ${shellQuote(newDir)}`
+  return new PinError(
+    `the marketplace pin is still at the old in-repository location ${oldDir}; the user-writable location ${newDir} does not exist. Omakit will not move the measured 16 MB checkout without you.`,
+    { code: "marketplace-pin-migration-required", remedy },
+  )
 }
 
 function git(dir, args, options = {}) {
@@ -73,8 +98,10 @@ function readPinIdentity(dir) {
  * Verify the pinned checkout without touching the network. Throws with a
  * stable message when it is missing, at another commit, or modified.
  */
-export function requirePin(repoRoot) {
-  const dir = marketplacePinDir(repoRoot)
+export function requirePin(repoRoot, env = process.env) {
+  const migration = pinMigration(repoRoot, env)
+  if (migration) throw migration
+  const dir = marketplacePinDir(repoRoot, env)
   if (!existsSync(join(dir, "scripts/security-baseline-scanner.mjs"))) {
     throw new PinError(`no pinned marketplace checkout at ${dir}. Every rule omakit checks is read from that checkout, so nothing can run without it.`)
   }
@@ -100,15 +127,17 @@ function hasCommit(dir) {
 
 /**
  * Reproducible setup: fetch exactly the pinned commit (depth 1) into
- * .cache/marketplace and check it out detached. Idempotent; never rewrites
+ * the XDG cache and check it out detached. Idempotent; never rewrites
  * an existing checkout that already sits at the pin.
  *
  * `log` is told what is happening as `{ state, text }`: a `pass` or `info`
  * line to keep, or `fetching` for the slow step about to start, which the CLI
  * draws as a progress line rather than a line of output.
  */
-export function ensurePin(repoRoot, log = () => {}) {
-  const dir = marketplacePinDir(repoRoot)
+export function ensurePin(repoRoot, log = () => {}, env = process.env) {
+  const migration = pinMigration(repoRoot, env)
+  if (migration) throw migration
+  const dir = marketplacePinDir(repoRoot, env)
   if (existsSync(join(dir, ".git")) && hasCommit(dir)) {
     const identity = readPinIdentity(dir)
     if (identity.commit === MARKETPLACE_PIN.commit && !identity.dirty) {

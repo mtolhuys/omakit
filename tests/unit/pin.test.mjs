@@ -8,10 +8,10 @@
 // fails this test.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
-import { PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { ensurePin, PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
@@ -67,6 +67,29 @@ test("a freshly fetched pin is sparse, and the pin identity still reads", () => 
   assert.equal(typeof pinIsSparse(dir), "boolean")
   assert.equal(marketplacePinDir(REPO_ROOT), dir)
   assert.match(MARKETPLACE_PIN.commit, /^[0-9a-f]{40}$/)
+})
+
+test("the pin follows XDG, falls back to ~/.cache, and keeps the explicit override", () => {
+  assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a", XDG_CACHE_HOME: "/cache/a" }), "/cache/a/omakit/marketplace")
+  assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a" }), "/home/a/.cache/omakit/marketplace")
+  assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a", OMAKIT_MARKETPLACE_PIN: "/chosen/pin" }), "/chosen/pin")
+})
+
+test("an old in-repository pin is named and never moved silently", () => {
+  const root = mkdtempSync(join(tmpdir(), "omakit-old-pin-"))
+  const old = join(root, ".cache/marketplace")
+  mkdirSync(join(old, ".git"), { recursive: true })
+  const env = { HOME: join(root, "home") }
+  assert.throws(
+    () => ensurePin(root, () => {}, env),
+    (error) => error.code === "marketplace-pin-migration-required"
+      && error.message.includes("16 MB")
+      && error.remedy.includes("mkdir -p --")
+      && error.remedy.includes("mv --")
+      && error.remedy.includes(old),
+  )
+  assert.ok(!existsSync(marketplacePinDir(root, env)), "the new location was not created")
+  assert.ok(existsSync(old), "the old checkout was not moved")
 })
 
 test("the pin's size on disk is the checkout's, reached through a symlink or not", () => {

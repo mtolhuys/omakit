@@ -4,9 +4,9 @@
 // checkout, because the two things a person might want "upgraded" here are not
 // the same thing and only one of them may ever move on its own.
 //
-// The tool version is npm's business: `npm i -g omakit@latest`. A CLI that
-// fetches and executes its own replacement is the supply-chain shape this
-// repository warns other people about.
+// The tool version belongs to the installer: Git for a checkout, npm for its
+// package, and pacman for the Arch package. A CLI that fetches and executes its
+// own replacement is the supply-chain shape this repository warns about.
 //
 // The pin must not move by itself. Bumping it changes where the submission
 // contract is read from, and the procedure in docs/UPSTREAM_CONTRACT.md requires
@@ -22,6 +22,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
+import { upgradeCommand } from "./upgrade.mjs"
 
 function tool(repoRoot) {
   try {
@@ -80,7 +81,7 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
     add("pin.size", sparse ? "ok" : "advice", `${pinDiskUsage(dir)}${sparse ? ", sparse" : ", full checkout"}`,
       sparse ? null : `This checkout predates the sparse fetch and is far larger than it needs to be. Remove ${dir} and run \`omakit pin\` to refetch only what omakit reads.`)
   } catch (error) {
-    add("pin.checkout", "problem", error.message, "omakit pin")
+    add("pin.checkout", "problem", error.message, error.remedy || "omakit pin")
   }
 
   if (!offline && identity) {
@@ -104,7 +105,7 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
       const current = latest === self.version
       add("omakit.latest", current ? "ok" : "advice",
         current ? `${latest} is the newest published version` : `${latest} is published, this is ${self.version}`,
-        current ? null : `npm i -g ${self.name}@latest`)
+        current ? null : upgradeCommand(repoRoot, self.name))
     } else {
       add("omakit.latest", "unknown", "the npm registry did not answer, or this version is unpublished")
     }

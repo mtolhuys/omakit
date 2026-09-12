@@ -1,0 +1,30 @@
+pkgname=omakit
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Read-only preflight for Omarchy Quattro plugin marketplace submissions"
+arch=('any')
+url="https://github.com/mtolhuys/omakit"
+license=('MIT')
+depends=('nodejs>=22' 'git')
+optdepends=('ttfx: animate the setup wordmark')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  install -d "${pkgdir}/usr/lib/${pkgname}"
+  cp -a bin tools skills package.json "${pkgdir}/usr/lib/${pkgname}/"
+  install -d "${pkgdir}/usr/lib/${pkgname}/tests/parity"
+  cp -a tests/parity/corpus.mjs tests/parity/run.mjs \
+    "${pkgdir}/usr/lib/${pkgname}/tests/parity/"
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 packaging/aur/completions/omakit.bash \
+    "${pkgdir}/usr/share/bash-completion/completions/omakit"
+  install -Dm644 packaging/aur/completions/_omakit \
+    "${pkgdir}/usr/share/zsh/site-functions/_omakit"
+  install -Dm644 packaging/aur/completions/omakit.fish \
+    "${pkgdir}/usr/share/fish/vendor_completions.d/omakit.fish"
+  install -d "${pkgdir}/usr/bin"
+  ln -s "../lib/${pkgname}/bin/omakit" "${pkgdir}/usr/bin/omakit"
+}

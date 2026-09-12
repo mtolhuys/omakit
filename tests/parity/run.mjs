@@ -12,17 +12,20 @@
 
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { runBaseline } from "../../tools/marketplace/run-baseline.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { parityCorpus, strataSizes } from "./corpus.mjs"
 import { subjectSlug } from "../../tools/subject/resolve.mjs"
 import { token } from "../../tools/marketplace/github.mjs"
+import { omakitCacheDir } from "../../tools/marketplace/paths.mjs"
+import { parityOutput } from "../../tools/marketplace/parity-output.mjs"
 
 const repoRoot = resolve(process.env.OMAKIT_ROOT || process.cwd())
 const pinDir = requirePin(repoRoot).dir
-const cacheDir = join(repoRoot, ".cache/parity")
+const cacheDir = omakitCacheDir("parity")
+const output = parityOutput({ repoRoot, out: process.env.PARITY_OUT || null })
 const count = Number(process.env.PARITY_COUNT || 30)
 const offset = Number(process.env.PARITY_OFFSET || 0)
 
@@ -36,8 +39,7 @@ function shallowClone(repoUrl, commit) {
   } catch {
     /* not fetched yet */
   }
-  // .cache/parity lives inside the Omakit repository, so `rev-parse` would
-  // find the outer repository; test for the clone's own .git instead.
+  // Test for the clone's own .git instead of relying on an outer repository.
   if (!existsSync(join(dir, ".git"))) {
     execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
     run(["remote", "add", "origin", repoUrl])
@@ -147,8 +149,17 @@ for (const target of corpus) {
   )
 }
 
+function generatorIdentity() {
+  try {
+    return { omakitCommit: execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() }
+  } catch {
+    const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
+    return { omakitPackage: `${pkg.name}@${pkg.version}` }
+  }
+}
+
 const summary = {
-  generator: { omakitCommit: execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { encoding: "utf8" }).trim() },
+  generator: generatorIdentity(),
   pinnedMarketplaceCommit: pinCommit(pinDir),
   corpusSize: corpus.length,
   requestedCount: count,
@@ -173,9 +184,11 @@ const summary = {
   rows,
 }
 const date = new Date().toISOString().slice(0, 10)
-mkdirSync(join(repoRoot, "docs/evidence/parity"), { recursive: true })
-let outFile = join(repoRoot, "docs/evidence/parity", `${date}-local-vs-github.json`)
-for (let n = 2; existsSync(outFile); n += 1) outFile = join(repoRoot, "docs/evidence/parity", `${date}-local-vs-github-${n}.json`)
+const outputIsFile = process.env.PARITY_OUT_EXPLICIT === "1"
+const outputDir = outputIsFile ? resolve(output, "..") : output
+mkdirSync(outputDir, { recursive: true })
+let outFile = outputIsFile ? output : join(outputDir, `${date}-local-vs-github.json`)
+for (let n = 2; !outputIsFile && existsSync(outFile); n += 1) outFile = join(outputDir, `${date}-local-vs-github-${n}.json`)
 writeFileSync(outFile, JSON.stringify(summary, null, 2) + "\n")
 console.log("\nidentical " + summary.identical + "/" + corpus.length + ", mismatches " + mismatches + ", failures " + failures + " -> " + outFile)
 process.exit(mismatches === 0 && failures === 0 ? 0 : 1)

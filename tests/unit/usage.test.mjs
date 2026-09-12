@@ -22,12 +22,11 @@ test("every command is listed, with its own description", () => {
   }
 })
 
-test("what a person has to set up is answered in a sentence, and there is no variable to list", () => {
+test("what a person has to set up is answered without a credential-variable list", () => {
   // The measured complaint this fixes: a bare list of environment variables
   // under the heading "Environment" read as things you must configure. The
-  // answer is that you configure nothing: a `gh` login is enough, most of this
-  // audience already has one, and omakit reads no variable of its own, so the
-  // list is gone rather than explained.
+  // answer is that you configure nothing: a `gh` login is enough, and the pin's
+  // optional path override is not a credential, so the list stays out of help.
   const off = renderUsage({ colour: false })
   assert.ok(off.includes("GitHub access:"))
   assert.ok(!off.includes("Environment:"), "no environment section")

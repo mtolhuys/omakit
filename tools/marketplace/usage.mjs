@@ -31,7 +31,8 @@ export const COMMANDS = Object.freeze([
   {
     signature: "omakit pin",
     lines: [
-      "Fetch or verify the pinned marketplace checkout in .cache/marketplace.",
+      "Fetch or verify the pinned marketplace checkout in the user cache:",
+      "$XDG_CACHE_HOME/omakit/marketplace, or ~/.cache/omakit/marketplace.",
       `Read-only, exact commit ${MARKETPLACE_PIN.commit}.`,
     ],
   },
@@ -91,10 +92,10 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit parity [--count <n>] [--offset <n>]",
+    signature: "omakit parity [--count <n>] [--offset <n>] [--out <file>]",
     lines: [
       "The official baseline over GitHub versus the local transport on real",
-      "listed repositories; writes its evidence under docs/evidence/parity/.",
+      "listed repositories; a packaged install requires --out for evidence.",
     ],
   },
 ])
@@ -109,8 +110,8 @@ export const TARGET_NOTE = "<target> is a local Git repository path, or <https u
 /**
  * The answer to "what do I have to set up?" is "nothing", and it is said in
  * so many words. There is no environment section because omakit reads no
- * variable of its own: `gh` is the one credential source and honours
- * GH_TOKEN and GITHUB_TOKEN itself, the pinned checkout has one place, and
+ * credential variable of its own: `gh` is the one credential source and honours
+ * GH_TOKEN and GITHUB_TOKEN itself, the pin follows XDG unless explicitly overridden, and
  * the terminal's own conventions (a pipe, TERM=dumb, NO_COLOR) are what turn
  * colour and motion off.
  */

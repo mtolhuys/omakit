@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { upgrade, isExpectedRemote, REPOSITORY } from "../../tools/marketplace/upgrade.mjs"
+import { installKind, upgrade, upgradeCommand, isExpectedRemote, REPOSITORY } from "../../tools/marketplace/upgrade.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 function repo(remote = REPOSITORY) {
@@ -46,8 +46,17 @@ test("it refuses a checkout that is not a Git checkout, and names the package ro
   const io = collect()
   const result = await upgrade({ repoRoot: dir, stream: io.stream })
   assert.equal(result.ok, false)
-  assert.match(io.text(), /not a Git checkout/)
+  assert.match(io.text(), /npm package install/)
   assert.match(io.text(), /npm i -g omakit@latest/)
+})
+
+test("package installs name the package manager that owns them", () => {
+  assert.equal(installKind("/usr/lib/node_modules/omakit"), "npm")
+  assert.equal(upgradeCommand("/usr/lib/node_modules/omakit"), "npm i -g omakit@latest")
+  assert.equal(installKind("/usr/lib/omakit"), "distro")
+  assert.equal(upgradeCommand("/usr/lib/omakit"), "sudo pacman -Syu omakit")
+  assert.equal(installKind(REPO_ROOT), "git")
+  assert.equal(upgradeCommand(REPO_ROOT), "omakit upgrade")
 })
 
 test("it refuses an unexpected remote rather than pulling from it", async () => {

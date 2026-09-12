@@ -22,11 +22,28 @@
 
 import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
-import { join } from "node:path"
+import { join, resolve, sep } from "node:path"
 import { progress } from "./progress.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, verdict, wrap } from "./style.mjs"
 
 export const REPOSITORY = "https://github.com/mtolhuys/omakit"
+
+/** Identify only the three supported delivery shapes; npm wins under /usr/node_modules. */
+export function installKind(repoRoot) {
+  const root = resolve(repoRoot)
+  if (existsSync(join(root, ".git"))) return "git"
+  if (root.split(sep).includes("node_modules")) return "npm"
+  if (root === "/usr/lib/omakit" || root.startsWith("/usr/lib/omakit/")) return "distro"
+  return "npm"
+}
+
+export function upgradeCommand(repoRoot, name = "omakit") {
+  return {
+    git: "omakit upgrade",
+    npm: `npm i -g ${name}@latest`,
+    distro: `sudo pacman -Syu ${name}`,
+  }[installKind(repoRoot)]
+}
 
 function git(dir, args) {
   return execFileSync("git", ["-C", dir, ...args], {
@@ -66,9 +83,12 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   const ok = (text) => out(`${mark("pass", c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
 
   if (!existsSync(join(repoRoot, ".git"))) {
+    const kind = installKind(repoRoot)
     return refuse(
-      "this is not a Git checkout, so there is nothing to fast-forward. It looks like a package install.",
-      "npm i -g omakit@latest",
+      kind === "distro"
+        ? "this is a distro package under /usr, so omakit leaves upgrades to pacman."
+        : "this is an npm package install, so omakit leaves upgrades to npm.",
+      upgradeCommand(repoRoot),
     )
   }
 
