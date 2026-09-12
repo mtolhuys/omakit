@@ -1,4 +1,4 @@
-Script started on 2026-09-12 23:26:01+02:00 [COMMAND="stty rows 28 cols 100; NODE_NO_WARNINGS=1 ./bin/omakit setup" <not executed on terminal>]
+Script started on 2026-09-13 00:03:42+02:00 [COMMAND="stty rows 28 cols 100; NODE_NO_WARNINGS=1 ./bin/omakit setup" <not executed on terminal>]
 [?25l                            
                             
                             
@@ -237,9 +237,8 @@ Script started on 2026-09-12 23:26:01+02:00 [COMMAND="stty rows 28 cols 100; NOD
 Every rule omakit checks is read from that checkout, at that exact commit. It
 [39mnever moves on its own. [0m[34momakit doctor[0m[39m says when it is behind.[0m
 
-[2m░ info[0m  Tab completion for bash is not installed yet. This puts it there:
-        [34;1m→[0m [34mmkdir -p ~/.local/share/bash-completion/completions && omakit[0m
-          [34mcompletion bash > ~/.local/share/bash-completion/completions/omakit[0m
+[32m▁ ok[0m    tab completion for bash installed at
+        ~/.local/share/bash-completion/completions/omakit.
 
 Try it on a plugin you have checked out:
 
@@ -247,4 +246,4 @@ Try it on a plugin you have checked out:
 
 It prints the issue title and body. It never posts anything.
 
-Script done on 2026-09-12 23:26:04+02:00 [COMMAND_EXIT_CODE="0"]
+Script done on 2026-09-13 00:03:45+02:00 [COMMAND_EXIT_CODE="0"]

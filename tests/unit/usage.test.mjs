@@ -18,7 +18,7 @@ test("every command is listed, with its own description", () => {
   assert.ok(off.startsWith(`omakit: ${TAGLINE}`))
   for (const command of COMMANDS) {
     for (const line of [].concat(command.signature)) assert.ok(off.includes(line), `missing: ${line}`)
-    for (const line of command.lines) assert.ok(off.includes(line), `missing: ${line}`)
+    for (const line of command.lines) assert.ok(off.includes(line.replace(/`/g, "")), `missing: ${line}`)
   }
 })
 

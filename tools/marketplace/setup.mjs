@@ -19,7 +19,8 @@ import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 import { TAGLINE } from "./usage.mjs"
-import { completionInstall, completionInstalled } from "./completion.mjs"
+import { installCompletion } from "./completion.mjs"
+import { submissionContract } from "./form.mjs"
 
 function version(command) {
   try {
@@ -106,13 +107,25 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
     out()
   }
 
-  // Tab completion, for the shell in $SHELL, and only while it is not there.
-  const completion = completionInstall()
-  if (completion && !completionInstalled()) {
-    step("info", `Tab completion for ${completion.shell} is not installed yet. This puts it there${completion.note ? `, ${completion.note}` : ""}:`)
-    fix(`mkdir -p ${completion.display.slice(0, completion.display.lastIndexOf("/"))} && omakit completion ${completion.shell} > ${completion.display}`)
-    out()
+  // Tab completion, installed for the shell in $SHELL where that shell loads
+  // it from, so nobody has to know the path. The script carries the pin's
+  // categories and tags, so it is rewritten when the pin has moved and left
+  // alone otherwise.
+  try {
+    const contract = await submissionContract({ repoRoot })
+    const completion = installCompletion({ contract, pin: identity.commit })
+    if (completion.state === "unsupported") {
+      step("info", completion.shell
+        ? `tab completion: no script for ${completion.shell}; \`omakit completion bash|zsh|fish\` prints one for those.`
+        : "tab completion: $SHELL is not set, so no script was installed; `omakit completion bash|zsh|fish` prints one.")
+    } else {
+      const what = { installed: "installed", updated: "updated for this pin", current: "already installed" }[completion.state]
+      step("pass", `tab completion for ${completion.shell} ${what} at ${completion.display}${completion.note ? `, ${completion.note}` : ""}.`)
+    }
+  } catch (error) {
+    step("info", `tab completion was not installed: ${error.message}`)
   }
+  out()
 
   out("Try it on a plugin you have checked out:")
   out()

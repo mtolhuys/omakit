@@ -56,18 +56,24 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     for (const primitive of ["cpSync", "copyFileSync", "copyFile", "renameSync", "symlinkSync", "linkSync"]) {
       assert.ok(!new RegExp(`\\b${primitive}\\s*\\(`).test(text), `${path} uses ${primitive}`)
     }
-    // Writes are allowed to an explicit --out path, to docs/evidence, and to the
+    // Writes are allowed to an explicit --out path, to docs/evidence, to the
     // pinned checkout's own .git/info (the sparse-checkout file, which is how
-    // the pin fetches only what omakit reads). Nothing else, and never into a
-    // subject.
+    // the pin fetches only what omakit reads), and to the one completion
+    // script `setup` installs where the user's shell loads it from
+    // (completionFile, in completion.mjs, at the path completionInstall names
+    // and nowhere else). Nothing else, and never into a subject.
     // The capture takes the rest of the line, because a target like
     // join(dir, ".git/info/x") contains a comma of its own.
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info/.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, nor the pin's own .git/info`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,/.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, nor the completion script`,
       )
+    }
+    if (path === "tools/marketplace/completion.mjs") {
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "completion.mjs writes exactly one file")
+      assert.match(text, /const completionFile = target\.path/, "and it is the path completionInstall names")
     }
     // And that allowance is only for the pin directory, not for any directory.
     for (const match of text.matchAll(/writeFileSync\(join\((\w+), "\.git\/info/g)) {

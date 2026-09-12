@@ -86,8 +86,8 @@ export const COMMANDS = Object.freeze([
   {
     signature: `omakit completion ${COMPLETION_SHELLS.join("|")}`,
     lines: [
-      "A completion script for your shell, on stdout, carrying the pin's own",
-      "categories and tags. Regenerate it if the pin is ever moved.",
+      "The completion script `omakit setup` installs for your shell, printed",
+      "for another one. It carries the pin's own categories and tags.",
     ],
   },
   {
@@ -185,7 +185,7 @@ export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
       out.push(`${INDENT}${paintSignature(line, c)}`)
     }
     for (const line of command.lines) {
-      out.push(`${DESCRIPTION}${c("prose", line)}`)
+      out.push(`${DESCRIPTION}${paintProse(line, c)}`)
     }
     out.push("")
   }

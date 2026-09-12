@@ -9,8 +9,8 @@
 // startup plus a pin read is not something to put behind a TAB. The script says
 // in its own header which pin it came from and how to regenerate it.
 
-import { existsSync } from "node:fs"
-import { basename, join } from "node:path"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { basename, dirname, join } from "node:path"
 import { tagSlug } from "./form.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "./usage.mjs"
 
@@ -240,8 +240,30 @@ export function completionInstall(env = process.env) {
   return { shell, path: join(dir, "_omakit"), display: `${tilde(dir)}/_omakit`, note: "with `fpath+=~/.zfunc` before `compinit` in your .zshrc" }
 }
 
-/** Whether the script is already where the shell loads it from. */
-export function completionInstalled(env = process.env) {
+/**
+ * Install the script where the shell in $SHELL loads it from, so a person
+ * never has to know the path: `omakit setup` calls this. Idempotent: a script
+ * that is already there and names the current pin is left alone; a missing
+ * one, or one from another pin, is written. The only file this writes is
+ * the completion script at the path `completionInstall` names, and
+ * tests/unit/self-containment.test.mjs holds it to that.
+ *
+ * @param {{ contract: { categories: string[], tagLabels: string[] }, pin: string, env?: NodeJS.ProcessEnv }} options
+ * @returns {{ state: "installed"|"updated"|"current"|"unsupported", shell: string|null, display: string|null, note: string|null }}
+ */
+export function installCompletion({ contract, pin, env = process.env }) {
   const target = completionInstall(env)
-  return target ? existsSync(target.path) : true
+  if (!target) return { state: "unsupported", shell: basename(env.SHELL || "") || null, display: null, note: null }
+  const script = renderCompletion(target.shell, { contract, pin })
+  let existing = null
+  try {
+    existing = readFileSync(target.path, "utf8")
+  } catch {
+    existing = null
+  }
+  if (existing === script) return { state: "current", ...target }
+  mkdirSync(dirname(target.path), { recursive: true })
+  const completionFile = target.path
+  writeFileSync(completionFile, script)
+  return { state: existing === null ? "installed" : "updated", ...target }
 }

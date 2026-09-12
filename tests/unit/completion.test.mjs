@@ -3,10 +3,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { completionInstall, completionInstalled, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
+import { completionInstall, installCompletion, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { submissionContract, tagSlug } from "../../tools/marketplace/form.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "../../tools/marketplace/usage.mjs"
@@ -123,18 +123,37 @@ test("an unknown shell, or none, is a usage error naming the three it has", () =
   }
 })
 
-test("setup knows where each shell loads the script from, and whether it is there", () => {
+test("setup installs the script where the shell in $SHELL loads it from, and nowhere else", () => {
   const home = mkdtempSync(join(tmpdir(), "omakit-home-"))
   assert.equal(completionInstall({ SHELL: "/bin/bash", HOME: home }).path, join(home, ".local/share/bash-completion/completions/omakit"))
   assert.equal(completionInstall({ SHELL: "/bin/bash", HOME: home, XDG_DATA_HOME: "/x" }).path, "/x/bash-completion/completions/omakit")
   assert.equal(completionInstall({ SHELL: "/usr/bin/fish", HOME: home }).path, join(home, ".config/fish/completions/omakit.fish"))
   assert.equal(completionInstall({ SHELL: "/usr/bin/zsh", HOME: home }).path, join(home, ".zfunc/_omakit"))
   assert.equal(completionInstall({ SHELL: "/usr/bin/zsh", HOME: home }).display, "~/.zfunc/_omakit")
-  assert.equal(completionInstall({ SHELL: "/bin/tcsh", HOME: home }), null, "no script, no hint")
+  assert.equal(completionInstall({ SHELL: "/bin/tcsh", HOME: home }), null, "no script, no path")
   assert.equal(completionInstall({ HOME: home }), null)
+
+  // A fresh home: the script is written, and it is the only thing written.
   const env = { SHELL: "/usr/bin/fish", HOME: home }
-  assert.equal(completionInstalled(env), false)
-  mkdirSync(join(home, ".config/fish/completions"), { recursive: true })
-  writeFileSync(join(home, ".config/fish/completions/omakit.fish"), scripts.fish)
-  assert.equal(completionInstalled(env), true)
+  const first = installCompletion({ contract, pin, env })
+  assert.equal(first.state, "installed")
+  const file = join(home, ".config/fish/completions/omakit.fish")
+  assert.equal(readFileSync(file, "utf8"), scripts.fish)
+  const files = readdirSync(home, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name)
+  assert.deepEqual(files, ["omakit.fish"], "the script is the only file written")
+
+  // Run again: nothing to do, and the file is untouched.
+  assert.equal(installCompletion({ contract, pin, env }).state, "current")
+  assert.equal(readFileSync(file, "utf8"), scripts.fish)
+
+  // The pin moved: the script names the old one, so it is rewritten.
+  writeFileSync(file, scripts.fish.replace(pin, "0".repeat(40)))
+  assert.equal(installCompletion({ contract, pin, env }).state, "updated")
+  assert.equal(readFileSync(file, "utf8"), scripts.fish)
+
+  // A shell with no script: nothing is written, and the shell is named.
+  const other = mkdtempSync(join(tmpdir(), "omakit-home-"))
+  assert.deepEqual(installCompletion({ contract, pin, env: { SHELL: "/bin/tcsh", HOME: other } }), { state: "unsupported", shell: "tcsh", display: null, note: null })
+  assert.deepEqual(readdirSync(other), [])
+  assert.equal(installCompletion({ contract, pin, env: { HOME: other } }).shell, null)
 })

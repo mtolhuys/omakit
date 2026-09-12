@@ -69,13 +69,15 @@ and `omakit doctor` says which of the two you are on.
 omakit doctor        # what is installed, what is pinned, and what has moved
 omakit help --agent  # the operating instructions, for the agent running this
 omakit pin           # what setup does for the pin, on its own
-omakit completion bash | zsh | fish   # a completion script, from the pin's own form
+omakit completion bash | zsh | fish   # the completion script setup installs, on stdout
 ```
 
-The completion script knows the subcommands and their flags, completes a
-directory for `<target>`, and offers the categories and tags the pin's
-submission form actually has. `omakit setup` says where your shell loads it
-from, until it is there.
+`omakit setup` installs tab completion for the shell you run it from (bash,
+zsh or fish, read from `$SHELL`), where that shell loads it from, and says so;
+run it again after the pin moves and it rewrites the script. The script knows
+the subcommands and their flags, completes a directory for `<target>`, and
+offers the categories and tags the pin's submission form actually has.
+`omakit completion <shell>` prints the same script for a shell you are not in.
 
 While `submit` works, a scanner sweeps across a progress line naming the step it
 is on. It is drawn on stderr and only when stderr is a terminal, so a piped run
