@@ -81,4 +81,5 @@ else.
 | `docs/UPSTREAM_CONTRACT.md` | the seam, the pin, the boundaries |
 | `docs/MARKETPLACE.md` | who this actually helps, stated honestly |
 | `docs/TUI.md` | the visual system: one vocabulary, one scale, and the tests that hold them |
+| `docs/PALETTE.md` | every installed theme measured, and the index each role gets |
 | `tools/marketplace/README.md` | the module map |

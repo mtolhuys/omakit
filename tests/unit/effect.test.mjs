@@ -9,7 +9,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { banner, frame, GLYPH_ROWS, schedule, wordmarkLayout } from "../../tools/marketplace/banner.mjs"
 import { effectAvailable, playEffect, TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
-import { MOTION, plain } from "../../tools/marketplace/style.mjs"
+import { code, MOTION, plain } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const ESC = "\u001b["
@@ -65,7 +65,7 @@ test("a played effect is relayed, then the wordmark is repainted in omakit's tin
   assert.ok(effectEnd > 0, "the effect's frames came first")
   assert.ok(text.slice(effectEnd).startsWith(`${ESC}${GLYPH_ROWS}A`), "then a walk back up over the five rows")
   assert.ok(text.includes(`${ESC}?25h`), "the cursor is shown again")
-  assert.match(text, /\[36m/, "the prefix tint is omakit's own")
+  assert.ok(text.includes(`${ESC}${code("typeable")}m`), "the prefix tint is omakit's own")
   assert.doesNotMatch(text, /\[38;[25];/, "no truecolor and no 256-colour anywhere")
   // What follows the walk up is the finished wordmark in omakit's tints, then
   // the front door's own shine pass over it, frame for frame the scan's, then

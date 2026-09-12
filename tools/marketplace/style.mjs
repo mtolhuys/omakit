@@ -13,31 +13,50 @@
 // tests/unit/style.test.mjs fails if a truecolor or 256-colour escape appears
 // anywhere in the sources.
 //
-// What each colour means, used the same way everywhere:
+// Colour is named by role, never by hue, at every call site: `c("typeable",
+// text)`, not `c("cyan", text)`. ROLES below is the one table that says which
+// palette index a role gets, and tests/unit/style.test.mjs fails on a hue
+// name used anywhere else. The index for each role was chosen by measuring
+// every theme installed on an Omarchy machine (32 of them, 5 light; the
+// method, the table and the reasoning are in docs/PALETTE.md), against the
+// worst case rather than the average:
 //
-//   green    it passed, it is fine, nothing to do; and the name of an
-//            environment variable, which is a setting in the same register
-//   red      it failed, and it is blocking
-//   yellow   your attention: an advisory failure, a path at fault, a placeholder
-//            you are meant to replace
-//   cyan     something you type or run, and the one action that fixes things
-//   bold     a name: a check id, a heading, a commit you should read
-//   grey     punctuation and grouping only: brackets, separators, a rule, and
-//            a label that names what the text beside it is
-//   default  the sentence itself
+//   typeable     blue (34). What you could type: a command, a flag, the remedy
+//                arrow, the `omakit` word. The one role a reader most needs to
+//                spot. Cyan was pixel-identical to the foreground on Matte
+//                Black and unreadable in three themes; blue is at least 21
+//                CIELAB units from the foreground in every chromatic theme,
+//                and on Matte Black it is the theme's own amber accent.
+//   placeholder  yellow (33). What you replace, in <angle brackets>, and the
+//   advisory     advisory and unknown marks. Unreadable in four themes, and
+//   unknown      still the least bad slot: every alternative fails more
+//                themes or collapses into blue or green. The brackets and the
+//                block glyph carry it where the hue does not.
+//   pass         green (32). Also an environment variable name, a setting in
+//   variable     the same register.
+//   fail         red (31), bold. At least 28 from the foreground everywhere.
+//   label        dim (2). A label beside a value, punctuation, grouping, a
+//   punctuation  rule, the info mark. Grey (90) was under 3:1 in 23 of 32
+//   info         themes, 1.5:1 on Matte Black; dim is the foreground scaled
+//                by the terminal (measured: 0.66 in Alacritty, foot and
+//                kitty, 0.74 in Ghostty) and is readable in all 32.
+//   heading      bold. A heading, a name: a check id, a commit you should read.
+//   name
+//   prose        the foreground (39). The sentence itself.
 //
 // Hue is never the only carrier. Omarchy's Matte Black theme resolves every
 // ANSI hue to nearly the same grey (measured: green reads orange, yellow reads
-// red, cyan reads grey), so anything said by colour alone is not said there.
-// Every distinction below is therefore also carried by something a monochrome
-// terminal has to honour: the density of a block glyph, the case of a word,
-// the column a line starts in, or the blank line around a block.
+// red, cyan reads grey), and five installed themes are monochrome by design,
+// so anything said by colour alone is not said there. Every distinction is
+// therefore also carried by something a monochrome terminal has to honour:
+// the density of a block glyph, the case of a word, the column a line starts
+// in, or the blank line around a block.
 //
 // A sentence a person has to read is never grey and never dim. On a
 // low-contrast theme grey on near-black is a line nobody can see, and the fix
-// is not a brighter grey, it is not dimming prose in the first place. Emphasis
-// inside a sentence comes from bold, or from tinting the one word you could
-// type.
+// is not a brighter grey, it is not dimming prose in the first place. A label
+// is one word, and it is the only thing that is ever dim. Emphasis inside a
+// sentence comes from bold, or from tinting the one word you could type.
 //
 // Colour is applied only when stdout is a terminal, and never under NO_COLOR or
 // a dumb TERM. The words never change: a piped run and a watched run say the
@@ -52,14 +71,46 @@ const SGR = {
   green: 32,
   yellow: 33,
   blue: 34,
+  magenta: 35,
   cyan: 36,
   white: 37,
   default: 39,
   grey: 90,
-  brightCyan: 96,
 }
 
+/**
+ * The roles, and the SGR each resolves to. This is the only place a hue is
+ * named; every call site names a role. `styler` accepts a dotted chain of
+ * roles and SGR names, so "fail" is "red.bold" and "typeable.bold" is a bold
+ * blue, but a source file outside this one may only use the role names.
+ */
+export const ROLES = Object.freeze({
+  typeable: "blue",
+  placeholder: "yellow",
+  advisory: "yellow",
+  unknown: "yellow",
+  pass: "green",
+  variable: "green",
+  fail: "red.bold",
+  label: "dim",
+  punctuation: "dim",
+  info: "dim",
+  heading: "bold",
+  name: "bold",
+  prose: "default",
+})
+
 export const PALETTE = Object.freeze({ ...SGR })
+
+/** The SGR parameter string for a role, for the two places that write an escape by hand (the wordmark, the progress line). */
+export function code(role) {
+  return String(role)
+    .split(".")
+    .flatMap((part) => (ROLES[part] || part).split("."))
+    .map((part) => SGR[part])
+    .filter((n) => n !== undefined)
+    .join(";")
+}
 
 // --- geometry ---------------------------------------------------------------
 
@@ -130,11 +181,11 @@ export const ARROW = "→"
  * column of lower-case ones, with or without colour.
  */
 export const STATUS = Object.freeze({
-  pass: Object.freeze({ glyph: DENSITY.floor, word: "ok", tint: "green" }),
-  fail: Object.freeze({ glyph: DENSITY.full, word: "FAIL", tint: "red.bold" }),
-  advisory: Object.freeze({ glyph: DENSITY.dark, word: "note", tint: "yellow" }),
-  info: Object.freeze({ glyph: DENSITY.light, word: "info", tint: "grey" }),
-  unknown: Object.freeze({ glyph: DENSITY.medium, word: "?", tint: "yellow" }),
+  pass: Object.freeze({ glyph: DENSITY.floor, word: "ok", tint: "pass" }),
+  fail: Object.freeze({ glyph: DENSITY.full, word: "FAIL", tint: "fail" }),
+  advisory: Object.freeze({ glyph: DENSITY.dark, word: "note", tint: "advisory" }),
+  info: Object.freeze({ glyph: DENSITY.light, word: "info", tint: "info" }),
+  unknown: Object.freeze({ glyph: DENSITY.medium, word: "?", tint: "unknown" }),
 })
 
 /** The width of the widest mark, "█ FAIL"; every mark is padded to it so the names beside them align. */
@@ -195,12 +246,9 @@ export function motionEnabled(stream, env = process.env) {
 export function styler(enabled) {
   if (!enabled) return (_name, text) => String(text)
   return (name, text) => {
-    const codes = String(name)
-      .split(".")
-      .map((part) => SGR[part])
-      .filter((code) => code !== undefined)
-    if (!codes.length) return String(text)
-    return `[${codes.join(";")}m${text}[0m`
+    const codes = code(name)
+    if (!codes) return String(text)
+    return `[${codes}m${text}[0m`
   }
 }
 
@@ -218,7 +266,7 @@ export function paintProse(line, c) {
   if (!String(line).includes("`")) return String(line)
   return String(line)
     .split(/`([^`]+)`/)
-    .map((part, index) => (index % 2 ? c("cyan", part) : c("default", part)))
+    .map((part, index) => (index % 2 ? c("typeable", part) : c("prose", part)))
     .join("")
 }
 
@@ -331,7 +379,7 @@ export function verdict(state, word, text, c) {
   const status = STATUS[state]
   if (!status) throw new Error(`style: no status named ${state}`)
   const head = `${status.glyph} ${word}`
-  const tint = status.tint.includes("bold") ? status.tint : `${status.tint}.bold`
+  const tint = (ROLES[status.tint] || status.tint).includes("bold") ? status.tint : `${status.tint}.bold`
   const lines = text ? wrap(text, { indent: head.length + 2 }, c) : []
   return lines.length ? [`${c(tint, head)}  ${lines[0].trimStart()}`, ...lines.slice(1)] : [c(tint, head)]
 }
@@ -343,7 +391,7 @@ export function verdict(state, word, text, c) {
  */
 export function field(key, value, c, { wrapValue = true } = {}) {
   if (key.length > LABEL - 2) throw new Error(`style: key "${key}" is wider than the label column`)
-  const label = `${c("grey", key)}${" ".repeat(LABEL - key.length)}`
+  const label = `${c("label", key)}${" ".repeat(LABEL - key.length)}`
   const lines = wrapValue ? wrap(value, { indent: LABEL }, c) : [String(value)]
   return [`${label}${lines[0].trimStart()}`, ...lines.slice(1)]
 }
@@ -363,8 +411,8 @@ export function action(text, c, { indent = GUTTER } = {}) {
   // to do, so a backticked word inside it has nothing to stand out from.
   const lines = wrap(text, { indent: indent + 2 })
   return lines.map((line, index) => (index === 0
-    ? `${" ".repeat(indent)}${c("cyan.bold", ARROW)} ${c("cyan", line.trimStart())}`
-    : `${" ".repeat(indent + 2)}${c("cyan", line.trimStart())}`))
+    ? `${" ".repeat(indent)}${c("typeable.bold", ARROW)} ${c("typeable", line.trimStart())}`
+    : `${" ".repeat(indent + 2)}${c("typeable", line.trimStart())}`))
 }
 
 /**
@@ -376,7 +424,7 @@ export function labelled(label, text, c, { indent = GUTTER } = {}) {
   const gap = label.length + 2
   const lines = wrap(text, { indent: indent + gap }, c)
   return lines.map((line, index) => (index === 0
-    ? `${" ".repeat(indent)}${c("grey", label)}  ${line.trimStart()}`
+    ? `${" ".repeat(indent)}${c("label", label)}  ${line.trimStart()}`
     : line))
 }
 
@@ -386,10 +434,10 @@ export function labelled(label, text, c, { indent = GUTTER } = {}) {
  * section of a report and the front door of the tool are drawn by one idea.
  */
 export function section(title, c, { width: total = COLUMNS } = {}) {
-  return [c("bold", title), c("grey", DENSITY.floor.repeat(total))]
+  return [c("heading", title), c("punctuation", DENSITY.floor.repeat(total))]
 }
 
 /** A rule with no heading, the same floor, for a wordmark or a block that names itself. */
-export function rule(c, { width: total = COLUMNS, tint = "grey" } = {}) {
+export function rule(c, { width: total = COLUMNS, tint = "punctuation" } = {}) {
   return c(tint, DENSITY.floor.repeat(total))
 }

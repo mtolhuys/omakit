@@ -131,18 +131,21 @@ export const ENVIRONMENT = Object.freeze([
  * sequences the first inserted and colour the `[` inside them, which corrupts
  * every sequence downstream of it.
  */
-const TOKEN = /(^\s*omakit +[a-z][a-z-]*)|(<[^>]+>)|(--[a-z-]+)|(\bomakit\b)|([[\]])/g
+const TOKEN = /(^\s*omakit +[a-z][a-z-]*)|(<[^>]+>)|(--[a-z-]+)|(\bomakit\b)|(\b[a-z]+(?:\|[a-z]+)+\b)|([[\]])/g
 
 export function paintSignature(signature, c) {
-  return signature.replace(TOKEN, (token, lead, placeholder, flag, bare, bracket) => {
+  return signature.replace(TOKEN, (token, lead, placeholder, flag, bare, choice, bracket) => {
     if (lead) {
       const [, indent, name, gap, subcommand] = lead.match(/^(\s*)(omakit)( +)([a-z][a-z-]*)$/)
-      return `${indent}${c("cyan.bold", name)}${gap}${c("bold", subcommand)}`
+      return `${indent}${c("typeable.bold", name)}${gap}${c("name", subcommand)}`
     }
-    if (placeholder) return c("yellow", placeholder)
-    if (flag) return c("cyan", flag)
-    if (bare) return c("cyan.bold", bare)
-    return c("grey", bracket)
+    if (placeholder) return c("placeholder", placeholder)
+    if (flag) return c("typeable", flag)
+    if (bare) return c("typeable.bold", bare)
+    // A choice like bash|zsh|fish: each word is one you could type, and the
+    // bar between them is grouping.
+    if (choice) return choice.split("|").map((word) => c("typeable", word)).join(c("punctuation", "|"))
+    return c("punctuation", bracket)
   })
 }
 
@@ -159,7 +162,7 @@ export function paintSignature(signature, c) {
  */
 export function renderSummary({ colour = colourEnabled(), heading = true } = {}) {
   const c = styler(colour)
-  const out = heading ? [`${c("cyan.bold", "omakit")}${c("grey", ":")} ${TAGLINE}`, ""] : []
+  const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
   for (const command of COMMANDS) {
     out.push(`${INDENT}${paintSignature([].concat(command.signature)[0], c)}`)
   }
@@ -176,27 +179,27 @@ export function renderSummary({ colour = colourEnabled(), heading = true } = {})
  */
 export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
   const c = styler(colour)
-  const out = heading ? [`${c("cyan.bold", "omakit")}${c("grey", ":")} ${TAGLINE}`, ""] : []
+  const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
 
   for (const command of COMMANDS) {
     for (const line of [].concat(command.signature)) {
       out.push(`${INDENT}${paintSignature(line, c)}`)
     }
     for (const line of command.lines) {
-      out.push(`${DESCRIPTION}${c("default", line)}`)
+      out.push(`${DESCRIPTION}${c("prose", line)}`)
     }
     out.push("")
   }
 
   out.push(`${INDENT}${paintSignature(TARGET_NOTE, c)}`)
   out.push("")
-  out.push(c("bold", "GitHub access:"))
+  out.push(c("heading", "GitHub access:"))
   for (const line of AUTHENTICATION) out.push(`${INDENT}${paintProse(line, c)}`)
   out.push("")
-  out.push(c("bold", "Environment:"))
+  out.push(c("heading", "Environment:"))
   const width = Math.max(...ENVIRONMENT.map(([name]) => name.length))
   for (const [name, description] of ENVIRONMENT) {
-    out.push(`${INDENT}${c("green", name.padEnd(width))}  ${paintProse(description, c)}`)
+    out.push(`${INDENT}${c("variable", name.padEnd(width))}  ${paintProse(description, c)}`)
   }
   return `${out.join("\n")}\n`
 }

@@ -7,7 +7,7 @@ import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import {
-  ARROW, COLUMNS, DENSITY, GUTTER, LABEL, MARK_WIDTH, MOTION, PALETTE, STATUS, STEP,
+  ARROW, COLUMNS, DENSITY, GUTTER, LABEL, MARK_WIDTH, MOTION, PALETTE, ROLES, STATUS, STEP,
   action, colourEnabled, field, labelled, mark, motionEnabled, overflows, plain, section, styler, verdict, width, wrap,
 } from "../../tools/marketplace/style.mjs"
 import { renderDoctor, renderSubmit, renderWatch } from "../../tools/marketplace/report.mjs"
@@ -91,7 +91,8 @@ test("five states, each with one glyph, one word and one tint, all distinct", ()
     assert.ok(!words.has(status.word), `${name}: shares a word`)
     glyphs.add(status.glyph)
     words.add(status.word)
-    for (const part of status.tint.split(".")) assert.ok(part in PALETTE, `${name}: ${part} is not a palette entry`)
+    assert.ok(status.tint in ROLES, `${name}: ${status.tint} is not a role`)
+    for (const part of ROLES[status.tint].split(".")) assert.ok(part in PALETTE, `${name}: ${part} is not a palette entry`)
   }
   // The one upper-case word is the blocking failure, so it can be found by
   // shape in a column of marks on a theme that shows no hue.
@@ -441,4 +442,27 @@ test("the word pin has one owner: the marketplace checkout the rules are read fr
       assert.ok(!hit, `${relative(REPO_ROOT, path)} uses "pin" for the validated commit: ${JSON.stringify(hit?.[0])}`)
     }
   }
+})
+
+test("colour is named by role at every call site, and a hue is named only in style.mjs", () => {
+  // Measured before this test existed (docs/PALETTE.md): the "cyan" every
+  // command used for what you could type is pixel-identical to the foreground
+  // on Matte Black and unreadable in three other installed themes, and the
+  // "grey" used for labels is under 3:1 in 23 of 32. Fixing that meant
+  // changing one index per role, which is only possible when the call sites
+  // name the role. So they must: the hue lives in ROLES and nowhere else.
+  const hues = Object.keys(PALETTE).join("|")
+  const hueCall = new RegExp(`c\\("(?:${hues})(?:\\.|")`)
+  const rawIndex = /\$\{ESC\}[0-9;]*(?:3[0-79]|9[0-7]|\b[12])m|\\u001b\[[0-9;]*(?:3[0-79]|9[0-7]|\b[12])m/
+  for (const { path, text } of sources) {
+    if (path === STYLE) continue
+    const code = uncommented(text)
+    assert.doesNotMatch(code, hueCall, `${path} names a hue at a call site instead of a role`)
+    assert.doesNotMatch(code, rawIndex, `${path} writes a palette index by hand instead of code(role)`)
+  }
+  for (const [role, chain] of Object.entries(ROLES)) {
+    for (const part of chain.split(".")) assert.ok(part in PALETTE, `${role}: ${part} is not in the palette`)
+  }
+  // Every role resolves to a palette index, bold or dim: never to nothing.
+  for (const role of Object.keys(ROLES)) assert.notEqual(styler(true)(role, "x"), "x", `${role} paints nothing`)
 })

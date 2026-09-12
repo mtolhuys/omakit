@@ -3,7 +3,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, ENVIRONMENT, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
-import { paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
+import { code, paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
 
 test("colour changes nothing about the words", () => {
   const off = renderUsage({ colour: false })
@@ -43,7 +43,7 @@ test("prose keeps the terminal's foreground; only what you could type is tinted"
   // Grey prose on a low-contrast theme is a sentence nobody reads. Backticks are
   // markup for a reader of the source, so they do not reach the terminal.
   const painted = paintProse("uses your `gh` login", (name, text) => `<${name}>${text}</${name}>`)
-  assert.equal(painted, "<default>uses your </default><cyan>gh</cyan><default> login</default>")
+  assert.equal(painted, "<prose>uses your </prose><typeable>gh</typeable><prose> login</prose>")
   const off = renderUsage({ colour: false })
   assert.ok(!off.includes("`"), "no backtick survives into the output")
   const on = renderUsage({ colour: true })
@@ -54,13 +54,17 @@ test("prose keeps the terminal's foreground; only what you could type is tinted"
   }
 })
 
-test("a signature is coloured by token: typed cyan, replaceable yellow", () => {
+test("a signature is coloured by token: typeable, placeholder, punctuation", () => {
   const c = styler(true)
   const painted = paintSignature("omakit submit <target> --category <c> [--json]", c)
-  assert.match(painted, /\u001b\[36;1momakit\u001b\[0m/, "the command name")
-  assert.match(painted, /\u001b\[33m<target>\u001b\[0m/, "a placeholder")
-  assert.match(painted, /\u001b\[36m--category\u001b\[0m/, "a flag")
-  assert.match(painted, /\u001b\[90m\[\u001b\[0m/, "grouping brackets stay out of the way")
+  const sgr = (role, text) => `\u001b[${code(role)}m${text}\u001b[0m`
+  assert.ok(painted.includes(sgr("typeable.bold", "omakit")), "the command name")
+  assert.ok(painted.includes(sgr("placeholder", "<target>")), "a placeholder")
+  assert.ok(painted.includes(sgr("typeable", "--category")), "a flag")
+  assert.ok(painted.includes(sgr("punctuation", "[")), "grouping brackets stay out of the way")
+  const choice = paintSignature("omakit completion bash|zsh|fish", c)
+  assert.ok(choice.includes(`${sgr("typeable", "bash")}${sgr("punctuation", "|")}${sgr("typeable", "zsh")}`), "a choice is words you could type, grouped by bars")
+  assert.equal(plain(choice), "omakit completion bash|zsh|fish")
   assert.equal(plain(painted), "omakit submit <target> --category <c> [--json]")
 })
 

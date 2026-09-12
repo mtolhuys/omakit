@@ -94,7 +94,9 @@ def spans(line):
             elif code == 1:
                 bold = True
             elif code == 2:
-                colour = ANSI[90]
+                # Dim is the current colour scaled by the terminal; measured
+                # 0.66 in Alacritty, foot and kitty (docs/PALETTE.md).
+                colour = tuple(int(channel * 0.66) for channel in colour)
             elif code in ANSI:
                 colour = ANSI[code]
         at = match.end()

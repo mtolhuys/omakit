@@ -35,8 +35,8 @@ function stateOf(check) {
  * ids form another.
  */
 function head(state, id, source, c) {
-  const left = `${mark(state, c)}${c("bold", id)}`
-  const tag = c("grey", `[${source}]`)
+  const left = `${mark(state, c)}${c("name", id)}`
+  const tag = c("punctuation", `[${source}]`)
   const gap = Math.max(2, COLUMNS - width(left) - width(tag))
   return `${left}${" ".repeat(gap)}${tag}`
 }
@@ -50,8 +50,8 @@ function checkBlock(check, c) {
     for (const path of check.paths) {
       out.push(...wrap(`- ${path}`, { indent: GUTTER + STEP, first: GUTTER })
         .map((line, index) => (index === 0
-          ? `${body}${c("red", "-")} ${c("yellow", line.trimStart().slice(2))}`
-          : `${" ".repeat(GUTTER + STEP)}${c("yellow", line.trimStart())}`)))
+          ? `${body}${c("fail", "-")} ${c("placeholder", line.trimStart().slice(2))}`
+          : `${" ".repeat(GUTTER + STEP)}${c("placeholder", line.trimStart())}`)))
     }
     if (check.remedy) out.push(...action(check.remedy, c))
     // The measured reason is the point of the check, so it is not dimmed: only
@@ -65,7 +65,7 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   const c = styler(colour)
   const out = []
   out.push(...field("subject", result.subject.repository || result.subject.directory, c, { wrapValue: false }))
-  out.push(...field("commit", `${result.subject.commit}${result.subject.cleanTree ? "" : c("yellow", " (dirty worktree)")}`, c, { wrapValue: false }))
+  out.push(...field("commit", `${result.subject.commit}${result.subject.cleanTree ? "" : c("advisory", " (dirty worktree)")}`, c, { wrapValue: false }))
   out.push(...field("marketplace", `${result.pin.commit}, baseline ${result.pin.baselineVersion}, ${result.pin.enforcementMode}`, c))
   out.push("")
 
@@ -94,7 +94,7 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     out.push(...verdict("fail", "REFUSED", `${count} failed, so no submission body is produced.`, c))
     out.push("")
     for (const check of failed) {
-      out.push(`${body}${c("bold", check.id)}`)
+      out.push(`${body}${c("name", check.id)}`)
       if (check.remedy) out.push(...action(check.remedy, c))
       else out.push(...wrap(check.detail, { indent: GUTTER }, c))
       out.push("")
@@ -109,7 +109,7 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   out.push(...verdict("pass", "READY", `every blocking check passed. ${validation}`, c))
   out.push("")
   out.push(...section("issue title", c))
-  out.push(c("bold", result.issue.title))
+  out.push(c("heading", result.issue.title))
   out.push("")
   out.push(...section("issue body", c))
   out.push(result.issue.body.trimEnd())
@@ -120,8 +120,8 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   // because a shell command breaks on its backslashes, not on its spaces.
   const step = " ".repeat(STEP)
   out.push(...action("gh issue create --repo omacom/omarchy-plugin-marketplace \\", c, { indent: 0 }))
-  out.push(`${step}${c("cyan", `--title ${JSON.stringify(result.issue.title)} \\`)}`)
-  out.push(`${step}${c("cyan", "--body-file <the body above>")}`)
+  out.push(`${step}${c("typeable", `--title ${JSON.stringify(result.issue.title)} \\`)}`)
+  out.push(`${step}${c("typeable", "--body-file <the body above>")}`)
   out.push("")
   out.push(...wrap(`After it is created: ${result.afterSubmitting}`, {}, c))
   return out.join("\n")
@@ -139,7 +139,7 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
   }
   out.push("")
   if (result.validated) {
-    out.push(...field("validated", c("bold", result.validated.commit), c, { wrapValue: false }))
+    out.push(...field("validated", c("name", result.validated.commit), c, { wrapValue: false }))
     out.push(...continuation(`outcome ${result.validated.outcome}, ${result.validated.findings.length} finding(s), ${result.validated.capabilities.length} capability/ies, checked ${result.validated.checkedAt}`, c))
   } else if (result.validationCommentFallback) {
     out.push(...field("validated", `${result.validationCommentFallback.short} (short form, from the validation comment)`, c))
@@ -147,7 +147,7 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
     out.push(...field("validated", "none", c))
   }
   if (result.head) {
-    const sha = result.verdict.state === "stale" ? c("red.bold", result.head.commit) : c("bold", result.head.commit)
+    const sha = result.verdict.state === "stale" ? c("fail", result.head.commit) : c("name", result.head.commit)
     out.push(...field("current HEAD", sha, c, { wrapValue: false }))
     out.push(...continuation(`${result.head.branch || "default"} branch, via ${result.head.source}${result.head.committedAt ? `, ${result.head.committedAt}` : ""}`, c))
   } else if (result.headError) {
@@ -179,7 +179,7 @@ export function renderDoctor(result, { colour = colourEnabled() } = {}) {
     const state = DOCTOR_STATE[check.state] || "unknown"
     const loud = state === "fail" || state === "advisory"
     if (index > 0 && (loud || previous)) out.push("")
-    out.push(`${mark(state, c)}${c("bold", check.id)}`)
+    out.push(`${mark(state, c)}${c("name", check.id)}`)
     out.push(...wrap(check.detail, { indent: GUTTER }, c))
     if (check.action) out.push(...action(check.action, c))
     previous = loud

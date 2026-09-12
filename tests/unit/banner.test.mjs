@@ -5,7 +5,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { banner, bannerEnabled, fitsOnScreen, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, INK, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
-import { DENSITY, MOTION, plain } from "../../tools/marketplace/style.mjs"
+import { DENSITY, MOTION, plain, code } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 test("a piped run gets no banner at all, not even a plain one", async () => {
@@ -52,14 +52,14 @@ test("oma and kit differ in density first and in tint second", () => {
   assert.match(mono, /\u2588/)
   // With colour on, the tints are palette entries and go on top of the ink.
   const drawn = frame(layout, -2, layout.width + 2).join("\n")
-  assert.match(drawn, /\u001b\[36m\u2593/, "the prefix takes the ecosystem's cyan on the shade")
+  assert.ok(drawn.includes(`\u001b[${code("typeable")}m\u2593`), "the prefix takes the typeable role's tint on the shade")
   assert.match(drawn, /\u001b\[39m\u2588/, "the name keeps the foreground on the full block")
   assert.doesNotMatch(drawn, /38;[25];|48;/, "a wordmark must not use truecolor or a colour cube")
   assert.equal(PREFIX_LETTERS, 3)
   assert.deepEqual(layout.spans.filter((span) => span.index < PREFIX_LETTERS).map((span) => span.letter), ["o", "m", "a"])
   // And the scanner's head is the one bright, solid thing, over either half.
   const scanning = frame(layout, 3, layout.width + 2).join("\n")
-  assert.match(scanning, /\u001b\[1;96m\u2588/, "the head is a full block in bright cyan")
+  assert.ok(scanning.includes(`\u001b[${code("typeable.bold")}m\u2588`), "the head is a full block in the typeable tint, bold")
 })
 
 test("the font covers the name, and refuses a letter it does not have", () => {

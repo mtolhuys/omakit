@@ -17,7 +17,7 @@
 // be decoration, and decoration in the middle of a security-baseline preview is
 // what makes a tool feel less trustworthy, not more.
 
-import { colourEnabled, COLUMNS, DENSITY, motionEnabled, MOTION } from "./style.mjs"
+import { code, colourEnabled, COLUMNS, DENSITY, motionEnabled, MOTION } from "./style.mjs"
 
 // A scanner sweeping back and forth over a fixed track: a three-cell head
 // moving across twelve cells, with the rest of the track drawn as a floor so
@@ -29,8 +29,8 @@ const HEAD = 3
 const INTERVAL = MOTION.progressFrameMs
 
 const ESC = "\u001b["
-const CYAN = `${ESC}36m`
-const GREY = `${ESC}90m`
+const ACCENT = `${ESC}${code("typeable")}m`
+const TRACK_TINT = `${ESC}${code("punctuation")}m`
 const RESET = `${ESC}0m`
 const CLEAR_LINE = `\r${ESC}2K`
 
@@ -66,9 +66,9 @@ export function progress(options = {}) {
     // Three runs, not twelve cells: the floor before the head, the head, the
     // floor after it. A frame is one write and carries at most three tints.
     const paint = (glyph, count, tint) => (count > 0 ? (colour ? `${tint}${glyph.repeat(count)}${RESET}` : glyph.repeat(count)) : "")
-    const track = paint(DENSITY.floor, start, GREY)
-      + paint(DENSITY.full, HEAD, CYAN)
-      + paint(DENSITY.floor, TRACK - start - HEAD, GREY)
+    const track = paint(DENSITY.floor, start, TRACK_TINT)
+      + paint(DENSITY.full, HEAD, ACCENT)
+      + paint(DENSITY.floor, TRACK - start - HEAD, TRACK_TINT)
     // One write per frame, clear included: two writes can flicker on a slow
     // terminal, and a partially drawn frame is worse than no animation. The
     // label is cut to the terminal's width first: a line that wraps is a line

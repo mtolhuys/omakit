@@ -24,7 +24,10 @@ issue. So:
   drawn without a single escape, and `TERM=dumb`, a pipe, `OMAKIT_NO_BANNER`
   and `OMAKIT_NO_PROGRESS` are the things that remove them.
 - Every colour is an ANSI palette index (30–37, 39, 90–97, bold). No truecolor,
-  no 256-colour, no background. The Omarchy theme decides what cyan is.
+  no 256-colour, no background. The Omarchy theme decides what blue is.
+- Colour is named by role at every call site and by hue in exactly one
+  table, `ROLES` in `style.mjs`; the index each role gets was chosen by
+  measuring every installed theme, in [PALETTE.md](PALETTE.md).
 
 ## One vocabulary
 
@@ -36,7 +39,7 @@ only way to print one is `mark()` in `style.mjs`:
 | pass | `▁ ok` | green | a check passed, a step is done |
 | fail | `█ FAIL` | red, bold | a blocking failure |
 | advisory | `▓ note` | yellow | a failure that does not block |
-| info | `░ info` | grey | a fact with no verdict |
+| info | `░ info` | dim | a fact with no verdict |
 | unknown | `▒ ?` | yellow | a check that could not be made |
 
 Before this, `submit` said `ok  `/`FAIL`, `doctor` said `ok    `/`note  `/
@@ -57,6 +60,17 @@ nearly the same grey. Green reads orange, yellow reads red, cyan reads grey. The
 old wordmark told `oma` from `kit` by tint and by bold, and a block glyph has no
 stroke for a bold face to thicken, so on that theme it was one flat word. Any
 distinction carried by hue alone was not carried there.
+
+Measured afterwards over all 32 installed themes ([PALETTE.md](PALETTE.md)):
+the cyan every command used for what you could type was pixel-identical to the
+foreground on Matte Black and under 3:1 in three other themes, so the one role
+a reader most needs to spot was the least visible one there; and the grey used
+for labels and brackets was under 3:1 in 23 of 32. What you could type is blue
+now (at least 21 CIELAB units from the foreground in every chromatic theme,
+and Matte Black's own amber accent there), and a label, a bracket or a rule is
+dim, which every terminal derives from the foreground and which is readable in
+all 32. Four hues, and no more than four: a screen with six colours on it is
+not livelier, it is noisier.
 
 So nothing is carried by hue alone. Each distinction has a second carrier that a
 monochrome terminal has to honour:
@@ -141,7 +155,8 @@ line 83.
 room it has (a URL, a 40-character sha, an absolute path) is left whole on a
 line of its own, never broken and never elided. A `backticked span` is one
 word, so `omakit pin` is never split across a line break, and the backticks
-themselves never reach the terminal: the span is tinted cyan instead, because
+themselves never reach the terminal: the span takes the typeable role's blue
+instead, because
 it is the thing you could type.
 
 So the rule is over what omakit composes, not over every word it is handed,
@@ -174,10 +189,10 @@ seconds. Three decisions serve that:
 1. The mark is in the gutter, the check id is bold beside it, and the source
    (`[marketplace-pin]` or `[omakit]`) is pushed to the right edge, so the
    marks form a column, the ids form a column, and the sources form a column.
-2. The remedy is the only line that starts with `→`, and it is cyan, the one
+2. The remedy is the only line that starts with `→`, and it is blue, the one
    tint reserved for what you type. The measured reason for the check follows
-   it under a grey `why` label; the reason is prose and keeps the foreground,
-   only its label is grey.
+   it under a dim `why` label; the reason is prose and keeps the foreground,
+   only its label is dim.
 3. A refusal ends with the failing checks and their arrows again. After fifteen
    checks and the marketplace's report, the fail blocks are off the top of the
    screen, and the last screen is the one a person is looking at. `▁ READY`

@@ -47,18 +47,19 @@
 // letters come from the small font below, so renaming the tool is a change to
 // one string and not a redrawing job.
 
-import { colourEnabled, DENSITY, motionEnabled, MOTION, rule as floorRule } from "./style.mjs"
+import { code, colourEnabled, DENSITY, motionEnabled, MOTION, rule as floorRule } from "./style.mjs"
 import { effectAvailable, playEffect } from "./effect.mjs"
 
 const ESC = "\u001b["
 const RESET = `${ESC}0m`
 // The tints, applied only when colour is on. The head of the scanner is the
-// one bright thing; the prefix takes the ecosystem's cyan; the name keeps the
+// one bright thing, the typeable role's tint in bold, the same tint the progress
+// line's head moves; the prefix takes that tint too; the name keeps the
 // terminal's foreground.
 const TINT = Object.freeze({
-  head: `${ESC}1;96m`,
-  prefix: `${ESC}36m`,
-  suffix: `${ESC}39m`,
+  head: `${ESC}${code("typeable.bold")}m`,
+  prefix: `${ESC}${code("typeable")}m`,
+  suffix: `${ESC}${code("prose")}m`,
 })
 
 // A five-row pixel font, "#" lit and " " blank, one blank column between
@@ -231,8 +232,8 @@ export async function banner(options = {}) {
   // decoration nobody can see. The rule takes the prefix tint, the tagline the
   // foreground.
   const c = (name, text) => (colour ? `${ESC}${name}m${text}${RESET}` : text)
-  const rule = floorRule((_name, text) => c("36", text), { width })
-  const tagline = options.tagline ? c("39", options.tagline) : null
+  const rule = floorRule((_name, text) => c(code("typeable"), text), { width })
+  const tagline = options.tagline ? c(code("prose"), options.tagline) : null
 
   // Nothing at all when it is not a terminal. There is no plain-text substitute
   // to print: `help` and `setup` already say the name and what it does in words,

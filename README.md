@@ -84,9 +84,11 @@ gives an agent exactly the bytes it gave before, and `NO_COLOR` or
 Every colour omakit prints is an ANSI palette entry, never a 24-bit or
 256-colour escape, so your Omarchy theme decides what they look like and
 recolouring the tool means recolouring the terminal. Green passed, red blocking,
-yellow your attention, cyan something you type, grey where a rule came from. And
-nothing is said by colour alone, because on a theme like Matte Black every hue
-is the same grey: a verdict is also a block glyph whose density is its weight
+yellow your attention, blue something you type, dim where a rule came from;
+which index each role gets was chosen by measuring all 32 installed themes
+([docs/PALETTE.md](docs/PALETTE.md)), not by taste. And nothing is said by
+colour alone, because on a theme like Matte Black every hue is nearly the same
+grey: a verdict is also a block glyph whose density is its weight
 (`█ FAIL`, `▓ note`, `▁ ok`), the one line that fixes things is the only line
 that starts with `→`, and the wordmark's `oma` is shade where its `kit` is
 solid. `NO_COLOR` removes the colour and nothing else. The words never change:
@@ -208,6 +210,7 @@ to publish.
 | [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md) | every number, its method and its limits |
 | [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) | the seam, the pin, the boundaries |
 | [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | who this actually helps |
+| [docs/PALETTE.md](docs/PALETTE.md) | every installed Omarchy theme measured, and which palette index each role gets |
 | [docs/TUI.md](docs/TUI.md) | what the terminal shows, and why it looks that way |
 | [AGENTS.md](AGENTS.md) | changing this repository |
 

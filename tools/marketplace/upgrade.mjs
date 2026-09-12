@@ -138,7 +138,7 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   const body = " ".repeat(GUTTER)
   const subject = (line) => {
     const split = line.match(/^(\S+)\s+([\s\S]*)$/)
-    return split ? `${body}${c("bold", split[1])} ${c("default", split[2])}` : `${body}${c("default", line)}`
+    return split ? `${body}${c("name", split[1])} ${c("prose", split[2])}` : `${body}${c("prose", line)}`
   }
   if (dryRun) {
     note(`${log.length} commit(s) available, not applied (--dry-run)`)

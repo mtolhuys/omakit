@@ -60,7 +60,7 @@ const REMEDY = Object.freeze({
  */
 function fail(code, message, exit = 1) {
   const c = styler(colourEnabled(process.stderr))
-  const lines = [`${mark("fail", c)}${c("bold", code)}`, ...wrap(message, { indent: GUTTER }, c)]
+  const lines = [`${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c)]
   if (REMEDY[code]) lines.push(...action(REMEDY[code], c))
   process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)
@@ -286,7 +286,7 @@ if (command === "setup") {
   // as every other failure: what happened, what it means, what to run.
   const c = styler(colourEnabled(process.stderr))
   process.stderr.write([
-    `${mark("fail", c)}${c("bold", "unknown command")}`,
+    `${mark("fail", c)}${c("name", "unknown command")}`,
     ...wrap(`\`${command}\` is not something omakit does. The commands it has are listed below.`, { indent: GUTTER }, c),
     ...action("omakit help", c),
     "",
