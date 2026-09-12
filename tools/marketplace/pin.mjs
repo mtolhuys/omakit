@@ -149,8 +149,11 @@ export function ensurePin(repoRoot, log = () => {}) {
 
 /** Human-readable size of the pinned checkout, for `omakit pin` and `omakit doctor`. */
 export function pinDiskUsage(dir) {
+  // -H follows a symlink given on the command line (POSIX; GNU's -D). Measured
+  // without it: a checkout reached through a symlink reported 0.0 MB, the size
+  // of the link, while the directory behind it was 15 MB.
   try {
-    const output = execFileSync("du", ["-sk", dir], { encoding: "utf8" }).split(/\s+/)[0]
+    const output = execFileSync("du", ["-skH", dir], { encoding: "utf8" }).split(/\s+/)[0]
     const mib = Number(output) / 1024
     return `${mib < 10 ? mib.toFixed(1) : Math.round(mib)} MB on disk`
   } catch {

@@ -8,9 +8,10 @@
 // fails this test.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync } from "node:fs"
+import { mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
-import { PIN_PATHS, MARKETPLACE_PIN, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
@@ -66,4 +67,17 @@ test("a freshly fetched pin is sparse, and the pin identity still reads", () => 
   assert.equal(typeof pinIsSparse(dir), "boolean")
   assert.equal(marketplacePinDir(REPO_ROOT), dir)
   assert.match(MARKETPLACE_PIN.commit, /^[0-9a-f]{40}$/)
+})
+
+test("the pin's size on disk is the checkout's, reached through a symlink or not", () => {
+  // Measured before this test existed: `du -sk` on a symlinked checkout
+  // measured the link, and `doctor` reported "0.0 MB on disk, sparse" for a
+  // 15 MB directory.
+  const dir = requirePinForTests()
+  const link = join(mkdtempSync(join(tmpdir(), "omakit-pin-link-")), "marketplace")
+  symlinkSync(dir, link)
+  const direct = pinDiskUsage(dir)
+  assert.match(direct, /^\d+(\.\d)? MB on disk$/)
+  assert.notEqual(direct, "0.0 MB on disk", "the checkout has a size")
+  assert.equal(pinDiskUsage(link), direct, "through the symlink it is the same size")
 })
