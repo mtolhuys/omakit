@@ -1,0 +1,45 @@
+{
+  "subject": {
+    "repository": {
+      "kind": "git",
+      "url": "https://github.com/haydenmckay/omarchy-theme-roulette",
+      "declared": true
+    },
+    "commit": "898d09770723ce14ab8e2363af27773790943502",
+    "cleanTree": {
+      "clean": true,
+      "proof": "git-status-porcelain-empty"
+    },
+    "mode": "reviewer"
+  },
+  "marketplaceBaseline": {
+    "pin": {
+      "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
+      "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+      "baselineVersion": "3",
+      "enforcementMode": "selective"
+    },
+    "transport": "local-git",
+    "assumedByAdapter": [
+      "repository.private=false",
+      "repository.disabled=false",
+      "repository.archived=false",
+      "tree.truncated=false (the local tree is always complete)"
+    ],
+    "invoked": true,
+    "skipReason": null,
+    "official": {
+      "outcome": "review-required",
+      "disposition": "review-required",
+      "blocksApproval": false,
+      "enforcementMode": "selective",
+      "baselineVersion": "3",
+      "checkedAt": "1970-01-01T00:00:00.000Z",
+      "findingCount": 0,
+      "capabilityCount": 1,
+      "digest": "f87691ccf70f3ffc1945b79dc5eca90d",
+      "detail": "omitted on publication; findings about a specific third-party plugin are not published"
+    },
+    "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
+  }
+}

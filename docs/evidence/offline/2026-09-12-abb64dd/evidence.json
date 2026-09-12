@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scenario": "verify-offline",
+  "subject": "https://github.com/haydenmckay/omarchy-theme-roulette@898d09770723ce14ab8e2363af27773790943502",
+  "generator": {
+    "omakitCommit": "abb64dd17c0b6c5d1594eb04704f5b7897486518",
+    "dirtyWorktree": true
+  },
+  "environment": {
+    "marketplacePin": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+    "isolation": "unshare -rn"
+  },
+  "result": "pass",
+  "checks": [
+    {
+      "id": "namespace.no-network",
+      "result": "pass",
+      "detail": "interfaces in the namespace: lo; curl to api.github.com curl=7"
+    },
+    {
+      "id": "verify.exit-zero",
+      "result": "pass",
+      "detail": "exit 0"
+    },
+    {
+      "id": "verify.official-result",
+      "result": "pass",
+      "detail": "outcome review-required over local-git"
+    },
+    {
+      "id": "verify.pin-identity",
+      "result": "pass",
+      "detail": "pin 38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6 baseline 3 selective"
+    },
+    {
+      "id": "verify.checked-at-pinned",
+      "result": "pass",
+      "detail": "checkedAt is pinned to the epoch, so two runs of the same commit are byte-identical"
+    }
+  ]
+}

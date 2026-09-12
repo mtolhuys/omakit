@@ -10,6 +10,7 @@
 // the marketplace's own analysis over a local snapshot. "No network during a
 // local run" is the property that makes it a preview instead of a second,
 // divergent scanner, so it is demonstrated rather than asserted.
+import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
@@ -89,6 +90,33 @@ let out = join(ROOT, "docs/evidence/offline", `${date}-${commit.slice(0, 7)}`)
 for (let n = 2; existsSync(out); n += 1) out = join(ROOT, "docs/evidence/offline", `${date}-${commit.slice(0, 7)}-${n}`)
 mkdirSync(out, { recursive: true })
 writeFileSync(join(out, "evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`)
-writeFileSync(join(out, "verify-output.json"), run.stdout)
+
+// The verify output is captured as proof that the official code ran, with the
+// official result reduced to its shape and a digest. The subject is somebody
+// else's plugin, and its findings and capabilities are not this project's to
+// publish; the digest is recomputable by anyone from the subject and the pin.
+const captured = document ? structuredClone(document) : { error: run.stdout.slice(0, 500) }
+if (captured.marketplaceBaseline?.official) {
+  const official = captured.marketplaceBaseline.official
+  captured.marketplaceBaseline.official = {
+    outcome: official.outcome,
+    disposition: official.disposition,
+    blocksApproval: official.blocksApproval,
+    enforcementMode: official.enforcementMode,
+    baselineVersion: official.baselineVersion,
+    checkedAt: official.checkedAt,
+    findingCount: (official.findings || []).length,
+    capabilityCount: (official.capabilities || []).length,
+    digest: createHash("sha256").update(JSON.stringify({
+      outcome: official.outcome,
+      disposition: official.disposition,
+      blocksApproval: official.blocksApproval,
+      findings: official.findings,
+      capabilities: official.capabilities,
+    })).digest("hex").slice(0, 32),
+    detail: "omitted on publication; findings about a specific third-party plugin are not published",
+  }
+}
+writeFileSync(join(out, "verify-output.json"), `${JSON.stringify(captured, null, 2)}\n`)
 console.log(`${result === "pass" ? "ok" : "not ok"} - evidence ${join(out, "evidence.json")}`)
 process.exit(result === "pass" ? 0 : 1)
