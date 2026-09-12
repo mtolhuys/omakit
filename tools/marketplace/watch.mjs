@@ -1,7 +1,8 @@
-// The pin watch. This is the reason the tool exists.
+// The validation watch. This is the reason the tool exists.
 //
-// After a submission is validated, the review is pinned to one exact commit.
-// The only action that moves that pin is editing the issue body:
+// The marketplace validates one exact commit, and the review that follows is
+// of that commit. The only action that makes it validate a newer one is
+// editing the issue body:
 // `route-issue-automation.yml` is the only workflow with a direct `issues`
 // trigger (`opened, edited, reopened, labeled, unlabeled`), there is no
 // `issue_comment` trigger anywhere in the marketplace, and `refresh-catalog.yml`
@@ -14,8 +15,8 @@
 // seeing it, and 82% of those authors also commented, so they are engaged and
 // stuck rather than gone. Of 13 open submissions inspected with no labels left,
 // 9 had passed validation and passed the automated security baseline with zero
-// findings and were blocked solely because the pin had gone stale while they
-// waited. 46% of the maintainer's own requests for a fresh validation never
+// findings and were blocked solely because their validated commit had fallen
+// behind while they waited. 46% of the maintainer's own requests for a fresh validation never
 // produced one; in the parked group 77% never did. The instruction that would
 // fix this appears 22 times in the failure path of
 // `scripts/submission-feedback.mjs` and zero times in the success path of
@@ -40,7 +41,7 @@ export class WatchError extends Error {
 
 const MARKETPLACE_SLUG = MARKETPLACE_PIN.repository.replace(/^https:\/\/github\.com\//, "").toLowerCase()
 
-// The one action that refreshes the pin, in the register the marketplace itself
+// The one action that re-runs validation, in the register the marketplace itself
 // uses in its own failure feedback.
 export const REFRESH_ACTION =
   "Edit the issue body. That is the only action that re-runs validation and the security baseline against a new commit: a push does not, and a comment does not."
@@ -107,7 +108,7 @@ export function validationCommentCommit(comments) {
 /**
  * @param {{ repoRoot: string, issueUrl: string }} options
  */
-export async function pinWatch({ repoRoot, issueUrl, onPhase }) {
+export async function validationWatch({ repoRoot, issueUrl, onPhase }) {
   // Optional: told the name of the step about to run, so a terminal can say
   // what is happening while the network answers. Never affects the result.
   const phase = onPhase || (() => {})
@@ -201,11 +202,11 @@ export async function pinWatch({ repoRoot, issueUrl, onPhase }) {
     baselineError,
     head,
     headError,
-    verdict: pinVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview }),
+    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview }),
   }
 }
 
-export function pinVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl = "unknown" }) {
+export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl = "unknown" }) {
   if (baselineError) {
     return {
       state: "unknown",
@@ -218,7 +219,7 @@ export function pinVerdict({ comparable, stale, validated, head, fallback, basel
       state: "unknown",
       summary: fallback
         ? `No security-baseline marker on this issue. Validation reported commit ${fallback.short}, which is too short to compare reliably.`
-        : "No automated validation or security baseline has run on this issue yet, so there is no pinned commit.",
+        : "No automated validation or security baseline has run on this issue yet, so there is no validated commit.",
       action: fallback ? REFRESH_ACTION : "Wait for the automated validation to run, or edit the issue body to trigger it.",
     }
   }
@@ -237,19 +238,19 @@ export function pinVerdict({ comparable, stale, validated, head, fallback, basel
     }
   }
   if (!comparable) {
-    return { state: "unknown", summary: "Not enough information to compare the pin.", action: null }
+    return { state: "unknown", summary: "Not enough information to compare the validated commit.", action: null }
   }
   if (!stale) {
     return {
       state: "current",
-      summary: `The review is pinned to ${validated.commit}, which is the current ${head.branch || "default"}-branch HEAD. Nothing needs refreshing.`,
+      summary: `The validated commit is ${validated.commit}, which is the current ${head.branch || "default"}-branch HEAD. Nothing needs refreshing.`,
       action: null,
     }
   }
   return {
     state: "stale",
     summary: [
-      `The review is pinned to ${validated.commit}.`,
+      `The validated commit is ${validated.commit}.`,
       `The repository's current ${head.branch || "default"}-branch HEAD is ${head.commit}.`,
       "The marketplace has not seen the newer commit. Pushing it did not tell the marketplace, and neither did any comment.",
       pushedAfterReview ? "The newer commit landed after the last human review comment on this issue." : null,

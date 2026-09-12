@@ -1,14 +1,15 @@
 ---
-name: omarchy-plugin-pin-watch
-description: Diagnose an Omarchy marketplace plugin submission that has gone quiet or is stuck waiting. Use when a submission issue has had no progress, when a reviewer asked for a fresh validation, or when fixes were pushed but nothing happened. Checks whether the review pin has gone stale and names the one action that refreshes it.
+name: omarchy-plugin-validation-watch
+description: Diagnose an Omarchy marketplace plugin submission that has gone quiet or is stuck waiting. Use when a submission issue has had no progress, when a reviewer asked for a fresh validation, or when fixes were pushed but nothing happened. Checks whether the validated commit has fallen behind the repository and names the one action that re-runs validation.
 ---
 
 # A submission that has gone quiet
 
 ## The mechanism, first
 
-When a submission is validated, the marketplace pins its review to **one exact
-commit**. The only action that moves that pin is **editing the issue body**.
+The marketplace validates **one exact commit**, and the review that follows is
+of that commit. The only action that makes it validate a newer one is **editing
+the issue body**.
 
 - The only workflow with a direct `issues` trigger fires on
   `opened, edited, reopened, labeled, unlabeled`.
@@ -36,14 +37,14 @@ falls back to the public commit feed. Never ask the operator for a token: run
 
 ## Acting on each verdict
 
-**`stale`.** The pin is behind. Tell the owner plainly: the marketplace has not
+**`stale`.** The validated commit is behind the repository. Tell the owner plainly: the marketplace has not
 seen the newer commit, and the fix is to **edit the issue body** (any edit
 re-triggers validation and the baseline against the new commit). Do not advise
 them to push again, and do not advise them to comment. If you are asked to do it,
 that is an edit to their issue: get their explicit approval and do it yourself,
 outside this tool.
 
-**`current`.** The pin is the current HEAD. The submission is genuinely waiting
+**`current`.** The validated commit is the current HEAD. The submission is genuinely waiting
 on a person, or on a fix the reviewer asked for that has not been made. Read the
 review comments and address the substance. Do not edit the issue to "bump" it: a
 fresh validation clears the reviewer's human decision and costs him a complete

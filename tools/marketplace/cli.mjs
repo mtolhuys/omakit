@@ -3,7 +3,7 @@
 //
 //   omakit pin                       fetch or verify the pinned marketplace checkout
 //   omakit submit <target> ...       everything knowable before submitting; prints, never posts
-//   omakit watch <issue-url>         is this submission's review pin still current?
+//   omakit watch <issue-url>         is this submission's validated commit still current?
 //   omakit verify <target>           the official baseline over the local transport, verbatim
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
 //
@@ -18,7 +18,7 @@ import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
-import { pinWatch } from "./watch.mjs"
+import { validationWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
@@ -124,7 +124,7 @@ async function cmdWatch(args) {
   const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   let result
   try {
-    result = await pinWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
+    result = await validationWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
   } catch (error) {
     spinner.done()
     failFrom(error)

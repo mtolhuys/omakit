@@ -1,4 +1,4 @@
-// Text rendering of a submit preflight, a pin watch and a doctor run, for the
+// Text rendering of a submit preflight, a validation watch and a doctor run, for the
 // agent that runs this tool and the person reading over its shoulder. Every
 // check prints its verdict, its source and the measured reason it exists; a
 // failing check prints its paths and the one action that clears it.
@@ -103,10 +103,10 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     return out.join("\n")
   }
 
-  const pinned = result.validationCommit.defaultBranchHead
-    ? `${result.validationCommit.local} is the ${result.validationCommit.branch || "default"}-branch HEAD, so it is the commit the review will be pinned to.`
-    : `${result.validationCommit.local} is the local commit; the review is pinned to the default-branch HEAD at validation time.`
-  out.push(...verdict("pass", "READY", `every blocking check passed. ${pinned}`, c))
+  const validation = result.validationCommit.defaultBranchHead
+    ? `${result.validationCommit.local} is the ${result.validationCommit.branch || "default"}-branch HEAD, so it is the commit the marketplace will validate.`
+    : `${result.validationCommit.local} is the local commit; the marketplace validates the default-branch HEAD it resolves when the issue is opened.`
+  out.push(...verdict("pass", "READY", `every blocking check passed. ${validation}`, c))
   out.push("")
   out.push(...section("issue title", c))
   out.push(c("bold", result.issue.title))
@@ -155,7 +155,7 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
   }
   out.push("")
   const state = { current: "pass", stale: "fail", unknown: "unknown" }[result.verdict.state] || "unknown"
-  out.push(...verdict(state, `PIN ${result.verdict.state.toUpperCase()}`, result.verdict.summary, c))
+  out.push(...verdict(state, `VALIDATION ${result.verdict.state.toUpperCase()}`, result.verdict.summary, c))
   if (result.verdict.action) {
     out.push("")
     out.push(...action(result.verdict.action, c, { indent: 0 }))

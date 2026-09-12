@@ -10,12 +10,13 @@
 [90mcurrent HEAD[0m  [31;1m1ce9f4c189f78ad352915e868dd5a200fdeb006c[0m
               main branch, via api, 2026-09-03T10:27:18Z
 
-[31;1m█ PIN STALE[0m  The review is pinned to de02fb5aa7243c0f84afa0442d16b50ba39144c1.
-             The repository's current main-branch HEAD is
-             1ce9f4c189f78ad352915e868dd5a200fdeb006c. The marketplace has not
-             seen the newer commit. Pushing it did not tell the marketplace, and
-             neither did any comment. The newer commit landed after the last
-             human review comment on this issue.
+[31;1m█ VALIDATION STALE[0m  The validated commit is
+                    de02fb5aa7243c0f84afa0442d16b50ba39144c1. The repository's
+                    current main-branch HEAD is
+                    1ce9f4c189f78ad352915e868dd5a200fdeb006c. The marketplace
+                    has not seen the newer commit. Pushing it did not tell the
+                    marketplace, and neither did any comment. The newer commit
+                    landed after the last human review comment on this issue.
 
 [36;1m→[0m [36mEdit the issue body. That is the only action that re-runs validation and the[0m
   [36msecurity baseline against a new commit: a push does not, and a comment does[0m

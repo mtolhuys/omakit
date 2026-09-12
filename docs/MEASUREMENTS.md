@@ -21,7 +21,7 @@ stable across the measurement window; absolute counts move by the hour.
 | --- | --- |
 | Population counts | GitHub search API, all 6,391 issues in twelve date slices, deduplicated on issue number. Text searches use `in:comments`, so they count issues, not comments. |
 | Sample | 320 issues with 328 maintainer review comments, four strata, fixed seed: 100 open `needs-fixes`, 120 published, 60 waiting on the maintainer, 40 closed `[Verify]:`. |
-| Pin staleness | The validated commit from the bot's own comment compared with the default branch HEAD from each plugin repository's `commits.atom`. |
+| Validation staleness | The validated commit from the bot's own comment compared with the default branch HEAD from each plugin repository's `commits.atom`. |
 | Registry figures | `registry.json` and `site/catalog.json` at the pinned marketplace commit, recomputed by this repository's own tests. |
 
 Known limits, stated rather than buried. A HEAD that is ahead proves the pin is
@@ -111,16 +111,17 @@ The baseline performs no general data-flow analysis and is not a security
 review. This tool never says otherwise: it prints the marketplace's own two
 closing sentences, read out of the marketplace's own report builder at the pin.
 
-## M6. The review pin goes stale silently, and that is the centre of this tool
+## M6. The validated commit falls behind silently, and that is the centre of this tool
 
-After validation, the review is pinned to one exact commit.
+The marketplace validates one exact commit, and the review that follows is of
+that commit.
 
 | Measurement | Value |
 | --- | --- |
 | Parked submissions with a default-branch HEAD ahead of the validated commit | 73% of 464 |
 | Pushed after the maintainer's review without the marketplace ever seeing it | 47% |
 | Of those authors, who also commented | 82%, so they are engaged and stuck, not gone |
-| Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a stale pin |
+| Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |
 | Listed sources whose validated commit was superseded at least once | 749 of 2,963 (25.3%), 1,108 superseded commits, one source revalidated 9 times |

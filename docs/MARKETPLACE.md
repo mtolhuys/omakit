@@ -24,7 +24,7 @@ would be selling something.
 **The submitter is.** Of the 464 submissions parked in the author's own court,
 roughly 339 contain code the marketplace has never seen, and 77% never produce
 the fresh validation that would revive them. The failures are mechanical: a title
-prefix, a heading, a stale pin. That is the work this tool removes, and it
+prefix, a heading, a validated commit that fell behind. That is the work this tool removes, and it
 removes it before a person is involved at all.
 
 The one thing it plausibly saves the maintainer is measurable and small: the
@@ -39,7 +39,7 @@ which was 19% of the parked sample. That is the honest size of it.
 | 39 submissions fell out on the title prefix alone; 11 more are malformed in the body, one by a single word | Generates title and body from the pinned form and has the marketplace's own parser judge them before anything is posted |
 | 1,226 of 2,990 listings needed a human to look because of a capability | Runs the official baseline locally on the exact commit first, and says which capability triggered it |
 | 103 issues mention agent-control files, and no automated check reports them | Refuses to submit a tree that contains one, with the exact paths and the remedy |
-| 73% of parked submissions have a HEAD the marketplace never saw | A read-only pin watch that names the one action which refreshes the review pin |
+| 73% of parked submissions have a HEAD the marketplace never saw | A read-only validation watch that names the one action which re-runs validation |
 
 Full figures and method: [MEASUREMENTS.md](MEASUREMENTS.md).
 

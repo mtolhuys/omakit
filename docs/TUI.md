@@ -47,8 +47,8 @@ file but `style.mjs`, so a sixth state or a second spelling of `ok` cannot
 appear without changing the one definition.
 
 A verdict, the closing line of a command, is the same glyph with the verdict's
-own word: `█ REFUSED`, `▁ READY`, `█ PIN STALE`, `▁ PIN CURRENT`, `▒ PIN
-UNKNOWN`, `█ NOT READY`.
+own word: `█ REFUSED`, `▁ READY`, `█ VALIDATION STALE`, `▁ VALIDATION CURRENT`,
+`▒ VALIDATION UNKNOWN`, `█ NOT READY`.
 
 ## Hierarchy without hue
 

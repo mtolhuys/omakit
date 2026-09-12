@@ -295,14 +295,14 @@ test("the coloured and uncoloured renderings say exactly the same thing", () => 
   }
 })
 
-test("a failing check, a stale pin and a problem are marked by the same vocabulary", () => {
+test("a failing check, a stale validation and a problem are marked by the same vocabulary", () => {
   const c = styler(false)
   const submit = renderSubmit(result, { colour: false })
   assert.ok(submit.includes(`${mark("fail", c)}two`), "a blocking failure is FAIL")
   assert.ok(submit.includes(`${mark("pass", c)}one`), "a pass is ok")
   assert.ok(submit.includes(`${mark("advisory", c)}three`), "an advisory failure is a note, not a FAIL")
   assert.ok(!submit.includes("(advisory)"), "the severity is the mark, not a suffix")
-  assert.ok(renderWatch(watch, { colour: false }).includes(`${DENSITY.full} PIN STALE`))
+  assert.ok(renderWatch(watch, { colour: false }).includes(`${DENSITY.full} VALIDATION STALE`))
   const doc = renderDoctor(doctor, { colour: false })
   assert.ok(doc.includes(`${mark("fail", c)}pin.checkout`))
   assert.ok(doc.includes(`${mark("unknown", c)}omakit.latest`))
@@ -397,6 +397,44 @@ test("no sentence is dimmed anywhere in the tool", () => {
       const words = literal.trim().split(/\s+/).length
       assert.ok(!(words >= 4 && /\.$/.test(literal.trim())),
         `${path} dims a sentence: ${literal}`)
+    }
+  }
+})
+
+test("the word pin has one owner: the marketplace checkout the rules are read from", () => {
+  // Measured before this test existed: `omakit submit --json` carried a
+  // top-level `pin` (the marketplace checkout, 38060f89) and a `pinnedCommit`
+  // (the subject's own commit) on one screen, and `omakit watch` closed with
+  // `PIN STALE` about a commit that has nothing to do with the pin `omakit pin`
+  // fetches. The marketplace pin keeps the word. What the marketplace does at a
+  // submission's commit is "validation", which is the marketplace's own word
+  // and the one the `validated` field already used. This reads every source,
+  // document, skill and recorded capture, so the second sense cannot return.
+  const banned = [
+    /\bPIN (STALE|CURRENT|UNKNOWN)\b/,
+    /\breview pin\b/i,
+    /\bpin watch\b/i,
+    /\bpinned-commit\b|\bpinnedCommit\b|\bpinVerdict\b|\bpinWatch\b|\bpin-watch\b|\bPIN_WATCH\b/,
+    /\bpins (the|its) review\b/i,
+    /\breview is (now )?pinned\b/i,
+    /\bstale pin\b/i,
+  ]
+  const prose = []
+  ;(function walkAll(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (SKIP.has(entry.name) || entry.name === ".tmp" || entry.name.endsWith(".tim")) continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walkAll(path)
+      else if (/\.(mjs|md|json|ansi|out)$/.test(entry.name) || entry.name === "omakit") prose.push(path)
+    }
+  })(REPO_ROOT)
+  assert.ok(prose.length > 40, `walked ${prose.length} files`)
+  for (const path of prose) {
+    if (relative(REPO_ROOT, path) === "tests/unit/style.test.mjs") continue
+    const text = readFileSync(path, "utf8")
+    for (const pattern of banned) {
+      const hit = text.match(pattern)
+      assert.ok(!hit, `${relative(REPO_ROOT, path)} uses "pin" for the validated commit: ${JSON.stringify(hit?.[0])}`)
     }
   }
 })

@@ -44,7 +44,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `submission.headings` | pin | The six form headings, in the form's order. |
 | `submission.checklist` | pin | All five checklist items, exact text, checked. |
 | `submission.official-parser` | pin | The marketplace's own `parseCurrentSubmission` accepts the rendered title and body. |
-| `submission.validation-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually pin. |
+| `submission.validation-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually validate. |
 | `baseline.preflight` | pin | The official security baseline over a local snapshot, verbatim, plus what its outcome will cause. |
 
 Every one of them states its measured reason in the output when it fails, and in
@@ -90,5 +90,6 @@ machine-readable attestation marker the marketplace's bot posts.
 
 ## After submitting
 
-The review is then pinned to one exact commit, and the only action that moves
-that pin is editing the issue body. See [PIN_WATCH.md](PIN_WATCH.md).
+The marketplace then validates one exact commit, and the only action that makes
+it validate a newer one is editing the issue body. See
+[VALIDATION_WATCH.md](VALIDATION_WATCH.md).

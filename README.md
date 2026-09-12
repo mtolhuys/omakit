@@ -80,15 +80,15 @@ stripping the colour from a coloured run gives the piped run back character for
 character, and a test asserts it. The whole system, and why each choice was
 made, is in [docs/TUI.md](docs/TUI.md).
 
-![omakit watch reporting that a review pin has gone stale](docs/media/watch.gif)
+![omakit watch reporting that a validated commit has fallen behind](docs/media/watch.gif)
 
 ```bash
 omakit watch <submission-issue-url>
 ```
 
 That submission passed validation and passed the security baseline with zero
-findings. It is stuck because the review is pinned to one exact commit, and the
-only action that moves that pin is editing the issue body. Pushing the fix does
+findings. It is stuck because the marketplace validated one exact commit, and
+the only action that makes it validate a newer one is editing the issue body. Pushing the fix does
 nothing. Commenting "fixed in `abc123`" does nothing. **73% of the 464
 submissions parked in their author's court have a default-branch HEAD the
 marketplace never saw.**
@@ -157,7 +157,7 @@ limits and the rest of the figures: [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md)
 | 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
 | 1,226 of 2,990 listings needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
 | 103 issues mention agent-control files, which no automated check reports | submit refuses the tree and prints the paths and the remedy |
-| 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a read-only pin watch that names the one action which refreshes the review |
+| 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a read-only validation watch that names the one action which re-runs validation |
 
 It does not claim to unblock the maintainer. His review writing barely repeats,
 his median time from submission to publication is hours, and the queue waiting on
@@ -190,7 +190,7 @@ to publish.
 | Document | For |
 | --- | --- |
 | [docs/SUBMIT.md](docs/SUBMIT.md) | every check and what it decides |
-| [docs/PIN_WATCH.md](docs/PIN_WATCH.md) | the pin mechanism |
+| [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md) | the validation watch: what the marketplace validated, and what moves it |
 | [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md) | every number, its method and its limits |
 | [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) | the seam, the pin, the boundaries |
 | [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | who this actually helps |

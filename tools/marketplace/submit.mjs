@@ -227,7 +227,7 @@ export async function submitPreflight(options) {
       : "not run: no body was rendered",
   }))
 
-  // --- the commit the submission will actually be pinned to -----------------
+  // --- the commit the marketplace will actually validate ---------------------
 
   let head = null
   let headError = null
@@ -242,7 +242,7 @@ export async function submitPreflight(options) {
   const validationMatches = head ? head.commit === subject.commit.toLowerCase() : null
   checks.push(check("submission.validation-commit", {
     source: "omakit",
-    why: "The marketplace pins the review to the default-branch HEAD it resolves when the issue is validated, not to the commit checked here. 73% of the 464 submissions parked in the author's court have a HEAD ahead of their validated commit, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
+    why: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited, not the commit checked here. 73% of the 464 submissions parked in the author's court have a HEAD ahead of their validated commit, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
     severity: options.offline ? "advisory" : "blocking",
     verdict: options.offline ? true : validationMatches === true,
     detail: options.offline
@@ -313,7 +313,7 @@ export async function submitPreflight(options) {
       defaultBranchHead: head?.commit || null,
       branch: head?.branch || null,
       matches: validationMatches,
-      note: "The marketplace pins the review to the commit it resolves at validation time. After submitting, use `omakit watch <issue-url>` to see whether that pin has gone stale.",
+      note: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited. After submitting, use `omakit watch <issue-url>` to see whether that validated commit has fallen behind.",
     },
     plugin: { id: tree.pluginId, name: pluginName },
     checks,

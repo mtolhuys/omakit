@@ -1,5 +1,5 @@
 [90msubject[0m       https://github.com/example/omarchy-plugin-clockwork
-[90mcommit[0m        b88ec753a57add9d89e0166015a863fb8f937d33
+[90mcommit[0m        9c436cb87b08578ac4d1dac90efdbfe735e2272d
 [90mmarketplace[0m   38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6, baseline 3, selective
 
 [32m▁ ok[0m    [1mplugin.root-manifest[0m                                   [90m[marketplace-pin][0m
@@ -71,9 +71,9 @@
 [32m▁ ok[0m    [1msubmission.official-parser[0m                             [90m[marketplace-pin][0m
         accepted: repo https://github.com/example/omarchy-plugin-clockwork,
         category Widgets, tags bar, quickshell
-[32m▁ ok[0m    [1msubmission.pinned-commit[0m                                        [90m[omakit][0m
+[32m▁ ok[0m    [1msubmission.validation-commit[0m                                    [90m[omakit][0m
         not checked (--offline). Local commit
-        b88ec753a57add9d89e0166015a863fb8f937d33.
+        9c436cb87b08578ac4d1dac90efdbfe735e2272d.
 
 [33m▓ note[0m  [1mbaseline.preflight[0m                                     [90m[marketplace-pin][0m
         needs-fixes (disposition review-required, enforcement selective,
@@ -94,7 +94,7 @@
 [90m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
 ## Automated security baseline
 
-🟡 **Manual review required at commit `b88ec75…`.**
+🟡 **Manual review required at commit `9c436cb…`.**
 
 Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
 
@@ -104,7 +104,7 @@ Selective policy permits an authorized marketplace maintainer to accept these no
 
 The remote response is executed immediately and is not bound to the commit reviewed for this submission.
 
-- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/b88ec753a57add9d89e0166015a863fb8f937d33/install.sh#L2)
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/9c436cb87b08578ac4d1dac90efdbfe735e2272d/install.sh#L2)
 
       curl -fsSL https://example.invalid/setup.sh \| sh
 
@@ -118,7 +118,7 @@ Accepted fixes:
 
 Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
 
-- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/b88ec753a57add9d89e0166015a863fb8f937d33/install.sh#L1)
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/9c436cb87b08578ac4d1dac90efdbfe735e2272d/install.sh#L1)
 
       Installer or setup file
 

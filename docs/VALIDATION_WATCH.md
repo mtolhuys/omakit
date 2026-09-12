@@ -1,4 +1,4 @@
-# `omakit watch`: the review pin
+# `omakit watch`: the validated commit
 
 ```
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
@@ -9,8 +9,9 @@ marketplace validated still the commit the repository is on?
 
 ## The mechanism
 
-When a submission is validated, the review is pinned to one exact commit. The
-only action that moves that pin is **editing the issue body**.
+The marketplace validates one exact commit, and the review that follows is of
+that commit. The only action that makes it validate a newer one is **editing the
+issue body**.
 
 - `route-issue-automation.yml` is the only workflow with a direct `issues`
   trigger: `types: [opened, edited, reopened, labeled, unlabeled]`.
@@ -31,7 +32,7 @@ maintainer's review without the marketplace ever seeing it, and 82% of those
 authors also commented, so they are engaged and stuck, not gone. Of 13 open
 submissions inspected with no labels left, 9 had passed validation and passed the
 automated security baseline with zero findings, and were blocked solely because
-the pin had gone stale while they waited. 46% of the maintainer's own requests
+their validated commit had fallen behind while they waited. 46% of the maintainer's own requests
 for a fresh validation never produced one; in the parked group, 77% never did.
 
 The instruction that would fix this exists. `scripts/submission-feedback.mjs`
@@ -51,7 +52,7 @@ from the validation comment is reported as what it is, too short to compare
 reliably, rather than guessed at.
 
 It never edits the issue, never comments, never labels, never opens a pull
-request. The one action that refreshes the pin is the author's to take, and the
+request. The one action that re-runs validation is the author's to take, and the
 command says so in the marketplace's own register.
 
 Authenticated it reads the default branch through the REST API. The credential
@@ -83,12 +84,13 @@ validated     de02fb5aa7243c0f84afa0442d16b50ba39144c1
 current HEAD  1ce9f4c189f78ad352915e868dd5a200fdeb006c
               main branch, via api, 2026-09-03T10:27:18Z
 
-█ PIN STALE  The review is pinned to de02fb5aa7243c0f84afa0442d16b50ba39144c1.
-             The repository's current main-branch HEAD is
-             1ce9f4c189f78ad352915e868dd5a200fdeb006c. The marketplace has not
-             seen the newer commit. Pushing it did not tell the marketplace, and
-             neither did any comment. The newer commit landed after the last
-             human review comment on this issue.
+█ VALIDATION STALE  The validated commit is
+                    de02fb5aa7243c0f84afa0442d16b50ba39144c1. The repository's
+                    current main-branch HEAD is
+                    1ce9f4c189f78ad352915e868dd5a200fdeb006c. The marketplace
+                    has not seen the newer commit. Pushing it did not tell the
+                    marketplace, and neither did any comment. The newer commit
+                    landed after the last human review comment on this issue.
 
 → Edit the issue body. That is the only action that re-runs validation and the
   security baseline against a new commit: a push does not, and a comment does
@@ -113,8 +115,9 @@ validated     bc2f75cf15f7827511d79a7afa1680198e79c8ef
 current HEAD  bc2f75cf15f7827511d79a7afa1680198e79c8ef
               main branch, via api, 2026-09-04T22:25:20Z
 
-▁ PIN CURRENT  The review is pinned to bc2f75cf15f7827511d79a7afa1680198e79c8ef,
-               which is the current main-branch HEAD. Nothing needs refreshing.
+▁ VALIDATION CURRENT  The validated commit is
+                      bc2f75cf15f7827511d79a7afa1680198e79c8ef, which is the
+                      current main-branch HEAD. Nothing needs refreshing.
 ```
 
 This is the one the underlying measurement caught mid-flight: on 2026-09-12 it
@@ -127,6 +130,6 @@ to read the review comments rather than to touch the issue.
 
 | State | Meaning | Exit |
 | --- | --- | --- |
-| `current` | The pin is the current default-branch HEAD. Nothing to do. | 0 |
+| `current` | The validated commit is the current default-branch HEAD. Nothing to do. | 0 |
 | `stale` | The marketplace has not seen the newer commit. Editing the issue body is what refreshes it. | 0 |
 | `unknown` | No validated commit to compare, an incomplete baseline, or an unreadable HEAD. Never reported as `current`. | 2 |

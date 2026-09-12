@@ -1,9 +1,9 @@
-// The pin watch's verdict logic, offline. The network path is exercised
+// The validation watch's verdict logic, offline. The network path is exercised
 // separately against a real listed repository and its evidence is committed
-// under docs/evidence/pin-watch/.
+// by the two real runs recorded in docs/VALIDATION_WATCH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { pinVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
+import { validationVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
 import { readFileSync } from "node:fs"
 
@@ -21,7 +21,7 @@ test("issue URLs are parsed, and anything else is refused", () => {
 })
 
 test("a pin that equals the current HEAD needs nothing", () => {
-  const verdict = pinVerdict({
+  const verdict = validationVerdict({
     comparable: true, stale: false, validated: { commit: A }, head: { commit: A, branch: "main" },
     fallback: null, baselineError: null, headError: null, pushedAfterReview: false,
   })
@@ -30,8 +30,8 @@ test("a pin that equals the current HEAD needs nothing", () => {
   assert.match(verdict.summary, /current main-branch HEAD/)
 })
 
-test("a stale pin names both commits and the one action that moves it", () => {
-  const verdict = pinVerdict({
+test("a stale validation names both commits and the one action that moves it", () => {
+  const verdict = validationVerdict({
     comparable: true, stale: true, validated: { commit: A }, head: { commit: B, branch: "master" },
     fallback: null, baselineError: null, headError: null, pushedAfterReview: false,
   })
@@ -44,7 +44,7 @@ test("a stale pin names both commits and the one action that moves it", () => {
 })
 
 test("a push after the last human review comment is called out", () => {
-  const verdict = pinVerdict({
+  const verdict = validationVerdict({
     comparable: true, stale: true, validated: { commit: A }, head: { commit: B, branch: "main" },
     fallback: null, baselineError: null, headError: null, pushedAfterReview: true,
   })
@@ -52,14 +52,14 @@ test("a push after the last human review comment is called out", () => {
 })
 
 test("no validated commit is 'unknown', never 'current'", () => {
-  const none = pinVerdict({
+  const none = validationVerdict({
     comparable: false, stale: null, validated: null, head: { commit: B },
     fallback: null, baselineError: null, headError: null, pushedAfterReview: false,
   })
   assert.equal(none.state, "unknown")
-  assert.match(none.summary, /no pinned commit/)
+  assert.match(none.summary, /no validated commit/)
 
-  const short = pinVerdict({
+  const short = validationVerdict({
     comparable: false, stale: null, validated: null, head: { commit: B },
     fallback: { short: "abc1234" }, baselineError: null, headError: null, pushedAfterReview: false,
   })
@@ -69,14 +69,14 @@ test("no validated commit is 'unknown', never 'current'", () => {
 })
 
 test("an incomplete baseline and an unreadable HEAD are both 'unknown'", () => {
-  const baseline = pinVerdict({
+  const baseline = validationVerdict({
     comparable: false, stale: null, validated: null, head: null, fallback: null,
     baselineError: { code: "approval-security-baseline-missing" }, headError: null, pushedAfterReview: false,
   })
   assert.equal(baseline.state, "unknown")
   assert.match(baseline.summary, /did not complete/)
 
-  const head = pinVerdict({
+  const head = validationVerdict({
     comparable: false, stale: null, validated: { commit: A }, head: null, fallback: null,
     baselineError: null, headError: { code: "not-found" }, pushedAfterReview: false,
   })
@@ -95,7 +95,7 @@ test("the short commit is read out of the validation comment as a fallback", () 
 })
 
 test("a missing repository URL is reported as that, not as an unreadable HEAD", () => {
-  const verdict = pinVerdict({
+  const verdict = validationVerdict({
     comparable: false, stale: null, validated: { commit: A }, head: null, fallback: null,
     baselineError: null, headError: null, pushedAfterReview: false, repositoryUrl: null,
   })
@@ -108,7 +108,7 @@ test("the two marketplace issue forms are read by their own parser", () => {
   // `[Verify]:` update requests share the "Repository URL" heading with the
   // submission form but not the rest, so the submission parser runs that section
   // on until the next heading it recognises and rejects the result. Measured on
-  // two real open update requests, which reported PIN UNKNOWN until each form
+  // two real open update requests, which reported VALIDATION UNKNOWN until each form
   // was read with the parser the marketplace uses for it.
   const source = readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8")
   assert.match(source, /parsePluginVerificationIssue/)

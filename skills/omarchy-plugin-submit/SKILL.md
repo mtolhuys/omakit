@@ -54,9 +54,9 @@ so they leave the installable tree, and keep a recursive check in the release
 process so they cannot return. Do not simply rename one file and resubmit; the
 check is recursive for a reason.
 
-**`submission.validation-commit`.** The marketplace pins its review to the commit it
-resolves when the issue is validated, which is the pushed default-branch HEAD, not
-whatever is checked out locally. Push first, then submit. 73% of submissions
+**`submission.validation-commit`.** The marketplace validates the commit it
+resolves when the issue is opened or edited, which is the pushed default-branch
+HEAD, not whatever is checked out locally. Push first, then submit. 73% of submissions
 parked in their author's court have a HEAD the marketplace never saw.
 
 ## What the baseline result means
@@ -79,8 +79,8 @@ words, and so should you.
 
 ## After the issue exists
 
-Tell the owner the one thing nobody tells them: the review is now pinned to one
-exact commit, and **editing the issue body** is the only action that moves that
-pin. Pushing a fix does nothing. Commenting "fixed in `abc123`" does nothing.
+Tell the owner the one thing nobody tells them: the marketplace validated one
+exact commit, and **editing the issue body** is the only action that makes it
+validate a newer one. Pushing a fix does nothing. Commenting "fixed in `abc123`" does nothing.
 Then use `omakit watch <issue-url>` to check it later, and see
-`skills/omarchy-plugin-pin-watch/SKILL.md`.
+`skills/omarchy-plugin-validation-watch/SKILL.md`.

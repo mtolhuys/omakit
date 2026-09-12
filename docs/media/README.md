@@ -10,7 +10,7 @@ FreeType and ffmpeg, produces byte-identical files.
 | `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it | a terminal session with timings |
 | `setup.gif` | `omakit setup` on a machine with no pin yet | a terminal session with timings |
 | `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
-| `watch.gif` | `omakit watch` on a real open submission with a stale pin | stdout, revealed line by line |
+| `watch.gif` | `omakit watch` on a real open submission whose validated commit has fallen behind | stdout, revealed line by line |
 
 Two capture kinds, because the two need different things. `submit` and `watch`
 print once and never redraw, so their stdout is enough and the renderer reveals
@@ -38,7 +38,7 @@ FORCE_COLOR=1 ./bin/omakit submit "$(cat /tmp/subject)" \
   --category Widgets --tags bar,quickshell --offline \
   > docs/media/captures/submit-refused.ansi 2>&1
 
-# watch, on a real open submission whose pin had gone stale
+# watch, on a real open submission whose validated commit had fallen behind
 FORCE_COLOR=1 GITHUB_TOKEN=... ./bin/omakit watch \
   https://github.com/omacom/omarchy-plugin-marketplace/issues/4403 \
   > docs/media/captures/watch-stale.ansi 2>&1
@@ -117,6 +117,6 @@ line naming what was cut. Nothing else is removed, and the full output is what
 
 The submit GIF uses a fixture, because pointing the demo at somebody's real
 plugin would publish a list of that plugin's problems on this project's front
-page. The watch GIF uses a real submission, because a stale review pin is a fact
+page. The watch GIF uses a real submission, because a stale validation is a fact
 about the submission rather than a judgement of the code, and because a staged
 one would not be evidence of anything. Its author's login is not printed.

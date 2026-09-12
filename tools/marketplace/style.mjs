@@ -313,7 +313,7 @@ export function mark(state, c) {
 
 /**
  * A verdict line: the closing word of a command, in the register of the state
- * it reports. "█ REFUSED", "▁ Ready", "█ PIN STALE". The word takes the tint
+ * it reports. "█ REFUSED", "▁ Ready", "█ VALIDATION STALE". The word takes the tint
  * and the weight; what follows it is a sentence and keeps the foreground.
  */
 export function verdict(state, word, text, c) {

@@ -7,7 +7,7 @@ the refusals up front, in one pass, with the reason attached.
 Two skills cover the two jobs:
 
 - `skills/omarchy-plugin-submit/SKILL.md`: submitting a plugin.
-- `skills/omarchy-plugin-pin-watch/SKILL.md`: a submission that has gone quiet.
+- `skills/omarchy-plugin-validation-watch/SKILL.md`: a submission that has gone quiet.
 
 Read the one you need. What follows applies to changing this repository itself.
 
@@ -76,7 +76,7 @@ else.
 | --- | --- |
 | `README.md` | one command and its output |
 | `docs/SUBMIT.md` | every check and what it decides |
-| `docs/PIN_WATCH.md` | the pin mechanism and why it is the centre |
+| `docs/VALIDATION_WATCH.md` | the validation watch and why it is the centre |
 | `docs/MEASUREMENTS.md` | every number, its method and its limits |
 | `docs/UPSTREAM_CONTRACT.md` | the seam, the pin, the boundaries |
 | `docs/MARKETPLACE.md` | who this actually helps, stated honestly |
