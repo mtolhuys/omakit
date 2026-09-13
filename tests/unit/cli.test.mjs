@@ -113,7 +113,22 @@ function assertFailureState(err, code, remedy) {
   const lines = err.split("\n")
   assert.equal(lines[0], `${DENSITY.full} FAIL  ${code}`, "what happened, first")
   assert.ok(lines.length >= 3, "what it means, under it")
-  assert.ok(lines.some((line) => line.trimStart().startsWith(`${ARROW} `) && line.includes(remedy)), `the one command that fixes it: ${remedy}\n${err}`)
+  // The arrow line wraps at 80 columns and its continuation sits under the
+  // arrow's text, so the remedy is read back across those lines. Measured:
+  // a fixture under a 55-character tmpdir wrapped the usage remedy onto
+  // three lines and this assertion, reading one line, went red only there.
+  const arrows = []
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!lines[index].trimStart().startsWith(`${ARROW} `)) continue
+    const indent = lines[index].indexOf(ARROW) + 2
+    let text = lines[index].trimStart().slice(2)
+    while (index + 1 < lines.length && lines[index + 1].startsWith(" ".repeat(indent)) && lines[index + 1].trim()) {
+      index += 1
+      text += ` ${lines[index].trim()}`
+    }
+    arrows.push(text)
+  }
+  assert.ok(arrows.some((text) => text.includes(remedy)), `the one command that fixes it: ${remedy}\n${err}`)
   assert.doesNotMatch(err, /^\s+at /m, "no stack trace")
   for (const line of lines) assert.ok(!overflows(line), `${line.length} columns: ${line}`)
 }
