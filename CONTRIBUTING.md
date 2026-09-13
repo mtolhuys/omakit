@@ -43,9 +43,13 @@ Before opening a pull request, run all three commands.
 - `tests/unit/pin.test.mjs` keeps every marketplace path behind the immutable
   pin and prevents a sparse checkout from quietly fetching another rule.
 - `tests/package-assert.mjs`, exercised by `tests/unit/package.test.mjs`,
-  compares all 40 publishable paths and enforces a 102,400-byte tarball
-  ceiling against the measured 81,351-byte baseline when CI feeds it
-  `npm pack --dry-run --json`.
+  compares all 40 publishable paths and enforces a 153,600-byte tarball
+  ceiling when CI feeds it `npm pack --dry-run --json`. The ceiling exists to
+  refuse an accidental tree (a pin, a cache, a fixture) rather than to hold
+  the package at a size: it was 102,400 bytes against the measured
+  81,351-byte baseline, and was raised at 0.1.8 when the package measured
+  102,177 bytes at 0.1.7 and the fixes to the 0.1.6 review did not fit under
+  it.
 - `tests/unit/workflows.test.mjs` holds workflow actions, permissions, secrets,
   triggers and GitHub write boundaries to the policy described here.
 

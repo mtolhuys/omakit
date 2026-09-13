@@ -2,10 +2,14 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
-// npm pack measured 81,351 bytes with the machine-readable freshness evidence.
-// The 102,400-byte ceiling leaves 21,049 bytes for deliberate growth while
-// rejecting an accidental tree.
-export const MAX_PACKED_BYTES = 102_400
+// npm pack measured 81,351 bytes with the machine-readable freshness evidence,
+// and the first ceiling, 102,400 bytes, left 21,049 bytes for deliberate
+// growth while rejecting an accidental tree. At 0.1.7 the package measured
+// 102,177 bytes, 223 under that ceiling, and the fixes to the 0.1.6 review
+// could not land under it, so the ceiling is 153,600 bytes: 51,423 bytes over
+// the 0.1.7 measurement, still half the size of an accidental tree with a
+// pin or a cache in it.
+export const MAX_PACKED_BYTES = 153_600
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
