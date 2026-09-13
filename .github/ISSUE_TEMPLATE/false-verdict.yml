@@ -1,0 +1,63 @@
+name: False verdict
+description: Report a check that passes or fails for the wrong reason.
+title: "[False verdict]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A false verdict is different from a crash: the command completed, but a named check reached the wrong conclusion.
+  - type: input
+    id: check
+    attributes:
+      label: Check id
+      placeholder: plugin.root-manifest
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Wrong direction
+      options:
+        - It failed but should pass
+        - It passed but should fail
+        - Its advisory or unknown state is wrong
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Omakit version and pin
+      description: Paste the omakit.version and pin.checkout rows from `omakit doctor --json`.
+      placeholder: omakit 0.1.0; 40-character pin
+    validations:
+      required: true
+  - type: input
+    id: subject
+    attributes:
+      label: Subject commit
+      description: Public repository URL and exact 40-character commit, when shareable.
+      placeholder: https://github.com/owner/repository@0123456789abcdef0123456789abcdef01234567
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant JSON output
+      description: Run the command with `--json` when it supports that flag and include the named check.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why the verdict is false
+      description: Point to the repository evidence or marketplace contract that contradicts it.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: The repository and commit above are public, and the output contains no credential.
+          required: true

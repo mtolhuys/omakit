@@ -60,7 +60,7 @@ Two modules at the pin are deliberately *not* imported:
 
 | Field | Value |
 | --- | --- |
-| Location | `.cache/marketplace`, under the tool; nothing moves it |
+| Location | `$XDG_CACHE_HOME/omakit/marketplace`, defaulting to `~/.cache/omakit/marketplace`; `OMAKIT_MARKETPLACE_PIN` overrides it |
 | Setup | `omakit pin`: `git fetch --depth 1 origin <commit>` then a detached checkout; idempotent; refuses a modified checkout |
 | Identity constant | `tools/marketplace/pin.mjs` (`MARKETPLACE_PIN`), the only home of the commit |
 | Commit | `38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6` ("Add Plugin updates plugin (#6374)") |
@@ -74,7 +74,7 @@ Two modules at the pin are deliberately *not* imported:
 A deliberate change, in this order:
 
 1. Change `MARKETPLACE_PIN` in `tools/marketplace/pin.mjs`.
-2. Remove `.cache/marketplace` and run `omakit pin`.
+2. Remove `$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace` when XDG is unset) and run `omakit pin`.
 3. Run `npm test`. The contract cross-check fails loudly if the form and the
    marketplace's own constants disagree at the new commit; the submission tests
    fail if the rendered body is no longer accepted by the official parser.

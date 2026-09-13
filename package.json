@@ -4,6 +4,15 @@
   "description": "The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only, posts nothing, zero dependencies.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
+  "keywords": [
+    "omarchy",
+    "quattro",
+    "plugin",
+    "marketplace",
+    "preflight",
+    "cli",
+    "agent"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -24,6 +33,8 @@
   "files": [
     "bin",
     "tools",
-    "skills"
+    "skills",
+    "tests/parity/corpus.mjs",
+    "tests/parity/run.mjs"
   ]
 }

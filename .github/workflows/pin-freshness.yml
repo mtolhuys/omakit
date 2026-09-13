@@ -1,0 +1,154 @@
+name: Marketplace pin freshness
+
+on:
+  schedule:
+    - cron: "17 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pin-freshness
+  cancel-in-progress: false
+
+# The inspect job reads the public marketplace through Omakit's single GET
+# path. Only reconcile-issue can write, and its token is scoped to issues in
+# this repository; no job can write to omacom/omarchy-plugin-marketplace.
+jobs:
+  inspect:
+    name: Read the pin and marketplace HEAD
+    runs-on: ubuntu-latest
+    outputs:
+      state: ${{ steps.freshness.outputs.state }}
+      pinned: ${{ steps.freshness.outputs.pinned }}
+      head: ${{ steps.freshness.outputs.head }}
+      branch: ${{ steps.freshness.outputs.branch }}
+
+    steps:
+      - name: Check out the exact revision without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Read the immutable pin identity
+        id: pin
+        shell: bash
+        run: |
+          commit=$(node --input-type=module --eval 'import { MARKETPLACE_PIN } from "./tools/marketplace/pin.mjs"; process.stdout.write(MARKETPLACE_PIN.commit)')
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "MARKETPLACE_PIN.commit is not a full commit: $commit" >&2
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      # There is deliberately no date or restore prefix in this key. The pin
+      # is an exact immutable commit, so this cache can never become stale.
+      - name: Restore the pinned marketplace checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/omakit/marketplace
+          key: omakit-marketplace-${{ runner.os }}-${{ steps.pin.outputs.commit }}
+
+      - name: Fetch or verify the marketplace pin
+        run: ./bin/omakit pin
+
+      - name: Read structured freshness evidence
+        id: freshness
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./bin/omakit doctor --json > "$RUNNER_TEMP/doctor.json"
+          count=$(jq '[.checks[] | select(.id == "pin.freshness")] | length' "$RUNNER_TEMP/doctor.json")
+          if [[ "$count" -ne 1 ]]; then
+            echo "doctor returned $count pin.freshness checks, expected exactly one" >&2
+            exit 1
+          fi
+          state=$(jq -r '.checks[] | select(.id == "pin.freshness") | .state' "$RUNNER_TEMP/doctor.json")
+          pinned=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.pinCommit // empty' "$RUNNER_TEMP/doctor.json")
+          head=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.marketplaceHead // empty' "$RUNNER_TEMP/doctor.json")
+          branch=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.branch // empty' "$RUNNER_TEMP/doctor.json")
+          if [[ "$state" != "ok" && "$state" != "advice" ]]; then
+            echo "pin freshness is $state; refusing to change an issue without a measured HEAD" >&2
+            exit 1
+          fi
+          if [[ ! "$pinned" =~ ^[0-9a-f]{40}$ || ! "$head" =~ ^[0-9a-f]{40}$ || -z "$branch" ]]; then
+            echo "pin freshness evidence is missing or malformed" >&2
+            exit 1
+          fi
+          if [[ "$state" == "ok" && "$pinned" != "$head" ]]; then
+            echo "doctor called unequal commits current" >&2
+            exit 1
+          fi
+          if [[ "$state" == "advice" && "$pinned" == "$head" ]]; then
+            echo "doctor called equal commits behind" >&2
+            exit 1
+          fi
+          {
+            echo "state=$state"
+            echo "pinned=$pinned"
+            echo "head=$head"
+            echo "branch=$branch"
+          } >> "$GITHUB_OUTPUT"
+
+  reconcile-issue:
+    name: Keep exactly one current-repository issue
+    needs: inspect
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Create, update, reopen, or close the one freshness issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATE: ${{ needs.inspect.outputs.state }}
+          PINNED: ${{ needs.inspect.outputs.pinned }}
+          HEAD_COMMIT: ${{ needs.inspect.outputs.head }}
+          HEAD_BRANCH: ${{ needs.inspect.outputs.branch }}
+        run: |
+          title="[automation] Marketplace pin differs from HEAD"
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" > "$RUNNER_TEMP/issues.json"
+          jq --arg title "$title" '[.[][] | select(has("pull_request") | not) | select(.title == $title)]' "$RUNNER_TEMP/issues.json" > "$RUNNER_TEMP/matches.json"
+          count=$(jq length "$RUNNER_TEMP/matches.json")
+          if [[ "$count" -gt 1 ]]; then
+            echo "found $count exact freshness issues; refusing to choose or mutate one" >&2
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/issue-body.md" <<EOF
+          The immutable Omakit marketplace pin differs from the marketplace's current \`${HEAD_BRANCH}\`-branch HEAD.
+
+          - Omakit pin: \`${PINNED}\`
+          - Marketplace HEAD: \`${HEAD_COMMIT}\`
+
+          Updating the pin is deliberate work. Follow [docs/UPSTREAM_CONTRACT.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/UPSTREAM_CONTRACT.md), including the 30-repository parity proof and committed evidence. This workflow reports the difference; it never advances the pin.
+          EOF
+          if [[ "$STATE" == "advice" ]]; then
+            if [[ "$count" -eq 0 ]]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$RUNNER_TEMP/issue-body.md"
+            else
+              number=$(jq -r '.[0].number' "$RUNNER_TEMP/matches.json")
+              issue_state=$(jq -r '.[0].state' "$RUNNER_TEMP/matches.json")
+              if [[ "$issue_state" == "closed" ]]; then
+                gh issue reopen "$number" --repo "$GITHUB_REPOSITORY"
+              fi
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$RUNNER_TEMP/issue-body.md"
+            fi
+          elif [[ "$STATE" == "ok" ]]; then
+            if [[ "$count" -eq 1 && "$(jq -r '.[0].state' "$RUNNER_TEMP/matches.json")" == "open" ]]; then
+              number=$(jq -r '.[0].number' "$RUNNER_TEMP/matches.json")
+              gh issue close "$number" --repo "$GITHUB_REPOSITORY" --comment "The pin and marketplace ${HEAD_BRANCH}-branch HEAD now both resolve to \`${PINNED}\`."
+            fi
+          else
+            echo "unexpected freshness state $STATE; refusing to mutate an issue" >&2
+            exit 1
+          fi

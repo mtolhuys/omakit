@@ -90,9 +90,9 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   } catch (error) {
     spinner.done()
     step("fail", error.message)
-    fix(error.code === "network-unavailable"
+    fix(error.remedy || (error.code === "network-unavailable"
       ? "Connect to the network, then run `omakit setup` again."
-      : "Remove the checkout, then run `omakit setup` again.")
+      : "Remove the checkout, then run `omakit setup` again."))
     return { ok: false }
   }
   spinner.done()

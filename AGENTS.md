@@ -22,7 +22,8 @@ with `gh`, not through this tool, which has no write path and must not grow one.
 
 **2. Never write down a marketplace rule.** Everything about the submission
 format, the plugin-id universe, the baseline policy and the reserved namespace is
-read from `.cache/marketplace` at the pinned commit. If you find yourself typing
+read from `$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace`)
+at the pinned commit. If you find yourself typing
 a category name, a checklist sentence, a rule id or an outcome name into a source
 file, stop: read it from the pin instead. A constant here is a constant that
 drifts, and drift is the failure this repository was built to remove.

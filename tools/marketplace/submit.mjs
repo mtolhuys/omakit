@@ -22,6 +22,7 @@ import { baselinePreflight } from "./preflight.mjs"
 import { renderIssue, verifyAgainstOfficialParser } from "./issue.mjs"
 import { defaultBranchHead } from "./github.mjs"
 import { REFRESH_ACTION } from "./watch.mjs"
+import { omakitCacheDir } from "./paths.mjs"
 
 export class SubmitError extends Error {
   constructor(code, message) {
@@ -67,7 +68,7 @@ export async function submitPreflight(options) {
   let subject
   try {
     subject = resolveSubject(options.target, {
-      cacheRoot: `${repoRoot}/.cache`,
+      cacheRoot: omakitCacheDir(),
       allowDirty: options.allowDirty === true,
     })
   } catch (error) {
