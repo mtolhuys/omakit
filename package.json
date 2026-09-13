@@ -1,6 +1,6 @@
 {
   "name": "omakit",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only, posts nothing, zero dependencies.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
