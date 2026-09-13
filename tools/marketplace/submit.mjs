@@ -121,12 +121,15 @@ export async function submitPreflight(options) {
     remedy: "Document both installing and removing the plugin in the root README, or submit by hand without the generated checklist.",
   }))
 
-  // --- the agent-control refusal -------------------------------------------
+  // --- the agent-control warning --------------------------------------------
+  // Advisory, not blocking: the marketplace lists plugins that ship these files
+  // (docs/MEASUREMENTS.md M3), so a refusal here would refuse what it accepts.
 
   const agentControl = findAgentControl(entries)
   checks.push(check("tree.agent-control", {
     source: "omakit",
-    why: "103 marketplace issues mention agent-control files, and 24 of 328 sampled maintainer review comments are about them: an instruction file inside an installed plugin is treated as a prompt-injection surface and listing is blocked on it. Nothing in the marketplace's automated baseline detects them, so without this check an author learns about them only from a human review round, which is the most expensive round there is.",
+    severity: "advisory",
+    why: "103 marketplace issues mention agent-control files, and 24 of 328 sampled maintainer review comments are about them, so an instruction file inside an installed plugin draws review attention and can cost a round. It is not a listing rule: at their listed commits, 6 of 34 listed plugins inspected on 2026-09-13 ship one, so this is a review-cost warning derived from public issue text, labelled `omakit` for that reason. Nothing in the marketplace's automated baseline reports them.",
     verdict: agentControl.length === 0,
     detail: agentControl.length
       ? `${agentControl.length} agent-control file(s) in the installable tree`

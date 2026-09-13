@@ -10,12 +10,14 @@ push; `watch` says when that has happened. All of it runs on your own machine
 and publishes nothing: no issue, no comment, no label, nobody's attention spent
 until you choose to.
 
-![omakit submit refusing a plugin that ships agent-control files](docs/media/submit.gif)
+![omakit submit refusing a plugin with no license, a README that never says how to uninstall, and a reserved plugin id](docs/media/submit.gif)
 
-The plugin above is fine except that it ships instruction files an agent will
-read once installed. **103 marketplace issues mention exactly that, and no
-automated check reports it, so today an author finds out from a human review
-round.**
+The plugin above is refused for three things the marketplace itself refuses,
+and warned about a fourth: it ships instruction files an agent will read once
+installed. **103 marketplace issues mention exactly that, and no automated check
+reports it, so today an author finds out from a human review round.** It is a
+warning and not a refusal, because the marketplace does list plugins that ship
+them: 6 of 34 inspected do, at the commit that was listed.
 
 ```bash
 omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
@@ -34,7 +36,7 @@ limits and the rest of the figures: [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md)
 | --- | --- |
 | 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
 | 1,226 of 2,990 listings needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
-| 103 issues mention agent-control files, which no automated check reports | submit refuses the tree and prints the paths and the remedy |
+| 103 issues mention agent-control files, which no automated check reports | submit names every one with its remedy, before a reviewer has to |
 | 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
 
 It does not claim to unblock the maintainer. His review writing barely repeats,

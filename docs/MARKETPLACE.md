@@ -38,7 +38,7 @@ which was 19% of the parked sample. That is the honest size of it.
 | --- | --- |
 | 39 submissions fell out on the title prefix alone; 11 more are malformed in the body, one by a single word | Generates title and body from the pinned form and has the marketplace's own parser judge them before anything is posted |
 | 1,226 of 2,990 listings needed a human to look because of a capability | Runs the official baseline locally on the exact commit first, and says which capability triggered it |
-| 103 issues mention agent-control files, and no automated check reports them | Refuses to submit a tree that contains one, with the exact paths and the remedy |
+| 103 issues mention agent-control files, and no automated check reports them | Names every one in the tree with the remedy, as a warning: the marketplace lists plugins that ship them, so it never refuses on it |
 | 73% of parked submissions have a HEAD the marketplace never saw | A read-only validation watch that names the one action which re-runs validation |
 
 Full figures and method: [MEASUREMENTS.md](MEASUREMENTS.md).

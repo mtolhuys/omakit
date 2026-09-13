@@ -46,13 +46,14 @@ exists. Fix the cause, do not work around the check.
 
 **`tree.agent-control`.** Agent-control files anywhere in the installable tree
 (`AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `.mcp.json`, anything under `.claude/` or
-`.codex/`, instruction files under `skills/`) are a prompt-injection surface once
-the plugin is installed, and listing is blocked on them by a human reviewer after
-a long wait. 103 marketplace issues mention this. The remedy is to move the
-guidance to a non-agent filename such as `DEVELOPMENT.md`, untrack the originals
-so they leave the installable tree, and keep a recursive check in the release
-process so they cannot return. Do not simply rename one file and resubmit; the
-check is recursive for a reason.
+`.codex/`, instruction files under `skills/`) are read by whatever agent the user
+runs next, and 103 marketplace issues mention them. This is a warning, not a
+refusal: the marketplace lists plugins that ship them (6 of 34 inspected at
+their listed commit), so the body is still produced. Tell the owner, and offer
+the remedy: move the guidance to a non-agent filename such as `DEVELOPMENT.md`,
+untrack the originals so they leave the installable tree, and keep a recursive
+check in the release process so they cannot return. The owner decides; do not
+strip files from their tree on your own.
 
 **`submission.validation-commit`.** The marketplace validates the commit it
 resolves when the issue is opened or edited, which is the pushed default-branch

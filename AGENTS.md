@@ -47,7 +47,7 @@ primitive.
 ## This repository's own agent files must never travel
 
 `AGENTS.md` and `skills/` at the root of this tool are a deliberate deliverable.
-They are also exactly what `tree.agent-control` refuses inside a plugin, and
+They are also exactly what `tree.agent-control` warns about inside a plugin, and
 `tests/unit/self-containment.test.mjs` proves the check would catch them. If you
 ever add a code path that writes into a plugin tree, you have to add the test that
 proves no agent-control file can ride along with it, before the code path, not

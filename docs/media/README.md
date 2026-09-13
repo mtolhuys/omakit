@@ -9,7 +9,7 @@ FreeType and ffmpeg, produces byte-identical files.
 | --- | --- | --- |
 | `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it | a terminal session with timings |
 | `setup.gif` | `omakit setup` on a machine with no pin yet, the wordmark through `ttfx` first | a terminal session with timings |
-| `submit.gif` | `omakit submit` refusing a plugin that ships agent-control files | stdout, revealed line by line |
+| `submit.gif` | `omakit submit` refusing a plugin with no license, no removal instructions and a reserved id, and warning about its agent-control files | stdout, revealed line by line |
 | `watch.gif` | `omakit watch` on a real open submission whose validated commit has fallen behind | stdout, revealed line by line |
 
 Two capture kinds, because the two need different things. `submit` and `watch`
@@ -26,7 +26,7 @@ The captures in `captures/` are the exact stdout of real runs, taken with
 `FORCE_COLOR=1` so the colour a person sees in a terminal ends up in the file:
 
 ```bash
-# submit, refusing a plugin that ships agent-control files. The subject is a
+# submit, refusing a fixture plugin (and warning about its agent-control files). The subject is a
 # fixture from tests/fixtures/plugins.mjs, materialised into a temporary Git
 # repository, so anyone can reproduce it without a plugin of their own.
 node --input-type=module -e '

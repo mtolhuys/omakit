@@ -56,18 +56,30 @@ the pin, and the rendered body is then handed to the marketplace's own
 form by one word reproduces exactly the failure above, so the form is the only
 source and the marketplace's own parser is the only judge.
 
-## M3. Agent-control files are blocked by a human, and nothing warns first
+## M3. Agent-control files draw review attention, and nothing warns first
 
 | Measurement | Value |
 | --- | --- |
 | Issues mentioning agent-control files | 103 |
 | Sampled maintainer review comments about them | 24 of 328 |
 | Detected by the marketplace's automated baseline | no |
+| Listed plugins that ship one at their listed commit | 6 of 34 inspected (2026-09-13) |
 
-An instruction file inside an installed plugin is treated as a prompt-injection
-surface, and listing is blocked on it. Because no automated check reports it, an
-author learns about it from a human review round, which is the most expensive
-round there is.
+An instruction file inside an installed plugin is read by whatever agent the
+user runs next, and reviewers raise it. Because no automated check reports it,
+an author hears about it from a human review round, which is the most
+expensive round there is.
+
+It is not a listing rule, and this check never refuses on it. Measured on
+2026-09-13 against `registry.json` at the pin: at their
+`listingValidatedCommit` (`git fetch --depth 1 --filter=blob:none origin
+<commit>`, then `git ls-tree -r --name-only`), 4 of one author's 5 listed
+plugins ship a root `AGENTS.md`, two of them at a commit carrying the
+maintainer's own `maintainerVerificationReview`; a fixed-seed sample of 30
+listed sources (one unreachable) found 2 more, one with `AGENTS.md`,
+`CLAUDE.md` and a `skills/**/SKILL.md`. Six of 34 listed plugins inspected
+(18%) carry one at the commit the marketplace listed. So the check is
+advisory: it prints the paths and the remedy and still produces the body.
 
 Used by: `tree.agent-control`. The check is recursive over the installable tree
 and matches `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `.mcp.json`, anything under

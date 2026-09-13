@@ -65,7 +65,6 @@ test("the crafted fixture is refused, and every measured failure class is named"
     "plugin.root-manifest",
     "plugin.root-license",
     "plugin.readme-install-removal",
-    "tree.agent-control",
     "identity.available",
     "submission.category",
     "submission.tags",
@@ -76,6 +75,9 @@ test("the crafted fixture is refused, and every measured failure class is named"
   }
 
   const agentControl = result.checks.find((check) => check.id === "tree.agent-control")
+  assert.equal(agentControl.verdict, "fail")
+  assert.equal(agentControl.severity, "advisory", "the marketplace lists plugins that ship agent-control files, so this warns and never refuses")
+  assert.ok(result.advisory.includes("tree.agent-control"))
   assert.deepEqual(agentControl.paths.map((path) => path.split(": ")[0]), [
     ".claude/settings.json",
     ".mcp.json",
@@ -93,6 +95,23 @@ test("the crafted fixture is refused, and every measured failure class is named"
   assert.equal(baseline.severity, "advisory", "a non-selectively-blocking finding does not block publication")
   assert.ok(result.baseline.consequence.findings.includes("curl-pipe-shell"))
   assert.ok(baseline.paths.some((path) => path.startsWith("curl-pipe-shell: install.sh:")))
+})
+
+test("an agent-control file alone never refuses: the marketplace lists such plugins", async () => {
+  // Measured 2026-09-13 at the pin: 4 of mtolhuys' 5 listed plugins and 2 of a
+  // 30-source sample ship AGENTS.md at their listingValidatedCommit.
+  const fixture = materialise({ ...GOOD, "AGENTS.md": "# Agent notes\n" }, { origin: "https://github.com/example/omarchy-plugin-fixture-agents" })
+  const result = await submitPreflight({
+    repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar,quickshell", offline: true,
+  })
+  assert.equal(result.ready, true, `blocking: ${result.blocking.join(", ")}`)
+  assert.deepEqual(result.blocking, [])
+  assert.deepEqual(result.advisory, ["tree.agent-control"])
+  assert.ok(result.issue, "a warning still produces the body")
+  const check = result.checks.find((entry) => entry.id === "tree.agent-control")
+  assert.equal(check.severity, "advisory")
+  assert.deepEqual(check.paths.map((path) => path.split(": ")[0]), ["AGENTS.md"])
+  assert.match(check.why, /6 of 34 listed plugins/)
 })
 
 test("a missing root manifest, README and license are each reported", async () => {

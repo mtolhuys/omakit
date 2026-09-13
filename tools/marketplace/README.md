@@ -17,7 +17,7 @@ local commit through the transport seam the marketplace tests itself
 | `registry.mjs` | The plugin-id and repository universe, and the reserved namespace, read from the pinned registry, catalog and catalog builder. |
 | `tree.mjs` | The installable tree of a subject at one exact commit, from the Git object database. |
 | `plugin.mjs` | The root files the submission contract needs, and the declared plugin identity. |
-| `agent-control.mjs` | The recursive agent-control refusal, and its remedy. |
+| `agent-control.mjs` | The recursive agent-control warning, and its remedy. |
 | `issue.mjs` | Renders the issue the way the form would, then has the marketplace's own parser judge it. |
 | `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. |
 | `watch.mjs` | The validation watch: validated commit versus current default-branch HEAD, and the one action that refreshes it. |

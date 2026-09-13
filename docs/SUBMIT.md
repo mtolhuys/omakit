@@ -35,7 +35,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `plugin.root-readme` | pin | A root README exists. |
 | `plugin.root-license` | pin | A root license or COPYING file exists. |
 | `plugin.readme-install-removal` | omakit | The README mentions installing and removing, because the generated checklist signs that claim. Keyword probe, not a reading. |
-| `tree.agent-control` | omakit | No agent-control file anywhere in the installable tree. |
+| `tree.agent-control` | omakit | Advisory: names every agent-control file in the installable tree. It never refuses, because the marketplace lists plugins that ship them (6 of 34 inspected). |
 | `identity.available` | pin | The plugin id is unused, not retired, outside the reserved namespace, and the repository is not already listed. |
 | `submission.title` | pin | The title is the form's own prefix plus the plugin name. |
 | `submission.category` | pin | Exactly one category from the form's controlled list. |
