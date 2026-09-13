@@ -39,7 +39,19 @@ Before opening a pull request, run all three commands.
   measured reason recorded in `docs/MEASUREMENTS.md`.
 - `tests/unit/style.test.mjs` and `tests/unit/cli.test.mjs` protect stdout as an
   API: a pipe has the same words, no escape sequence, and no hidden colour-only
-  meaning.
+  meaning, and nothing omakit writes itself is wider than 80 columns. Two
+  rules qualify that, each with its reason, and the tests say the same:
+  - Text that will be posted verbatim is never wrapped and may exceed 80
+    columns: the marketplace's own baseline report, and the issue body
+    rendered from the pinned form. A wrapped body would not be the body. The
+    width test names both regions by their section heading, asserts each is
+    the `--json` text line for line, and holds every other line to 80.
+  - stderr carries interactive decoration, the progress line and the
+    chooser, only when stderr is a TTY. A piped stderr is empty on success;
+    failures go to stderr always. The three-way test asserts the empty pipe,
+    and a pseudo-terminal test (util-linux `script`, skipped where it is
+    absent) asserts that a successful `doctor` puts nothing but the progress
+    sequences on a terminal's stderr.
 - `tests/unit/pin.test.mjs` keeps every marketplace path behind the immutable
   pin and prevents a sparse checkout from quietly fetching another rule.
 - `tests/package-assert.mjs`, exercised by `tests/unit/package.test.mjs`,

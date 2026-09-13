@@ -60,6 +60,19 @@ the registry recorded so the corpus always contains repositories that are not
 side rather than the findings themselves. The GitHub side uses whatever
 credential `github.mjs` resolves (a `gh` login, and only that), read-only.
 
+Two rules about the output, stated as rules because each is an exception to
+a wider one. Everything omakit writes itself stays within 80 columns; text
+that will be posted verbatim, the marketplace's own baseline report and the
+issue body rendered from the pinned form, is never wrapped and may exceed 80,
+because a wrapped body would not be the body. And stdout is the whole result;
+stderr carries interactive decoration, the progress line from `progress.mjs`
+and the chooser from `ask.mjs`, only when stderr is a TTY, so a piped stderr
+is empty on success, and failures go to stderr always. `tests/unit/cli.test.mjs`
+holds both: the width test names the two verbatim regions by their heading
+and holds every other line to 80, the three-way test asserts the empty pipe,
+and a pseudo-terminal test asserts that a terminal's stderr gets the progress
+sequences and nothing else.
+
 `parity`, `watch`, `doctor` and `submit` reach the network, with Node's
 built-in `fetch`, which does not read proxy environment variables by default.
 Behind a proxy, run them with `NODE_USE_ENV_PROXY=1`. `submit` reads two things

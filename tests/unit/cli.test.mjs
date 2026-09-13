@@ -59,23 +59,76 @@ test("a piped run, a NO_COLOR run and a coloured run say the same words", () => 
   }
 })
 
-test("nothing a command prints is wider than eighty columns", () => {
+test("nothing omakit writes itself is wider than eighty columns; the two verbatim regions are named, not stripped", () => {
+  // The contract (CONTRIBUTING.md, "stdout is an API"): text that will be
+  // posted verbatim is never wrapped and may exceed eighty columns, because
+  // a wrapped body would not be the body; everything omakit writes itself
+  // stays within eighty. Two regions are verbatim: the marketplace's own
+  // baseline report, and the issue body rendered from the pinned form. Each
+  // is found by its section heading, and each is asserted to be exactly the
+  // text `--json` carries for it, line for line, so the exemption covers
+  // that text and not a line more. Every other line is held to the rule.
+  // Measured on 0.1.6: the old test cut the regions out by two markers
+  // apiece, and three lines of 114, 82 and 91 columns inside them were the
+  // reason the contract needed stating.
+  const regions = [
+    { marker: "the marketplace's own baseline report for this commit", text: (json) => json.baseline?.officialReport },
+    { marker: "issue body", text: (json) => json.issue?.body?.trimEnd() },
+  ]
   for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"], ["submit", own.dir, "--offline"], ["submit", taken.dir, "--offline"]]) {
     const { out } = run(args)
-    // Two exemptions, both somebody else's text quoted verbatim: the
-    // marketplace's own baseline report, and the issue body, whose checklist
-    // sentences are the form's own, character for character.
-    const verbatim = [
-      ["## Automated security baseline", "Official baseline preview"],
-      ["### Repository URL", "This is not posted"],
-    ]
-    let own = out
-    for (const [from, to] of verbatim) {
-      if (own.includes(from)) own = own.slice(0, own.indexOf(from)) + own.slice(own.indexOf(to))
+    const lines = out.split("\n")
+    const json = args[0] === "submit" ? JSON.parse(run([...args, "--json"]).out) : {}
+    const verbatim = new Set()
+    for (const region of regions) {
+      const text = region.text(json)
+      const at = lines.indexOf(region.marker)
+      if (!text) {
+        assert.equal(at, -1, `${args.join(" ")}: a "${region.marker}" section with nothing verbatim to hold`)
+        continue
+      }
+      assert.ok(at >= 0, `${args.join(" ")}: no "${region.marker}" section`)
+      // The heading and its rule are omakit's; the region starts under them.
+      const start = at + 2
+      const expected = text.split("\n")
+      assert.deepEqual(lines.slice(start, start + expected.length), expected, `${args.join(" ")}: the "${region.marker}" region is the verbatim text, line for line`)
+      for (let index = start; index < start + expected.length; index += 1) verbatim.add(index)
     }
-    for (const line of own.split("\n")) {
-      assert.ok(!overflows(line), `${args.join(" ")}: ${line.length} columns: ${JSON.stringify(line)}`)
+    for (const [index, line] of lines.entries()) {
+      if (verbatim.has(index)) continue
+      assert.ok(!overflows(line), `${args.join(" ")}: line ${index + 1}, ${line.length} columns: ${JSON.stringify(line)}`)
     }
+  }
+})
+
+test("under a pseudo-terminal, a successful doctor writes nothing but its progress line to stderr", (t) => {
+  // The contract: stderr carries interactive decoration (the progress line,
+  // the chooser) only when stderr is a TTY; a piped stderr is empty on
+  // success (the three-way test above); failures go to stderr always. A pipe
+  // cannot see the first clause, so this runs the command under script(1)
+  // with stdout sent away and stderr left on the terminal, and reads back
+  // what reached it: clear-line sequences, the track, a label, and nothing
+  // else. util-linux script only; a BSD script has other flags, and a
+  // machine without one skips, as the ttfx test does.
+  const probe = spawnSync("script", ["--version"], { encoding: "utf8" })
+  if (probe.status !== 0 || !/util-linux/.test(probe.stdout)) {
+    t.skip("util-linux script(1) is not installed here")
+    return
+  }
+  const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} doctor --offline >/dev/null`
+  const result = spawnSync("script", ["-qec", command, "/dev/null"], {
+    encoding: "utf8",
+    env: { ...process.env, NODE_NO_WARNINGS: "1", TERM: "xterm", FORCE_COLOR: undefined, NO_COLOR: undefined },
+  })
+  assert.equal(result.status, 0, result.stdout)
+  const CLEAR = "\r\u001b[2K"
+  const frames = result.stdout.split(CLEAR)
+  assert.equal(frames[0], "", "the first byte on stderr is a clear")
+  assert.equal(frames.at(-1), "", "and so is the last: the line is gone when the command is done")
+  assert.ok(frames.length >= 3, "at least one frame was drawn")
+  const frame = new RegExp(`^(?:(?:\\u001b\\[[0-9;]*m)?[${DENSITY.floor}${DENSITY.full}]+(?:\\u001b\\[0m)?)+ [^\\r\\n\\u001b]+$`)
+  for (const drawn of frames.slice(1, -1)) {
+    assert.match(drawn, frame, `a frame that is not the track and a label: ${JSON.stringify(drawn)}`)
   }
 })
 
