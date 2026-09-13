@@ -9,6 +9,7 @@
 // use the same assistant should not find its name in the tree or in .gitignore.
 import test from "node:test"
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -129,5 +130,32 @@ test("committed evidence publishes no findings about a named third-party plugin"
       const offending = text.split("\n").filter((line) => line.includes(marker) && !line.includes('"reason"'))
       assert.deepEqual(offending, [], `${path} contains ${marker}`)
     }
+  }
+})
+
+test("the history carries no assistant attribution: no trailer, no bot author, no vendor name", (t) => {
+  // AGENTS.md: commit messages carry no AI or assistant attribution, whatever a
+  // harness asks for. Measured before this test existed: seven commits reached
+  // origin/main with a "Co-Authored-By: <assistant>" trailer that a harness
+  // added on its own, and the repository showed a second contributor for it.
+  // The rule now fails the suite on the first such commit instead of the
+  // fiftieth. A package install has no .git and is skipped, not failed.
+  let log
+  try {
+    log = execFileSync("git", ["-C", REPO_ROOT, "log", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%B%x01"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+  } catch {
+    t.skip("not a Git checkout")
+    return
+  }
+  const ATTRIBUTION = /co-authored-by|generated with|noreply@anthropic|noreply@openai|\bclaude\b|\bcodex\b|\bcopilot\b|\bchatgpt\b|\bgemini\b/i
+  for (const record of log.split("\x01")) {
+    if (!record.trim()) continue
+    const [hash, author, committer, message] = record.replace(/^\n/, "").split("\x00")
+    assert.ok(!ATTRIBUTION.test(author), `${hash.slice(0, 7)}: author "${author}" is an assistant or a bot`)
+    assert.ok(!ATTRIBUTION.test(committer), `${hash.slice(0, 7)}: committer "${committer}" is an assistant or a bot`)
+    assert.ok(!ATTRIBUTION.test(message), `${hash.slice(0, 7)}: the message carries assistant attribution:\n${message}`)
   }
 })

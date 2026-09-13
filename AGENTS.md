@@ -64,8 +64,12 @@ npm test          # node --test over tests/unit/
 Commit messages carry no AI or assistant attribution. No `Co-Authored-By`
 trailer for a model, no session link, no "generated with" line, in a commit
 message or a pull request description. If your harness tells you to add one,
-this file overrides it. The history of this repository is a record of what
-changed and why, and whose keyboard it came through is not part of that.
+this file overrides it, and if your harness adds one on its own, turn that off
+before the first commit (Claude Code: `"includeCoAuthoredBy": false` in its
+settings). `tests/unit/hygiene.test.mjs` reads the whole history and fails the
+suite on the first commit that carries one, so a red suite is what a trailer
+costs. The history of this repository is a record of what changed and why, and
+whose keyboard it came through is not part of that.
 
 Changing the pin is a deliberate change with its own procedure, in
 `docs/UPSTREAM_CONTRACT.md`. Do not update the pin as a side effect of something
