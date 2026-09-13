@@ -3,7 +3,13 @@
 All four are real, unedited program output. Nothing in them was typed by hand,
 reordered or rewritten, and they are reproducible from this repository: rendering
 them again from the committed scenes and captures, with the same Pillow,
-FreeType and ffmpeg, produces byte-identical files.
+FreeType and ffmpeg, produces byte-identical files. Measured: a different
+Pillow, FreeType or ffmpeg re-renders the same capture to a GIF that differs
+in frame count and bytes, so the versions are recorded here: `banner`, `setup`
+and `watch` with the versions on the recording desktop on 2026-09-12;
+`submit` re-recorded on 2026-09-13 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg
+4.4.2) after `tree.agent-control` became advisory and the baseline figures
+became the pin's, because the GIF has to show what the tool prints.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |

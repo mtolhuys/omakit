@@ -1,5 +1,5 @@
 [2msubject[0m       https://github.com/example/omarchy-plugin-clockwork
-[2mcommit[0m        9c436cb87b08578ac4d1dac90efdbfe735e2272d
+[2mcommit[0m        c417143a3af8dc4742d394cd08999f6ba1dcf2a9
 [2mmarketplace[0m   38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6, baseline 3, selective
 
 [32m▁ ok[0m    [1mplugin.root-manifest[0m                                   [2m[marketplace-pin][0m
@@ -28,7 +28,7 @@
              keyword probe on the README text, not a reading of it, and it is
              not a marketplace rule.
 
-[31;1m█ FAIL[0m  [1mtree.agent-control[0m                                              [2m[omakit][0m
+[33m▓ note[0m  [1mtree.agent-control[0m                                              [2m[omakit][0m
         5 agent-control file(s) in the installable tree
         [31;1m-[0m [33m.claude/settings.json: inside an agent-control directory (.claude/)[0m
         [31;1m-[0m [33m.mcp.json: agent-control file (.mcp.json)[0m
@@ -40,12 +40,13 @@
           [34mtree, and add them to .gitignore. Keep a recursive release check so[0m
           [34mthey cannot return.[0m
         [2mwhy[0m  103 marketplace issues mention agent-control files, and 24 of 328
-             sampled maintainer review comments are about them: an instruction
-             file inside an installed plugin is treated as a prompt-injection
-             surface and listing is blocked on it. Nothing in the marketplace's
-             automated baseline detects them, so without this check an author
-             learns about them only from a human review round, which is the most
-             expensive round there is.
+             sampled maintainer review comments are about them, so an
+             instruction file inside an installed plugin draws review attention
+             and can cost a round. It is not a listing rule: at their listed
+             commits, 6 of 34 listed plugins inspected on 2026-09-13 ship one,
+             so this is a review-cost warning derived from public issue text,
+             [39mlabelled [0m[34momakit[0m[39m for that reason. Nothing in the marketplace's[0m
+             automated baseline reports them.
 
 [31;1m█ FAIL[0m  [1midentity.available[0m                                     [2m[marketplace-pin][0m
         reserved-plugin-id: "omarchy.fixture-bad" is inside the reserved
@@ -73,7 +74,7 @@
         category Widgets, tags bar, quickshell
 [32m▁ ok[0m    [1msubmission.validation-commit[0m                                    [2m[omakit][0m
         not checked (--offline). Local commit
-        9c436cb87b08578ac4d1dac90efdbfe735e2272d.
+        c417143a3af8dc4742d394cd08999f6ba1dcf2a9.
 
 [33m▓ note[0m  [1mbaseline.preflight[0m                                     [2m[marketplace-pin][0m
         needs-fixes (disposition review-required, enforcement selective,
@@ -86,15 +87,16 @@
           [34mmode, but a maintainer must accept them for this exact commit. Fixing[0m
           [34mthem first avoids that round.[0m
         [2mwhy[0m  The official baseline decides whether a human has to look at all:
-             [39mof 2,990 listings it produced 1,697 [0m[34mpassed[0m[39m, 1,226 [0m[34mreview-required[0m[39m[0m
-             [39mand 20 [0m[34mneeds-fixes[0m[39m. It is the pinned marketplace code itself, run[0m
-             over a local snapshot; Omakit adds no rule and renames no outcome.
+             of the 2,916 listed sources with a recorded baseline at the pin, it
+             [39mproduced 1,681 [0m[34mpassed[0m[39m, 1,215 [0m[34mreview-required[0m[39m and 20 [0m[34mneeds-fixes[0m[39m. It[0m
+             is the pinned marketplace code itself, run over a local snapshot;
+             Omakit adds no rule and renames no outcome.
 
 [1mthe marketplace's own baseline report for this commit[0m
 [2m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
 ## Automated security baseline
 
-🟡 **Manual review required at commit `9c436cb…`.**
+🟡 **Manual review required at commit `c417143…`.**
 
 Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
 
@@ -104,7 +106,7 @@ Selective policy permits an authorized marketplace maintainer to accept these no
 
 The remote response is executed immediately and is not bound to the commit reviewed for this submission.
 
-- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/9c436cb87b08578ac4d1dac90efdbfe735e2272d/install.sh#L2)
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/c417143a3af8dc4742d394cd08999f6ba1dcf2a9/install.sh#L2)
 
       curl -fsSL https://example.invalid/setup.sh \| sh
 
@@ -118,7 +120,7 @@ Accepted fixes:
 
 Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
 
-- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/9c436cb87b08578ac4d1dac90efdbfe735e2272d/install.sh#L1)
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/c417143a3af8dc4742d394cd08999f6ba1dcf2a9/install.sh#L1)
 
       Installer or setup file
 
@@ -130,7 +132,7 @@ Official baseline preview over a local snapshot. The marketplace rescans the
 public commit itself. This is not approval, listing, verification or a security
 audit.
 
-[31;1m█ REFUSED[0m  4 blocking checks failed, so no submission body is produced.
+[31;1m█ REFUSED[0m  3 blocking checks failed, so no submission body is produced.
 
         [1mplugin.root-license[0m
         [34;1m→[0m [34mAdd a LICENSE (or COPYING) file at the repository root.[0m
@@ -138,12 +140,6 @@ audit.
         [1mplugin.readme-install-removal[0m
         [34;1m→[0m [34mDocument both installing and removing the plugin in the root README,[0m
           [34mor submit by hand without the generated checklist.[0m
-
-        [1mtree.agent-control[0m
-        [34;1m→[0m [34mMove the guidance to a non-agent filename such as DEVELOPMENT.md.[0m
-          [34mUntrack the originals (git rm --cached) so they leave the installable[0m
-          [34mtree, and add them to .gitignore. Keep a recursive release check so[0m
-          [34mthey cannot return.[0m
 
         [1midentity.available[0m
         [34;1m→[0m [34mChoose an unused plugin id outside the reserved namespace.[0m
