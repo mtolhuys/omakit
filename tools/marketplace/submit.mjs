@@ -13,8 +13,8 @@
 
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { requirePin } from "./pin.mjs"
-import { submissionContract, resolveCategory, resolveTags } from "./form.mjs"
-import { idUniverse, checkIdentity, baselineFigures, figure, liveRegistry, registrySourceDetail } from "./registry.mjs"
+import { submissionContract, resolveCategory, resolveTags, tagSlug } from "./form.mjs"
+import { idUniverse, checkIdentity, baselineFigures, figure, liveRegistry, registrySourceDetail, catalogPresentation, defaultPresentation } from "./registry.mjs"
 import { readTree } from "./tree.mjs"
 import { inspectTree } from "./plugin.mjs"
 import { findAgentControl, REMEDY as AGENT_CONTROL_REMEDY } from "./agent-control.mjs"
@@ -108,13 +108,42 @@ export function missingSubmitFlags(contract, { category, tags } = {}) {
   return { missing, categories: [...contract.categories], tags: [...contract.tagLabels], maximumTags: contract.maximumTags }
 }
 
+/** A shell word: quoted when it holds anything a shell would read. */
+function shellWord(value) {
+  const text = String(value)
+  return /^[A-Za-z0-9_@%+=:,./~-]+$/.test(text) ? text : `"${text.replace(/(["\\$`])/g, "\\$1")}"`
+}
+
+/**
+ * The command line that repeats this run without asking anything: the target
+ * as given, the category and tags the run used wherever they came from, and
+ * every other flag that was given. Printed at the end of the report and
+ * carried in --json as `reproduce`, so the next run needs no prompt.
+ */
+export function reproduceCommand({ target, category, tags, pluginName, notes, suggestedTag, allowDirty, offline }) {
+  const parts = ["omakit", "submit", shellWord(target)]
+  if (category) parts.push("--category", shellWord(category))
+  if (tags?.length) parts.push("--tags", shellWord(tags.map(tagSlug).join(",")))
+  if (pluginName) parts.push("--name", shellWord(pluginName))
+  if (notes) parts.push("--notes", shellWord(notes))
+  if (suggestedTag) parts.push("--suggest-tag", shellWord(suggestedTag))
+  if (allowDirty) parts.push("--allow-dirty")
+  if (offline) parts.push("--offline")
+  return parts.join(" ")
+}
+
 /**
  * @param {{ repoRoot: string, target: string, category?: string, tags?: string|string[],
  *           notes?: string, suggestedTag?: string, pluginName?: string,
  *           allowDirty?: boolean, offline?: boolean,
- *           readRegistry?: typeof liveRegistry }} options
+ *           readRegistry?: typeof liveRegistry,
+ *           chooser?: (question: { contract: object, defaults: object, missing: string[] }) => Promise<{ category?: string, tags?: string[] }> }} options
  *   `readRegistry` is injectable for tests; the default reads the marketplace's
- *   current HEAD, or the pin with `offline`.
+ *   current HEAD, or the pin with `offline`. `chooser` answers for a missing
+ *   --category or --tags on an unlisted plugin; without one, that is a usage
+ *   error (SubmitError "usage", with the form's lists under `usage`), decided
+ *   after the registry so a listed plugin is never asked for a choice that
+ *   does not matter.
  */
 export async function submitPreflight(options) {
   const { repoRoot } = options
@@ -213,6 +242,30 @@ export async function submitPreflight(options) {
 
   const identity = checkIdentity(universe, { id: tree.pluginId, repositoryUrl: subject.repository.url })
   const identityRemedy = identity.ok ? null : identityRemedies(identity, universe, await newerCommitAction(pinDir))
+  const listed = identity.problems.some((problem) => problem.code === "plugin-id-listed" || problem.code === "submission-repository-listed")
+
+  // The category and the tags are decided here, after the registry. Measured
+  // before this: a listed plugin was asked for both and then told there was
+  // nothing to submit. A listed plugin needs neither; an unlisted plugin with
+  // either missing is asked through `chooser` when there is one, and is a
+  // usage error otherwise. The default offered is the marketplace's own
+  // presentation for the manifest's kinds, read from the pinned catalog
+  // builder.
+  let chosenCategory = options.category
+  let chosenTags = options.tags
+  const missing = missingSubmitFlags(contract, { category: chosenCategory, tags: chosenTags })
+  const moot = Boolean(missing) && listed
+  if (missing && !listed) {
+    if (!options.chooser) {
+      const error = new SubmitError("usage", `submit needs ${missing.missing.join(" and ")}`)
+      error.usage = missing
+      throw error
+    }
+    const defaults = defaultPresentation(catalogPresentation(pinDir), tree.manifest?.kinds)
+    const answers = await options.chooser({ contract, defaults, missing: missing.missing })
+    if (answers?.category) chosenCategory = answers.category
+    if (answers?.tags) chosenTags = answers.tags
+  }
   checks.push(check("identity.available", {
     source: "marketplace-pin",
     why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${figure(universe.counts.listedIds)} listed ids, ${figure(universe.counts.retiredIds)} retired ids and ${figure(universe.counts.listedRepositories)} listed repositories from the registry and catalog at the commit the detail names, and the reserved namespace from the pinned catalog builder. The registry is read from the marketplace's current HEAD when the network is there because the pin's copy is stale within hours: registry.json changed in 4,201 of the marketplace's 4,293 commits in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md M7). Code and the form are only ever read from the pin.`,
@@ -226,8 +279,11 @@ export async function submitPreflight(options) {
   // --- the submission itself ------------------------------------------------
 
   const pluginName = String(options.pluginName || tree.pluginName || "").trim()
-  const category = resolveCategory(contract, options.category)
-  const tags = resolveTags(contract, options.tags)
+  const category = resolveCategory(contract, chosenCategory)
+  const tags = resolveTags(contract, chosenTags)
+  // For a listed plugin the editorial choice is moot: these wait on the
+  // identity check rather than failing for a flag nobody needed to give.
+  const mootWaitsOn = moot ? ["identity.available"] : []
 
   checks.push(check("submission.title", {
     source: "marketplace-pin",
@@ -245,6 +301,7 @@ export async function submitPreflight(options) {
     verdict: category.ok,
     detail: category.ok ? `category: ${category.value}` : `${category.reason}. Choose one of: ${contract.categories.join(", ")}`,
     remedy: category.ok ? null : "Pass --category with one of the listed values.",
+    waitedOn: mootWaitsOn,
   }))
 
   checks.push(check("submission.tags", {
@@ -253,11 +310,12 @@ export async function submitPreflight(options) {
     verdict: tags.ok,
     detail: tags.ok ? `tags: ${tags.value.join(", ")}` : `${tags.reason}. Choose from: ${contract.tagLabels.join(", ")}`,
     remedy: tags.ok ? null : "Pass --tags with 1 to 3 comma-separated values from the list.",
+    waitedOn: mootWaitsOn,
   }))
 
   // The body needs every field above and the repository URL below; the three
   // checks that read it wait on whichever of those failed.
-  const bodyWaitsOn = [
+  const bodyWaitsOn = moot ? mootWaitsOn : [
     !pluginName && "submission.title",
     !category.ok && "submission.category",
     !tags.ok && "submission.tags",
@@ -409,6 +467,16 @@ export async function submitPreflight(options) {
       note: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited. After submitting, use `omakit watch <issue-url>` to see whether that validated commit has fallen behind.",
     },
     plugin: { id: tree.pluginId, name: pluginName },
+    reproduce: reproduceCommand({
+      target: options.target,
+      category: category.ok ? category.value : null,
+      tags: tags.ok ? tags.value : null,
+      pluginName: options.pluginName,
+      notes: options.notes,
+      suggestedTag: options.suggestedTag,
+      allowDirty: options.allowDirty === true,
+      offline: options.offline === true,
+    }),
     checks,
     ready,
     blocking: blocking.map((entry) => entry.id),

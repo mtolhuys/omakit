@@ -71,6 +71,42 @@ export function reservedNamespace(pinDir) {
   return match[1].endsWith(".") ? match[1] : `${match[1]}.`
 }
 
+/**
+ * How the marketplace itself presents a plugin it lists, read out of the
+ * pinned `build-catalog.mjs` rather than copied: `categoryFor(kinds)` maps the
+ * manifest's kinds to a category in order of its `if` lines, with a fallback,
+ * and the tags are the first three kinds lowercased. `omakit submit` offers
+ * these as the default answer when it has to ask for a category and tags, so
+ * the default is the marketplace's own choice; a mapping that cannot be read
+ * offers no default. tests/unit/registry-figures.test.mjs pins what the
+ * mapping is at this commit, so a marketplace that changes it fails the suite
+ * until the docs follow.
+ *
+ * @returns {{ rules: Array<{ kinds: string[], category: string }>, fallback: string|null, tagsFromKinds: boolean }}
+ */
+export function catalogPresentation(pinDir) {
+  const source = readFileSync(join(pinDir, CATALOG_BUILDER_PATH), "utf8")
+  const body = source.match(/function categoryFor\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || ""
+  const rules = [...body.matchAll(/if \(((?:kinds\.includes\("[^"]+"\)(?:\s*\|\|\s*)?)+)\) return "([^"]+)";/g)]
+    .map((match) => ({ kinds: [...match[1].matchAll(/"([^"]+)"/g)].map((kind) => kind[1]), category: match[2] }))
+  const fallback = body.match(/\n\s*return "([^"]+)";\s*$/)?.[1] || null
+  const tagsFromKinds = /tags:\s*kinds\.slice\(0,\s*3\)\.map\(\(kind\) => kind\.toLowerCase\(\)\)/.test(source)
+  return { rules, fallback, tagsFromKinds }
+}
+
+/**
+ * The marketplace's own presentation for a manifest's kinds: the category its
+ * rules pick and the tags it would derive. Null where the mapping was not
+ * readable, so nothing is offered rather than something guessed.
+ */
+export function defaultPresentation(presentation, kinds = []) {
+  const list = Array.isArray(kinds) ? kinds.filter((kind) => typeof kind === "string") : []
+  const rule = presentation.rules.find((candidate) => candidate.kinds.some((kind) => list.includes(kind)))
+  const category = presentation.rules.length && presentation.fallback ? (rule ? rule.category : presentation.fallback) : null
+  const tags = presentation.tagsFromKinds ? list.slice(0, 3).map((kind) => kind.toLowerCase()) : null
+  return { category, tags }
+}
+
 function repositorySlug(value) {
   try {
     return new URL(String(value)).pathname.replace(/^\/+|\/+$/g, "").replace(/\.git$/i, "").toLowerCase()

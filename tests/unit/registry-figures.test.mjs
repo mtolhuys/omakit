@@ -6,7 +6,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { baselineFigures, figure } from "../../tools/marketplace/registry.mjs"
+import { baselineFigures, catalogPresentation, defaultPresentation, figure } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const pinDir = requirePinForTests()
@@ -46,6 +46,29 @@ test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figu
   }
   assert.equal(figure(1681), "1,681")
   assert.equal(figure(20), "20")
+})
+
+test("the presentation the marketplace derives from a manifest's kinds is what build-catalog.mjs says at the pin", () => {
+  // The default `omakit submit` offers when it asks for a category and tags
+  // is read from the pinned catalog builder, not copied. This pins what that
+  // mapping is at this commit: a marketplace that changes categoryFor() or
+  // the tag derivation fails here until the reading and the docs follow.
+  const presentation = catalogPresentation(pinDir)
+  assert.deepEqual(presentation, {
+    rules: [
+      { kinds: ["bar-widget"], category: "Widgets" },
+      { kinds: ["overlay", "panel", "bar"], category: "Desktop" },
+      { kinds: ["service"], category: "System" },
+    ],
+    fallback: "Other",
+    tagsFromKinds: true,
+  })
+  assert.deepEqual(defaultPresentation(presentation, ["bar-widget"]), { category: "Widgets", tags: ["bar-widget"] })
+  assert.deepEqual(defaultPresentation(presentation, ["Panel", "overlay", "service", "x"]), { category: "Desktop", tags: ["panel", "overlay", "service"] })
+  assert.deepEqual(defaultPresentation(presentation, ["service"]), { category: "System", tags: ["service"] })
+  assert.deepEqual(defaultPresentation(presentation, []), { category: "Other", tags: [] })
+  assert.deepEqual(defaultPresentation(presentation, undefined), { category: "Other", tags: [] })
+  assert.deepEqual(defaultPresentation({ rules: [], fallback: null, tagsFromKinds: false }, ["bar"]), { category: null, tags: null }, "an unreadable mapping offers nothing")
 })
 
 test("the printed why of baseline.preflight is built from the pin, not typed", () => {

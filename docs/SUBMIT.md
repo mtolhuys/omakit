@@ -60,10 +60,23 @@ and says how many checks waited on them. Measured before this: a run with no
 `--category` and no `--tags` on a listed plugin said "6 blocking checks failed"
 for two causes.
 
-No `--category` or no `--tags` is a usage error, decided before any check runs:
-exit 2, the missing flag(s) named, and the form's own category and tag lists
-printed under it, read from the pin. They are an editorial choice nobody else
-can make, so nothing is rendered without them.
+The category and the tags are decided after the registry is read, not before.
+A plugin that is already listed is refused at `identity.available` and asked
+for nothing (measured on 0.1.5: the tool exited 2 asking for `--category` and
+`--tags`, then would have said there was nothing to submit). For an unlisted
+plugin they are an editorial choice nobody else can make, so nothing is
+rendered without them: when stdin and stdout are both terminals and `--json`
+is absent, `submit` asks, once each, with the form's lists numbered and the
+marketplace's own presentation for the manifest's kinds (read from the pinned
+`build-catalog.mjs`: `bar-widget` is Widgets, `overlay`, `panel` and `bar` are
+Desktop, `service` is System, and the tags are the first three kinds) offered
+as the default where it is on the list; Enter takes the default, an invalid
+answer is asked again with the reason, and nothing typed is written anywhere.
+In a pipe, from an agent, or with `--json`, it is a usage error: exit 2, the
+missing flag(s) named, the lists under it, and `--json` carries
+`{ "usage": { "missing", "categories", "tags", "maximumTags" } }`. Whatever
+the source of the values, the report ends with the command line that repeats
+the run without asking, and `--json` carries it as `reproduce`.
 
 ## Nothing about the format is written down here
 

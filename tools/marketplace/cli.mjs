@@ -17,8 +17,8 @@ import { fileURLToPath } from "node:url"
 import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
-import { missingSubmitFlags, submitPreflight } from "./submit.mjs"
-import { submissionContract } from "./form.mjs"
+import { submitPreflight } from "./submit.mjs"
+import { askChoices } from "./ask.mjs"
 import { validationWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
@@ -98,29 +98,20 @@ function emit(args, text) {
 async function cmdSubmit(args) {
   const target = positionals(args)[0]
   if (!target) fail("usage", "submit needs a target: `omakit submit <target> --category <c> --tags <a,b>`", 2)
-  // A missing category or tag list is a usage error, decided before any check
-  // runs and before the spinner starts: nothing can be rendered without them,
-  // and the values the form accepts are the answer, read from the pin.
-  let usage = null
-  try {
-    usage = missingSubmitFlags(await submissionContract({ repoRoot: ROOT }), { category: option(args, "--category"), tags: option(args, "--tags") })
-  } catch (error) {
-    failFrom(error)
-  }
-  if (usage) {
-    if (args.includes("--json")) {
-      process.stdout.write(`${JSON.stringify({ usage }, null, 2)}\n`)
-      process.exit(2)
+  const json = args.includes("--json")
+  const spinner = json ? { phase: () => {}, done: () => {} } : progress()
+  // A missing --category or --tags on an unlisted plugin is asked for, once
+  // each, when a person is at a terminal on both ends and no machine is
+  // reading the result. Anything else, a pipe, an agent, --json, gets the
+  // usage error with the form's lists, exit 2. Decided after the registry:
+  // a listed plugin is never asked for a choice that does not matter.
+  const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
+  const chooser = interactive
+    ? async (asked) => {
+      spinner.done()
+      return askChoices({ ...asked, input: process.stdin, output: process.stderr })
     }
-    const flags = usage.missing.join(" and ")
-    fail("usage", `submit needs ${flags}: ${usage.missing.length === 1 ? "it is" : "they are"} an editorial choice nobody else can make, from the pinned form's own lists.`, 2,
-      `omakit submit ${target} --category <c> --tags <a,b>`,
-      (c) => [
-        ...labelled("categories", usage.categories.join(", "), c),
-        ...labelled(`tags, 1 to ${usage.maximumTags}`, usage.tags.join(", "), c),
-      ])
-  }
-  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
+    : undefined
   let result
   try {
     result = await submitPreflight({
@@ -134,9 +125,24 @@ async function cmdSubmit(args) {
       pluginName: option(args, "--name"),
       allowDirty: args.includes("--allow-dirty"),
       offline: args.includes("--offline"),
+      chooser,
     })
   } catch (error) {
     spinner.done()
+    if (error?.code === "usage" && error.usage) {
+      const usage = error.usage
+      if (json) {
+        process.stdout.write(`${JSON.stringify({ usage }, null, 2)}\n`)
+        process.exit(2)
+      }
+      const flags = usage.missing.join(" and ")
+      fail("usage", `submit needs ${flags}: ${usage.missing.length === 1 ? "it is" : "they are"} an editorial choice nobody else can make, from the pinned form's own lists.`, 2,
+        `omakit submit ${target} --category <c> --tags <a,b>`,
+        (c) => [
+          ...labelled("categories", usage.categories.join(", "), c),
+          ...labelled(`tags, 1 to ${usage.maximumTags}`, usage.tags.join(", "), c),
+        ])
+    }
     failFrom(error)
   }
   spinner.done()

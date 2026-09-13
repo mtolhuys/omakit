@@ -17,6 +17,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tests/parity/corpus.mjs",
   "tests/parity/run.mjs",
   "tools/marketplace/agent-control.mjs",
+  "tools/marketplace/ask.mjs",
   "tools/marketplace/banner.mjs",
   "tools/marketplace/cli.mjs",
   "tools/marketplace/completion.mjs",

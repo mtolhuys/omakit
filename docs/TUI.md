@@ -259,7 +259,7 @@ stderr, exit 1, or 2 for a usage error.
 | state | what a person sees |
 | --- | --- |
 | unknown command | `█ FAIL  unknown command`, `→ omakit help`, then the front door |
-| submit without `--category` or `--tags` | `█ FAIL  usage`, one sentence naming the missing flag(s), the form's categories and tags on labelled lines under it, `→ omakit submit <target> --category <c> --tags <a,b>`; decided before any check runs, so no spinner and no baseline; `--json` prints `{ "usage": { "missing", "categories", "tags", "maximumTags" } }` on stdout, exit 2 either way |
+| submit without `--category` or `--tags`, in a pipe or with `--json` | `█ FAIL  usage`, one sentence naming the missing flag(s), the form's categories and tags on labelled lines under it, `→ omakit submit <target> --category <c> --tags <a,b>`; decided after the registry, so a listed plugin is never asked; `--json` prints `{ "usage": { "missing", "categories", "tags", "maximumTags" } }` on stdout, exit 2 either way. At a terminal on both ends it is not a failure: the two questions are asked on stderr, numbered from the pinned form, with the marketplace's own default in brackets |
 | missing pin | `█ FAIL  marketplace-unavailable`, `→ omakit pin`; doctor reports it as a problem with the same arrow |
 | no network | `█ FAIL  network-unavailable`, `→ Connect to the network, then run it again.`; `submit` runs every local check and marks the one that needed the network, naming `--offline`; `doctor` marks the two it could not make `▒ ?` and names `--offline` |
 | dirty tree | `█ FAIL  dirty-worktree`, `→ Commit the changes, or pass --allow-dirty` |

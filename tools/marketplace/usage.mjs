@@ -45,6 +45,10 @@ export const COMMANDS = Object.freeze([
     lines: [
       "Every check that is knowable before submitting, the resolved commit, and",
       "the exact issue title and body. Prints them. Never posts anything.",
+      "A listed plugin is refused at identity and needs no category or tags.",
+      "An unlisted one without them is asked at a terminal, with the form's",
+      "lists numbered; in a pipe or with --json that is a usage error, exit 2.",
+      "The report ends with the command line that repeats the run unasked.",
     ],
   },
   {

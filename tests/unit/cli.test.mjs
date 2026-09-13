@@ -206,6 +206,24 @@ test("submit without --category or --tags is a usage error before any check runs
   assert.deepEqual(parsed.usage.missing, ["--category", "--tags"])
   assert.equal(parsed.usage.categories.length, 9)
   assert.equal(parsed.usage.tags.length, 13)
+  assert.deepEqual(Object.keys(parsed.usage), ["missing", "categories", "tags", "maximumTags"], "the JSON shape is unchanged")
+})
+
+test("a listed plugin without flags is refused at identity, never asked for flags", () => {
+  // Measured on 0.1.5: exit 2 asking for --category and --tags on a plugin
+  // that identity.available would then have refused as already listed.
+  const manifest = { ...JSON.parse(GOOD["manifest.json"]), id: "io.github.mtolhuys.disk-lens" }
+  const listed = materialise({ ...GOOD, "manifest.json": JSON.stringify(manifest) + "\n" }, { origin: "https://github.com/mtolhuys/omarchy-disk-lens" })
+  const { code, out, err } = run(["submit", listed.dir, "--offline"])
+  assert.equal(code, 1)
+  assert.equal(err, "")
+  assert.ok(!out.includes("usage"))
+  assert.ok(out.includes(`${DENSITY.full} FAIL  identity.available`))
+  assert.ok(out.includes("This plugin is already listed, so there is nothing to submit."))
+  assert.ok(out.includes(`${DENSITY.medium} ?     submission.category`))
+  assert.ok(out.trimEnd().endsWith(`omakit submit ${listed.dir} --offline`), "the report ends with the command line that repeats the run")
+  const json = JSON.parse(run(["submit", listed.dir, "--offline", "--json"]).out)
+  assert.equal(json.reproduce, `omakit submit ${listed.dir} --offline`)
 })
 
 test("a usage error says what was expected and exits 2", () => {

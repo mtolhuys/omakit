@@ -134,7 +134,7 @@ test("a body that cannot render leaves the checks that read it unknown and out o
   // rendered" where a remedy goes. Forced here through the API with no
   // category, which the CLI now refuses earlier as a usage error.
   const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
-  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, tags: "bar", offline: true })
+  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Nonsense", tags: "bar", offline: true })
   assert.deepEqual(result.blocking, ["submission.category"], "one root cause")
   assert.deepEqual(result.unknown, ["submission.headings", "submission.checklist", "submission.official-parser"])
   for (const id of result.unknown) {
@@ -227,6 +227,60 @@ test("more than one cause prints the arrows in order: retired, then listed", asy
   assert.match(check.remedy[1], /^This plugin is already listed/)
   const taken = await identityOf(withId("omarchy." + LISTED_ID), "https://github.com/example/omarchy-plugin-fixture-two")
   assert.deepEqual(taken.check.remedy, ["Choose a plugin id outside the reserved omarchy.* namespace."], "reserved alone when the id is not otherwise listed")
+})
+
+// --- the category and tags are decided after the registry ----------------------
+// Measured on 0.1.5: `omakit submit <a listed plugin>` exited 2 asking for
+// --category and --tags, and would then have refused at identity.available
+// with "nothing to submit".
+
+test("a listed plugin without flags is never a usage error: the choice is moot and waits on identity", async () => {
+  const fixture = materialise(withId(LISTED_ID), { origin: LISTED_REPO })
+  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true })
+  assert.deepEqual(result.blocking, ["identity.available"])
+  assert.deepEqual(result.unknown, ["submission.category", "submission.tags", "submission.headings", "submission.checklist", "submission.official-parser"])
+  for (const id of result.unknown) {
+    assert.equal(result.checks.find((entry) => entry.id === id).detail, "not checked: it needs identity.available to pass first")
+  }
+  assert.match(result.checks.find((entry) => entry.id === "identity.available").remedy[0], /^This plugin is already listed/)
+  assert.equal(result.reproduce, `omakit submit ${fixture.dir} --offline`)
+  assert.match(renderSubmit(result, { colour: false }), /Fix it, then run submit again:\n\S omakit submit \S+ --offline$/)
+})
+
+test("an unlisted plugin without flags and without a chooser is the usage error, unchanged", async () => {
+  const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+  await assert.rejects(
+    () => submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true }),
+    (error) => error.code === "usage" && error.usage.missing.join(",") === "--category,--tags" && error.usage.categories.length === 9 && error.usage.tags.length === 13 && error.usage.maximumTags === 3,
+  )
+  await assert.rejects(
+    () => submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", offline: true }),
+    (error) => error.code === "usage" && error.usage.missing.join(",") === "--tags",
+  )
+})
+
+test("an unlisted plugin without flags asks the chooser, with the marketplace's own default for the manifest's kinds", async () => {
+  const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+  const asked = []
+  const chooser = async (question) => {
+    asked.push(question)
+    return { category: "Widgets", tags: ["Bar", "Quickshell"] }
+  }
+  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true, chooser })
+  assert.equal(asked.length, 1, "asked once")
+  assert.deepEqual(asked[0].missing, ["--category", "--tags"])
+  assert.deepEqual(asked[0].defaults, { category: "Widgets", tags: ["bar-widget"] }, "GOOD declares kinds: [bar-widget]")
+  assert.equal(asked[0].contract.categories.length, 9)
+  assert.equal(result.ready, true, `blocking: ${result.blocking.join(", ")}`)
+  assert.equal(result.reproduce, `omakit submit ${fixture.dir} --category Widgets --tags bar,quickshell --offline`)
+  const tail = renderSubmit(result, { colour: false }).split("The same run, without prompting:\n")[1]
+  assert.ok(tail, "the report ends with the command line")
+  assert.equal(tail.replace(/ \\\n\s+/g, " ").slice(2), result.reproduce, "broken before a flag, and the same command joined back")
+  for (const line of tail.split("\n")) assert.ok(line.length <= 80, line)
+
+  // Given flags are never asked for, and the reproduce line carries every flag.
+  const given = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "widgets", tags: "bar", notes: "No privileges needed.", pluginName: "Given Name", offline: true, chooser: async () => { throw new Error("must not ask") } })
+  assert.equal(given.reproduce, `omakit submit ${fixture.dir} --category Widgets --tags bar --name "Given Name" --notes "No privileges needed." --offline`)
 })
 
 test("a missing root manifest, README and license are each reported", async () => {

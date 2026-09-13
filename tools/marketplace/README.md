@@ -19,7 +19,8 @@ local commit through the transport seam the marketplace tests itself
 | `plugin.mjs` | The root files the submission contract needs, and the declared plugin identity. |
 | `agent-control.mjs` | The recursive agent-control warning, and its remedy. |
 | `issue.mjs` | Renders the issue the way the form would, then has the marketplace's own parser judge it. |
-| `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. |
+| `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. Decides the category and tags after the registry: a listed plugin needs neither; an unlisted one without them is asked through `ask.mjs` at a terminal, and is a usage error otherwise. Ends with `reproduce`, the command line that repeats the run without asking. |
+| `ask.mjs` | The two questions `submit` asks a person at a terminal, and only there: category and tags, numbered from the pinned form, with the marketplace's own presentation for the manifest's kinds (read from the pinned catalog builder) as the default where it is on the list. Prompts on stderr, nothing persisted. |
 | `watch.mjs` | The validation watch: validated commit versus current default-branch HEAD, and the one action that refreshes it. |
 | `github.mjs` | Read-only GitHub access. GET only. The credential is your `gh` login, read through one frozen `gh auth token` call, and is never written anywhere. |
 | `style.mjs` | The visual system, defined once: the palette, the status vocabulary, the block ramp, the columns, the motion budgets, and the composition helpers every command draws with. `docs/TUI.md` explains it. |
@@ -34,6 +35,7 @@ local commit through the transport seam the marketplace tests itself
 
 ```text
 omakit pin
+omakit submit /path/to/plugin-repo                       # asks for the category and tags at a terminal
 omakit submit /path/to/plugin-repo --category Widgets --tags bar,quickshell
 omakit submit https://github.com/owner/repo@<40-char sha> --category System --tags system
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/4829

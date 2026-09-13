@@ -62,6 +62,42 @@ function checkBlock(check, c) {
   return out
 }
 
+/**
+ * A shell command as an arrow, broken before a flag when it would not fit:
+ * a command is not prose, and a line break inside it is only valid with a
+ * backslash, the way the issue-creating example at the end of the report
+ * is printed.
+ */
+function commandLines(command, c) {
+  // A flag and its value travel together; a quoted value is one word.
+  const words = String(command).match(/"(?:[^"\\]|\\.)*"|\S+/g) || []
+  const units = []
+  for (const word of words) {
+    if (units.length && units[units.length - 1].startsWith("--") && !units[units.length - 1].includes(" ") && !word.startsWith("--")) {
+      units[units.length - 1] += ` ${word}`
+    } else {
+      units.push(word)
+    }
+  }
+  const room = COLUMNS - STEP - " \\".length
+  const lines = []
+  let line = ""
+  for (const unit of units) {
+    const next = line ? `${line} ${unit}` : unit
+    if (line && next.length > room) {
+      lines.push(line)
+      line = unit
+    } else {
+      line = next
+    }
+  }
+  lines.push(line)
+  const step = " ".repeat(STEP)
+  return lines.flatMap((text, index) => (index === 0
+    ? action(`${text}${lines.length > 1 ? " \\" : ""}`, c, { indent: 0 })
+    : [`${step}${c("typeable", `${text}${index < lines.length - 1 ? " \\" : ""}`)}`]))
+}
+
 export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   const c = styler(colour)
   const out = []
@@ -106,7 +142,12 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
       else out.push(...wrap(check.detail, { indent: GUTTER }, c))
       out.push("")
     }
-    out.push(failed.length === 1 ? "Fix it, then run submit again." : "Fix them, then run submit again.")
+    if (result.reproduce) {
+      out.push(failed.length === 1 ? "Fix it, then run submit again:" : "Fix them, then run submit again:")
+      out.push(...commandLines(result.reproduce, c))
+    } else {
+      out.push(failed.length === 1 ? "Fix it, then run submit again." : "Fix them, then run submit again.")
+    }
     return out.join("\n")
   }
 
@@ -131,6 +172,11 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   out.push(`${step}${c("typeable", "--body-file <the body above>")}`)
   out.push("")
   out.push(...wrap(`After it is created: ${result.afterSubmitting}`, {}, c))
+  if (result.reproduce) {
+    out.push("")
+    out.push("The same run, without prompting:")
+    out.push(...commandLines(result.reproduce, c))
+  }
   return out.join("\n")
 }
 

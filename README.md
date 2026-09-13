@@ -105,7 +105,7 @@ owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 
 ```bash
 omakit setup                 # the environment, the pin, tab completion, and what to try first
-omakit submit <plugin-repo> --category <c> --tags <a,b>
+omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
 omakit verify <plugin-repo>  # the official security baseline over the local transport, reported verbatim
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
@@ -125,6 +125,17 @@ seven files omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the
 pin's submission form actually has.
+
+`omakit submit` reads the marketplace's registry first. A plugin that is
+already listed is refused there and asked for nothing (measured on 0.1.5: it
+exited 2 asking for `--category` and `--tags`, then would have said there was
+nothing to submit). An unlisted plugin needs both, and they are an editorial
+choice nobody else can make: at a terminal it asks, once each, with the form's
+own lists numbered and the marketplace's own default for the manifest's kinds
+offered where it is on the list; in a pipe, from an agent, or with `--json` it
+is the usage error with the same lists, exit 2. Either way the report ends
+with the command line that repeats the run without asking, and `--json`
+carries it as `reproduce`.
 
 There is nothing to authenticate. If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
