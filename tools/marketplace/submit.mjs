@@ -23,6 +23,39 @@ import { renderIssue, verifyAgainstOfficialParser } from "./issue.mjs"
 import { defaultBranchHead } from "./github.mjs"
 import { REFRESH_ACTION } from "./watch.mjs"
 import { omakitCacheDir } from "./paths.mjs"
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
+
+/**
+ * The marketplace's own name for the verification action that lists a newer
+ * commit of an already listed plugin, read from the pin rather than typed:
+ * a form option retyped here would drift by a word, and a person would be
+ * sent to choose something the form no longer offers.
+ */
+async function newerCommitAction(pinDir) {
+  const verification = await import(pathToFileURL(join(pinDir, "scripts/plugin-verification-request.mjs")).href)
+  return verification.upstreamUpdateVerificationAction
+}
+
+/**
+ * One arrow per cause, in this order, so a person fixes the thing that is
+ * actually wrong. Measured before this: an id listed by its own repository
+ * was told to "choose an unused plugin id outside the reserved namespace",
+ * which is the remedy for a different failure, and an author who followed
+ * it would have renamed a plugin the marketplace already lists.
+ */
+function identityRemedies(identity, universe, newerCommit) {
+  const remedies = []
+  const codes = new Set(identity.problems.map((problem) => problem.code))
+  if (codes.has("reserved-plugin-id")) remedies.push(`Choose a plugin id outside the reserved ${universe.reservedPrefix}* namespace.`)
+  if (codes.has("plugin-id-retired")) remedies.push("That id was retired by the marketplace and cannot be reused; choose another.")
+  const taken = identity.problems.find((problem) => problem.code === "plugin-id-listed" && !problem.sameRepository)
+  if (taken) remedies.push(taken.repository ? `That id is taken by ${taken.repository}; choose another.` : "That id is already listed; choose another.")
+  if (identity.problems.some((problem) => problem.sameRepository)) {
+    remedies.push(`This plugin is already listed, so there is nothing to submit. To get a newer commit listed, use the marketplace's verification form and choose "${newerCommit}"; \`omakit watch <the submission issue>\` shows which commit is listed now.`)
+  }
+  return remedies
+}
 
 export class SubmitError extends Error {
   constructor(code, message) {
@@ -53,7 +86,8 @@ function check(id, fields) {
     verdict: waitedOn.length ? "unknown" : fields.verdict ? "pass" : "fail",
     detail: waitedOn.length ? `not checked: it needs ${waitedOn.join(" and ")} to pass first` : fields.detail || "",
     paths: fields.paths || [],
-    remedy: waitedOn.length ? null : fields.remedy || null,
+    // One arrow, or one per cause in the order they should be read.
+    remedy: waitedOn.length ? null : Array.isArray(fields.remedy) ? (fields.remedy.length ? fields.remedy : null) : fields.remedy || null,
   }
 }
 
@@ -89,7 +123,7 @@ export async function submitPreflight(options) {
   const phase = options.onPhase || (() => {})
 
   phase("verifying the pinned marketplace checkout")
-  const { identity: pinIdentity } = requirePin(repoRoot)
+  const { dir: pinDir, identity: pinIdentity } = requirePin(repoRoot)
   phase("reading the submission contract from the pin")
   const contract = await submissionContract({ repoRoot })
   phase(options.offline ? "reading the listed and retired plugin ids from the pin" : "reading the marketplace's current registry")
@@ -178,6 +212,7 @@ export async function submitPreflight(options) {
   // --- identity -------------------------------------------------------------
 
   const identity = checkIdentity(universe, { id: tree.pluginId, repositoryUrl: subject.repository.url })
+  const identityRemedy = identity.ok ? null : identityRemedies(identity, universe, await newerCommitAction(pinDir))
   checks.push(check("identity.available", {
     source: "marketplace-pin",
     why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${figure(universe.counts.listedIds)} listed ids, ${figure(universe.counts.retiredIds)} retired ids and ${figure(universe.counts.listedRepositories)} listed repositories from the registry and catalog at the commit the detail names, and the reserved namespace from the pinned catalog builder. The registry is read from the marketplace's current HEAD when the network is there because the pin's copy is stale within hours: registry.json changed in 4,201 of the marketplace's 4,293 commits in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md M7). Code and the form are only ever read from the pin.`,
@@ -185,7 +220,7 @@ export async function submitPreflight(options) {
     detail: `${identity.ok
       ? `id "${tree.pluginId}" is unused, outside the reserved ${universe.reservedPrefix}* namespace, and the repository is not listed`
       : identity.problems.map((problem) => `${problem.code}: ${problem.detail}`).join("; ")}; ${registrySourceDetail(live)}`,
-    remedy: identity.ok ? null : "Choose an unused plugin id outside the reserved namespace.",
+    remedy: identityRemedy,
   }))
 
   // --- the submission itself ------------------------------------------------

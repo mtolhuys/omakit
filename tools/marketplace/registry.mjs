@@ -236,7 +236,10 @@ export function registrySourceDetail(live) {
  *   `registry` and `catalog` are the parsed files from liveRegistry(); without
  *   them the pin's copies are read.
  * @returns {{ reservedPrefix: string, listedIds: Set<string>, retiredIds: Set<string>,
- *             listedRepositories: Set<string>, counts: object }}
+ *             listedRepositories: Set<string>, listedBy: Map<string, string>, counts: object }}
+ *   `listedBy` names the repository slug that lists each id, where the
+ *   registry or catalog says which, so a taken id can be blamed on a
+ *   repository and told apart from the subject's own listing.
  */
 export function idUniverse(options = {}) {
   const pinDir = options.pinDir || requirePin(options.repoRoot).dir
@@ -244,8 +247,14 @@ export function idUniverse(options = {}) {
   const registry = options.registry || readJson(pinDir, REGISTRY_PATH)
 
   const listedIds = new Set()
+  const listedBy = new Map()
+  const listed = (id, repo) => {
+    listedIds.add(id)
+    const slug = repositorySlug(repo)
+    if (slug && !listedBy.has(id)) listedBy.set(id, slug)
+  }
   for (const plugin of Array.isArray(catalog.plugins) ? catalog.plugins : []) {
-    if (typeof plugin?.id === "string" && plugin.id) listedIds.add(plugin.id)
+    if (typeof plugin?.id === "string" && plugin.id) listed(plugin.id, plugin.repo)
   }
   const catalogIds = listedIds.size
 
@@ -255,17 +264,17 @@ export function idUniverse(options = {}) {
     const slug = repositorySlug(source?.repo)
     if (slug) listedRepositories.add(slug)
     if (source?.plugins && typeof source.plugins === "object" && !Array.isArray(source.plugins)) {
-      for (const id of Object.keys(source.plugins)) listedIds.add(id)
+      for (const id of Object.keys(source.plugins)) listed(id, source.repo)
     }
     if (Array.isArray(source?.plugins)) {
       for (const entry of source.plugins) {
         const id = typeof entry === "string" ? entry : entry?.id
-        if (id) listedIds.add(id)
+        if (id) listed(id, source.repo)
       }
     }
-    if (typeof source?.catalog?.id === "string") listedIds.add(source.catalog.id)
+    if (typeof source?.catalog?.id === "string") listed(source.catalog.id, source.repo)
     for (const id of source?.automatedSecurityBaseline?.pluginIds || []) {
-      if (typeof id === "string") listedIds.add(id)
+      if (typeof id === "string") listed(id, source.repo)
     }
   }
 
@@ -281,6 +290,7 @@ export function idUniverse(options = {}) {
     listedIds,
     retiredIds,
     listedRepositories,
+    listedBy,
     counts: {
       catalogPlugins: catalogIds,
       registrySources: sources.length,
@@ -354,7 +364,11 @@ export function figure(n) {
 
 /**
  * @param {{ id: string, repositoryUrl?: string|null }} subject
- * @returns {{ ok: boolean, problems: Array<{ code: string, detail: string }> }}
+ * @returns {{ ok: boolean, problems: Array<{ code: string, detail: string, repository?: string|null, sameRepository?: boolean }> }}
+ *   A `plugin-id-listed` problem names the repository that lists the id
+ *   (`repository`, a slug, or null when the registry does not say) and
+ *   whether that is the subject's own (`sameRepository`), because the two
+ *   have different remedies: another id, or nothing to submit at all.
  */
 export function checkIdentity(universe, subject) {
   const problems = []
@@ -363,6 +377,7 @@ export function checkIdentity(universe, subject) {
     problems.push({ code: "plugin-id-missing", detail: "the root manifest declares no id" })
     return { ok: false, problems }
   }
+  const slug = repositorySlug(subject.repositoryUrl)
   if (id.toLowerCase().startsWith(universe.reservedPrefix)) {
     problems.push({
       code: "reserved-plugin-id",
@@ -373,11 +388,17 @@ export function checkIdentity(universe, subject) {
     problems.push({ code: "plugin-id-retired", detail: `"${id}" was used by a previous listing (registry.json retiredPluginIds)` })
   }
   if (universe.listedIds.has(id)) {
-    problems.push({ code: "plugin-id-listed", detail: `"${id}" is already listed` })
+    const repository = universe.listedBy?.get(id) || null
+    const sameRepository = Boolean(repository && slug && repository === slug)
+    problems.push({
+      code: "plugin-id-listed",
+      detail: `"${id}" is already listed${repository ? ` by ${repository}` : ""}`,
+      repository,
+      sameRepository,
+    })
   }
-  const slug = repositorySlug(subject.repositoryUrl)
   if (slug && universe.listedRepositories.has(slug)) {
-    problems.push({ code: "submission-repository-listed", detail: `${slug} is already listed` })
+    problems.push({ code: "submission-repository-listed", detail: `${slug} is already listed`, repository: slug, sameRepository: true })
   }
   return { ok: problems.length === 0, problems }
 }

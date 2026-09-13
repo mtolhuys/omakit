@@ -54,7 +54,7 @@ function checkBlock(check, c) {
           ? `${body}${c("fail", "-")} ${c("placeholder", line.trimStart().slice(2))}`
           : `${" ".repeat(GUTTER + STEP)}${c("placeholder", line.trimStart())}`)))
     }
-    if (check.remedy) out.push(...action(check.remedy, c))
+    for (const remedy of [].concat(check.remedy || [])) out.push(...action(remedy, c))
     // The measured reason is the point of the check, so it is not dimmed: only
     // its label is grey, and on a low-contrast theme the number still reads.
     out.push(...labelled("why", check.why, c))
@@ -102,7 +102,7 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     out.push("")
     for (const check of failed) {
       out.push(`${body}${c("name", check.id)}`)
-      if (check.remedy) out.push(...action(check.remedy, c))
+      if (check.remedy) for (const remedy of [].concat(check.remedy)) out.push(...action(remedy, c))
       else out.push(...wrap(check.detail, { indent: GUTTER }, c))
       out.push("")
     }

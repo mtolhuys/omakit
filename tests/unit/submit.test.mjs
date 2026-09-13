@@ -8,6 +8,9 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 
 const pinDir = requirePinForTests()
 const contract = await submissionContract({ pinDir })
@@ -156,6 +159,74 @@ test("missing --category or --tags is known before any check runs, with the form
   assert.equal(both.maximumTags, 3)
   assert.deepEqual(missingSubmitFlags(contract, { category: "Widgets", tags: " , " }).missing, ["--tags"])
   assert.deepEqual(missingSubmitFlags(contract, { tags: ["bar"] }).missing, ["--category"])
+})
+
+// --- identity.available's remedy follows the cause ------------------------------
+// Measured 2026-09-13: a plugin listed by its own repository was told to
+// "Choose an unused plugin id outside the reserved namespace", the remedy for a
+// different failure. Each fixture below collides with an entry in the pinned
+// registry (offline, so the pin is the registry read).
+
+const LISTED_ID = "io.github.mtolhuys.disk-lens"
+const LISTED_REPO = "https://github.com/mtolhuys/omarchy-disk-lens"
+const retiredId = JSON.parse(readFileSync(join(pinDir, "registry.json"), "utf8")).retiredPluginIds[0]
+const NEWER_COMMIT = (await import(pathToFileURL(join(pinDir, "scripts/plugin-verification-request.mjs")).href)).upstreamUpdateVerificationAction
+
+function withId(id) {
+  return { ...GOOD, "manifest.json": JSON.stringify({ ...JSON.parse(GOOD["manifest.json"]), id }) + "\n" }
+}
+
+async function identityOf(tree, origin) {
+  const fixture = materialise(tree, { origin })
+  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: true })
+  return { result, check: result.checks.find((entry) => entry.id === "identity.available") }
+}
+
+test("a reserved id is told to leave the namespace", async () => {
+  const { check } = await identityOf(withId("omarchy.fixture-reserved"), "https://github.com/example/omarchy-plugin-fixture-reserved")
+  assert.equal(check.verdict, "fail")
+  assert.match(check.detail, /^reserved-plugin-id: "omarchy\.fixture-reserved" is inside the reserved omarchy\.\* namespace; registry at the pin/)
+  assert.deepEqual(check.remedy, ["Choose a plugin id outside the reserved omarchy.* namespace."])
+})
+
+test("a retired id is told it cannot be reused", async () => {
+  assert.ok(retiredId, "the pin retires at least one id")
+  const { check } = await identityOf(withId(retiredId), "https://github.com/example/omarchy-plugin-fixture-retired")
+  assert.match(check.detail, new RegExp(`^plugin-id-retired: "${retiredId.replace(/\./g, "\\.")}" was used by a previous listing`))
+  assert.deepEqual(check.remedy, ["That id was retired by the marketplace and cannot be reused; choose another."])
+})
+
+test("an id taken by another repository names that repository", async () => {
+  const { check } = await identityOf(withId(LISTED_ID), "https://github.com/example/omarchy-plugin-fixture-taken")
+  assert.match(check.detail, /^plugin-id-listed: "io\.github\.mtolhuys\.disk-lens" is already listed by mtolhuys\/omarchy-disk-lens; registry at the pin/)
+  assert.deepEqual(check.remedy, ["That id is taken by mtolhuys/omarchy-disk-lens; choose another."])
+})
+
+test("a plugin listed by its own repository has nothing to submit, and is sent to the verification form", async () => {
+  // disk-lens at the pin: listed id, same repository. Both codes fire, one arrow.
+  const { result, check } = await identityOf(withId(LISTED_ID), LISTED_REPO)
+  assert.match(check.detail, /^plugin-id-listed: .* by mtolhuys\/omarchy-disk-lens; submission-repository-listed: mtolhuys\/omarchy-disk-lens is already listed; registry at the pin/)
+  assert.equal(check.remedy.length, 1, "one arrow for one cause, however many codes")
+  assert.equal(check.remedy[0], `This plugin is already listed, so there is nothing to submit. To get a newer commit listed, use the marketplace's verification form and choose "${NEWER_COMMIT}"; \`omakit watch <the submission issue>\` shows which commit is listed now.`)
+  assert.match(NEWER_COMMIT, /newer/, "read from the pin's own module, not typed")
+  const rendered = renderSubmit(result, { colour: false })
+  assert.ok(!rendered.includes("Choose an unused plugin id"), "the old remedy is gone")
+  assert.equal((rendered.match(/This plugin is already listed/g) || []).length, 2, "once under the check, once in the refusal")
+
+  // A listed repository with a fresh id is the same cause.
+  const fresh = await identityOf(withId("io.github.mtolhuys.fixture-fresh"), LISTED_REPO)
+  assert.match(fresh.check.detail, /^submission-repository-listed: mtolhuys\/omarchy-disk-lens is already listed; registry/)
+  assert.equal(fresh.check.remedy.length, 1)
+  assert.match(fresh.check.remedy[0], /^This plugin is already listed/)
+})
+
+test("more than one cause prints the arrows in order: retired, then listed", async () => {
+  const { check } = await identityOf(withId(retiredId), LISTED_REPO)
+  assert.equal(check.remedy.length, 2)
+  assert.match(check.remedy[0], /^That id was retired/)
+  assert.match(check.remedy[1], /^This plugin is already listed/)
+  const taken = await identityOf(withId("omarchy." + LISTED_ID), "https://github.com/example/omarchy-plugin-fixture-two")
+  assert.deepEqual(taken.check.remedy, ["Choose a plugin id outside the reserved omarchy.* namespace."], "reserved alone when the id is not otherwise listed")
 })
 
 test("a missing root manifest, README and license are each reported", async () => {
