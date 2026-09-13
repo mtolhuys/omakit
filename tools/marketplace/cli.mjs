@@ -6,7 +6,6 @@
 //   omakit watch <issue-url>         is this submission's validated commit still current?
 //   omakit verify <target>           the official baseline over the local transport, verbatim
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
-//   omakit completion <shell>        a completion script for bash, zsh or fish, on stdout
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
@@ -26,8 +25,7 @@ import { setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
-import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { renderCompletion } from "./completion.mjs"
+import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { submissionContract } from "./form.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 
@@ -204,25 +202,6 @@ async function cmdParity(args) {
   await import("../../tests/parity/run.mjs")
 }
 
-/**
- * A script on stdout and nothing else: no banner, no colour, no progress. The
- * controlled values come from the pin's form, so a missing pin is the same
- * failure state every other command reports.
- */
-async function cmdCompletion(args) {
-  const shell = positionals(args)[0]
-  if (!COMPLETION_SHELLS.includes(shell)) {
-    fail("usage", `completion needs a shell it has a script for: \`omakit completion ${COMPLETION_SHELLS.join("|")}\``, 2)
-  }
-  try {
-    const { identity } = requirePin(ROOT)
-    const contract = await submissionContract({ repoRoot: ROOT })
-    process.stdout.write(renderCompletion(shell, { contract, pin: identity.commit, commands: COMMANDS }))
-  } catch (error) {
-    failFrom(error)
-  }
-}
-
 const [command, ...rest] = process.argv.slice(2)
 if (command === "setup") {
   await cmdSetup()
@@ -253,8 +232,6 @@ if (command === "setup") {
   await cmdVerify(rest.filter((value, index) => value !== "marketplace" || rest[index - 1] !== "--profile"))
 } else if (command === "parity") {
   await cmdParity(rest)
-} else if (command === "completion") {
-  await cmdCompletion(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install

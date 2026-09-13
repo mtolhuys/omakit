@@ -17,7 +17,7 @@ import { colourEnabled, paintProse, STEP, styler } from "./style.mjs"
  */
 export const TAGLINE = "the safe place to find out"
 
-/** The shells `omakit completion` has a script for; completion.mjs holds the scripts. */
+/** The shells `omakit setup` installs tab completion for; completion.mjs holds the scripts. */
 export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])
 
 export const COMMANDS = Object.freeze([
@@ -81,13 +81,6 @@ export const COMMANDS = Object.freeze([
     lines: [
       "What is installed, what is pinned, and what has moved since. Reads and",
       "prints; it installs nothing and never moves the pin.",
-    ],
-  },
-  {
-    signature: `omakit completion ${COMPLETION_SHELLS.join("|")}`,
-    lines: [
-      "The completion script `omakit setup` installs for your shell, printed",
-      "for another one. It carries the pin's own categories and tags.",
     ],
   },
   {

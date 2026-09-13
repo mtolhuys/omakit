@@ -90,7 +90,6 @@ omakit parity                # the baseline over GitHub versus the local transpo
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # fast-forwards this checkout of omakit itself
-omakit completion <shell>    # the completion script setup installs, on stdout
 omakit help --agent          # the operating instructions, for the agent running this
 ```
 
@@ -101,10 +100,9 @@ every rule is read from, installs tab completion for the shell you run it from
 (bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
 idempotent. The fetch takes about 2 seconds and 16 MB, because it takes only the
 seven files omakit reads out of that repository rather than the 325 MB it is at
-that commit. `omakit completion <shell>` prints the same completion script for
-a shell you are not in; it knows the subcommands and their flags, completes a
-directory for `<target>`, and offers the categories and tags the pin's
-submission form actually has.
+that commit. The completion script knows the subcommands and their flags,
+completes a directory for `<target>`, and offers the categories and tags the
+pin's submission form actually has.
 
 There is nothing to authenticate. If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
@@ -174,7 +172,7 @@ would be poor form to hide it here.
 ## Evidence, not claims
 
 ```bash
-npm test        # 149 tests, node --test, no dependencies
+npm test        # 147 tests, node --test, no dependencies
 ```
 
 | Claim | Proof |

@@ -1,4 +1,4 @@
-// `omakit completion`: a script on stdout and nothing else, derived from the
+// Tab completion, installed by `omakit setup`: a script derived from the
 // help data and the pin's form rather than retyped.
 import test from "node:test"
 import assert from "node:assert/strict"
@@ -43,7 +43,7 @@ test("every command, every flag, every category and tag, and the pin, in every s
     for (const category of contract.categories) assert.ok(script.includes(category.replace(/ /g, shell === "fish" ? "\\ " : " ")), `${shell}: category ${category}`)
     for (const label of contract.tagLabels) assert.ok(script.includes(tagSlug(label)), `${shell}: tag ${label}`)
     assert.ok(script.includes(`marketplace pin ${pin}`), `${shell}: names the pin`)
-    assert.ok(script.includes(`omakit completion ${shell}`), `${shell}: says how to regenerate`)
+    assert.ok(script.includes("`omakit setup`"), `${shell}: says how to regenerate`)
     assert.doesNotMatch(script, /\u001b/, `${shell}: no escape`)
   }
 })
@@ -93,35 +93,9 @@ test("the bash function completes commands, flags, controlled values and directo
   assert.deepEqual(complete("omakit", "submit", "--tags", "bar,qu"), ["bar,quickshell"], "the segment after the last comma")
   assert.deepEqual(complete("omakit", "submit", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").flags.map((f) => f.flag))
   assert.deepEqual(complete("omakit", "submit", "doc"), ["docs"], "a target is a directory")
-  assert.deepEqual(complete("omakit", "completion", ""), [...COMPLETION_SHELLS])
   assert.deepEqual(complete("omakit", "doctor", "--"), ["--offline", "--json"])
 })
 
-test("the command prints the script and nothing else, under every setting", () => {
-  for (const shell of COMPLETION_SHELLS) {
-    const piped = run(["completion", shell])
-    assert.equal(piped.code, 0)
-    assert.equal(piped.out, scripts[shell])
-    assert.equal(piped.err, "", "nothing on stderr")
-    for (const env of [{ FORCE_COLOR: "1" }, { NO_COLOR: "1" }, { TERM: "dumb" }]) {
-      const other = run(["completion", shell], env)
-      assert.equal(other.out, piped.out, `${shell}: ${JSON.stringify(env)} changed the script`)
-      assert.equal(other.err, "")
-    }
-    assert.doesNotMatch(piped.out, /\u001b/)
-    assert.equal(plain(piped.out), piped.out)
-  }
-})
-
-test("an unknown shell, or none, is a usage error naming the three it has", () => {
-  for (const args of [["completion"], ["completion", "powershell"]]) {
-    const { code, out, err } = run(args)
-    assert.equal(code, 2, args.join(" "))
-    assert.equal(out, "", "nothing on stdout")
-    assert.ok(err.startsWith(`${DENSITY.full} FAIL  usage`), err)
-    assert.ok(err.includes(`omakit completion ${COMPLETION_SHELLS.join("|")}`), err)
-  }
-})
 
 test("setup installs the script where the shell in $SHELL loads it from, and nowhere else", () => {
   const home = mkdtempSync(join(tmpdir(), "omakit-home-"))

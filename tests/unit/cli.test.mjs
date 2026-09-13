@@ -212,7 +212,7 @@ test("every command's bytes are the same with and without ttfx on PATH", () => {
   const fake = mkdtempSync(join(tmpdir(), "omakit-fake-ttfx-"))
   writeFileSync(join(fake, "ttfx"), "#!/bin/sh\necho 'ttfx 0.0.0-fake'\n", { mode: 0o755 })
   const withFake = { PATH: `${fake}:${process.env.PATH}` }
-  for (const args of [["help"], [], ["doctor", "--offline"], ["completion", "bash"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"]]) {
+  for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"]]) {
     for (const env of [{}, { FORCE_COLOR: "1" }]) {
       const a = run(args, { ...env, ...without })
       const b = run(args, { ...env, ...withFake })

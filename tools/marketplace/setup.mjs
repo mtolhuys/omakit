@@ -116,8 +116,8 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
     const completion = installCompletion({ contract, pin: identity.commit })
     if (completion.state === "unsupported") {
       step("info", completion.shell
-        ? `tab completion: no script for ${completion.shell}; \`omakit completion bash|zsh|fish\` prints one for those.`
-        : "tab completion: $SHELL is not set, so no script was installed; `omakit completion bash|zsh|fish` prints one.")
+        ? `tab completion: no script for ${completion.shell}; there is one for bash, zsh and fish.`
+        : "tab completion: $SHELL is not set, so no script was installed.")
     } else {
       const what = { installed: "installed", updated: "updated for this pin", current: "already installed" }[completion.state]
       step("pass", `tab completion for ${completion.shell} ${what} at ${completion.display}${completion.note ? `, ${completion.note}` : ""}.`)
