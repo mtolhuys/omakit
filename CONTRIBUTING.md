@@ -26,9 +26,7 @@ The first command fetches the immutable marketplace commit used by the suite.
 The test command uses Node's built-in test runner. The pack command shows the
 exact publishable file list and measured archive size without publishing it.
 
-Before opening a pull request, run all three commands. When changing the Arch
-package, also run `makepkg --printsrcinfo`, keep `.SRCINFO` identical to that
-output, and build/install the package in a clean Arch environment.
+Before opening a pull request, run all three commands.
 
 ## What the suite protects
 

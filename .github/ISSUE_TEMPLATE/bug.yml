@@ -19,7 +19,7 @@ body:
     attributes:
       label: Environment
       description: Operating system, Node version and installation method.
-      placeholder: Arch Linux; Node 22; AUR
+      placeholder: Omarchy 4.0.3; Node 22; npm
     validations:
       required: true
   - type: textarea

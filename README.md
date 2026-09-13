@@ -48,15 +48,6 @@ review writing. The rest of the benefit is the submitter's.
 
 ## Install
 
-On Omarchy, or any Arch:
-
-```bash
-yay -S omakit
-omakit setup
-```
-
-Anywhere with Node 22 or newer:
-
 ```bash
 npm install --global omakit
 omakit setup
@@ -72,15 +63,15 @@ omakit setup
 
 | Needs | Why |
 | --- | --- |
-| Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has it through `mise`, along with `git`, `yay`, `gh` and `ttfx` |
+| Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has Node and npm through `mise`, along with `git`, `gh` and `ttfx` |
 | `git` | the pin, and reading a subject's tree at an exact commit |
 | network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
 | 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
 
-Updates come from whichever installer you used: `omarchy-update` or `yay -Syu`
-for the package, `npm i -g omakit@latest` for npm, `omakit upgrade` for a
-clone. Nothing in omakit updates itself, and `omarchy-mise-install npm:omakit`
-would, so it is not the way in.
+Updates come from whichever installer you used: `npm i -g omakit@latest` for
+the package, `omakit upgrade` for a clone; `omakit doctor` says when a newer
+version is published. Nothing in omakit updates itself, and
+`omarchy-mise-install npm:omakit` would, so it is not the way in.
 
 ## Watch
 
@@ -178,8 +169,7 @@ and anything that is not a fast-forward, and it names what to run yourself in
 each case. It is not a self-updater of the kind this repository warns other
 people about: it fast-forwards a Git checkout you cloned, from the remote you
 cloned it from, and it touches nothing else. On a package install it says so and
-names the installer's own command: `npm i -g omakit@latest`, or
-`sudo pacman -Syu omakit` for the Arch package. `git -C ~/.local/share/omakit pull` still works
+names the installer's own command, `npm i -g omakit@latest`. `git -C ~/.local/share/omakit pull` still works
 and does the same thing.
 
 **The pin** does not move by itself, ever, and `omakit upgrade` does not move it

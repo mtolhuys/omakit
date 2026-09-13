@@ -48,18 +48,6 @@ test("every command, every flag, every category and tag, and the pin, in every s
   }
 })
 
-test("the AUR package ships the scripts generated from this pin", () => {
-  const packaged = {
-    bash: "omakit.bash",
-    zsh: "_omakit",
-    fish: "omakit.fish",
-  }
-  for (const shell of COMPLETION_SHELLS) {
-    const file = join(REPO_ROOT, "packaging/aur/completions", packaged[shell])
-    assert.equal(readFileSync(file, "utf8"), scripts[shell], `${file} needs to be regenerated`)
-  }
-})
-
 test("each script parses in its shell, where the shell is installed", (t) => {
   const checks = { bash: ["bash", "-n"], zsh: ["zsh", "-n"], fish: ["fish", "--no-execute"] }
   let checked = 0

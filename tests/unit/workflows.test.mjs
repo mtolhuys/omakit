@@ -73,11 +73,7 @@ test("release is tag-only, provenance-carrying, reviewable and replay-safe", () 
   assert.match(source, /gh\s+release\s+create/)
   assert.match(source, /--json isDraft/)
   assert.doesNotMatch(source, /--clobber/)
-  assert.match(source, /gh\s+pr\s+create/)
-  assert.match(source, /automation\/aur-v\$\{VERSION\}/)
-  assert.match(source, /AUR_SSH_PRIVATE_KEY: \$\{\{ secrets\.AUR_SSH_PRIVATE_KEY \}\}/)
-  assert.match(source, /StrictHostKeyChecking=yes/)
-  assert.match(source, /SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11\+4/)
+  assert.doesNotMatch(source, /aur/i, "the AUR route was dropped: npm is the package, the clone is the fallback")
   assert.doesNotMatch(source, /StrictHostKeyChecking=no|force-with-lease|force push|--force/)
 })
 
@@ -108,14 +104,14 @@ test("workflow GitHub commands can address only this repository", () => {
       )
     }
   }
-  assert.match(workflows["release.yml"], /refusing to push to unexpected origin/)
+  assert.doesNotMatch(workflows["release.yml"], /git push/, "release.yml pushes nothing: it publishes a Release and a package")
 })
 
-test("secrets occur only in release and are limited to npm and AUR publishing", () => {
+test("secrets occur only in release and are limited to npm publishing", () => {
   assert.doesNotMatch(workflows["ci.yml"], /secrets\./)
   assert.doesNotMatch(workflows["pin-freshness.yml"], /secrets\./)
   const names = [...new Set([...workflows["release.yml"].matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]))].sort()
-  assert.deepEqual(names, ["AUR_SSH_PRIVATE_KEY", "NPM_TOKEN"])
+  assert.deepEqual(names, ["NPM_TOKEN"])
   // Neither secret is a precondition: a tag with no token still produces the
   // GitHub Release, and the npm publish is then a manual step, named as such.
   assert.match(workflows["release.yml"], /HAS_NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN != '' \}\}/)

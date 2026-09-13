@@ -150,12 +150,17 @@ test("the history carries no assistant attribution: no trailer, no bot author, n
     t.skip("not a Git checkout")
     return
   }
-  const ATTRIBUTION = /co-authored-by|generated with|noreply@anthropic|noreply@openai|\bclaude\b|\bcodex\b|\bcopilot\b|\bchatgpt\b|\bgemini\b/i
+  // An identity is checked as a whole: no assistant, no bot, no vendor mailbox.
+  const IDENTITY = /noreply@anthropic|noreply@openai|\[bot\]|\bclaude\b|\bcodex\b|\bcopilot\b|\bchatgpt\b|\bgemini\b/i
+  // A message is checked for the attribution shapes harnesses add: a trailer
+  // line, a session link, a "generated with" line. Prose may name the tools;
+  // a commit that removes a trailer has to be able to say so.
+  const TRAILER = /^(?:co-authored-by|claude-session|generated-by|generated-with):|^(?:🤖 )?generated with \[?(?:claude|codex|copilot|chatgpt|gemini)/im
   for (const record of log.split("\x01")) {
     if (!record.trim()) continue
     const [hash, author, committer, message] = record.replace(/^\n/, "").split("\x00")
-    assert.ok(!ATTRIBUTION.test(author), `${hash.slice(0, 7)}: author "${author}" is an assistant or a bot`)
-    assert.ok(!ATTRIBUTION.test(committer), `${hash.slice(0, 7)}: committer "${committer}" is an assistant or a bot`)
-    assert.ok(!ATTRIBUTION.test(message), `${hash.slice(0, 7)}: the message carries assistant attribution:\n${message}`)
+    assert.ok(!IDENTITY.test(author), `${hash.slice(0, 7)}: author "${author}" is an assistant or a bot`)
+    assert.ok(!IDENTITY.test(committer), `${hash.slice(0, 7)}: committer "${committer}" is an assistant or a bot`)
+    assert.ok(!TRAILER.test(message), `${hash.slice(0, 7)}: the message carries an attribution trailer:\n${message}`)
   }
 })
