@@ -192,6 +192,11 @@ the marketplace's current HEAD when the network is there, because the pin's
 copy is stale within hours (4,201 of 4,293 commits in 30 days touched only
 `registry.json`), and from the pin with `--offline`.
 
+This is why the tool is Node: the marketplace's scanner, form parser and
+catalog builder are Node modules, and omakit runs them verbatim from the
+pinned commit instead of reimplementing their rules, where a different
+language would mean a copy that can drift.
+
 The security baseline is the marketplace's own code, imported unmodified and run
 over a local snapshot with no network. Omakit adds no rule, renames no outcome,
 and never restates the result as a safety claim: the baseline does no data-flow
