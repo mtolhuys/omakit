@@ -35,6 +35,11 @@ it from the operator's `gh` login (which itself honours `GH_TOKEN` and
 `GITHUB_TOKEN`); without one it falls back to the public commit feed. Never ask the operator for a token: run
 `omakit doctor` and read the `github.auth` line, which names the source.
 
+If the diagnosis ends in a resubmission under a new id, run `omakit submit`
+online: never pass `--offline` to get around a listed id, because that reads
+the listed ids from the pin, which is stale within hours, and the marketplace
+refuses against its current registry.
+
 ## Acting on each verdict
 
 **`stale`.** The validated commit is behind the repository. Tell the owner plainly: the marketplace has not

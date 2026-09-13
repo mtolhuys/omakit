@@ -129,6 +129,34 @@ test("there is exactly one HTTP call site, and it is the read-only one", () => {
     "a second fetch call site means the GET-only guarantee is no longer structural")
 })
 
+test("every request host is one of the four known ones, and the raw file host is reached only at an explicit commit", () => {
+  // The GET-only guarantee says nothing about where a GET goes. Four hosts
+  // are known: the API, github.com for the commit feed, the npm registry for
+  // `upgrade`, and raw.githubusercontent.com for the two live registry files.
+  // The last one is a file server: what it hands back at a branch name can
+  // change between two requests, so it may be addressed only through the one
+  // builder that refuses anything but a 40-character commit and anything but
+  // the two data files (tests/unit/registry.test.mjs proves both refusals).
+  const HOSTS = new Set(["api.github.com", "github.com", "registry.npmjs.org", "raw.githubusercontent.com"])
+  const RAW = "raw.githubusercontent.com"
+  for (const { path, text } of sources) {
+    if (path.startsWith("tests/")) continue
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    for (const match of code.matchAll(/https?:\/\/([A-Za-z0-9.-]+)/g)) {
+      assert.ok(HOSTS.has(match[1]), `${path} reaches ${match[1]}, which is not a known host`)
+    }
+    // local-transport.mjs also names the raw host: it answers the official
+    // resolver's requests for it from a local clone, and never sends one.
+    if (path !== "tools/marketplace/registry.mjs" && path !== "tools/marketplace/local-transport.mjs") {
+      assert.ok(!code.includes(RAW), `${path} names ${RAW}; only registry.mjs may request it, through liveFileUrl()`)
+    }
+  }
+  const registry = sources.find((source) => source.path === "tools/marketplace/registry.mjs")
+  assert.equal(registry.text.split(RAW).length - 1, 1, "registry.mjs names the raw host exactly once")
+  assert.match(registry.text, /export function liveFileUrl\(commit, path\) \{\s*\n\s*if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(String\(commit\)\)\)/,
+    "liveFileUrl refuses anything but a 40-character commit before it builds a URL")
+})
+
 test("no git verb that writes to a remote", () => {
   // Every git invocation's first verb must be one of these. `fetch`, `init`,
   // `remote add` and `checkout` are how the pinned checkout and a reviewer-mode

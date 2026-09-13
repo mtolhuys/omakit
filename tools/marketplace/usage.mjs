@@ -110,9 +110,10 @@ export const TARGET_NOTE = "<target> is a local Git repository path, or <https u
  */
 export const AUTHENTICATION = Object.freeze([
   "Read-only, and optional. omakit uses your `gh` login if you have one, and",
-  "otherwise goes unauthenticated. `submit` and `verify` need no network at",
-  `all; \`watch\` and \`parity\` are capped at ${UNAUTHENTICATED_LIMIT} requests an hour without a`,
-  "login. omakit never writes a credential anywhere.",
+  "otherwise goes unauthenticated. `verify` needs no network; `submit` reads",
+  "two things online and `--offline` turns both off; `watch` and `parity` are",
+  `capped at ${UNAUTHENTICATED_LIMIT} requests an hour without a login. omakit never writes a`,
+  "credential anywhere.",
 ])
 
 /**

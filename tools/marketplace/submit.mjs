@@ -14,7 +14,7 @@
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { requirePin } from "./pin.mjs"
 import { submissionContract, resolveCategory, resolveTags } from "./form.mjs"
-import { idUniverse, checkIdentity, baselineFigures, figure } from "./registry.mjs"
+import { idUniverse, checkIdentity, baselineFigures, figure, liveRegistry, registrySourceDetail } from "./registry.mjs"
 import { readTree } from "./tree.mjs"
 import { inspectTree } from "./plugin.mjs"
 import { findAgentControl, REMEDY as AGENT_CONTROL_REMEDY } from "./agent-control.mjs"
@@ -48,7 +48,10 @@ function check(id, fields) {
 /**
  * @param {{ repoRoot: string, target: string, category?: string, tags?: string|string[],
  *           notes?: string, suggestedTag?: string, pluginName?: string,
- *           allowDirty?: boolean, offline?: boolean }} options
+ *           allowDirty?: boolean, offline?: boolean,
+ *           readRegistry?: typeof liveRegistry }} options
+ *   `readRegistry` is injectable for tests; the default reads the marketplace's
+ *   current HEAD, or the pin with `offline`.
  */
 export async function submitPreflight(options) {
   const { repoRoot } = options
@@ -60,8 +63,11 @@ export async function submitPreflight(options) {
   const { identity: pinIdentity } = requirePin(repoRoot)
   phase("reading the submission contract from the pin")
   const contract = await submissionContract({ repoRoot })
-  phase("reading the listed and retired plugin ids")
-  const universe = idUniverse({ repoRoot })
+  phase(options.offline ? "reading the listed and retired plugin ids from the pin" : "reading the marketplace's current registry")
+  const live = await (options.readRegistry || liveRegistry)({ repoRoot, offline: options.offline === true })
+  const universe = idUniverse({ repoRoot, registry: live.registry, catalog: live.catalog })
+  // The documented figures are the pin's by design: they are cited in prose
+  // that a test holds to the pin, so they never move between two runs.
   const figures = baselineFigures({ repoRoot })
 
   phase("resolving the subject commit")
@@ -145,11 +151,11 @@ export async function submitPreflight(options) {
   const identity = checkIdentity(universe, { id: tree.pluginId, repositoryUrl: subject.repository.url })
   checks.push(check("identity.available", {
     source: "marketplace-pin",
-    why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${universe.counts.listedIds} listed ids, ${universe.counts.retiredIds} retired ids and ${universe.counts.listedRepositories} listed repositories read from the pinned registry and catalog.`,
+    why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${figure(universe.counts.listedIds)} listed ids, ${figure(universe.counts.retiredIds)} retired ids and ${figure(universe.counts.listedRepositories)} listed repositories from the registry and catalog at the commit the detail names, and the reserved namespace from the pinned catalog builder. The registry is read from the marketplace's current HEAD when the network is there because the pin's copy is stale within hours: registry.json changed in 4,201 of the marketplace's 4,293 commits in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md M7). Code and the form are only ever read from the pin.`,
     verdict: identity.ok,
-    detail: identity.ok
+    detail: `${identity.ok
       ? `id "${tree.pluginId}" is unused, outside the reserved ${universe.reservedPrefix}* namespace, and the repository is not listed`
-      : identity.problems.map((problem) => `${problem.code}: ${problem.detail}`).join("; "),
+      : identity.problems.map((problem) => `${problem.code}: ${problem.detail}`).join("; ")}; ${registrySourceDetail(live)}`,
     remedy: identity.ok ? null : "Choose an unused plugin id outside the reserved namespace.",
   }))
 
@@ -312,6 +318,12 @@ export async function submitPreflight(options) {
       repository: subject.repository.url,
       commit: subject.commit,
       cleanTree: subject.clean,
+    },
+    registry: {
+      source: live.source,
+      commit: live.commit,
+      fetchedAt: live.fetchedAt,
+      reason: live.reason,
     },
     validationCommit: {
       local: subject.commit,

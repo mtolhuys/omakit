@@ -121,11 +121,12 @@ There is nothing to authenticate. If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
 `GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
 those itself. Without either, `watch` and `parity` share GitHub's
-60-requests-an-hour unauthenticated allowance, and `submit` and `verify` on a
-local repository do not touch the network at all (a `<url>@<sha>` target is
-fetched once, over git, into the cache). omakit reads no environment variable of its own,
-and `omakit doctor` names the credential source it found, or that it found
-none.
+60-requests-an-hour unauthenticated allowance; `submit` reads two things
+online, the subject's default-branch HEAD and the marketplace's current
+registry, and `--offline` turns both off; `verify` on a local repository does
+not touch the network at all (a `<url>@<sha>` target is fetched once, over
+git, into the cache). omakit reads no environment variable of its own, and
+`omakit doctor` names the credential source it found, or that it found none.
 
 Every colour omakit prints is an ANSI palette index, so your Omarchy theme
 decides what it looks like, and nothing is said by colour alone. What the
@@ -141,7 +142,11 @@ tags and the exact text of the five checklist items are all read from
 `.github/ISSUE_TEMPLATE/submit-plugin.yml` in a marketplace checkout pinned to an
 exact commit. The rendered body is then handed to the marketplace's own
 `parseCurrentSubmission` from that same commit. If it accepts the body here, it
-accepts it there.
+accepts it there. The one exception is data, not rules: the registry and the
+catalog that say which ids and repositories are already listed are read from
+the marketplace's current HEAD when the network is there, because the pin's
+copy is stale within hours (4,201 of 4,293 commits in 30 days touched only
+`registry.json`), and from the pin with `--offline`.
 
 The security baseline is the marketplace's own code, imported unmodified and run
 over a local snapshot with no network. Omakit adds no rule, renames no outcome,

@@ -1,8 +1,7 @@
-// The plugin-id and repository universe, read from the pinned marketplace
-// checkout. Like the submission contract, nothing here is hardcoded: the
-// reserved namespace is read out of the marketplace's own catalog builder, the
-// listed ids out of the published catalog and the registry sources, and the
-// retired ids out of `registry.json`.
+// The plugin-id and repository universe. Like the submission contract, nothing
+// here is hardcoded: the reserved namespace is read out of the marketplace's
+// own catalog builder, the listed ids out of the published catalog and the
+// registry sources, and the retired ids out of `registry.json`.
 //
 // Measured reason these three checks exist (docs/MEASUREMENTS.md M2): the
 // marketplace refuses a submission whose id is already listed
@@ -13,14 +12,30 @@
 // median submission-to-publication time rose sevenfold between 2026-W33 and
 // 2026-W36, and it is knowable before submitting from data the marketplace
 // publishes.
+//
+// Two kinds of file, two sources (docs/MEASUREMENTS.md M7). The catalog
+// builder is code, and code is only ever read from the pin: it moves a few
+// times a month and must never be fetched and executed unreviewed. The
+// registry and the catalog are data, and the pin's copy of them is stale
+// within hours: registry.json changed in 4,201 of the marketplace's 4,293
+// commits in the 30 days to 2026-09-13, about 140 a day. So those two files
+// are read from the marketplace's current default-branch HEAD when the network
+// is there, at the exact commit `defaultBranchHead()` resolved so they cannot
+// disagree with each other, and from the pin when it is not or when the caller
+// asks for --offline. Every result says which, with the commit.
 
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
-import { requirePin } from "./pin.mjs"
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
+import { defaultBranchHead, getJson } from "./github.mjs"
+import { omakitCacheDir } from "./paths.mjs"
 
 export const CATALOG_PATH = "site/catalog.json"
 export const REGISTRY_PATH = "registry.json"
 export const CATALOG_BUILDER_PATH = "scripts/build-catalog.mjs"
+
+/** The only two marketplace files ever read from HEAD. Everything else comes from the pin. */
+export const LIVE_PATHS = Object.freeze([REGISTRY_PATH, CATALOG_PATH])
 
 export class RegistryError extends Error {
   constructor(code, message) {
@@ -65,14 +80,143 @@ function repositorySlug(value) {
 }
 
 /**
- * @param {{ repoRoot?: string, pinDir?: string }} [options]
+ * The one URL shape a live registry file is read from: one of LIVE_PATHS at
+ * one explicit 40-character commit on the marketplace's raw file host. Never
+ * a branch name, so the two files always come from the same commit and the
+ * commit named in the output is the one they came from; never a path outside
+ * LIVE_PATHS, so nothing executable can arrive this way.
+ */
+export function liveFileUrl(commit, path) {
+  if (!/^[0-9a-f]{40}$/.test(String(commit))) {
+    throw new RegistryError("usage", `a live registry file is read at a 40-character commit, not "${commit}"`)
+  }
+  if (!LIVE_PATHS.includes(path)) {
+    throw new RegistryError("usage", `${path} is never read from HEAD; only ${LIVE_PATHS.join(" and ")} are`)
+  }
+  const raw = MARKETPLACE_PIN.repository.replace(/^https:\/\/github\.com\//, "https://raw.githubusercontent.com/")
+  return `${raw}/${commit}/${path}`
+}
+
+/** Where the live files for one commit are kept: beside the pin, never inside it. */
+export function liveCacheDir(commit, cacheRoot = omakitCacheDir("registry")) {
+  return join(cacheRoot, commit)
+}
+
+/** A cached commit is one whose meta.json, written last, names every file present. */
+function readCached(liveCache) {
+  try {
+    const meta = JSON.parse(readFileSync(join(liveCache, "meta.json"), "utf8"))
+    if (typeof meta.fetchedAt !== "string" || JSON.stringify(meta.paths) !== JSON.stringify(LIVE_PATHS)) return null
+    const files = {}
+    for (const path of LIVE_PATHS) files[path] = JSON.parse(readFileSync(join(liveCache, path), "utf8"))
+    return { fetchedAt: meta.fetchedAt, files }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * One directory per commit, the files first and meta.json last, so a run that
+ * dies mid-write leaves a directory readCached() does not accept. Older
+ * commits are removed: at about 140 registry commits a day, keeping every one
+ * would grow the cache by the measured 13 MB per run.
+ */
+function writeCached(cacheRoot, commit, fetchedAt, files) {
+  const liveCache = liveCacheDir(commit, cacheRoot)
+  rmSync(liveCache, { recursive: true, force: true })
+  for (const path of LIVE_PATHS) {
+    mkdirSync(dirname(join(liveCache, path)), { recursive: true })
+    writeFileSync(join(liveCache, path), JSON.stringify(files[path]))
+  }
+  writeFileSync(join(liveCache, "meta.json"), `${JSON.stringify({ commit, fetchedAt, paths: LIVE_PATHS }, null, 2)}\n`)
+  for (const entry of readdirSync(cacheRoot, { withFileTypes: true })) {
+    if (entry.isDirectory() && entry.name !== commit) rmSync(join(cacheRoot, entry.name), { recursive: true, force: true })
+  }
+}
+
+/**
+ * The registry and the catalog, from the marketplace's current default-branch
+ * HEAD when the network is there and from the pin when it is not. Never
+ * throws for a network reason: a HEAD that cannot be read falls back to the pin
+ * and says so in `reason`. The pinned checkout is never written to; a fetched
+ * pair is cached under `cacheRoot/<commit>/`.
+ *
+ * `resolveHead`, `fetchJson`, `cacheRoot` and `now` are injectable for tests;
+ * the defaults are the tool's one HEAD resolver and its one GET call site.
+ *
+ * @param {{ repoRoot?: string, pinDir?: string, offline?: boolean,
+ *           resolveHead?: (url: string) => Promise<{ commit: string }>,
+ *           fetchJson?: (url: string) => Promise<object>, cacheRoot?: string,
+ *           now?: () => string }} [options]
+ * @returns {Promise<{ source: "head"|"pin", commit: string, fetchedAt: string|null,
+ *                     reason: string|null, registry: object, catalog: object }>}
+ */
+export async function liveRegistry(options = {}) {
+  const pinDir = options.pinDir || requirePin(options.repoRoot).dir
+  const resolveHead = options.resolveHead || defaultBranchHead
+  const fetchJson = options.fetchJson || getJson
+  const cacheRoot = options.cacheRoot || omakitCacheDir("registry")
+  const now = options.now || (() => new Date().toISOString())
+  const fromPin = (reason) => ({
+    source: "pin",
+    commit: MARKETPLACE_PIN.commit,
+    fetchedAt: null,
+    reason,
+    registry: readJson(pinDir, REGISTRY_PATH),
+    catalog: readJson(pinDir, CATALOG_PATH),
+  })
+  if (options.offline) return fromPin("--offline")
+
+  let commit
+  try {
+    commit = String((await resolveHead(MARKETPLACE_PIN.repository)).commit).toLowerCase()
+  } catch (error) {
+    return fromPin(`HEAD unreadable (${error?.code || "error"}): ${error?.message || error}`)
+  }
+  if (commit === MARKETPLACE_PIN.commit) {
+    // HEAD is the pin, so the pin's files are HEAD's files: nothing to fetch.
+    return { ...fromPin(null), source: "head", fetchedAt: now() }
+  }
+
+  const cached = readCached(liveCacheDir(commit, cacheRoot))
+  if (cached) {
+    return { source: "head", commit, fetchedAt: cached.fetchedAt, reason: null, registry: cached.files[REGISTRY_PATH], catalog: cached.files[CATALOG_PATH] }
+  }
+
+  const files = {}
+  try {
+    for (const path of LIVE_PATHS) files[path] = await fetchJson(liveFileUrl(commit, path))
+  } catch (error) {
+    return fromPin(`registry at ${commit} unreadable (${error?.code || "error"}): ${error?.message || error}`)
+  }
+  const fetchedAt = now()
+  try {
+    mkdirSync(cacheRoot, { recursive: true })
+    writeCached(cacheRoot, commit, fetchedAt, files)
+  } catch {
+    // A cache that cannot be written costs the next run a refetch, nothing else.
+  }
+  return { source: "head", commit, fetchedAt, reason: null, registry: files[REGISTRY_PATH], catalog: files[CATALOG_PATH] }
+}
+
+/** How a check names where its registry data came from. Short hash for the pin, which the docs name that way; the full commit for HEAD, which nothing else names. */
+export function registrySourceDetail(live) {
+  if (live.source === "head") return `registry at ${live.commit}, read ${live.fetchedAt}`
+  const reason = live.reason === "--offline" ? "offline" : live.reason
+  return `registry at the pin ${live.commit.slice(0, 8)}${reason ? ` (${reason})` : ""}`
+}
+
+/**
+ * @param {{ repoRoot?: string, pinDir?: string, registry?: object, catalog?: object }} [options]
+ *   `registry` and `catalog` are the parsed files from liveRegistry(); without
+ *   them the pin's copies are read.
  * @returns {{ reservedPrefix: string, listedIds: Set<string>, retiredIds: Set<string>,
  *             listedRepositories: Set<string>, counts: object }}
  */
 export function idUniverse(options = {}) {
   const pinDir = options.pinDir || requirePin(options.repoRoot).dir
-  const catalog = readJson(pinDir, CATALOG_PATH)
-  const registry = readJson(pinDir, REGISTRY_PATH)
+  const catalog = options.catalog || readJson(pinDir, CATALOG_PATH)
+  const registry = options.registry || readJson(pinDir, REGISTRY_PATH)
 
   const listedIds = new Set()
   for (const plugin of Array.isArray(catalog.plugins) ? catalog.plugins : []) {

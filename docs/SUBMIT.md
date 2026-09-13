@@ -36,7 +36,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `plugin.root-license` | pin | A root license or COPYING file exists. |
 | `plugin.readme-install-removal` | omakit | The README mentions installing and removing, because the generated checklist signs that claim. Keyword probe, not a reading. |
 | `tree.agent-control` | omakit | Advisory: names every agent-control file in the installable tree. It never refuses, because the marketplace lists plugins that ship them (6 of 34 inspected). |
-| `identity.available` | pin | The plugin id is unused, not retired, outside the reserved namespace, and the repository is not already listed. |
+| `identity.available` | pin | The plugin id is unused, not retired, outside the reserved namespace, and the repository is not already listed. The registry and catalog it reads are the marketplace's current HEAD when online, the pin when not (`--offline`, or no network); the detail names which, with the commit. |
 | `submission.title` | pin | The title is the form's own prefix plus the plugin name. |
 | `submission.category` | pin | Exactly one category from the form's controlled list. |
 | `submission.tags` | pin | One to three tags from the form's controlled list. |
@@ -58,8 +58,11 @@ the exact text of the five checklist items are all read from
 tag count comes from the pinned `scripts/submission.mjs`. The reserved plugin-id
 namespace is read out of the pinned `scripts/build-catalog.mjs` next to the
 marketplace's own `reserved-plugin-id` check. The listed ids, the retired ids and
-the listed repositories come from the pinned `registry.json` and
-`site/catalog.json`.
+the listed repositories come from `registry.json` and `site/catalog.json`, and
+those two files alone are read from the marketplace's current HEAD when the
+network is there, because the pin's copy is stale within hours
+([MEASUREMENTS.md](MEASUREMENTS.md) M7); with `--offline`, or when HEAD cannot
+be read, they come from the pin, and the output says so either way.
 
 The form and the marketplace's own constants are then cross-checked against each
 other. If they disagree, `omakit submit` refuses to generate anything and says

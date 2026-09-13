@@ -28,7 +28,14 @@ them. The failing checks print the controlled lists, read from the pinned form.
 
 Useful flags: `--notes` for the Maintainer notes field, `--suggest-tag` for the
 optional suggestion, `--name` when the manifest has no name, `--json` for a
-machine-readable result, `--offline` to skip the one check that needs the network.
+machine-readable result, `--offline` to skip the one check that needs the network
+and to read the listed ids from the pin instead of the marketplace's current HEAD.
+
+Never pass `--offline` to get around a listed id. `identity.available` reads the
+registry from HEAD because the pin's copy is stale within hours; a run that
+passes only against the pin describes a marketplace that no longer exists, and
+the marketplace will refuse the id anyway. If an id or repository is listed at
+HEAD, tell the owner and choose another id.
 
 ## Reading the result
 

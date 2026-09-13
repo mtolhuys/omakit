@@ -14,7 +14,7 @@ local commit through the transport seam the marketplace tests itself
 | `preflight.mjs` | Translates that result into what it will cause on submission, using the pinned policy, and renders the marketplace's own report text with its attestation marker stripped and asserted absent. |
 | `yaml.mjs` | A deliberately small YAML reader for the pinned issue form. Accepts that subset and throws on anything else. |
 | `form.mjs` | The submission contract, read from the form and cross-checked against the marketplace's own constants. |
-| `registry.mjs` | The plugin-id and repository universe, and the reserved namespace, read from the pinned registry, catalog and catalog builder. |
+| `registry.mjs` | The plugin-id and repository universe: the reserved namespace from the pinned catalog builder, the listed and retired ids and listed repositories from `registry.json` and `site/catalog.json` at the marketplace's current HEAD when the network is there (cached under `$XDG_CACHE_HOME/omakit/registry/<commit>/`, never in the pin) and at the pin with `--offline`; `liveFileUrl()` is the only way to the raw file host, at a 40-character commit, for those two files. |
 | `tree.mjs` | The installable tree of a subject at one exact commit, from the Git object database. |
 | `plugin.mjs` | The root files the submission contract needs, and the declared plugin identity. |
 | `agent-control.mjs` | The recursive agent-control warning, and its remedy. |
@@ -57,8 +57,10 @@ the registry recorded so the corpus always contains repositories that are not
 side rather than the findings themselves. The GitHub side uses whatever
 credential `github.mjs` resolves (a `gh` login, and only that), read-only.
 
-`parity` and `watch` are the only commands that reach the network, and they do it
-with Node's built-in `fetch`, which does not read proxy environment variables by
-default. Behind a proxy, run them with `NODE_USE_ENV_PROXY=1`. `submit` and
-`verify` need no network at all beyond fetching a reviewer-mode subject, and
-`tests/parity/offline.mjs` proves it.
+`parity`, `watch`, `doctor` and `submit` reach the network, with Node's
+built-in `fetch`, which does not read proxy environment variables by default.
+Behind a proxy, run them with `NODE_USE_ENV_PROXY=1`. `submit` reads two things
+online, the subject's default-branch HEAD and the marketplace's current
+registry, and `--offline` turns both off; `verify` needs no network at all
+beyond fetching a reviewer-mode subject, and `tests/parity/offline.mjs` proves
+it.

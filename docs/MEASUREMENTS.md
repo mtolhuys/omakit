@@ -23,6 +23,7 @@ stable across the measurement window; absolute counts move by the hour.
 | Sample | 320 issues with 328 maintainer review comments, four strata, fixed seed: 100 open `needs-fixes`, 120 published, 60 waiting on the maintainer, 40 closed `[Verify]:`. |
 | Validation staleness | The validated commit from the bot's own comment compared with the default branch HEAD from each plugin repository's `commits.atom`. |
 | Registry figures | `registry.json` and `site/catalog.json` at the pinned marketplace commit, counted by `baselineFigures()` in `tools/marketplace/registry.mjs` and pinned by `tests/unit/registry-figures.test.mjs`, which also checks that this document still carries them. |
+| Churn per path | `git clone --filter=blob:none` of the marketplace, then `git log --since=30.days --oneline` for the whole tree and `git log --since=30.days --oneline -- <path>` per path omakit reads; a commit touching only `registry.json` is one whose `git show --stat` names that file alone. |
 
 Known limits, stated rather than buried. A HEAD that is ahead proves the pin is
 stale, not that the findings were fixed; the push may be a README tweak. The
@@ -164,3 +165,40 @@ The mechanism, with `file:line`:
 Used by: `omakit watch`, and `submission.validation-commit` in `omakit submit`.
 The watch reads; it never edits, comments or labels. The action it names is the
 author's to take.
+
+## M7. The registry moves by the hour; the code and the rules move by the week
+
+Measured on 2026-09-13 against `omacom/omarchy-plugin-marketplace` at
+`d4321b5b`, with a blob-filtered clone and `git log --since=30.days` per path:
+
+| Measurement | Value |
+| --- | --- |
+| Commits in the last 30 days | 4,293 |
+| Of those, touching only `registry.json` | 4,201 (about 140 a day) |
+| Changes to each of the eleven files omakit reads rules and code from | 1 to 8 in the month |
+| Last change to `submit-plugin.yml` and `scripts/submission.mjs` | 2026-08-30 |
+| Last change to `scripts/build-catalog.mjs` | 2026-09-03 |
+| Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none |
+
+So one pin is right for the code and the rules, which move slowly and must
+never be fetched and executed unreviewed, and wrong for the registry, which is
+stale within hours of any pin. `identity.available` judges "is this id listed,
+is this repository listed, is this id retired" against `registry.json` and
+`site/catalog.json`, and a copy frozen at the pin answers those questions about
+a marketplace that has since listed about 140 more commits' worth of plugins a
+day.
+
+The consequence: `registry.json` and `site/catalog.json` are read from the
+marketplace's current default-branch HEAD when the network is there, at the
+exact commit `defaultBranchHead()` resolved so the two files cannot disagree
+with each other, and from the pin when it is not or when `--offline` is
+passed. Nothing under `scripts/` and nothing in `.github/ISSUE_TEMPLATE/` is
+ever read from HEAD: the sparse pin stays the only source of executed code and
+of the contract. Every run says which source it used and at which commit, in
+the check's detail and under `registry` in `--json`. The figures in M4 and M6
+are the pin's by design: they are cited in prose that
+`tests/unit/registry-figures.test.mjs` holds to the pin, and a number that
+moved between two runs could not be cited.
+
+Used by: `identity.available`. Not by `baseline.preflight`, whose figures stay
+the pin's.

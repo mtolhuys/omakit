@@ -58,18 +58,27 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     }
     // Writes are allowed to an explicit --out path, to docs/evidence, to the
     // pinned checkout's own .git/info (the sparse-checkout file, which is how
-    // the pin fetches only what omakit reads), and to the one completion
-    // script `setup` installs where the user's shell loads it from
-    // (completionFile, in completion.mjs, at the path completionInstall names
-    // and nowhere else). Nothing else, and never into a subject.
+    // the pin fetches only what omakit reads), to the live registry cache
+    // beside the pin (liveCache, in registry.mjs, at the path liveCacheDir
+    // names under the user cache: two data files and a stamp, never code),
+    // and to the one completion script `setup` installs where the user's
+    // shell loads it from (completionFile, in completion.mjs, at the path
+    // completionInstall names and nowhere else). Nothing else, and never into
+    // a subject.
     // The capture takes the rest of the line, because a target like
     // join(dir, ".git/info/x") contains a comma of its own.
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,/.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, nor the completion script`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, nor the completion script`,
       )
+    }
+    if (path === "tools/marketplace/registry.mjs") {
+      assert.match(text, /const liveCache = liveCacheDir\(commit, cacheRoot\)/, "the live registry cache is the path liveCacheDir names")
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 2, "registry.mjs writes the data files and the stamp, nothing else")
+    } else {
+      assert.ok(!/join\(liveCache,/.test(text), `${path} writes into the live registry cache; only registry.mjs may`)
     }
     if (path === "tools/marketplace/completion.mjs") {
       assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "completion.mjs writes exactly one file")
