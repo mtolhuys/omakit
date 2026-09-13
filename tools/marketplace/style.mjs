@@ -195,19 +195,19 @@ export const MARK_WIDTH = Math.max(...Object.values(STATUS).map((s) => `${s.glyp
 
 /**
  * Every animation has a stated budget. The wordmark scan is over in one glance,
- * because `setup` exists to put status lines on the screen and the scan has to
- * be finished before it is in the way; the first version took 1.4 seconds. The
+ * because what follows it is the point and the scan has to be finished before
+ * it is in the way; the first version took 1.4 seconds. The
  * progress line has no duration of its own, it lasts as long as the work does,
  * so its budget is a frame rate: one redraw per 70ms is smooth on a terminal
  * and cheap on a pty.
  *
- * The one text effect, `ttfx` over the wordmark in `omakit setup`, has a frame
+ * The one text effect, `ttfx` over the wordmark, has a frame
  * rate the arguments are frozen to and a budget that is a hard timeout, after
  * which the process is killed and the wordmark is drawn at once. Measured on
  * this machine, the pinned effect at 60 frames a second: 42 frames, 713ms on a
- * pipe and 720ms on a pty, so the budget is twice that. The wordmark is drawn
- * in `setup` only, a first run already spending seconds fetching the pin, and
- * without `ttfx` it gets the 220ms scan there instead.
+ * pipe and 720ms on a pty, so the budget is twice that. It plays where the
+ * wordmark is drawn, a bare `omakit` and `setup`; without `ttfx` the 220ms
+ * scan runs there instead.
  */
 export const MOTION = Object.freeze({
   bannerBudgetMs: 220,
@@ -431,7 +431,7 @@ export function labelled(label, text, c, { indent = GUTTER } = {}) {
 /**
  * The one separator: a heading on its own line, then a floor rule under it in
  * grey. It is the same shape the wordmark uses (the name, then its rule), so a
- * section of a report and the wordmark in `setup` are drawn by one idea.
+ * section of a report and the front door of the tool are drawn by one idea.
  */
 export function section(title, c, { width: total = COLUMNS } = {}) {
   return [c("heading", title), c("punctuation", DENSITY.floor.repeat(total))]

@@ -1,15 +1,15 @@
 // The wordmark, and the one place decoration is allowed.
 //
-// It is drawn in `omakit setup` only: a first run, already spending seconds
-// fetching the pin, is the one moment a wordmark is not in the way of anything.
-// It used to open `omakit`, `omakit help` and `omakit doctor` as well, and on
-// those it was seven rows a person scrolled past to reach the list they asked
-// for. Never in `submit`, `watch` or `verify` output, because that output gets
-// pasted into issues and read by agents, and a banner there costs a reader
-// lines and costs a submission credibility.
+// It is drawn in two places: a bare `omakit`, the front door, where the short
+// list under it fits on any screen; and `omakit setup`, a first run already
+// spending seconds fetching the pin. Not on `omakit help`, whose 53 lines
+// scroll it off the top before anyone has read it, and not on `doctor`, which
+// is run to read a report. Never in `submit`, `watch` or `verify` output,
+// because that output gets pasted into issues and read by agents, and a
+// banner there costs a reader lines and costs a submission credibility.
 //
-// One more gate. It draws only when stdout is a terminal, so `omakit setup |
-// tee` stays plain text; there is no switch of omakit's own, because a pipe
+// One more gate. It draws only when stdout is a terminal, so `omakit | less`
+// and `omakit setup | tee` stay plain text; there is no switch of omakit's own, because a pipe
 // and TERM=dumb are the terminal's way of saying the same thing. NO_COLOR does
 // what it says and no more: the wordmark is still drawn, in the terminal's own
 // foreground, because a person who turned colour off did not ask for a
@@ -17,7 +17,7 @@
 // without the wordmark.
 //
 // The animation is on a budget: the whole scan is MOTION.bannerBudgetMs, about
-// a quarter of a second, so the first status line is on the screen before a
+// a quarter of a second, so the first line under it is on the screen before a
 // person has finished looking at the wordmark. The first version of this took
 // 1.4 seconds. The schedule below is derived from the budget rather than from
 // taste, so the wordmark can grow a letter without the scan growing a delay.
@@ -199,7 +199,7 @@ export function frame(layout, band, revealed = band, { colour = true } = {}) {
  *           enabled?: boolean, animate?: boolean, shines?: number,
  *           effect?: boolean, env?: NodeJS.ProcessEnv }} [options]
  *   `effect: true` runs the wordmark through `ttfx` when it is there (see
- *   effect.mjs); `setup`, the one caller, passes it.
+ *   effect.mjs); both callers, the front door and `setup`, pass it.
  */
 export async function banner(options = {}) {
   const stream = options.stream || process.stdout

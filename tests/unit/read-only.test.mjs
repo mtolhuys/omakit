@@ -75,7 +75,7 @@ test("the GitHub CLI is only ever asked for a token", () => {
 })
 
 test("ttfx is only ever handed the wordmark on stdin, with frozen arguments", () => {
-  // The one text effect is an enhancement in `setup`, and `ttfx` is a binary
+  // The one text effect is an enhancement of the wordmark, and `ttfx` is a binary
   // that reads files and runs a random effect if asked. So the arguments are
   // frozen here: stdin only, no input file, no path, no `--random-effect`, one
   // pinned effect and one seed, so the recorded GIF stays reproducible.

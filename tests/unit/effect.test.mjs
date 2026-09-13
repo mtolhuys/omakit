@@ -1,4 +1,4 @@
-// The one text effect: `ttfx` over the wordmark, in `setup` only, and never a
+// The one text effect: `ttfx` over the wordmark, where it is drawn, and never a
 // requirement. A fake `ttfx` on PATH makes every outcome deterministic; the
 // real one, where it is installed, has its budget measured.
 import test from "node:test"
@@ -104,7 +104,7 @@ test("a ttfx that fails, hangs or prints nothing never leaves the tool worse tha
   assert.equal(await playEffect(rows, capture(), { env: fakeTtfx("sleep 30"), budgetMs: 150 }), "absent")
 })
 
-test("the effect is asked for by setup and by nothing else", () => {
+test("the effect is asked for where the wordmark is drawn, and by nothing else", () => {
   const askers = []
   for (const path of readdirSync(join(REPO_ROOT, "tools/marketplace"))) {
     if (!path.endsWith(".mjs")) continue
@@ -112,7 +112,7 @@ test("the effect is asked for by setup and by nothing else", () => {
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
     if (/\beffect:\s*true\b/.test(text)) askers.push(path)
   }
-  assert.deepEqual(askers, ["setup.mjs"])
+  assert.deepEqual(askers.sort(), ["cli.mjs", "setup.mjs"])
 })
 
 test("with the real ttfx, the pinned effect finishes inside its stated budget", async (t) => {

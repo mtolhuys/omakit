@@ -102,18 +102,31 @@ test("a frame emits no colour code it does not use", () => {
   }
 })
 
-test("the banner appears in setup only", () => {
+test("the banner appears on the front door and in setup only", () => {
   // Read out of the sources rather than trusted. `submit`, `watch` and
   // `verify` output gets pasted into issues and read by agents, where a banner
-  // costs a submission credibility; `omakit`, `help` and `doctor` are run to
-  // read a list, where it was seven rows to scroll past. The one caller is
-  // `setup`, a first run already spending seconds fetching the pin.
+  // costs a submission credibility; `help` is 53 lines that scroll it off the
+  // top, and `doctor` is run to read a report. The two callers are a bare
+  // `omakit`, whose short list fits under it, and `setup`, a first run
+  // already spending seconds fetching the pin.
   const dir = join(REPO_ROOT, "tools/marketplace")
+  const allowed = ["cli.mjs", "setup.mjs"]
   for (const module of readdirSync(dir).filter((name) => name.endsWith(".mjs") && name !== "banner.mjs")) {
     const text = readFileSync(join(dir, module), "utf8")
     const draws = text.includes("banner.mjs") || /\bbanner\(/.test(text)
-    assert.equal(draws, module === "setup.mjs", module === "setup.mjs" ? "setup draws the banner" : `${module} draws the banner; it must not`)
+    assert.equal(draws, allowed.includes(module), `${module} ${draws ? "draws the banner; it must not" : "does not draw the banner; it must"}`)
   }
+  // Inside the CLI, the one call is the front door's. Every other command
+  // function is checked by name, so a new one cannot draw it unnoticed.
+  const cli = readFileSync(join(dir, "cli.mjs"), "utf8")
+  const functions = [...cli.matchAll(/^async function (cmd\w+)/gm)].map((m) => m[1])
+  assert.ok(functions.includes("cmdFrontDoor") && functions.length > 5, "the command functions are found")
+  for (const name of functions) {
+    const start = cli.indexOf(`function ${name}`)
+    const body = cli.slice(start, cli.indexOf("\n}", start))
+    assert.equal(body.includes("banner("), name === "cmdFrontDoor", `${name} ${name === "cmdFrontDoor" ? "must draw" : "draws"} the banner`)
+  }
+  assert.ok(!/\bbanner\(/.test(cli.slice(cli.indexOf("} else if (command ==="))), "the dispatch itself draws no banner")
 })
 
 test("the whole scan fits in one glance, on any name the font can draw", () => {
@@ -134,15 +147,18 @@ test("the whole scan fits in one glance, on any name the font can draw", () => {
   }
 })
 
-test("setup animates the wordmark, and plays the effect", () => {
-  // Where the banner appears is asserted above; this is how. `setup` never
-  // opts out of the scan (the budget replaced that), and it is the one place
-  // the wordmark goes through `ttfx` when it is there.
-  const setup = readFileSync(join(REPO_ROOT, "tools/marketplace/setup.mjs"), "utf8")
-  const call = setup.match(/banner\(\{[^}]*\}\)/)?.[0]
-  assert.ok(call, "setup draws the banner")
-  assert.doesNotMatch(call, /animate:\s*false/, `${call} opts out of the scan; the budget replaced that`)
-  assert.match(call, /effect:\s*true/, "setup asks for the effect")
+test("both callers animate the wordmark and play the effect", () => {
+  // Where the banner appears is asserted above; this is how. Neither caller
+  // opts out of the scan (the budget replaced that), and both run the
+  // wordmark through `ttfx` when it is there, so one wordmark has one
+  // entrance wherever it is drawn.
+  for (const module of ["cli.mjs", "setup.mjs"]) {
+    const text = readFileSync(join(REPO_ROOT, "tools/marketplace", module), "utf8")
+    const calls = text.match(/banner\(\{[^}]*\}\)/g) || []
+    assert.equal(calls.length, 1, `${module} draws the banner once`)
+    assert.doesNotMatch(calls[0], /animate:\s*false/, `${calls[0]} opts out of the scan; the budget replaced that`)
+    assert.match(calls[0], /effect:\s*true/, `${module} asks for the effect`)
+  }
 })
 
 test("a short terminal gets the finished wordmark and no cursor-up at all", async () => {

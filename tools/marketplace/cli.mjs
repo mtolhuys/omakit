@@ -25,7 +25,8 @@ import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
-import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage } from "./usage.mjs"
+import { banner, bannerEnabled } from "./banner.mjs"
+import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { renderCompletion } from "./completion.mjs"
 import { submissionContract } from "./form.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
@@ -134,6 +135,15 @@ async function cmdWatch(args) {
   spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderWatch(result))
   process.exit(result.verdict.state === "unknown" ? 2 : 0)
+}
+
+async function cmdFrontDoor() {
+  // A bare `omakit` is the front door: the wordmark, through `ttfx` when it is
+  // there, then the short list, which fits under it on any screen. The banner
+  // already says the name and the tagline, so the heading would repeat it.
+  const drew = bannerEnabled()
+  await banner({ tagline: TAGLINE, effect: true })
+  process.stdout.write(renderSummary({ heading: !drew }))
 }
 
 async function cmdSetup() {
@@ -261,11 +271,13 @@ if (command === "setup") {
       }
     }
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
+  } else if (command === undefined) {
+    await cmdFrontDoor()
   } else {
-    // A bare `omakit` is the front door and gets the short list; `omakit help`
-    // is the reference and gets all of it. Both open with the name and the
-    // tagline as one line of text: the wordmark is drawn in `setup` only.
-    process.stdout.write(command === undefined ? renderSummary() : renderUsage())
+    // `omakit help` is the reference and gets all of it, under the name and
+    // the tagline as one line of text: 53 lines scroll a wordmark off the top
+    // of the screen before anyone has read it, so it gets none.
+    process.stdout.write(renderUsage())
   }
 } else {
   // The short list on a typo, not 53 lines of reference, in the same register

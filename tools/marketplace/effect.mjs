@@ -1,10 +1,10 @@
-// The one place a text effect runs: the wordmark through `ttfx`, in
-// `omakit setup` only, and only into a terminal.
+// The one text effect: the wordmark through `ttfx`, where the wordmark is
+// drawn (a bare `omakit` and `omakit setup`), and only into a terminal.
 //
 // `ttfx` (github.com/omacom/ttfx) is the Rust port of TerminalTextEffects that
 // Omarchy's own screensaver draws with, so its vocabulary reads as native
 // here. It is an enhancement and never a requirement: absent, unexecutable or
-// over budget, `setup` looks exactly as it does without it, and the probe is a
+// over budget, the wordmark looks exactly as it does without it, and the probe is a
 // spawn that fails silently, the way the `gh` credential lookup does.
 //
 // Colour stays omakit's. Measured before this was decided, the wordmark with

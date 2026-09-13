@@ -205,7 +205,7 @@ test("no network is a failure state, not a stack trace", (t) => {
 })
 
 test("every command's bytes are the same with and without ttfx on PATH", () => {
-  // The one text effect lives in `setup` and behind a terminal; nothing else
+  // The one text effect lives behind a terminal; nothing else
   // may change by a byte because a binary happens to be installed.
   const empty = mkdtempSync(join(tmpdir(), "omakit-no-ttfx-"))
   const without = { PATH: `${empty}:${process.env.PATH}` }

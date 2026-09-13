@@ -208,11 +208,11 @@ else; the test fails on a literal interval anywhere else.
 - The wordmark scan is `bannerBudgetMs` (220ms) in total, whatever the length
   of the name: the frame delay is derived from the budget. The first version
   took 1.4 seconds, which is long enough to be in the way of someone who ran
-  `help` to read a flag. The wordmark is drawn in `setup` only now: on
-  `omakit`, `help` and `doctor` it was seven rows a person scrolled past to
-  reach the list they asked for, and on a screen too short for the reference
-  it scrolled off before anyone saw it. `setup` is a first run already
-  spending seconds on the pin, which is the one place it is not in the way.
+  `help` to read a flag. The wordmark is drawn in two places: a bare
+  `omakit`, where the short list under it fits on any screen, and `setup`, a
+  first run already spending seconds on the pin. Not on `help`, whose 53
+  lines scroll it off the top before anyone has read it, and not on
+  `doctor`, which is run to read a report.
 - The progress line has no duration of its own; it lasts as long as the work.
   Its budget is a frame rate, `progressFrameMs` (70ms). It is on stderr, it
   names the phase it is in rather than merely moving, and its label is cut to
@@ -222,17 +222,16 @@ else; the test fails on a literal interval anywhere else.
 - No command is silent while it works. `submit` and `setup` already narrated;
   `watch` (1.7s on the network), `doctor` (1.5s), `upgrade` (a fetch), `verify`
   (the baseline) and `pin` (the fetch) now do too.
-- One text effect, and only in `omakit setup`. Where `ttfx` (Omarchy's own
-  port of TerminalTextEffects, the thing its screensaver draws with) is on
-  PATH, `setup` runs the wordmark through its `expand` before the scan's
-  finished frame is painted: `effectFrameRate` (60) and `effectBudgetMs`
+- One text effect, and only where the wordmark is drawn: a bare `omakit` and
+  `omakit setup`. Where `ttfx` (Omarchy's own port of TerminalTextEffects, the
+  thing its screensaver draws with) is on PATH, the wordmark plays in through
+  its `expand` before the scan's finished frame is painted: `effectFrameRate` (60) and `effectBudgetMs`
   (1500, a hard timeout after which the process is killed) are in `MOTION`,
   and the arguments are frozen in `effect.mjs` and asserted by the read-only
   test: stdin only, no file, no path, one effect, one seed. Measured: 42
-  frames, 713ms. It lives in `setup` because that is a first run already
-  spending seconds fetching the pin, and `setup` is the only command that
-  draws the wordmark at all. Absent, unexecutable or over budget, `setup` is
-  byte for byte what it was, and every other command is byte for byte the
+  frames, 713ms. One wordmark has one entrance, so it plays on both and on
+  nothing else. Absent, unexecutable or over budget, the wordmark is byte for
+  byte what the scan draws, and every other command is byte for byte the
   same whether `ttfx` is there or not; the suite proves both with a fake
   `ttfx` on PATH.
 
@@ -282,6 +281,6 @@ runs each of these against the binary, the no-network case inside
 - No boxes, tables or rules of `─`. The one separator is a heading over a floor
   rule, the shape the wordmark has, used for the issue title, the issue body
   and the marketplace's report.
-- No spinner without a phase name, and no banner outside `setup`.
+- No spinner without a phase name, and no banner outside the front door and `setup`.
 - No colour that is not a palette index, no dimmed sentence, no backtick that
   reaches the terminal.

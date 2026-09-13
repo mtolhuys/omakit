@@ -78,9 +78,9 @@ block of lines the program actually wrote in one go. Without that check the
 replay happily assembled a frame from two different redraws, which looked like a
 wordmark with its bottom row missing and an `I` that read as a `T`.
 
-The scan is what `setup` draws when `ttfx` is not on PATH, and its shine pass
-is how `setup` ends the effect when it is; no other command draws the wordmark.
-It is on a budget (`MOTION.bannerBudgetMs` in `tools/marketplace/style.mjs`,
+The scan is what a bare `omakit` and `setup` draw when `ttfx` is not on PATH,
+and its shine pass is how they end the effect when it is; no other command
+draws the wordmark. It is on a budget (`MOTION.bannerBudgetMs` in `tools/marketplace/style.mjs`,
 220ms), so the GIF is brisk because the program is: the first version took 1.4
 seconds, which is long enough to be in the way of someone who ran `help` to
 read a flag.
@@ -89,7 +89,7 @@ read a flag.
 and DejaVu Sans Mono, which omakit itself does not (`OMAKIT_RENDER_FONTS` names
 a directory to find the font in if it is not where the distribution keeps it).
 The `setup` capture also needs `ttfx` on PATH when it is recorded, because
-`setup` runs the wordmark through it when it is there: the committed capture was
+the wordmark plays in through it when it is there: the committed capture was
 made with `ttfx 0.3.2`, with the effect and seed frozen in
 `tools/marketplace/effect.mjs`, so the same version replays the same 42 frames.
 Re-recording without it produces the scan instead, which is also real output,
