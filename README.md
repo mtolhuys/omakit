@@ -2,7 +2,7 @@
   <img src="docs/media/banner.gif" alt="omakit" width="440">
 </p>
 
-[![Built for Omarchy](https://raw.githubusercontent.com/tcballard/omarchy-badges/85f859029e236e784e7b05ada6dbe73506d07a91/badges/v1/built-for-omarchy.svg)](https://github.com/tcballard/omarchy-badges)
+[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges)
 
 **Everything knowable about an Omarchy Quattro plugin submission, checked
 before you post it:** the tree, the manifest, the form, the commit, and the
