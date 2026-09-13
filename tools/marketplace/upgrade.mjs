@@ -59,11 +59,29 @@ export const NPM_UPGRADE_ARGS = Object.freeze(["install", "--global", "--ignore-
 
 /** The newest published version, or null when the registry did not answer. */
 export async function latestOnRegistry(name) {
+  return (await registryLatest(name)).version
+}
+
+/** The registry the newest version is read from, named in doctor's evidence. */
+export const NPM_REGISTRY = "https://registry.npmjs.org"
+
+/**
+ * The newest published version, with the reason when there is none: the
+ * failure code from the one GET call site (network-unavailable,
+ * github-unavailable's npm sibling, not-found for an unpublished name), or
+ * `unpublished` when the registry answered without a version. `doctor` prints
+ * the code; `upgrade` only needs the version.
+ *
+ * @returns {Promise<{ version: string|null, error: { code: string, message: string }|null }>}
+ */
+export async function registryLatest(name) {
   try {
-    const meta = await getJson(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`)
-    return meta?.version || null
-  } catch {
-    return null
+    const meta = await getJson(`${NPM_REGISTRY}/${encodeURIComponent(name)}/latest`)
+    return meta?.version
+      ? { version: meta.version, error: null }
+      : { version: null, error: { code: "unpublished", message: "the registry answered without a version" } }
+  } catch (error) {
+    return { version: null, error: { code: error?.code || "error", message: String(error?.message || error) } }
   }
 }
 

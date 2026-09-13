@@ -42,7 +42,7 @@ import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
-import { latestOnRegistry, upgradeCommand } from "./upgrade.mjs"
+import { NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
 
 /** "git+https://github.com/owner/name.git" in package.json -> "https://github.com/owner/name", or null. */
@@ -172,13 +172,13 @@ export function pinFreshness(identity, head, changedPaths = null, { issues = nul
 
 /**
  * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null,
- *           resolveHead?: typeof defaultBranchHead, latest?: typeof latestOnRegistry }} options
+ *           resolveHead?: typeof defaultBranchHead, latest?: typeof registryLatest }} options
  *   `env` and `npmPrefix` are injectable for tests of the PATH check;
  *   `resolveHead` and `latest` for tests of the two checks that read the
  *   network, whose defaults are the tool's one HEAD resolver and its one
  *   registry read.
  */
-export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = latestOnRegistry }) {
+export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = registryLatest }) {
   // Optional: told what is being read while the network answers. Never
   // affects the result.
   const phase = onPhase || (() => {})
@@ -192,7 +192,27 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
   })
 
   const self = tool(repoRoot)
-  add("omakit.version", "info", `${self.name} ${self.version}`)
+  // What is installed and what is published, one check: the two facts are
+  // one question, "is this the current omakit", and were two lines before.
+  // Offline, the first fact alone, as information. The evidence carries both
+  // and where the second came from.
+  const versionCheck = (state, detail, action = null, latest = null, source = null) =>
+    add("omakit.version", state, detail, action, { installed: self.version, latest, source })
+  if (offline) {
+    versionCheck("info", `${self.version}; the newest published version is not checked (--offline)`)
+  } else {
+    phase("asking the npm registry for the newest published version")
+    const published = await latestVersion(self.name)
+    if (published.version) {
+      const current = published.version === self.version
+      versionCheck(current ? "ok" : "advice",
+        current ? `${self.version}, the newest published version` : `${self.version}; ${published.version} is published`,
+        current ? null : `run \`${upgradeCommand(repoRoot, self.name)}\``,
+        published.version, NPM_REGISTRY)
+    } else {
+      versionCheck("unknown", `${self.version}; could not read the npm registry (${published.error?.code || "error"})`)
+    }
+  }
 
   // Reachable as a bare command, or the one line that makes it so for this
   // install (path-hint.mjs). Measured: an npm prefix whose bin is not on PATH
@@ -241,16 +261,6 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
         { pinCommit: identity.commit, marketplaceHead: null, branch: null })
     }
 
-    phase("asking the npm registry for the newest published version")
-    const latest = await latestVersion(self.name)
-    if (latest) {
-      const current = latest === self.version
-      add("omakit.latest", current ? "ok" : "advice",
-        current ? `${latest} is the newest published version` : `${latest} is published, this is ${self.version}`,
-        current ? null : upgradeCommand(repoRoot, self.name))
-    } else {
-      add("omakit.latest", "unknown", "the npm registry did not answer, or this version is unpublished")
-    }
   }
 
   // Where the credential comes from, said out loud. Borrowing someone's `gh`

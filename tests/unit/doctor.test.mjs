@@ -104,7 +104,7 @@ test("doctor reads the issues URL from package.json and HEAD unreadable stays un
   assert.doesNotMatch(source, /github\.com\/mtolhuys/, "doctor.mjs does not type the repository")
 
   // Unreachable HEAD: unknown, as before, and no paths are named.
-  const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => null })
+  const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }) })
   const check = result.checks.find((entry) => entry.id === "pin.freshness")
   assert.equal(check.state, "unknown")
   assert.match(check.detail, /could not read the marketplace's HEAD \(network-unavailable\)/)
@@ -172,4 +172,51 @@ test("each path in PIN_PATHS is compared by object id between the pin and HEAD, 
   assert.deepEqual(await changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async (url) => ({ tree: gone[url.split("/git/trees/")[1]] }) }), ["/site/catalog.json"])
   await assert.rejects(() => changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async () => ({ message: "Not Found" }) }), /did not read as a tree/)
   await assert.rejects(() => changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async () => { throw Object.assign(new Error("no"), { code: "network-unavailable" }) } }), /no/)
+})
+
+// --- one version check ----------------------------------------------------------
+// Measured on 0.1.8: `omakit.version` said "omakit 0.1.8" as information and
+// `omakit.latest` said "0.1.8 is the newest published version" six lines
+// later; one question, two answers. Now it is one check with both facts.
+
+const REGISTRY = "https://registry.npmjs.org"
+const installed = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version
+const quiet = { onPhase: () => {}, env: { ...process.env }, resolveHead: async () => ({ commit: MARKETPLACE_PIN.commit, branch: "main" }) }
+const versionCheck = async (latest) => (await doctor({ repoRoot: REPO_ROOT, ...quiet, latest })).checks.find((check) => check.id === "omakit.version")
+
+test("omakit.version: current and newest is ok, behind is a note with the upgrade, unreachable is unknown, and both facts are in the JSON", async () => {
+  const current = await versionCheck(async () => ({ version: installed, error: null }))
+  assert.equal(current.state, "ok")
+  assert.equal(current.detail, `${installed}, the newest published version`)
+  assert.equal(current.action, null)
+  assert.deepEqual(current.evidence, { installed, latest: installed, source: REGISTRY })
+
+  const behind = await versionCheck(async () => ({ version: "9.9.9", error: null }))
+  assert.equal(behind.state, "advice")
+  assert.equal(behind.detail, `${installed}; 9.9.9 is published`)
+  assert.equal(behind.action, "run `omakit upgrade`")
+  assert.deepEqual(behind.evidence, { installed, latest: "9.9.9", source: REGISTRY })
+
+  const unreachable = await versionCheck(async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }))
+  assert.equal(unreachable.state, "unknown")
+  assert.equal(unreachable.detail, `${installed}; could not read the npm registry (network-unavailable)`)
+  assert.equal(unreachable.action, null)
+  assert.deepEqual(unreachable.evidence, { installed, latest: null, source: null })
+
+  const offline = (await doctor({ repoRoot: REPO_ROOT, ...quiet, offline: true, latest: async () => { throw new Error("must not read the registry offline") } })).checks
+  assert.equal(offline[0].id, "omakit.version", "first, offline or not")
+  assert.equal(offline[0].state, "info")
+  assert.equal(offline[0].detail, `${installed}; the newest published version is not checked (--offline)`)
+  assert.deepEqual(offline[0].evidence, { installed, latest: null, source: null })
+  assert.ok(!offline.some((check) => check.id === "omakit.latest"), "there is no second version check")
+})
+
+test("the registry read keeps the failure code for doctor, and upgrade still gets only the version", async () => {
+  // The GET call site's own code, not a guess: an unpublished name is
+  // not-found, no network is network-unavailable.
+  const { registryLatest, latestOnRegistry } = await import("../../tools/marketplace/upgrade.mjs")
+  assert.equal(typeof registryLatest, "function")
+  assert.equal(typeof latestOnRegistry, "function")
+  const source = readFileSync(join(REPO_ROOT, "tools/marketplace/upgrade.mjs"), "utf8")
+  assert.match(source, /return \(await registryLatest\(name\)\)\.version/, "one read, two callers")
 })
