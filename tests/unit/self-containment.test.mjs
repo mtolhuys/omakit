@@ -140,13 +140,15 @@ test("omakit reads no environment variable of its own", () => {
   // README: "omakit reads no environment variable of its own". The pin follows
   // XDG_CACHE_HOME, the completion install follows XDG and $SHELL, and colour
   // follows NO_COLOR, FORCE_COLOR and TERM: every one of those is somebody
-  // else's convention and every user already has it. The exceptions below are
-  // process-internal handoffs from cli.mjs to tests/parity/run.mjs and are
-  // never read from a user's shell.
-  const internal = new Set(["OMAKIT_ROOT", "PARITY_COUNT", "PARITY_OFFSET", "PARITY_OUT", "PARITY_OUT_EXPLICIT"])
+  // else's convention and every user already has it. No exemptions: until
+  // 0.1.8 this test excused OMAKIT_ROOT and four PARITY_* names as an
+  // internal handoff from cli.mjs to tests/parity/run.mjs, which made the
+  // rule "no OMAKIT_* variable a user sets" by convention rather than the
+  // rule as written. The runner now takes arguments.
   for (const { path, text } of sources) {
-    for (const [, name] of text.matchAll(/\benv\.([A-Z][A-Z0-9_]*)|process\.env\[["']([A-Z][A-Z0-9_]*)["']\]/g)) {
-      if (name?.startsWith("OMAKIT_") && !internal.has(name)) assert.fail(`${path} reads ${name}: omakit has no environment variable of its own`)
+    for (const match of text.matchAll(/\benv\.([A-Z][A-Z0-9_]*)|process\.env\[["']([A-Z][A-Z0-9_]*)["']\]/g)) {
+      const name = match[1] || match[2]
+      if (name?.startsWith("OMAKIT_") || name?.startsWith("PARITY_")) assert.fail(`${path} reads ${name}: omakit has no environment variable of its own`)
     }
   }
 })

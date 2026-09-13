@@ -30,7 +30,6 @@ import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, colourEnabled, GUTTER, labelled, mark, styler, wrap } from "./style.mjs"
 import { omakitCacheDir } from "./paths.mjs"
-import { parityOutput } from "./parity-output.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -239,23 +238,27 @@ async function cmdVerify(args) {
 }
 
 async function cmdParity(args) {
-  const count = option(args, "--count")
-  const offset = option(args, "--offset")
-  if (count) process.env.PARITY_COUNT = count
-  if (offset) process.env.PARITY_OFFSET = offset
+  // The runner takes everything as arguments. Before 0.1.8 this handed over
+  // four PARITY_* variables and an OMAKIT_ROOT through the process
+  // environment, and OMAKIT_ROOT was the one OMAKIT_* name in the tree.
+  let ok = false
   try {
-    const out = option(args, "--out")
-    process.env.PARITY_OUT = parityOutput({ repoRoot: ROOT, out })
-    if (out) process.env.PARITY_OUT_EXPLICIT = "1"
+    // Imported here, not at the top: the runner ships with the package, but
+    // no other command needs it, and a copy of bin/ and tools/ alone runs
+    // everything else.
+    const { runParity } = await import("../../tests/parity/run.mjs")
+    const count = option(args, "--count")
+    const offset = option(args, "--offset")
+    ;({ ok } = await runParity({
+      repoRoot: ROOT,
+      count: count ? Number(count) : undefined,
+      offset: offset ? Number(offset) : undefined,
+      out: option(args, "--out") || null,
+    }))
   } catch (error) {
     failFrom(error)
   }
-  process.env.OMAKIT_ROOT = ROOT
-  try {
-    await import("../../tests/parity/run.mjs")
-  } catch (error) {
-    failFrom(error)
-  }
+  process.exit(ok ? 0 : 1)
 }
 
 const [command, ...rest] = process.argv.slice(2)
