@@ -10,8 +10,8 @@
       "pace": 14,
       "omit": [
         [
-          95,
-          128,
+          101,
+          134,
           "34 lines of the marketplace's own baseline report, left out for length"
         ]
       ],
@@ -25,7 +25,7 @@
           220
         ],
         [
-          100,
+          106,
           200
         ],
         [

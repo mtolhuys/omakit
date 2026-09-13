@@ -9,7 +9,16 @@ in frame count and bytes, so the versions are recorded here: `banner`, `setup`
 and `watch` with the versions on the recording desktop on 2026-09-12;
 `submit` re-recorded on 2026-09-13 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg
 4.4.2) after `tree.agent-control` became advisory and the baseline figures
-became the pin's, because the GIF has to show what the tool prints.
+became the pin's, because the GIF has to show what the tool prints; and
+`submit` again later on 2026-09-13 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg
+n9.0.1) after `identity.available` began naming where its registry came from.
+Measured at that re-recording: the same capture and the same Pillow and
+FreeType, with ffmpeg n9.0.1 instead of 4.4.2, re-rendered the previous
+`submit.gif` to 797,813 bytes against the committed 792,201, so the ffmpeg
+version is part of the record and not decoration. `watch.gif` and `setup.gif`
+were left alone at that point because nothing they print had changed: `watch`
+does not read the registry, and the `setup` capture was taken with `omakit`
+already on PATH, where no install hint prints.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
