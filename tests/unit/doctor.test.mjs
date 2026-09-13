@@ -1,9 +1,12 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { changedPinPaths, pinFreshness } from "../../tools/marketplace/doctor.mjs"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { changedPinPaths, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
 import { MARKETPLACE_PIN, PIN_PATHS } from "../../tools/marketplace/pin.mjs"
-import { requirePinForTests } from "./helpers.mjs"
+import { LIVE_PATHS } from "../../tools/marketplace/registry.mjs"
+import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const pinned = { commit: "1".repeat(40) }
 
@@ -11,8 +14,8 @@ test("freshness JSON carries both full commits without changing the human detail
   const head = { commit: "2".repeat(40), branch: "main" }
   const check = pinFreshness(pinned, head)
 
-  assert.equal(check.state, "advice")
-  assert.match(check.detail, /the pin is 1111111;.*main branch is now at 2222222/)
+  assert.equal(check.state, "advice", "HEAD moved and the paths were not compared, so it cannot say the pin is fine")
+  assert.match(check.detail, /^pin 1111111; marketplace main at 2222222; the paths omakit reads were not compared$/)
   assert.deepEqual(check.evidence, {
     pinCommit: "1".repeat(40),
     marketplaceHead: "2".repeat(40),
@@ -33,25 +36,79 @@ test("a current pin is explicit machine evidence", () => {
   })
 })
 
-test("a pin that is behind names what moved, not only that something did", () => {
-  // Measured 2026-09-13 (docs/MEASUREMENTS.md M7): 4,201 of 4,293 commits in
-  // 30 days touched only registry.json, so "behind" alone is true of every
-  // run and says nothing about whether the code or the rules moved.
-  const head = { commit: "2".repeat(40), branch: "main" }
-  const moved = pinFreshness(pinned, head, ["/registry.json", "/site/catalog.json"])
-  assert.equal(moved.state, "advice")
-  assert.match(moved.detail, /the pin is 1111111;.*main branch is now at 2222222; changed since the pin: \/registry\.json, \/site\/catalog\.json$/)
-  assert.deepEqual(moved.evidence.changedPaths, ["/registry.json", "/site/catalog.json"])
-  assert.match(moved.action, /docs\/UPSTREAM_CONTRACT\.md has the procedure/, "the remedy line stays what it is")
+// --- what moved, split by what omakit reads live ------------------------------
+// Measured on 0.1.7: with only /registry.json and /site/catalog.json changed
+// since the pin, doctor printed `▓ note pin.freshness` and pointed a user at
+// docs/UPSTREAM_CONTRACT.md, a file the npm package does not ship. Those two
+// files are read live from HEAD (registry.mjs LIVE_PATHS), so the pin was
+// behind in nothing the tool uses. The split below uses that same list.
 
-  const same = pinFreshness(pinned, head, [])
-  assert.equal(same.state, "advice")
-  assert.match(same.detail, /now at 2222222; every path omakit reads is unchanged since the pin$/)
-  assert.deepEqual(same.evidence.changedPaths, [])
+const head = { commit: "2".repeat(40), branch: "main" }
+const issues = "https://github.com/mtolhuys/omakit"
 
-  const current = pinFreshness(pinned, { commit: pinned.commit, branch: "main" }, [])
+test("only the data files moved, or nothing did: ok, no action, and the detail says they are read live", () => {
+  const both = pinFreshness(pinned, head, ["/registry.json", "/site/catalog.json"], { issues })
+  assert.equal(both.state, "ok")
+  assert.equal(both.action, null)
+  assert.equal(both.detail, "pin 1111111; marketplace main at 2222222; only registry.json and site/catalog.json moved, and those are read live")
+  assert.deepEqual(both.evidence, {
+    pinCommit: pinned.commit, marketplaceHead: head.commit, branch: "main",
+    changedPaths: ["/registry.json", "/site/catalog.json"], readLive: ["/registry.json", "/site/catalog.json"], pinned: [],
+  })
+  assert.deepEqual([...LIVE_PATHS], ["registry.json", "site/catalog.json"], "the split is registry.mjs's list, not a second one")
+
+  const one = pinFreshness(pinned, head, ["/registry.json"], { issues })
+  assert.equal(one.state, "ok")
+  assert.equal(one.detail, "pin 1111111; marketplace main at 2222222; only registry.json moved, and that is read live")
+
+  const nothing = pinFreshness(pinned, head, [], { issues })
+  assert.equal(nothing.state, "ok")
+  assert.equal(nothing.action, null)
+  assert.equal(nothing.detail, "pin 1111111; marketplace main at 2222222; nothing omakit reads moved")
+  assert.deepEqual(nothing.evidence.changedPaths, [])
+  assert.deepEqual(nothing.evidence.readLive, [])
+  assert.deepEqual(nothing.evidence.pinned, [])
+
+  const current = pinFreshness(pinned, { commit: pinned.commit, branch: "main" }, [], { issues })
   assert.equal(current.state, "ok")
+  assert.equal(current.detail, "the pin is the marketplace's current main-branch HEAD")
   assert.deepEqual(current.evidence.changedPaths, [])
+})
+
+test("a pinned path moved: note, the paths named, and an action for a user, never the maintainer's procedure", () => {
+  const code = pinFreshness(pinned, head, ["/scripts/", "/registry.json"], { issues })
+  assert.equal(code.state, "advice")
+  assert.equal(code.detail, "pin 1111111; marketplace main at 2222222; changed since the pin: /scripts/ (registry.json moved too, and that is read live)")
+  assert.equal(code.action, "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue at https://github.com/mtolhuys/omakit/issues naming the paths above.")
+  assert.deepEqual(code.evidence.changedPaths, ["/scripts/", "/registry.json"])
+  assert.deepEqual(code.evidence.readLive, ["/registry.json"])
+  assert.deepEqual(code.evidence.pinned, ["/scripts/"])
+  assert.doesNotMatch(`${code.detail} ${code.action}`, /UPSTREAM_CONTRACT|parity|evidence/, "the procedure is the maintainer's and stays in the docs")
+
+  const forms = pinFreshness(pinned, head, ["/.github/ISSUE_TEMPLATE/"], { issues })
+  assert.equal(forms.state, "advice")
+  assert.equal(forms.detail, "pin 1111111; marketplace main at 2222222; changed since the pin: /.github/ISSUE_TEMPLATE/")
+  assert.deepEqual(forms.evidence.readLive, [])
+  assert.deepEqual(forms.evidence.pinned, ["/.github/ISSUE_TEMPLATE/"])
+
+  // Without a repository URL to read, the issue is still asked for, nowhere in particular.
+  const nowhere = pinFreshness(pinned, head, ["/scripts/"])
+  assert.equal(nowhere.action, "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue naming the paths above.")
+})
+
+test("doctor reads the issues URL from package.json and HEAD unreadable stays unknown", async () => {
+  // The URL is read, never typed: package.json's repository field is the one home.
+  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
+  assert.match(pkg.repository.url, /github\.com\/mtolhuys\/omakit/)
+  const source = readFileSync(join(REPO_ROOT, "tools/marketplace/doctor.mjs"), "utf8")
+  assert.doesNotMatch(source, /github\.com\/mtolhuys/, "doctor.mjs does not type the repository")
+
+  // Unreachable HEAD: unknown, as before, and no paths are named.
+  const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => null })
+  const check = result.checks.find((entry) => entry.id === "pin.freshness")
+  assert.equal(check.state, "unknown")
+  assert.match(check.detail, /could not read the marketplace's HEAD \(network-unavailable\)/)
+  assert.deepEqual(check.evidence, { pinCommit: MARKETPLACE_PIN.commit, marketplaceHead: null, branch: null })
 })
 
 /** The pin's own object ids, read the way doctor reads them. */

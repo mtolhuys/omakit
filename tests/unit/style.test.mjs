@@ -306,7 +306,7 @@ const doctor = {
     { id: "omakit.version", state: "info", detail: "omakit 0.1.0", action: null },
     { id: "node", state: "ok", detail: "node 22.23.2 (needs >=22)", action: null },
     { id: "pin.checkout", state: "problem", detail: "no pinned marketplace checkout at /home/someone/.cache/omakit/marketplace. Every rule omakit checks is read from that checkout.", action: "omakit pin" },
-    { id: "pin.freshness", state: "advice", detail: "the pin is 38060f8; the marketplace's main branch is now at 692f90b", action: "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you." },
+    { id: "pin.freshness", state: "advice", detail: "pin 38060f8; marketplace main at 692f90b; changed since the pin: /scripts/ (registry.json moved too, and that is read live)", action: "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue at https://github.com/mtolhuys/omakit/issues naming the paths above." },
     { id: "omakit.latest", state: "unknown", detail: "the npm registry did not answer, or this version is unpublished", action: null },
     { id: "github.auth", state: "ok", detail: "read-only, from your `gh` login (gh version 2.100.0); omakit stores nothing", action: null },
   ],

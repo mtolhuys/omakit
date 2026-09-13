@@ -231,9 +231,13 @@ the cache. Bumping it changes where the submission contract and the baseline
 policy are read from, and the procedure in
 [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) ends in re-proving
 transport parity and committing the evidence. `omakit doctor` tells you when the
-pin is behind the marketplace's current branch, names which of the paths omakit
-reads actually changed (about 140 commits a day touch only `registry.json`, so
-"behind" alone would be true of every run), and then leaves it alone. That the
+pin is behind in something omakit reads from it, names which paths changed,
+and then leaves it alone: `registry.json` and `site/catalog.json` moving is
+fine, because those are read live from HEAD (about 140 commits a day touch
+only `registry.json`, so "behind" alone would be true of every run); the
+marketplace's code or forms moving is a note, and what you can do about it
+is run `omakit upgrade`, since a newer omakit may already carry the new pin,
+and otherwise open an issue naming the paths. That the
 pin can go stale unnoticed is the same defect class `omakit watch` reports, so it
 would be poor form to hide it here.
 

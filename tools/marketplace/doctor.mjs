@@ -13,33 +13,51 @@
 // contract is read from, and the procedure in docs/UPSTREAM_CONTRACT.md requires
 // re-proving transport parity and committing the evidence afterwards. An
 // `upgrade` that quietly advanced the pin would break the one guarantee this
-// tool sells. So doctor reports that the pin is behind and prints the procedure.
+// tool sells. So doctor reports that the pin is behind, and that is all it
+// does: the procedure is the maintainer's, it lives in that document and in
+// this comment, and it is never printed, because the person running doctor
+// is a user of a package that does not even ship docs/. What a user can do
+// is run `omakit upgrade`, since a newer omakit may already carry the new
+// pin, and otherwise open an issue naming the paths that moved.
 //
 // That the pin goes stale unnoticed is, of course, exactly the defect class
 // `omakit watch` exists to report. It would be poor form not to apply it here.
 //
 // And "behind" is not the same as "behind in something omakit reads". Measured
 // on 2026-09-13 (docs/MEASUREMENTS.md M7): 4,201 of the marketplace's 4,293
-// commits in 30 days touched only registry.json, which omakit now reads live,
+// commits in 30 days touched only registry.json, which omakit reads live,
 // while nothing under scripts/ or .github/ISSUE_TEMPLATE/ changed since the
 // pin. A doctor that only said "behind" would say it about every run. So it
 // compares each path in PIN_PATHS between the pin and HEAD, by tree or blob
-// id, and names the ones that moved.
+// id, and splits the ones that moved by the same list registry.mjs reads
+// live from: the two data files, which a moved HEAD cannot make stale, and
+// everything else, which only a new pin can carry. Measured on 0.1.7: with
+// only registry.json and site/catalog.json moved, doctor said `note` and
+// pointed a user at docs/UPSTREAM_CONTRACT.md, though the pin was behind in
+// nothing the tool uses.
 
 import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
+import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
 import { latestOnRegistry, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
 
+/** "git+https://github.com/owner/name.git" in package.json -> "https://github.com/owner/name", or null. */
+function repositoryPage(repository) {
+  const url = typeof repository === "string" ? repository : repository?.url
+  const match = String(url || "").match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/)
+  return match ? `https://github.com/${match[1]}/${match[2]}` : null
+}
+
 function tool(repoRoot) {
   try {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
-    return { name: pkg.name, version: pkg.version, engines: pkg.engines?.node || null }
+    return { name: pkg.name, version: pkg.version, engines: pkg.engines?.node || null, repository: repositoryPage(pkg.repository) }
   } catch {
-    return { name: "omakit", version: "unknown", engines: null }
+    return { name: "omakit", version: "unknown", engines: null, repository: null }
   }
 }
 
@@ -102,40 +120,65 @@ export async function changedPinPaths({ pinDir, headCommit, pinCommit = MARKETPL
   return changed
 }
 
+/** A PIN_PATHS pattern as a path: "/site/catalog.json" -> "site/catalog.json". */
+const asPath = (pattern) => pattern.replace(/^\/|\/$/g, "")
+
+/** "a", "a and b", "a, b and c". */
+function list(items) {
+  return items.length < 3 ? items.join(" and ") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+}
+
 /**
- * Full pin evidence for machines; human output deliberately keeps short
- * hashes. `changedPaths` is the answer from changedPinPaths(); null when the
- * comparison was not made, and then the detail says only that HEAD moved.
+ * The pin against the marketplace's HEAD, for a user. `changedPaths` is the
+ * answer from changedPinPaths(), split by LIVE_PATHS into `readLive`, the
+ * data files a moved HEAD cannot make stale because registry.mjs reads them
+ * from HEAD, and `pinned`, everything only a new pin can carry. Only the
+ * second set is worth a note; the action for it is a user's, not the
+ * maintainer's. Null when the comparison was not made, and then the detail
+ * says only that HEAD moved. Full commits in the evidence; short ones in
+ * the detail. `issues` is where a user reports a pinned path that moved,
+ * read from package.json by the caller.
  */
-export function pinFreshness(identity, head, changedPaths = null) {
+export function pinFreshness(identity, head, changedPaths = null, { issues = null } = {}) {
   const current = head.commit === identity.commit
   const branch = head.branch || "default"
+  const changed = current ? [] : changedPaths || []
+  const readLive = changed.filter((pattern) => LIVE_PATHS.includes(asPath(pattern)))
+  const pinned = changed.filter((pattern) => !LIVE_PATHS.includes(asPath(pattern)))
+  const where = `pin ${identity.commit.slice(0, 7)}; marketplace ${branch} at ${head.commit.slice(0, 7)}`
   const moved = changedPaths === null
-    ? ""
-    : changedPaths.length
-      ? `; changed since the pin: ${changedPaths.join(", ")}`
-      : "; every path omakit reads is unchanged since the pin"
+    ? "; the paths omakit reads were not compared"
+    : pinned.length
+      ? `; changed since the pin: ${pinned.join(", ")}${readLive.length ? ` (${list(readLive.map(asPath))} moved too, and ${readLive.length === 1 ? "that is" : "those are"} read live)` : ""}`
+      : readLive.length
+        ? `; only ${list(readLive.map(asPath))} moved, and ${readLive.length === 1 ? "that is" : "those are"} read live`
+        : "; nothing omakit reads moved"
+  const stale = !current && (changedPaths === null || pinned.length > 0)
   return {
     id: "pin.freshness",
-    state: current ? "ok" : "advice",
-    detail: current
-      ? `the pin is the marketplace's current ${branch}-branch HEAD`
-      : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${branch} branch is now at ${head.commit.slice(0, 7)}${moved}`,
-    action: current ? null : "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you.",
+    state: stale ? "advice" : "ok",
+    detail: current ? `the pin is the marketplace's current ${branch}-branch HEAD` : `${where}${moved}`,
+    action: stale
+      ? `A newer omakit may already carry the new pin: run \`omakit upgrade\`. If it does not, open an issue${issues ? ` at ${issues}/issues` : ""} naming the paths above.`
+      : null,
     evidence: {
       pinCommit: identity.commit,
       marketplaceHead: head.commit,
       branch,
-      ...(changedPaths === null ? {} : { changedPaths: current ? [] : changedPaths }),
+      ...(changedPaths === null ? {} : { changedPaths: changed, readLive, pinned }),
     },
   }
 }
 
 /**
- * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null }} options
- *   `env` and `npmPrefix` are injectable for tests of the PATH check.
+ * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null,
+ *           resolveHead?: typeof defaultBranchHead, latest?: typeof latestOnRegistry }} options
+ *   `env` and `npmPrefix` are injectable for tests of the PATH check;
+ *   `resolveHead` and `latest` for tests of the two checks that read the
+ *   network, whose defaults are the tool's one HEAD resolver and its one
+ *   registry read.
  */
-export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix }) {
+export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = latestOnRegistry }) {
   // Optional: told what is being read while the network answers. Never
   // affects the result.
   const phase = onPhase || (() => {})
@@ -185,13 +228,13 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
   if (!offline && identity) {
     phase("reading the marketplace's current default-branch HEAD")
     try {
-      const head = await defaultBranchHead(MARKETPLACE_PIN.repository)
+      const head = await resolveHead(MARKETPLACE_PIN.repository)
       let changedPaths = []
       if (head.commit !== identity.commit) {
         phase("comparing each path omakit reads between the pin and HEAD")
         changedPaths = await changedPinPaths({ pinDir: dir, headCommit: head.commit, pinCommit: identity.commit })
       }
-      checks.push(pinFreshness(identity, head, changedPaths))
+      checks.push(pinFreshness(identity, head, changedPaths, { issues: self.repository }))
     } catch (error) {
       add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`,
         error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null,
@@ -199,7 +242,7 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     }
 
     phase("asking the npm registry for the newest published version")
-    const latest = await latestOnRegistry(self.name)
+    const latest = await latestVersion(self.name)
     if (latest) {
       const current = latest === self.version
       add("omakit.latest", current ? "ok" : "advice",
