@@ -4,9 +4,10 @@
 // checkout, because the two things a person might want "upgraded" here are not
 // the same thing and only one of them may ever move on its own.
 //
-// The tool version belongs to the installer: Git for a checkout, npm for its
-// package, and pacman for the Arch package. A CLI that fetches and executes its
-// own replacement is the supply-chain shape this repository warns about.
+// The tool version belongs to the installer: `omakit upgrade` hands it to Git
+// for a checkout and to npm for its package, and names pacman for a distro
+// package. A CLI that fetches and executes its own replacement is the
+// supply-chain shape this repository warns about.
 //
 // The pin must not move by itself. Bumping it changes where the submission
 // contract is read from, and the procedure in docs/UPSTREAM_CONTRACT.md requires
@@ -22,7 +23,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
-import { upgradeCommand } from "./upgrade.mjs"
+import { latestOnRegistry, upgradeCommand } from "./upgrade.mjs"
 
 function tool(repoRoot) {
   try {
@@ -36,15 +37,6 @@ function tool(repoRoot) {
 function version(command, args = ["--version"]) {
   try {
     return execFileSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n")[0]
-  } catch {
-    return null
-  }
-}
-
-async function latestOnRegistry(name) {
-  try {
-    const meta = await getJson(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`)
-    return meta?.version || null
   } catch {
     return null
   }

@@ -3,11 +3,11 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { installKind, upgrade, upgradeCommand, isExpectedRemote, REPOSITORY } from "../../tools/marketplace/upgrade.mjs"
+import { installKind, upgrade, upgradeCommand, isExpectedRemote, NPM_UPGRADE_ARGS, REPOSITORY } from "../../tools/marketplace/upgrade.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 function repo(remote = REPOSITORY) {
@@ -40,19 +40,97 @@ test("the same repository in any spelling is accepted, anything else is not", ()
   }
 })
 
-test("it refuses a checkout that is not a Git checkout, and names the package route", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "omakit-plain-"))
-  mkdirSync(join(dir, "tools"), { recursive: true })
+/**
+ * An npm install as npm lays it out: <root>/node_modules/omakit with a
+ * package.json, and a fake `npm` on PATH that answers `root --global` with
+ * that root and, on install, rewrites the version to whatever spec it got and
+ * records its argv. Nothing here touches the network or the real npm.
+ */
+function npmInstall(version) {
+  const home = mkdtempSync(join(tmpdir(), "omakit-npm-"))
+  const root = join(home, "lib/node_modules")
+  const pkg = join(root, "omakit")
+  mkdirSync(join(pkg, "tools"), { recursive: true })
+  writeFileSync(join(pkg, "package.json"), JSON.stringify({ name: "omakit", version }) + "\n")
+  const bin = join(home, "bin")
+  mkdirSync(bin)
+  writeFileSync(join(bin, "npm"), [
+    "#!/bin/sh",
+    `printf '%s\\n' "$*" >> "${join(home, "npm-argv")}"`,
+    `if [ "$1" = "root" ]; then echo "${root}"; exit 0; fi`,
+    "if [ \"$1\" = \"install\" ]; then",
+    "  for arg in \"$@\"; do case \"$arg\" in omakit@*) v=${arg#omakit@};; esac; done",
+    `  printf '{"name":"omakit","version":"%s"}\\n' "$v" > "${join(pkg, "package.json")}"`,
+    "  exit 0",
+    "fi",
+    "exit 2",
+  ].join("\n") + "\n")
+  chmodSync(join(bin, "npm"), 0o755)
+  return {
+    pkg,
+    root,
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    argv: () => { try { return readFileSync(join(home, "npm-argv"), "utf8").trim().split("\n") } catch { return [] } },
+  }
+}
+
+async function withPath(env, fn) {
+  const saved = process.env.PATH
+  process.env.PATH = env.PATH
+  try { return await fn() } finally { process.env.PATH = saved }
+}
+
+test("an npm install is upgraded through the npm that owns it, at the exact version the registry named", async () => {
+  const fake = npmInstall("0.1.0")
   const io = collect()
-  const result = await upgrade({ repoRoot: dir, stream: io.stream })
-  assert.equal(result.ok, false)
-  assert.match(io.text(), /npm package install/)
-  assert.match(io.text(), /npm i -g omakit@latest/)
+  const result = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: io.stream, latest: async () => "0.1.1" }))
+  assert.equal(result.ok, true, io.text())
+  assert.deepEqual({ from: result.from, to: result.to }, { from: "0.1.0", to: "0.1.1" })
+  assert.match(io.text(), /0\.1\.0 to 0\.1\.1, through the npm that installed it/)
+  assert.deepEqual(fake.argv(), ["root --global", `${NPM_UPGRADE_ARGS.join(" ")} omakit@0.1.1`], "npm is called with the frozen arguments and the exact version")
+  assert.doesNotMatch(io.text(), /sudo/)
+  for (const line of io.text().split("\n")) assert.ok(line.length <= 80, `${line.length} columns: ${line}`)
 })
 
-test("package installs name the package manager that owns them", () => {
+test("an npm install that is already current is left alone, and --dry-run applies nothing", async () => {
+  const fake = npmInstall("0.1.0")
+  const io = collect()
+  const current = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: io.stream, latest: async () => "0.1.0" }))
+  assert.deepEqual(current, { ok: true, changed: false, version: "0.1.0" })
+  assert.match(io.text(), /already current at 0\.1\.0/)
+  const dry = collect()
+  const result = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: dry.stream, dryRun: true, latest: async () => "0.1.1" }))
+  assert.deepEqual(result, { ok: true, changed: false, version: "0.1.0", available: "0.1.1" })
+  assert.match(dry.text(), /0\.1\.1 is published, this is 0\.1\.0; not applied \(--dry-run\)/)
+  assert.match(dry.text(), new RegExp(`npm ${NPM_UPGRADE_ARGS.join(" ")} omakit@0\\.1\\.1`), "the command it would run is printed whole")
+  assert.deepEqual(fake.argv(), ["root --global", "root --global"], "npm was asked where it installs, and nothing else")
+})
+
+test("an npm install that the npm on PATH does not own is refused, with the path named", async () => {
+  const fake = npmInstall("0.1.0")
+  const elsewhere = join(mkdtempSync(join(tmpdir(), "omakit-elsewhere-")), "node_modules/omakit")
+  mkdirSync(elsewhere, { recursive: true })
+  writeFileSync(join(elsewhere, "package.json"), JSON.stringify({ name: "omakit", version: "0.1.0" }) + "\n")
+  const io = collect()
+  const result = await withPath(fake.env, () => upgrade({ repoRoot: elsewhere, stream: io.stream, latest: async () => "0.1.1" }))
+  assert.equal(result.ok, false)
+  assert.match(io.text(), /installed at[\s\S]*elsewhere[\s\S]*node_modules\/omakit/)
+  assert.match(io.text(), /→ npm install --global omakit@latest/)
+  assert.deepEqual(fake.argv(), ["root --global"], "nothing was installed")
+})
+
+test("an npm install with no registry answer is a refusal with a remedy, not a guess", async () => {
+  const fake = npmInstall("0.1.0")
+  const io = collect()
+  const result = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: io.stream, latest: async () => null }))
+  assert.equal(result.ok, false)
+  assert.match(io.text(), /registry did not answer/)
+  assert.match(io.text(), /Connect to the network/)
+})
+
+test("package installs name the command that updates them", () => {
   assert.equal(installKind("/usr/lib/node_modules/omakit"), "npm")
-  assert.equal(upgradeCommand("/usr/lib/node_modules/omakit"), "npm i -g omakit@latest")
+  assert.equal(upgradeCommand("/usr/lib/node_modules/omakit"), "omakit upgrade")
   assert.equal(installKind("/usr/lib/omakit"), "distro")
   assert.equal(upgradeCommand("/usr/lib/omakit"), "sudo pacman -Syu omakit")
   assert.equal(installKind(REPO_ROOT), "git")

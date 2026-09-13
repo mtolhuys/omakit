@@ -9,6 +9,7 @@ import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import { GH_ARGS } from "../../tools/marketplace/github.mjs"
+import { NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
 import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -93,6 +94,28 @@ test("ttfx is only ever handed the wordmark on stdin, with frozen arguments", ()
       const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
       assert.doesNotMatch(code, /["'`]ttfx["'`]/, `${path} names the ttfx binary; only effect.mjs may spawn it`)
     }
+  }
+})
+
+test("npm is spawned only by upgrade, with frozen arguments, at an exact version, never with sudo", () => {
+  // `omakit upgrade` on an npm install hands the update to the npm on PATH.
+  // The arguments are frozen: a global install of one package spec, scripts
+  // ignored, and the spec is `<name>@<version>` with the version the registry
+  // just named, never `latest`, so the printed command is the executed one.
+  assert.deepEqual([...NPM_UPGRADE_ARGS], ["install", "--global", "--ignore-scripts", "--no-fund", "--no-audit"])
+  for (const { path, text } of sources) {
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.doesNotMatch(code, /\w+\s*\(\s*["'`]sudo["'`]/, `${path} spawns sudo`)
+    const spawns = [...code.matchAll(/\w+\s*\(\s*["'`]npm["'`]\s*,\s*(\[[^\]]*\])/g)].map((match) => match[1].replace(/\s+/g, ""))
+    if (path !== "tools/marketplace/upgrade.mjs") {
+      assert.deepEqual(spawns, [], `${path} spawns npm; only upgrade.mjs may`)
+      continue
+    }
+    assert.ok(spawns.length >= 1, "upgrade.mjs spawns npm")
+    for (const args of spawns) {
+      assert.match(args, /^\[\.\.\.NPM_UPGRADE_ARGS,spec\]$|^\["root","--global"\]$/, `upgrade.mjs spawns npm as ${args}`)
+    }
+    assert.doesNotMatch(code, /@latest["'`]\s*\]|`\$\{name\}@latest`\s*\]/, "the executed spec is never @latest")
   }
 })
 

@@ -16,13 +16,16 @@
 // against.
 //
 // It is not a self-updater in the sense this repository warns other people
-// about. It does not fetch and execute arbitrary code: it fast-forwards a Git
-// checkout the user cloned themselves, from the remote they cloned it from, and
-// it refuses if any of that is not true.
+// about. It does not fetch and execute arbitrary code: it hands the update to
+// the installer that put the tool here. A Git checkout is fast-forwarded from
+// the remote it was cloned from; an npm install is reinstalled by the `npm` on
+// PATH, with frozen arguments, at the exact version the registry named, and
+// only when that version is newer. It refuses if any of that is not true.
 
 import { execFileSync } from "node:child_process"
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join, resolve, sep } from "node:path"
+import { getJson } from "./github.mjs"
 import { progress } from "./progress.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, verdict, wrap } from "./style.mjs"
 
@@ -40,9 +43,45 @@ export function installKind(repoRoot) {
 export function upgradeCommand(repoRoot, name = "omakit") {
   return {
     git: "omakit upgrade",
-    npm: `npm i -g ${name}@latest`,
+    npm: "omakit upgrade",
     distro: `sudo pacman -Syu ${name}`,
   }[installKind(repoRoot)]
+}
+
+/**
+ * The frozen shape of the one `npm` invocation this tool makes. The package
+ * spec appended to it is `<name>@<version>` with the version the registry just
+ * reported, never `latest`, so what is printed is what is run. No sudo, no
+ * script execution (`--ignore-scripts`), and tests/unit/read-only.test.mjs
+ * asserts that npm is spawned nowhere else and with nothing else.
+ */
+export const NPM_UPGRADE_ARGS = Object.freeze(["install", "--global", "--ignore-scripts", "--no-fund", "--no-audit"])
+
+/** The newest published version, or null when the registry did not answer. */
+export async function latestOnRegistry(name) {
+  try {
+    const meta = await getJson(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`)
+    return meta?.version || null
+  } catch {
+    return null
+  }
+}
+
+function installedVersion(repoRoot) {
+  try {
+    return JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).version || null
+  } catch {
+    return null
+  }
+}
+
+/** Where the `npm` on PATH installs global packages, or null when there is no npm. */
+function npmGlobalRoot() {
+  try {
+    return resolve(execFileSync("npm", ["root", "--global"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
+  } catch {
+    return null
+  }
 }
 
 function git(dir, args) {
@@ -70,7 +109,7 @@ export function isExpectedRemote(url, expected = REPOSITORY) {
  *   a way to point the command at somebody else's repository, because nothing
  *   on the command line reaches it.
  */
-export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY }) {
+export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY, latest = latestOnRegistry, npmRoot = npmGlobalRoot, name = "omakit" }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
   const lines = (list) => { for (const line of list) out(line) }
@@ -83,13 +122,10 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   const ok = (text) => out(`${mark("pass", c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
 
   if (!existsSync(join(repoRoot, ".git"))) {
-    const kind = installKind(repoRoot)
-    return refuse(
-      kind === "distro"
-        ? "this is a distro package under /usr, so omakit leaves upgrades to pacman."
-        : "this is an npm package install, so omakit leaves upgrades to npm.",
-      upgradeCommand(repoRoot),
-    )
+    if (installKind(repoRoot) === "distro") {
+      return refuse("this is a distro package under /usr, so omakit leaves upgrades to the package manager.", upgradeCommand(repoRoot))
+    }
+    return upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c })
   }
 
   let remote
@@ -176,4 +212,61 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   out()
   lines(wrap("The marketplace pin did not move: this updated the tool, not the commit its rules are read from. `omakit doctor` says whether that pin is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", {}, c))
   return { ok: true, changed: true, from: before, to: after, commits: log.length }
+}
+
+/**
+ * The npm route. `latest` and `npmRoot` are injectable for the tests only, the
+ * way `expectedRemote` is: nothing on the command line reaches them.
+ */
+async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c }) {
+  const root = resolve(repoRoot)
+  const globalRoot = npmRoot()
+  if (!globalRoot) {
+    return refuse("this is an npm package install, but no `npm` is on PATH to update it with.", `npm install --global ${name}@latest`)
+  }
+  if (root !== join(globalRoot, name)) {
+    return refuse(
+      `this omakit is installed at ${root}, but the npm on PATH installs global packages under ${globalRoot}. Updating with a different npm would leave this one where it is.`,
+      `npm install --global ${name}@latest`,
+    )
+  }
+  const current = installedVersion(root)
+  const spinner = progress({ stream: stream === process.stdout ? process.stderr : stream })
+  spinner.phase("asking the npm registry for the newest published version")
+  const newest = await latest(name)
+  spinner.done()
+  if (!newest) {
+    return refuse("the npm registry did not answer, so there is nothing to compare against.", "Connect to the network, then run `omakit upgrade` again.")
+  }
+  if (newest === current) {
+    ok(`already current at ${current}, the newest published version`)
+    out()
+    lines(wrap("The marketplace pin is a separate thing and is never touched here. `omakit doctor` says whether it is behind.", {}, c))
+    return { ok: true, changed: false, version: current }
+  }
+  const spec = `${name}@${newest}`
+  if (dryRun) {
+    note(`${newest} is published, this is ${current}; not applied (--dry-run)`)
+    out(`${" ".repeat(GUTTER)}${c("prose", `npm ${[...NPM_UPGRADE_ARGS, spec].join(" ")}`)}`)
+    out()
+    lines(action("omakit upgrade", c, { indent: 0 }))
+    return { ok: true, changed: false, version: current, available: newest }
+  }
+  spinner.phase(`npm install --global ${spec}`)
+  try {
+    execFileSync("npm", [...NPM_UPGRADE_ARGS, spec], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  } catch (error) {
+    spinner.done()
+    const reason = String(error?.stderr || "").trim().split("\n").filter((line) => /^npm (?:error|ERR!)/.test(line)).pop() || "npm install failed"
+    return refuse(`npm could not install ${spec}: ${reason.replace(/^npm (?:error|ERR!)\s*/, "")}`, `npm ${[...NPM_UPGRADE_ARGS, spec].join(" ")}`)
+  }
+  spinner.done()
+  const after = installedVersion(root)
+  if (after !== newest) {
+    return refuse(`npm finished, but ${root} reports ${after || "no version"} rather than ${newest}.`, `npm ${[...NPM_UPGRADE_ARGS, spec].join(" ")}`)
+  }
+  ok(`${current} to ${after}, through the npm that installed it`)
+  out()
+  lines(wrap("The marketplace pin did not move: this updated the tool, not the commit its rules are read from. `omakit doctor` says whether that pin is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", {}, c))
+  return { ok: true, changed: true, from: current, to: after }
 }

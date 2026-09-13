@@ -68,9 +68,10 @@ omakit setup
 | network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
 | 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
 
-Updates come from whichever installer you used: `npm i -g omakit@latest` for
-the package, `omakit upgrade` for a clone; `omakit doctor` says when a newer
-version is published. Nothing in omakit updates itself, and
+`omakit upgrade` updates either install through the installer that made it:
+`npm` for the package, at the exact version the registry names, and a
+fast-forward for a clone. `omakit doctor` says when a newer version is
+published. Nothing in omakit fetches and runs its own replacement, and
 `omarchy-mise-install npm:omakit` would, so it is not the way in.
 
 ## Watch
@@ -101,7 +102,7 @@ omakit verify <plugin-repo>  # the official security baseline over the local tra
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
-omakit upgrade               # fast-forwards this checkout of omakit itself
+omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
 omakit help --agent          # the operating instructions, for the agent running this
 ```
 
@@ -160,17 +161,20 @@ move on its own. That distinction is now enforced rather than argued.
 **The tool:**
 
 ```bash
-omakit upgrade          # fast-forwards this checkout of omakit itself
+omakit upgrade          # the npm package, or a clone: through its own installer
 omakit upgrade --dry-run
 ```
 
-It refuses a dirty tree, a detached HEAD, a remote that is not this repository,
-and anything that is not a fast-forward, and it names what to run yourself in
-each case. It is not a self-updater of the kind this repository warns other
-people about: it fast-forwards a Git checkout you cloned, from the remote you
-cloned it from, and it touches nothing else. On a package install it says so and
-names the installer's own command, `npm i -g omakit@latest`. `git -C ~/.local/share/omakit pull` still works
-and does the same thing.
+It is not a self-updater of the kind this repository warns other people
+about: it never fetches and runs its own replacement. On an npm install it asks
+the registry for the newest version and, if that is newer, runs the `npm` on
+PATH with frozen arguments (`npm install --global --ignore-scripts omakit@<that
+version>`, never `@latest`, never with sudo), and it refuses when the npm on
+PATH is not the one that installed it. On a clone it fast-forwards from the
+remote you cloned it from, and refuses a dirty tree, a detached HEAD, a remote
+that is not this repository, and anything that is not a fast-forward. In every
+refusal it names what to run yourself. `git -C ~/.local/share/omakit pull`
+still works on a clone and does the same thing.
 
 **The pin** does not move by itself, ever, and `omakit upgrade` does not move it
 either: a test asserts that its source does not so much as mention the pin or

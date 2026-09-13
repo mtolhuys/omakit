@@ -72,9 +72,9 @@ export const COMMANDS = Object.freeze([
   {
     signature: "omakit upgrade [--dry-run]",
     lines: [
-      "Fast-forward this checkout of omakit itself. Refuses a dirty tree, an",
-      "unexpected remote and anything that is not a fast-forward. Never moves",
-      "the marketplace pin.",
+      "Update omakit through the installer that made it: npm, at the exact",
+      "version the registry names, or a fast-forward of a clone. Refuses",
+      "anything else, and never moves the marketplace pin.",
     ],
   },
   {
