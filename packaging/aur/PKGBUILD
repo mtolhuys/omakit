@@ -8,7 +8,7 @@ license=('MIT')
 depends=('nodejs>=22' 'git')
 optdepends=('ttfx: animate the setup wordmark')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/releases/download/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('4e67712babffbaff7940e28b6fd7e0f062d5db7a89c401809f8cf54bedd1cc2b')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"

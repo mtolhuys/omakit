@@ -9,6 +9,6 @@ pkgbase = omakit
 	depends = git
 	optdepends = ttfx: animate the setup wordmark
 	source = omakit-0.1.0.tar.gz::https://github.com/mtolhuys/omakit/releases/download/v0.1.0/omakit-0.1.0.tar.gz
-	sha256sums = SKIP
+	sha256sums = 4e67712babffbaff7940e28b6fd7e0f062d5db7a89c401809f8cf54bedd1cc2b
 
 pkgname = omakit
