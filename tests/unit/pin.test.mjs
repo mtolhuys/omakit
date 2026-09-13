@@ -69,10 +69,10 @@ test("a freshly fetched pin is sparse, and the pin identity still reads", () => 
   assert.match(MARKETPLACE_PIN.commit, /^[0-9a-f]{40}$/)
 })
 
-test("the pin follows XDG, falls back to ~/.cache, and keeps the explicit override", () => {
+test("the pin follows XDG and falls back to ~/.cache; omakit has no variable of its own", () => {
   assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a", XDG_CACHE_HOME: "/cache/a" }), "/cache/a/omakit/marketplace")
   assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a" }), "/home/a/.cache/omakit/marketplace")
-  assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a", OMAKIT_MARKETPLACE_PIN: "/chosen/pin" }), "/chosen/pin")
+  assert.equal(marketplacePinDir(REPO_ROOT, { HOME: "/home/a", OMAKIT_MARKETPLACE_PIN: "/chosen/pin" }), "/home/a/.cache/omakit/marketplace", "a variable named after the tool does nothing")
 })
 
 test("an old in-repository pin is named and never moved silently", () => {

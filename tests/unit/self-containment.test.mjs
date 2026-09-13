@@ -126,3 +126,18 @@ test("there is no build step and no runtime dependency", () => {
   assert.ok(statSync(join(REPO_ROOT, "bin/omakit")).mode & 0o111, "bin/omakit must be executable")
   assert.ok(!files.includes("package-lock.json"))
 })
+
+test("omakit reads no environment variable of its own", () => {
+  // README: "omakit reads no environment variable of its own". The pin follows
+  // XDG_CACHE_HOME, the completion install follows XDG and $SHELL, and colour
+  // follows NO_COLOR, FORCE_COLOR and TERM: every one of those is somebody
+  // else's convention and every user already has it. The exceptions below are
+  // process-internal handoffs from cli.mjs to tests/parity/run.mjs and are
+  // never read from a user's shell.
+  const internal = new Set(["OMAKIT_ROOT", "PARITY_COUNT", "PARITY_OFFSET", "PARITY_OUT", "PARITY_OUT_EXPLICIT"])
+  for (const { path, text } of sources) {
+    for (const [, name] of text.matchAll(/\benv\.([A-Z][A-Z0-9_]*)|process\.env\[["']([A-Z][A-Z0-9_]*)["']\]/g)) {
+      if (name?.startsWith("OMAKIT_") && !internal.has(name)) assert.fail(`${path} reads ${name}: omakit has no environment variable of its own`)
+    }
+  }
+})

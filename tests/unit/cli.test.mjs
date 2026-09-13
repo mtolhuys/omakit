@@ -86,12 +86,13 @@ test("the eighty-column rule does not depend on where the checkout lives", () =>
   const parent = join(mkdtempSync(join(tmpdir(), "omakit-deep-")), "a/".repeat((COLUMNS - GUTTER) / 2))
   mkdirSync(parent, { recursive: true })
   const root = copyOfTool(parent)
-  const deep = join(root, ".cache/marketplace")
-  mkdirSync(join(root, ".cache"))
+  const cache = join(root, "xdg-cache")
+  const deep = join(cache, "omakit/marketplace")
+  mkdirSync(join(cache, "omakit"), { recursive: true })
   symlinkSync(requirePinForTests(), deep)
   assert.ok(deep.length > COLUMNS, `the path is deliberately wider than the terminal: ${deep.length}`)
 
-  const { code, out, err } = run(["doctor", "--offline"], { OMAKIT_MARKETPLACE_PIN: deep }, root)
+  const { code, out, err } = run(["doctor", "--offline"], { XDG_CACHE_HOME: cache }, root)
   assert.equal(code, 0, err)
   const lines = out.split("\n")
   assert.ok(lines.includes(`${" ".repeat(GUTTER)}${deep}`), `the path is whole, on its own line, in the gutter:\n${out}`)
@@ -101,8 +102,8 @@ test("the eighty-column rule does not depend on where the checkout lives", () =>
 
   // And the failure state that names a missing checkout holds to the same rule.
   const bare = copyOfTool(parent, "omakit-without-a-pin")
-  const missing = join(bare, "missing-marketplace")
-  const failure = run(["verify", good.dir], { OMAKIT_MARKETPLACE_PIN: missing }, bare)
+  const missing = join(bare, "missing-cache/omakit/marketplace")
+  const failure = run(["verify", good.dir], { XDG_CACHE_HOME: join(bare, "missing-cache") }, bare)
   assert.equal(failure.code, 1)
   assertFailureState(failure.err, "marketplace-unavailable", "omakit pin")
   assert.ok(failure.err.includes(missing), "the missing path is named whole")
@@ -119,7 +120,7 @@ function assertFailureState(err, code, remedy) {
 
 test("a missing pin is a failure state naming `omakit pin`, in every command that needs it", () => {
   const nowhere = copyOfTool(mkdtempSync(join(tmpdir(), "omakit-nopin-")))
-  const env = { OMAKIT_MARKETPLACE_PIN: join(nowhere, "missing-marketplace") }
+  const env = { XDG_CACHE_HOME: join(nowhere, "missing-cache") }
   for (const args of [
     ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"],
     ["watch", "https://github.com/omacom/omarchy-plugin-marketplace/issues/1"],
@@ -143,7 +144,7 @@ test("an old install reports the one migration command instead of moving the pin
   const old = join(root, ".cache/marketplace")
   mkdirSync(join(old, ".git"), { recursive: true })
   const home = join(root, "home")
-  const result = run(["pin"], { HOME: home, XDG_CACHE_HOME: undefined, OMAKIT_MARKETPLACE_PIN: undefined }, root)
+  const result = run(["pin"], { HOME: home, XDG_CACHE_HOME: undefined }, root)
   assert.equal(result.code, 1)
   assert.equal(result.out, "")
   assertFailureState(result.err, "marketplace-pin-migration-required", "mkdir -p --")

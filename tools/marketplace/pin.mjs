@@ -52,11 +52,14 @@ export const PIN_PATHS = Object.freeze([
   "/.github/ISSUE_TEMPLATE/",
 ])
 
-/** The user-writable pin location, with an explicit override for tests and unusual installs. */
+/**
+ * The user-writable pin location: `$XDG_CACHE_HOME/omakit/marketplace`, or
+ * `~/.cache/omakit/marketplace`. omakit reads no variable of its own; a test or
+ * an unusual install that wants the pin elsewhere sets XDG_CACHE_HOME, which is
+ * the same switch every user has.
+ */
 export function marketplacePinDir(_repoRoot, env = process.env) {
-  return env.OMAKIT_MARKETPLACE_PIN
-    ? resolve(env.OMAKIT_MARKETPLACE_PIN)
-    : omakitCacheDir("marketplace", env)
+  return omakitCacheDir("marketplace", env)
 }
 
 /** The location used before 0.1.0 packaging made the tool installable read-only. */
@@ -69,7 +72,6 @@ function shellQuote(value) {
 }
 
 function pinMigration(repoRoot, env = process.env) {
-  if (env.OMAKIT_MARKETPLACE_PIN) return null
   const oldDir = legacyMarketplacePinDir(repoRoot)
   const newDir = marketplacePinDir(repoRoot, env)
   if (!existsSync(join(oldDir, ".git")) || existsSync(newDir)) return null

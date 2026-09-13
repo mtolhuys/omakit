@@ -60,7 +60,7 @@ Two modules at the pin are deliberately *not* imported:
 
 | Field | Value |
 | --- | --- |
-| Location | `$XDG_CACHE_HOME/omakit/marketplace`, defaulting to `~/.cache/omakit/marketplace`; `OMAKIT_MARKETPLACE_PIN` overrides it |
+| Location | `$XDG_CACHE_HOME/omakit/marketplace`, defaulting to `~/.cache/omakit/marketplace`; nothing else moves it |
 | Setup | `omakit pin`: `git fetch --depth 1 origin <commit>` then a detached checkout; idempotent; refuses a modified checkout |
 | Identity constant | `tools/marketplace/pin.mjs` (`MARKETPLACE_PIN`), the only home of the commit |
 | Commit | `38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6` ("Add Plugin updates plugin (#6374)") |
