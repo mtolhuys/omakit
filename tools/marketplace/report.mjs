@@ -20,6 +20,7 @@
 import {
   action, colourEnabled, COLUMNS, continuation, field, GUTTER, labelled, mark, section, STEP, styler, verdict, width, wrap,
 } from "./style.mjs"
+import { withHomeAbbreviated } from "./paths.mjs"
 
 const body = " ".repeat(GUTTER)
 
@@ -317,7 +318,13 @@ export function renderVerify(document, { colour = colourEnabled(), blockingRules
 
 const DOCTOR_STATE = { ok: "pass", advice: "advisory", problem: "fail", info: "info", unknown: "unknown" }
 
-export function renderDoctor(result, { colour = colourEnabled() } = {}) {
+/**
+ * @param {{ colour?: boolean, env?: object }} [options] `env` is where `$HOME`
+ *   is read from: a path under it is printed as `~/...` for a person, the
+ *   way a shell takes it, while the result itself, and so `--json`, keeps
+ *   every path absolute.
+ */
+export function renderDoctor(result, { colour = colourEnabled(), env = process.env } = {}) {
   const c = styler(colour)
   const out = []
   let previous = false
@@ -326,8 +333,8 @@ export function renderDoctor(result, { colour = colourEnabled() } = {}) {
     const loud = state === "fail" || state === "advisory"
     if (index > 0 && (loud || previous)) out.push("")
     out.push(`${mark(state, c)}${c("name", check.id)}`)
-    out.push(...wrap(check.detail, { indent: GUTTER }, c))
-    if (check.action) out.push(...action(check.action, c))
+    out.push(...wrap(withHomeAbbreviated(check.detail, env), { indent: GUTTER }, c))
+    if (check.action) out.push(...action(withHomeAbbreviated(check.action, env), c))
     previous = loud
   }
   out.push("")

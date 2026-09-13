@@ -20,6 +20,7 @@ import { TAGLINE } from "./usage.mjs"
 import { installCompletion } from "./completion.mjs"
 import { submissionContract } from "./form.mjs"
 import { pathHint } from "./path-hint.mjs"
+import { withHomeAbbreviated } from "./paths.mjs"
 
 function version(command) {
   try {
@@ -32,16 +33,18 @@ function version(command) {
 }
 
 /**
- * @param {{ repoRoot: string, entryPoint: string, stream?: NodeJS.WriteStream }} options
+ * @param {{ repoRoot: string, entryPoint: string, stream?: NodeJS.WriteStream, env?: object }} options
+ *   `env` is where `$HOME` is read from: this is output for a person, so a
+ *   path under it is printed as `~/...`.
  */
-export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
+export async function setup({ repoRoot, entryPoint, stream = process.stdout, env = process.env }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
   // A step is a status line: the mark, then the fact, wrapped under itself.
-  const step = (state, text) => out(`${mark(state, c)}${wrap(text, { indent: GUTTER }, c).join("\n").trimStart()}`)
+  const step = (state, text) => out(`${mark(state, c)}${wrap(withHomeAbbreviated(text, env), { indent: GUTTER }, c).join("\n").trimStart()}`)
   // The one action under a step sits in the step's body; under a sentence it
   // sits where the sentence does.
-  const fix = (text, indent = GUTTER) => { for (const line of action(text, c, { indent })) out(line) }
+  const fix = (text, indent = GUTTER) => { for (const line of action(withHomeAbbreviated(text, env), c, { indent })) out(line) }
 
   // The one place the wordmark runs through `ttfx` (effect.mjs): a first run
   // already spending seconds fetching the pin.

@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { tagSlug } from "./form.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "./usage.mjs"
+import { withHomeAbbreviated } from "./paths.mjs"
 
 /**
  * The completion model, read out of the help data. A subcommand is the word
@@ -221,7 +222,7 @@ export function completionInstall(env = process.env) {
   const shell = basename(env.SHELL || "")
   const home = env.HOME || ""
   if (!home || !COMPLETION_SHELLS.includes(shell)) return null
-  const tilde = (dir) => (dir.startsWith(home) ? `~${dir.slice(home.length)}` : dir)
+  const tilde = (dir) => withHomeAbbreviated(dir, env)
   if (shell === "bash") {
     const dir = join(env.XDG_DATA_HOME || join(home, ".local/share"), "bash-completion/completions")
     return { shell, path: join(dir, "omakit"), display: `${tilde(dir)}/omakit`, note: null }

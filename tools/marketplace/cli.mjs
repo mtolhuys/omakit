@@ -29,7 +29,7 @@ import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, colourEnabled, GUTTER, labelled, mark, styler, wrap } from "./style.mjs"
-import { omakitCacheDir } from "./paths.mjs"
+import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -284,7 +284,7 @@ if (command === "setup") {
       // ensurePin narrates: a state line to keep, then a fetch it is about to
       // start. The fetch is the slow part, so it gets the progress line.
       if (line.state === "fetching") spinner.phase(line.text)
-      else process.stdout.write(`${mark(line.state, c)}${wrap(line.text, { indent: GUTTER }, c).join("\n").trimStart()}\n`)
+      else process.stdout.write(`${mark(line.state, c)}${wrap(withHomeAbbreviated(line.text), { indent: GUTTER }, c).join("\n").trimStart()}\n`)
     })
   } catch (error) {
     spinner.done()
