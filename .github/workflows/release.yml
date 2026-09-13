@@ -91,6 +91,7 @@ jobs:
           COMMIT: ${{ steps.version.outputs.commit }}
         run: |
           set -o pipefail
+          mkdir -p release-assets
           npm pack --ignore-scripts --json --pack-destination release-assets > "$RUNNER_TEMP/npm-pack.json"
           node tests/package-assert.mjs "$RUNNER_TEMP/npm-pack.json"
           npm_file=$(node --input-type=module --eval 'const doc=JSON.parse(await (await import("node:fs/promises")).readFile(process.argv[1], "utf8")); process.stdout.write(doc[0].filename)' "$RUNNER_TEMP/npm-pack.json")
@@ -146,7 +147,6 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-          registry-url: https://registry.npmjs.org
 
       - name: Retrieve the exact release inputs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -159,57 +159,59 @@ jobs:
         run: |
           (cd release-assets && sha256sum --check SHA256SUMS)
           npm_version=$(npm --version)
-          node --input-type=module --eval 'const [major,minor]=process.argv[1].split(".").map(Number); if (major < 11 || (major === 11 && minor < 5)) throw new Error("npm " + process.argv[1] + " cannot use trusted publishing; need npm >=11.5.1")' "$npm_version"
+          node --input-type=module --eval 'const [major,minor,patch]=process.argv[1].split(".").map(Number); if (major < 11 || (major === 11 && (minor < 5 || (minor === 5 && patch < 1)))) throw new Error("npm " + process.argv[1] + " cannot use trusted publishing; need npm >=11.5.1")' "$npm_version"
 
       - name: Inspect an existing npm version without credentials
         id: registry
         shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-          HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
         run: |
           local_integrity=$(cat release-assets/npm-integrity.txt)
           set +e
-          remote_json=$(npm view "omakit@$VERSION" dist.integrity --json 2> "$RUNNER_TEMP/npm-view.err")
+          remote_json=$(npm view "omakit@$VERSION" dist.integrity --json --registry https://registry.npmjs.org 2> "$RUNNER_TEMP/npm-view.err")
           status=$?
           set -e
           if [[ "$status" -eq 0 ]]; then
             remote_integrity=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(Array.isArray(value) ? value[0] : value)' "$remote_json")
             if [[ "$remote_integrity" != "$local_integrity" ]]; then
-              # A version published by hand from another npm client packs to
-              # different bytes for the same tree. Without a token this job
-              # could not replace it anyway, so it is reported, not fatal.
-              if [[ "$HAS_NPM_TOKEN" == "true" ]]; then
-                echo "omakit@$VERSION exists with different package integrity" >&2
-                exit 1
-              fi
-              echo "omakit@$VERSION was published by hand with a different tarball integrity; nothing to do here" >&2
+              echo "omakit@$VERSION exists with different package integrity; refusing to report a successful release" >&2
+              exit 1
             else
               echo "omakit@$VERSION already has the exact package integrity"
             fi
             echo "publish=false" >> "$GITHUB_OUTPUT"
           elif grep -Eq 'E404|404 Not Found|is not in this registry' "$RUNNER_TEMP/npm-view.err"; then
-            if [[ "$HAS_NPM_TOKEN" == "true" ]]; then
-              echo "publish=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "publish=false" >> "$GITHUB_OUTPUT"
-              echo "no NPM_TOKEN and no trusted publisher: publish omakit@$VERSION by hand with npm publish from a checkout at the tag" >&2
-            fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             cat "$RUNNER_TEMP/npm-view.err" >&2
             exit "$status"
           fi
 
-      # Preferred: configure npm Trusted Publishing for this repository and
-      # release.yml, then leave NPM_TOKEN absent. For the first package publish,
-      # or if OIDC is unavailable, a package-scoped granular NPM_TOKEN is the
-      # fallback. The secret reaches this one step only; npm tries OIDC first.
+      # npm authenticates through GitHub OIDC and the trusted publisher for
+      # mtolhuys/omakit, release.yml, with no environment restriction or token.
       - name: Publish with provenance
         if: steps.registry.outputs.publish == 'true'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_FILE: ${{ needs.prepare.outputs.npm-file }}
-        run: npm publish "release-assets/$NPM_FILE" --ignore-scripts --provenance --access public
+        run: npm publish "release-assets/$NPM_FILE" --ignore-scripts --provenance --access public --registry https://registry.npmjs.org
+
+      - name: Verify the published package on npm
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        shell: bash
+        run: |
+          expected=$(cat release-assets/npm-integrity.txt)
+          for attempt in {1..6}; do
+            actual=$(npm view "omakit@$VERSION" dist.integrity --registry https://registry.npmjs.org 2>/dev/null) || actual=""
+            if [[ "$actual" == "$expected" ]]; then
+              echo "Verified omakit@$VERSION on npm with the exact release tarball." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [[ "$attempt" -lt 6 ]]; then sleep 10; fi
+          done
+          echo "npm did not return the expected integrity for omakit@$VERSION" >&2
+          exit 1
 
   github-release:
     name: Publish the GitHub Release without replacement
