@@ -36,7 +36,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `plugin.root-license` | pin | A root license or COPYING file exists. |
 | `plugin.readme-install-removal` | omakit | The README mentions installing and removing, because the generated checklist signs that claim. Keyword probe, not a reading. |
 | `tree.agent-control` | omakit | Advisory: names every agent-control file in the installable tree. It never refuses, because the marketplace lists plugins that ship them (6 of 34 inspected). |
-| `identity.available` | pin | The plugin id is unused, not retired, outside the reserved namespace, and the repository is not already listed. The registry and catalog it reads are the marketplace's current HEAD when online, the pin when not (`--offline`, or no network); the detail names which, with the commit. The remedy follows the cause, one arrow each in this order: leave the reserved namespace; a retired id cannot be reused; an id taken by another repository names that repository; a plugin listed by its own repository has nothing to submit and is sent to the marketplace's verification form for a newer commit (the form's action name is read from the pin). In `--json` such a `remedy` is an array. |
+| `identity.available` | pin | The plugin id is unused, not retired, outside the reserved namespace, and the repository is not already listed; or the plugin is listed by its own repository, which passes with the listing's record (see below). The registry and catalog it reads are the marketplace's current HEAD when online, the pin when not (`--offline`, or no network); the detail names which, with the commit. The remedy follows the cause, one arrow each in this order: leave the reserved namespace; a retired id cannot be reused; an id taken by another repository names that repository; a listed repository whose manifest carries another id is sent to the marketplace's verification form (the form's choice text is read from the pin). In `--json` such a `remedy` is an array. |
 | `submission.title` | pin | The title is the form's own prefix plus the plugin name. |
 | `submission.category` | pin | Exactly one category from the form's controlled list. |
 | `submission.tags` | pin | One to three tags from the form's controlled list. |
@@ -50,6 +50,47 @@ public issue text; it is not marketplace policy and never claims to be.
 Every one of them states its measured reason in the output when it fails, and in
 the source either way. The numbers are in [MEASUREMENTS.md](MEASUREMENTS.md).
 
+## Three outcomes
+
+A run ends one of three ways, `outcome` in `--json`:
+
+| Outcome | Exit | What it means |
+| --- | --- | --- |
+| `ready` | 0 | Every blocking check passed. The issue title and body follow, and `ready` is `true`. |
+| `refused` | 1 | A blocking check failed. No body is produced; the closing block lists the root causes, then "Fix it, then run submit again" and the command line that repeats the run. |
+| `listed` | 0 | The plugin is already listed by its own repository, so the submission form is not the route. Nothing was refused and nothing is wrong. |
+
+`listed` is decided at `identity.available`: the manifest id is in the
+catalog, and the listing's repository is the subject's declared `origin`,
+compared as owner and name, case-insensitively, with a trailing `.git`
+ignored. The check passes and its detail is the listing's record, read from
+the catalog at HEAD or, offline, at the pin, and it says which: "listed by
+this repository since `<addedAt>`, verification commit `<sha>` (`<status>`,
+checked `<time>`)". The five checks that exist only for the body (category,
+tags, headings, checklist, official parser) are omitted, not drawn as
+questions waiting on identity, because no body is being rendered on purpose;
+nothing is asked for, with or without a terminal. The closing block is
+`▁ LISTED`: the commit the marketplace lists, the local commit, whether they
+are the same, and the marketplace's verification form with the choice that
+lists a newer commit, both read from `verify-plugin.yml` at the pin and
+cross-checked against the marketplace's own verification module. No "Fix it"
+line and no reproduce line. In `--json`, `ready` is `false` and `listing` is
+`{ repository, id, addedAt, verificationCommit, verificationStatus,
+verificationCheckedAt, localCommit, sameCommit, source: "head" | "pin",
+updateRoute: { form, choice } }`.
+
+Measured on 0.1.6: `omakit submit` on the author's own listed plugin printed
+`FAIL identity.available`, `REFUSED 1 blocking check failed`, and closed with
+"Fix it, then run submit again" plus the reproduce line, while the remedy
+under the check said there was nothing to submit. A healthy state was drawn
+as a failure, and the closing line contradicted the remedy.
+
+An id taken by another repository, a retired id, a reserved id, or a listed
+repository whose manifest carries an id it does not list are all still
+`refused`, with the remedies above; when the only blocking check is
+`identity.available`, the closing line keeps "Fix it, then run submit again"
+and the reproduce line, because a new id is a fix.
+
 A check has three verdicts. `pass` and `fail` are its own. `unknown`, drawn as
 `▒ ?`, is a check that could not run because one it depends on failed:
 `submission.headings`, `submission.checklist` and `submission.official-parser`
@@ -61,9 +102,9 @@ and says how many checks waited on them. Measured before this: a run with no
 for two causes.
 
 The category and the tags are decided after the registry is read, not before.
-A plugin that is already listed is refused at `identity.available` and asked
-for nothing (measured on 0.1.5: the tool exited 2 asking for `--category` and
-`--tags`, then would have said there was nothing to submit). For an unlisted
+A plugin that is already listed, by its own repository or by another, is
+asked for nothing (measured on 0.1.5: the tool exited 2 asking for
+`--category` and `--tags`, then would have said there was nothing to submit). For an unlisted
 plugin they are an editorial choice nobody else can make, so nothing is
 rendered without them: when stdin and stdout are both terminals and `--json`
 is absent, `submit` asks, once each, with the form's lists numbered and the
@@ -76,7 +117,8 @@ In a pipe, from an agent, or with `--json`, it is a usage error: exit 2, the
 missing flag(s) named, the lists under it, and `--json` carries
 `{ "usage": { "missing", "categories", "tags", "maximumTags" } }`. Whatever
 the source of the values, the report ends with the command line that repeats
-the run without asking, and `--json` carries it as `reproduce`.
+the run without asking, and `--json` carries it as `reproduce`; a `listed`
+run has no such line to print, because there is no run to repeat.
 
 ## Nothing about the format is written down here
 

@@ -134,16 +134,32 @@ file and line, and the official text verbatim, then the marketplace's own
 statement. `--json` prints the document itself, unchanged from earlier
 releases, and `--out <file>` writes it; agents and the skills use those.
 
-`omakit submit` reads the marketplace's registry first. A plugin that is
-already listed is refused there and asked for nothing (measured on 0.1.5: it
-exited 2 asking for `--category` and `--tags`, then would have said there was
-nothing to submit). An unlisted plugin needs both, and they are an editorial
+`omakit submit` reads the marketplace's registry first, and a run has three
+outcomes. `READY`, exit 0: every blocking check passed and the title and body
+follow. `REFUSED`, exit 1: a blocking check failed and no body is produced.
+`LISTED`, exit 0: the plugin is already listed by its own repository (the
+manifest id is in the catalog, and the listing's repository is the subject's
+declared `origin`, compared as owner and name), so the submission form is not
+the route. Nothing is wrong and nothing was refused: `identity.available`
+passes with the listing's record (since when, which commit, verified or not),
+the five checks that exist only for the body are omitted, nothing is asked,
+and the closing block names the commit the marketplace lists, the local
+commit, whether they are the same, and the marketplace's verification form
+with the choice that lists a newer commit, read from the pin's
+`verify-plugin.yml`. Measured on 0.1.6: this state printed `FAIL
+identity.available`, `REFUSED`, and "Fix it, then run submit again" under a
+remedy that said there was nothing to submit. An id taken by another
+repository, a retired id or a reserved one is still refused. In `--json`, the
+outcome is `outcome: "ready" | "refused" | "listed"`, `ready` stays a boolean
+that is true for the first only, and a listed run carries a `listing` object.
+
+An unlisted plugin needs a category and tags, and they are an editorial
 choice nobody else can make: at a terminal it asks, once each, with the form's
 own lists numbered and the marketplace's own default for the manifest's kinds
 offered where it is on the list; in a pipe, from an agent, or with `--json` it
-is the usage error with the same lists, exit 2. Either way the report ends
-with the command line that repeats the run without asking, and `--json`
-carries it as `reproduce`.
+is the usage error with the same lists, exit 2. A listed plugin is asked for
+neither. A `READY` or `REFUSED` report ends with the command line that repeats
+the run without asking, and `--json` carries it as `reproduce`.
 
 There is nothing to authenticate. If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in

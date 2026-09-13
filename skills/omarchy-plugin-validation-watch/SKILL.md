@@ -44,7 +44,11 @@ it from the operator's `gh` login (which itself honours `GH_TOKEN` and
 If the diagnosis ends in a resubmission under a new id, run `omakit submit`
 online: never pass `--offline` to get around a listed id, because that reads
 the listed ids from the pin, which is stale within hours, and the marketplace
-refuses against its current registry.
+refuses against its current registry. If `omakit submit` ends `LISTED`
+(`outcome: "listed"` in `--json`), the plugin is already listed by its own
+repository: stop, do not change the id, and tell the owner the update route
+the output names, the marketplace's verification form with the choice "Verify
+and publish a newer upstream commit", read from the pin.
 
 ## Acting on each verdict
 

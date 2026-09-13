@@ -51,8 +51,8 @@ file but `style.mjs`, so a sixth state or a second spelling of `ok` cannot
 appear without changing the one definition.
 
 A verdict, the closing line of a command, is the same glyph with the verdict's
-own word: `█ REFUSED`, `▁ READY`, `█ VALIDATION STALE`, `▁ VALIDATION CURRENT`,
-`▒ VALIDATION UNKNOWN`, `█ NOT READY`.
+own word: `█ REFUSED`, `▁ READY`, `▁ LISTED`, `█ VALIDATION STALE`,
+`▁ VALIDATION CURRENT`, `▒ VALIDATION UNKNOWN`, `█ NOT READY`.
 
 ## Hierarchy without hue
 
@@ -198,7 +198,10 @@ seconds. Three decisions serve that:
    checks and the marketplace's report, the fail blocks are off the top of the
    screen, and the last screen is the one a person is looking at. `▁ READY`
    ends the other way: the title, the body, and the one `gh issue create`
-   command, in that order.
+   command, in that order. `▁ LISTED`, the third ending, is neither: the
+   plugin is already listed by this repository, so it prints the listed
+   commit against the local one and the marketplace's form for a newer
+   commit, and no fix line, because nothing is wrong.
 
 ## Motion, on a budget
 

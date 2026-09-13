@@ -46,9 +46,9 @@ message lists the controlled values, read from the pinned form; with `--json`
 the same lists come back under `usage`. A person at a terminal is asked
 instead, once each, with the marketplace's own default for the manifest's
 kinds. It is decided after the registry is read: a plugin that is already
-listed is refused at `identity.available` and asked for nothing. Every report
-ends with the command line that repeats the run without asking, and `--json`
-carries it as `reproduce`.
+listed is asked for nothing. A `READY` or `REFUSED` report ends with the
+command line that repeats the run without asking, and `--json` carries it as
+`reproduce`.
 
 To see the official baseline result alone, with no Omakit check around it:
 
@@ -72,9 +72,34 @@ HEAD, tell the owner and choose another id.
 
 ## Reading the result
 
-Exit code 0 means every blocking check passed and the output contains the issue
-title and body. Exit code 1 means it refused, and no body was produced. Exit
-code 2 is a usage error: nothing was checked.
+A run ends one of three ways; `--json` carries it as `outcome`.
+
+- `READY`, exit 0, `outcome: "ready"`: every blocking check passed and the
+  output contains the issue title and body.
+- `REFUSED`, exit 1, `outcome: "refused"`: a blocking check failed and no body
+  was produced.
+- `LISTED`, exit 0, `outcome: "listed"`: the plugin is already listed by its
+  own repository. Nothing is wrong and nothing was refused, and there is no
+  body, because the submission form is not the route. See below.
+
+Exit code 2 is a usage error: nothing was checked.
+
+**If the outcome is `listed`, stop.** Do not open a submission issue, and
+never change the plugin id to get past it: the id is listed by this very
+repository, and a renamed id would be a second listing of the same plugin.
+Tell the owner the update route, which the output states: the marketplace
+lists `verificationCommit`; the local commit is `localCommit`, and
+`sameCommit` says whether they are the same; to get a newer commit listed,
+open the marketplace's verification form (its name and the choice to pick,
+"Verify and publish a newer upstream commit", are printed from the pin's own
+form, under `listing.updateRoute` in `--json`), and `omakit watch <the
+submission issue>` shows which commit is listed now. A listed plugin is asked
+for no category and no tags, and the five body checks are omitted rather than
+shown as waiting.
+
+An id listed by a *different* repository is a refusal, `identity.available`
+names that repository, and the remedy is another id. That is the one case
+where changing the id is the fix.
 
 A check drawn as `▒ ?` did not run because one it depends on failed; its detail
 names that check. It is not a failure of its own, and the closing refusal lists

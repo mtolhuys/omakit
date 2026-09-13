@@ -45,10 +45,13 @@ export const COMMANDS = Object.freeze([
     lines: [
       "Every check that is knowable before submitting, the resolved commit, and",
       "the exact issue title and body. Prints them. Never posts anything.",
-      "A listed plugin is refused at identity and needs no category or tags.",
-      "An unlisted one without them is asked at a terminal, with the form's",
-      "lists numbered; in a pipe or with --json that is a usage error, exit 2.",
-      "The report ends with the command line that repeats the run unasked.",
+      "Three outcomes: READY (exit 0, the body), REFUSED (exit 1, no body), and",
+      "LISTED (exit 0): the plugin is already listed by its own repository, so",
+      "the submission form is not the route and nothing is asked. An id taken",
+      "by another repository is refused. An unlisted plugin without a category",
+      "and tags is asked at a terminal, with the form's lists numbered; in a",
+      "pipe or with --json that is a usage error, exit 2. A READY or REFUSED",
+      "report ends with the command line that repeats the run unasked.",
     ],
   },
   {
