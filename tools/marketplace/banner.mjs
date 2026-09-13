@@ -233,7 +233,13 @@ export async function banner(options = {}) {
   // foreground.
   const c = (name, text) => (colour ? `${ESC}${name}m${text}${RESET}` : text)
   const rule = floorRule((_name, text) => c(code("typeable"), text), { width })
-  const tagline = options.tagline ? c(code("prose"), options.tagline) : null
+  // The tagline is centred under the wordmark, not set flush left: the rule
+  // is exactly as wide as the letters, so a shorter line starting at column
+  // 0 reads as slid to the left. The padding is spaces, no escape, so the
+  // line is centred under NO_COLOR and in a pipe alike.
+  const tagline = options.tagline
+    ? " ".repeat(Math.max(0, Math.floor((width - [...String(options.tagline)].length) / 2))) + c(code("prose"), options.tagline)
+    : null
 
   // Nothing at all when it is not a terminal. There is no plain-text substitute
   // to print: `help` and `setup` already say the name and what it does in words,
