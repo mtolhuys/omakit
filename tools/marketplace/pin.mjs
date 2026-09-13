@@ -5,7 +5,7 @@
 // It fetches only what omakit reads. The marketplace at this commit is 325 MB,
 // of which 168 MB is preview imagery and 151 MB is history, and omakit reads
 // seven files out of it. A blob-filtered, sparsely checked out fetch of just
-// those paths is 16 MB and takes 2 seconds instead of 17. PIN_PATHS below is the
+// those paths is 15 MB and takes 2 seconds instead of 17. PIN_PATHS below is the
 // whole list, and tests/unit/pin.test.mjs fails if any module starts reading a
 // path outside it, because on a partial clone such a read would quietly reach
 // for the network instead of failing.
@@ -77,7 +77,7 @@ function pinMigration(repoRoot, env = process.env) {
   if (!existsSync(join(oldDir, ".git")) || existsSync(newDir)) return null
   const remedy = `mkdir -p -- ${shellQuote(dirname(newDir))} && mv -- ${shellQuote(oldDir)} ${shellQuote(newDir)}`
   return new PinError(
-    `the marketplace pin is still at the old in-repository location ${oldDir}; the user-writable location ${newDir} does not exist. Omakit will not move the measured 16 MB checkout without you.`,
+    `the marketplace pin is still at the old in-repository location ${oldDir}; the user-writable location ${newDir} does not exist. Omakit will not move the measured 15 MB checkout without you.`,
     { code: "marketplace-pin-migration-required", remedy },
   )
 }
@@ -153,7 +153,7 @@ export function ensurePin(repoRoot, log = () => {}, env = process.env) {
     execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
     git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
   }
-  log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 16 MB` })
+  log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 15 MB` })
   // Written as plumbing rather than through `git sparse-checkout`, so the
   // result does not depend on the git version's cone-mode defaults.
   git(dir, ["config", "core.sparseCheckout", "true"])

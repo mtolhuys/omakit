@@ -59,14 +59,33 @@ README.md still has uncommitted work in the other checkout, so it was not edited
 
 ## Phase-two handoff
 
-1. Push the `packaging` branch. This only uploads the branch; it does not publish a package or create a release.
-2. Open a pull request from `packaging` to `main`. CI should start three jobs: Ubuntu on Node 22, Ubuntu on Node 24, and the portable macOS suite on Node 22. Each summary should name the test count, package size, 102,400-byte ceiling, exact marketplace pin, and any named skip.
-3. Watch that first CI run. Confirm all three jobs pass, the zsh and fish completion parsers actually run on Linux, the cache key ends in the 40-character pin, and macOS names `no network is a failure state, not a stack trace` as Linux-only. Merge only after that proof is green.
-4. Before releasing, allow GitHub Actions write access and enable **Allow GitHub Actions to create and approve pull requests** in the repository Actions settings. For the first npm publish, add repository secret `NPM_TOKEN`: a short-lived granular npm token allowed to publish `omakit`, with read/write package access and bypass-2FA, then remove it after the first release. Once the package exists, configure npm Trusted Publishing for repository `mtolhuys/omakit` and workflow `release.yml`, explicitly allow direct `npm publish`, and leave `NPM_TOKEN` absent. Optional AUR publishing uses repository secret `AUR_SSH_PRIVATE_KEY`, an unencrypted dedicated Ed25519 private key whose public half is registered with the AUR account. That key can push every AUR package maintained or co-maintained by that account, not only `omakit`; omit it to keep the AUR job inert.
-5. After the pull request is merged, tag that exact `main` commit `v0.1.0` and push the tag. The tag starts a fresh proof, publishes the already-checked npm tarball with provenance, creates a GitHub Release with npm and source archives plus both SHA-256 values, and opens or updates `automation/aur-v0.1.0` as one reviewable AUR-metadata pull request. A replay refuses to replace an existing asset or differing release body. GitHub holds CI for a `GITHUB_TOKEN`-created pull request for approval, so click **Approve workflows to run** on that PR. When `AUR_SSH_PRIVATE_KEY` exists, the same measured PKGBUILD and `.SRCINFO` are also pushed to AUR; without it the job reports a no-op.
-6. The weekly pin-freshness run then keeps one `[automation] Marketplace pin differs from HEAD` issue in this repository: it creates, updates or reopens it while the full commits differ and closes it once they match. A missing or unknown HEAD fails without changing any issue.
+Done on the `launch` branch on 2026-09-13: the README replacements above, the
+`OMAKIT_MARKETPLACE_PIN` override removed (omakit reads no variable of its
+own; tests set `XDG_CACHE_HOME`), the AUR completion scripts regenerated after
+`omakit completion` went, and `release.yml` made to succeed without a secret.
 
-Locally unverified because they require the first push or release: GitHub's event delivery, cache service and effective repository permission ceiling; npm package-name ownership, `NPM_TOKEN`, OIDC trusted-publisher matching and the published provenance; GitHub Release upload and the bot-created AUR pull request; the approval-gated CI on that pull request; the scheduled issue state machine; AUR account/package authorization and outbound SSH on port 22; and a clean AUR build from the not-yet-existing release URL. The local online `omakit doctor --json` run also returned `pin.freshness: unknown` because this sandbox could not reach GitHub, so its live HEAD comparison remains unverified here.
+The first release is published by hand:
+
+1. `main` carries all of it. A `v0.1.0` tag on `main` starts `release.yml`,
+   which runs the suite, builds `omakit-0.1.0.tgz` and `omakit-0.1.0.tar.gz`
+   from the tagged commit, creates the GitHub Release with both archives and
+   both SHA-256 values, and opens `automation/aur-v0.1.0` with the measured
+   PKGBUILD and `.SRCINFO`. With no `NPM_TOKEN` it reports that npm is a
+   manual step and does not fail.
+2. `npm publish --access public` from a checkout at the tag, with the account's
+   own login. Then `npm view omakit version`.
+3. Merge `automation/aur-v0.1.0` (GitHub holds its CI for approval: click
+   **Approve workflows to run**), then push `packaging/aur/PKGBUILD` and
+   `.SRCINFO` from that merge to `ssh://aur@aur.archlinux.org/omakit.git`.
+   `AUR_SSH_PRIVATE_KEY` stays absent; the AUR job reports a no-op.
+4. First week: configure npm Trusted Publishing for `mtolhuys/omakit` and
+   `release.yml`, so the next tag publishes with provenance on its own.
+5. The weekly pin-freshness run keeps one `[automation] Marketplace pin
+   differs from HEAD` issue in this repository.
+
+Still unverified until the first tag: GitHub's event delivery, the cache
+service, the effective permission ceiling, the Release upload, the bot-created
+pull request and its approval gate, and the scheduled issue state machine.
 
 ## Local phase-two evidence
 

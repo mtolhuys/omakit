@@ -7,7 +7,7 @@ local commit through the transport seam the marketplace tests itself
 
 | File | Purpose |
 | --- | --- |
-| `pin.mjs` | The pin identity (one home) and the reproducible setup: `omakit pin` fetches exactly that commit into `.cache/marketplace` and refuses a modified checkout. |
+| `pin.mjs` | The pin identity (one home) and the reproducible setup: `omakit pin` fetches exactly that commit into `$XDG_CACHE_HOME/omakit/marketplace` and refuses a modified checkout. |
 | `local-transport.mjs` | Answers the four request shapes the official resolver makes, from a local clone at the exact commit. No network, no credentials, no writes. |
 | `run-baseline.mjs` | Runs the pinned official baseline over either transport and reports the pin identity beside the result. |
 | `verify.mjs` | Builds the `marketplaceBaseline` section: pin, transport, assumptions, the official result verbatim, the statement. |

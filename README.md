@@ -48,7 +48,21 @@ review writing. The rest of the benefit is the submitter's.
 
 ## Install
 
-Three commands. The third one is the tool doing its job.
+On Omarchy, or any Arch:
+
+```bash
+yay -S omakit
+omakit setup
+```
+
+Anywhere with Node 22 or newer:
+
+```bash
+npm install --global omakit
+omakit setup
+```
+
+Or read what you run:
 
 ```bash
 git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
@@ -58,10 +72,15 @@ omakit setup
 
 | Needs | Why |
 | --- | --- |
-| Node 22 or newer | the tool is plain ESM with no dependencies and no build step |
+| Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has it through `mise`, along with `git`, `yay`, `gh` and `ttfx` |
 | `git` | the pin, and reading a subject's tree at an exact commit |
-| network, once | `omakit pin`. After that, `submit` and `verify` need none at all |
-| 16 MB on disk | the pinned checkout, in `.cache/` beside the tool |
+| network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
+| 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
+
+Updates come from whichever installer you used: `omarchy-update` or `yay -Syu`
+for the package, `npm i -g omakit@latest` for npm, `omakit upgrade` for a
+clone. Nothing in omakit updates itself, and `omarchy-mise-install npm:omakit`
+would, so it is not the way in.
 
 ## Watch
 
@@ -100,7 +119,7 @@ omakit help --agent          # the operating instructions, for the agent running
 `omakit setup` checks the environment, fetches the marketplace checkout that
 every rule is read from, installs tab completion for the shell you run it from
 (bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
-idempotent. The fetch takes about 2 seconds and 16 MB, because it takes only the
+idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
 seven files omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the
@@ -110,8 +129,9 @@ There is nothing to authenticate. If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
 `GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
 those itself. Without either, `watch` and `parity` share GitHub's
-60-requests-an-hour unauthenticated allowance, and `submit` and `verify` do
-not touch the network at all. omakit reads no environment variable of its own,
+60-requests-an-hour unauthenticated allowance, and `submit` and `verify` on a
+local repository do not touch the network at all (a `<url>@<sha>` target is
+fetched once, over git, into the cache). omakit reads no environment variable of its own,
 and `omakit doctor` names the credential source it found, or that it found
 none.
 
@@ -158,7 +178,8 @@ and anything that is not a fast-forward, and it names what to run yourself in
 each case. It is not a self-updater of the kind this repository warns other
 people about: it fast-forwards a Git checkout you cloned, from the remote you
 cloned it from, and it touches nothing else. On a package install it says so and
-prints `npm i -g omakit@latest`. `git -C ~/.local/share/omakit pull` still works
+names the installer's own command: `npm i -g omakit@latest`, or
+`sudo pacman -Syu omakit` for the Arch package. `git -C ~/.local/share/omakit pull` still works
 and does the same thing.
 
 **The pin** does not move by itself, ever, and `omakit upgrade` does not move it
