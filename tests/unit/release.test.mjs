@@ -52,3 +52,8 @@ test("the publish job uses OIDC without static token configuration", () => {
   assert.doesNotMatch(publish, /NPM_TOKEN|NODE_AUTH_TOKEN|registry-url:/)
   assert.match(publish, /npm publish .*--provenance --access public/)
 })
+
+test("the publish argument is explicitly a local tarball, never GitHub shorthand", () => {
+  const step = steps.find((step) => step.startsWith("Publish with provenance"))
+  assert.match(step, /npm publish "\.\/release-assets\/\$NPM_FILE"/)
+})
