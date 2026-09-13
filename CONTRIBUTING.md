@@ -28,6 +28,15 @@ exact publishable file list and measured archive size without publishing it.
 
 Before opening a pull request, run all three commands.
 
+## Repository layout
+
+`tools/marketplace/README.md` is the module map: one row per file under
+`tools/`, with what each reads and never writes. `AGENTS.md` at the root is
+guidance for coding agents working on omakit itself; it is not in the npm
+package (`tests/package-assert.mjs` proves it), and omakit is not a plugin, so
+the `tree.agent-control` note, which is about a plugin's installable tree, does
+not apply to it.
+
 ## What the suite protects
 
 - `tests/unit/read-only.test.mjs` proves the tool has one literal-GET HTTP call

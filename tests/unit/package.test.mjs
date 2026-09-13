@@ -22,9 +22,15 @@ test("the real npm pack matches the reviewed list, so a new file cannot reach a 
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   })
-  const result = assertPackageArtifact(JSON.parse(json))
+  const packed = JSON.parse(json)
+  const result = assertPackageArtifact(packed)
   assert.equal(result.fileCount, EXPECTED_PACKAGE_PATHS.length)
   assert.ok(result.packedBytes <= MAX_PACKED_BYTES)
+  // AGENTS.md is guidance for coding agents working on omakit itself
+  // (CONTRIBUTING.md, "Repository layout"): never a deliverable, so it is in
+  // neither the reviewed list nor the tarball npm would actually build.
+  assert.ok(!EXPECTED_PACKAGE_PATHS.includes("AGENTS.md"))
+  assert.ok(!packed[0].files.some((file) => file.path === "AGENTS.md"), "AGENTS.md is not in the tarball")
 })
 
 test("an added publishable path is refused by name", () => {
