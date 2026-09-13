@@ -82,9 +82,14 @@ test("an npm install off PATH gets the export line for bash and zsh with the rc 
 })
 
 test("a clone off PATH keeps the symlink hint, a reachable command needs none, and no npm means no line", () => {
-  const off = pathHint({ repoRoot: REPO_ROOT, entryPoint: "/opt/omakit/bin/omakit", env: { PATH: "/usr/bin", SHELL: "/bin/zsh" } })
+  // A clone is a directory with a `.git` in it, made here rather than read
+  // off this checkout: the suite runs green from `git archive`, which has
+  // no `.git`, and this test is about a clone, not about where it runs.
+  const clone = mkdtempSync(join(tmpdir(), "omakit-clone-"))
+  mkdirSync(join(clone, ".git"))
+  const off = pathHint({ repoRoot: clone, entryPoint: join(clone, "bin/omakit"), env: { PATH: "/usr/bin", SHELL: "/bin/zsh" } })
   assert.equal(off.kind, "git")
-  assert.equal(off.line, "ln -s /opt/omakit/bin/omakit ~/.local/bin/omakit")
+  assert.equal(off.line, `ln -s ${join(clone, "bin/omakit")} ~/.local/bin/omakit`)
   assert.equal(off.where, null)
 
   const fake = npmInstall()

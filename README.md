@@ -240,7 +240,7 @@ would be poor form to hide it here.
 ## Evidence, not claims
 
 ```bash
-npm test        # 147 tests, node --test, no dependencies
+npm test        # node --test, no dependencies; green from `git archive` too
 ```
 
 | Claim | Proof |

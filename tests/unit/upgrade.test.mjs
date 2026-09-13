@@ -133,8 +133,11 @@ test("package installs name the command that updates them", () => {
   assert.equal(upgradeCommand("/usr/lib/node_modules/omakit"), "omakit upgrade")
   assert.equal(installKind("/usr/lib/omakit"), "distro")
   assert.equal(upgradeCommand("/usr/lib/omakit"), "sudo pacman -Syu omakit")
-  assert.equal(installKind(REPO_ROOT), "git")
-  assert.equal(upgradeCommand(REPO_ROOT), "omakit upgrade")
+  // A clone made here, not this checkout: the suite runs green from
+  // `git archive`, which has no `.git`.
+  const { dir: clone } = repo()
+  assert.equal(installKind(clone), "git")
+  assert.equal(upgradeCommand(clone), "omakit upgrade")
 })
 
 test("it refuses an unexpected remote rather than pulling from it", async () => {
