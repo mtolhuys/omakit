@@ -106,9 +106,22 @@ export function token() {
   return credential().value
 }
 
-async function get(url, { accept = "application/vnd.github+json" } = {}) {
-  const headers = { accept, "user-agent": USER_AGENT }
-  const auth = token()
+/** The one host the borrowed gh credential may be sent to. */
+export const CREDENTIAL_HOST = "api.github.com"
+
+async function get(url, { accept } = {}) {
+  const { host } = new URL(url)
+  // The credential is GitHub's and goes to GitHub's API and nowhere else.
+  // Measured before this held: `omakit upgrade` and `doctor` sent the gh
+  // token as a bearer to registry.npmjs.org, which answered 401, so both
+  // reported "the npm registry did not answer" on every machine with a gh
+  // login, and a GitHub credential had left GitHub.
+  const authenticated = host === CREDENTIAL_HOST
+  const headers = {
+    accept: accept || (authenticated ? "application/vnd.github+json" : "application/json"),
+    "user-agent": USER_AGENT,
+  }
+  const auth = authenticated ? token() : null
   if (auth) headers.authorization = `Bearer ${auth}`
   let response
   try {

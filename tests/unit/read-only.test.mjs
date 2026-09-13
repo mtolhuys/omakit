@@ -8,7 +8,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
-import { GH_ARGS } from "../../tools/marketplace/github.mjs"
+import { CREDENTIAL_HOST, GH_ARGS, getJson } from "../../tools/marketplace/github.mjs"
 import { NPM_PREFIX_ARGS, NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
 import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION } from "../../tools/marketplace/style.mjs"
@@ -229,4 +229,34 @@ test("no marketplace security-baseline marker can be emitted", () => {
     assert.doesNotMatch(text, /marketplace-security-baseline:v/, `${path} contains a baseline marker literal`)
     assert.doesNotMatch(text, /serializeSecurityBaselineMarker/, `${path} constructs a baseline marker`)
   }
+})
+
+test("the borrowed credential is sent to api.github.com and to no other host", async () => {
+  // Measured 2026-09-13 on a machine with a gh login: the bearer token went
+  // to registry.npmjs.org with every version check, npm answered 401, and
+  // `omakit upgrade` refused with "the npm registry did not answer".
+  assert.equal(CREDENTIAL_HOST, "api.github.com")
+  const seen = []
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    seen.push({ host: new URL(url).host, authorization: init.headers.authorization || null, accept: init.headers.accept })
+    return { ok: true, json: async () => ({}), text: async () => "", headers: { get: () => null } }
+  }
+  try {
+    await getJson("https://registry.npmjs.org/omakit/latest")
+    await getJson("https://raw.githubusercontent.com/omacom/omarchy-plugin-marketplace/0000000000000000000000000000000000000000/registry.json")
+    await getJson("https://api.github.com/repos/omacom/omarchy-plugin-marketplace")
+  } finally {
+    globalThis.fetch = realFetch
+  }
+  for (const request of seen) {
+    if (request.host !== CREDENTIAL_HOST) {
+      assert.equal(request.authorization, null, `${request.host} was sent a credential`)
+      assert.equal(request.accept, "application/json", `${request.host} was asked for GitHub's media type`)
+    }
+  }
+  const github = seen.find((request) => request.host === CREDENTIAL_HOST)
+  assert.equal(github.accept, "application/vnd.github+json")
+  // Whether a bearer went to GitHub depends on whether this machine has a gh
+  // login; that it goes nowhere else does not.
 })
