@@ -26,6 +26,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/github.mjs",
   "tools/marketplace/issue.mjs",
   "tools/marketplace/local-transport.mjs",
+  "tools/marketplace/path-hint.mjs",
   "tools/marketplace/parity-output.mjs",
   "tools/marketplace/paths.mjs",
   "tools/marketplace/pin.mjs",

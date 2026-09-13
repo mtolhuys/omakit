@@ -110,6 +110,9 @@ test("npm is spawned only by upgrade, with frozen arguments, at an exact version
     const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
     assert.doesNotMatch(code, /\w+\s*\(\s*["'`]sudo["'`]/, `${path} spawns sudo`)
     const spawns = [...code.matchAll(/\w+\s*\(\s*["'`]npm["'`]\s*,\s*(\[[^\]]*\])/g)].map((match) => match[1].replace(/\s+/g, ""))
+    // A test may run npm (package.test.mjs reads the real `npm pack`); the
+    // tool itself may only in upgrade.mjs.
+    if (path.startsWith("tests/")) continue
     if (path !== "tools/marketplace/upgrade.mjs") {
       assert.deepEqual(spawns, [], `${path} spawns npm; only upgrade.mjs may`)
       continue
