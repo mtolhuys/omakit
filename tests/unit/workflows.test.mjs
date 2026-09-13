@@ -54,7 +54,7 @@ test("CI proves both supported Nodes, the portable macOS suite, pin and package"
   assert.match(source, /npm pack --dry-run --json/)
   assert.match(source, /tests\/package-assert\.mjs/)
   assert.match(source, /GITHUB_STEP_SUMMARY/)
-  assert.match(source, /Skipped: no network is a failure state, not a stack trace — Linux-only \(unshare -rn\)/)
+  assert.match(source, /Skipped: no network is a failure state, not a stack trace, Linux-only \(unshare -rn\)/)
   assert.match(source, /key: omakit-marketplace-\$\{\{ runner\.os \}\}-\$\{\{ steps\.pin\.outputs\.commit \}\}/i)
   assert.doesNotMatch(source, /restore-keys:/)
   assert.doesNotMatch(source, /find tests\/unit/, "test-file counting stays inside the selected Node runtime")

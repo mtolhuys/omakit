@@ -68,7 +68,7 @@ jobs:
       - name: Name the portable-suite skip
         if: runner.os == 'macOS'
         run: |
-          echo "::notice title=Portable test skip::Skipped: no network is a failure state, not a stack trace — Linux-only (unshare -rn)"
+          echo "::notice title=Portable test skip::Skipped: no network is a failure state, not a stack trace, Linux-only (unshare -rn)"
 
       - name: Run the dependency-free suite
         id: suite
@@ -114,12 +114,12 @@ jobs:
         run: |
           skipped="none"
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            skipped="no network is a failure state, not a stack trace — Linux-only (unshare -rn)"
+            skipped="no network is a failure state, not a stack trace, Linux-only (unshare -rn)"
           elif ! unshare -rn true >/dev/null 2>&1; then
-            skipped="no network is a failure state, not a stack trace — unshare -rn unavailable"
+            skipped="no network is a failure state, not a stack trace, unshare -rn unavailable"
           fi
           if ! command -v ttfx >/dev/null 2>&1; then
-            effect="with the real ttfx, the pinned effect finishes inside its stated budget — ttfx not installed"
+            effect="with the real ttfx, the pinned effect finishes inside its stated budget, ttfx not installed"
             skipped=$([[ "$skipped" == "none" ]] && echo "$effect" || echo "$skipped; $effect")
           fi
           {

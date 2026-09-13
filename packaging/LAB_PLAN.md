@@ -342,7 +342,7 @@ into that same pathname.
 Before a compositor starts, every human and JSON run report states:
 
 ```text
-tier           compositor — <stable reason>
+tier           compositor: <stable reason>
 release        4.0.3
 guest          omarchy 4.0.3-1
 iso sha256     03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
@@ -362,10 +362,10 @@ Doctor remains read-only and network-free for the lab section. It reports one
 base line in all states:
 
 ```text
-lab base       missing — 0 B; run `omakit lab setup`
-lab base       ready — Omarchy 4.0.3-1; 6,456,705,024 B (6.457 GB / 6.013 GiB)
-lab base       mismatch — cached <identity>; required <identity>; setup required
-lab base       invalid — <measured local reason>; it will not be booted
+lab base       missing: 0 B; run `omakit lab setup`
+lab base       ready: Omarchy 4.0.3-1; 6,456,705,024 B (6.457 GB / 6.013 GiB)
+lab base       mismatch: cached <identity>; required <identity>; setup required
+lab base       invalid: <measured local reason>; it will not be booted
 ```
 
 It also reports the measured total of the lab cache and retained text evidence.
