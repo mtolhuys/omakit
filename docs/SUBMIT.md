@@ -91,7 +91,7 @@ repository whose manifest carries an id it does not list are all still
 `identity.available`, the closing line keeps "Fix it, then run submit again"
 and the reproduce line, because a new id is a fix.
 
-A check has three verdicts. `pass` and `fail` are its own. `unknown`, drawn as
+A check has four verdicts. `pass` and `fail` are its own. `unknown`, drawn as
 `▒ ?`, is a check that could not run because one it depends on failed:
 `submission.headings`, `submission.checklist` and `submission.official-parser`
 read the rendered body, so when the title, the category, the tags or the
@@ -100,6 +100,14 @@ neither `blocking` nor `advisory`. The closing refusal lists root causes only
 and says how many checks waited on them. Measured before this: a run with no
 `--category` and no `--tags` on a listed plugin said "6 blocking checks failed"
 for two causes.
+
+`skipped`, drawn as `▔ skip`, is a check that was not made because a flag said
+not to: `--offline` skips `submission.validation-commit`, whose detail then
+reads "not checked (--offline). Local commit <sha>." It never blocks, it is
+listed under `skipped` in `--json` and not under `unknown`, and a READY run
+says so on the READY line: "every blocking check passed. 1 check skipped
+(--offline)." Measured on 0.1.6: that check came out `"verdict": "pass"` and
+was drawn `▁ ok` under `--offline`, for a comparison that never happened.
 
 The category and the tags are decided after the registry is read, not before.
 A plugin that is already listed, by its own repository or by another, is

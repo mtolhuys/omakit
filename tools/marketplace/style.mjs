@@ -162,6 +162,7 @@ export const DENSITY = Object.freeze({
   medium: "▒", // ▒  unknown: neither here nor there
   light: "░", // ░  information: present, weightless
   floor: "▁", // ▁  settled: a pass, a rule, the track the scanner runs on
+  ceiling: "▔", // ▔  skipped: the floor's own ink, never landed, because a flag said not to look
 })
 
 /** The glyph that starts the one line that fixes things. */
@@ -170,15 +171,23 @@ export const ARROW = "→"
 // --- the status vocabulary ---------------------------------------------------
 
 /**
- * Five states, and only five. Each has one glyph, one word and one tint, and
+ * Six states, and only six. Each has one glyph, one word and one tint, and
  * every command prints them through `mark()` below. `pass` and `fail` are
  * verdicts; `advisory` is a failure that does not block; `info` is a fact with
- * no verdict; `unknown` is a check that could not be made.
+ * no verdict; `unknown` is a check that could not be made; `skipped` is a
+ * check that was not made because a flag said not to (`--offline`).
  *
  * The glyph is the density ramp read as severity: the more ink, the more it
  * matters. The word is the same thing in letters, and its case carries it too:
  * FAIL is the only upper-case mark, so it is the one the eye lands on in a
  * column of lower-case ones, with or without colour.
+ *
+ * `skipped` and `unknown` are one family: neither has a verdict, both wear the
+ * same tint, and only the glyph and the word tell them apart. Measured on
+ * 0.1.6: `--offline` drew the skipped validation-commit check as `▁ ok`, and
+ * `--json` said `"verdict": "pass"`, for a comparison that never happened. The
+ * skipped mark is the floor's ink at the ceiling: the same weight as a pass,
+ * visibly not landed on one, on a theme that shows no hue.
  */
 export const STATUS = Object.freeze({
   pass: Object.freeze({ glyph: DENSITY.floor, word: "ok", tint: "pass" }),
@@ -186,6 +195,7 @@ export const STATUS = Object.freeze({
   advisory: Object.freeze({ glyph: DENSITY.dark, word: "note", tint: "advisory" }),
   info: Object.freeze({ glyph: DENSITY.light, word: "info", tint: "info" }),
   unknown: Object.freeze({ glyph: DENSITY.medium, word: "?", tint: "unknown" }),
+  skipped: Object.freeze({ glyph: DENSITY.ceiling, word: "skip", tint: "unknown" }),
 })
 
 /** The width of the widest mark, "█ FAIL"; every mark is padded to it so the names beside them align. */
@@ -360,7 +370,7 @@ export function wrap(text, { indent = 0, width: total = COLUMNS, first = indent 
  * after it starts at GUTTER. This is the only place a status is turned into
  * characters.
  *
- * @param {"pass"|"fail"|"advisory"|"info"|"unknown"} state
+ * @param {"pass"|"fail"|"advisory"|"info"|"unknown"|"skipped"} state
  * @param {(name: string, text: string) => string} c
  */
 export function mark(state, c) {

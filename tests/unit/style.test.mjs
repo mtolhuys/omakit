@@ -81,8 +81,8 @@ test("a disabled styler is the identity function", () => {
 
 // --- one vocabulary -----------------------------------------------------------
 
-test("five states, each with one glyph, one word and one tint, all distinct", () => {
-  assert.deepEqual(Object.keys(STATUS), ["pass", "fail", "advisory", "info", "unknown"])
+test("six states, each with one glyph, one word and one tint, all distinct", () => {
+  assert.deepEqual(Object.keys(STATUS), ["pass", "fail", "advisory", "info", "unknown", "skipped"])
   const glyphs = new Set()
   const words = new Set()
   for (const [name, status] of Object.entries(STATUS)) {
@@ -102,6 +102,13 @@ test("five states, each with one glyph, one word and one tint, all distinct", ()
   // floor is information.
   assert.equal(STATUS.fail.glyph, DENSITY.full)
   assert.equal(STATUS.pass.glyph, DENSITY.floor)
+  // A skipped check is the unknown family (no verdict, the same tint), told
+  // apart by ink alone: the floor's weight, at the ceiling, so it is never
+  // read as a pass on a theme that shows no hue.
+  assert.equal(STATUS.skipped.tint, STATUS.unknown.tint)
+  assert.equal(STATUS.skipped.glyph, DENSITY.ceiling)
+  assert.notEqual(STATUS.skipped.glyph, STATUS.pass.glyph)
+  assert.equal(width(STATUS.skipped.glyph), 1)
 })
 
 test("the columns are derived from the marks and the keys, not chosen", () => {
@@ -121,7 +128,7 @@ test("no status mark, glyph or arrow is typed anywhere but style.mjs", () => {
   // appear without changing the one definition.
   const glyphs = [...Object.values(DENSITY), ARROW]
   const escapes = glyphs.map((glyph) => `\\u${glyph.codePointAt(0).toString(16).padStart(4, "0")}`)
-  const words = /c\("[a-z.]+",\s*(?:`|")\s*(?:ok|FAIL|PROBLEM|note|info|\?|REFUSED)\b/
+  const words = /c\("[a-z.]+",\s*(?:`|")\s*(?:ok|FAIL|PROBLEM|note|info|skip|\?|REFUSED)\b/
   for (const { path, text: raw } of sources) {
     if (path === STYLE) continue
     const text = uncommented(raw)

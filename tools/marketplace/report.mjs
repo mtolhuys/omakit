@@ -23,10 +23,11 @@ import {
 
 const body = " ".repeat(GUTTER)
 
-/** The state a check renders in: an advisory failure is a note, not a FAIL, and a check that waited on another is a question. */
+/** The state a check renders in: an advisory failure is a note, not a FAIL, a check that waited on another is a question, and a check a flag skipped says so. */
 function stateOf(check) {
   if (check.verdict === "pass") return "pass"
   if (check.verdict === "unknown") return "unknown"
+  if (check.verdict === "skipped") return "skipped"
   return check.severity === "advisory" ? "advisory" : "fail"
 }
 
@@ -101,10 +102,10 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   out.push(...field("marketplace", `${result.pin.commit}, baseline ${result.pin.baselineVersion}, ${result.pin.enforcementMode}`, c))
   out.push("")
 
-  // Passing checks run together, and so does a check that waited on another:
-  // both are two quiet lines. Anything else gets a blank line on each side,
-  // collapsed where two blocks meet.
-  const quiet = (state) => state === "pass" || state === "unknown"
+  // Passing checks run together, and so do a check that waited on another
+  // and one a flag skipped: all are two quiet lines. Anything else gets a
+  // blank line on each side, collapsed where two blocks meet.
+  const quiet = (state) => state === "pass" || state === "unknown" || state === "skipped"
   let previous = "pass"
   for (const [index, check] of result.checks.entries()) {
     const state = stateOf(check)
@@ -168,7 +169,12 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   const validation = result.validationCommit.defaultBranchHead
     ? `${result.validationCommit.local} is the ${result.validationCommit.branch || "default"}-branch HEAD, so it is the commit the marketplace will validate.`
     : `${result.validationCommit.local} is the local commit; the marketplace validates the default-branch HEAD it resolves when the issue is opened.`
-  out.push(...verdict("pass", "READY", `every blocking check passed. ${validation}`, c))
+  // A skipped check is said on the READY line itself, so the one line an
+  // agent quotes does not read as "everything passed" when one check never
+  // ran. The count is the whole `skipped` list; today only --offline skips.
+  const skipped = (result.skipped || []).length
+  const skippedNote = skipped ? ` ${skipped === 1 ? "1 check" : `${skipped} checks`} skipped (--offline).` : ""
+  out.push(...verdict("pass", "READY", `every blocking check passed.${skippedNote} ${validation}`, c))
   out.push("")
   out.push(...section("issue title", c))
   out.push(c("heading", result.issue.title))

@@ -56,7 +56,7 @@ export class SubmitError extends Error {
 }
 
 /**
- * A check has three verdicts. `pass` and `fail` are its own. `unknown` is
+ * A check has four verdicts. `pass` and `fail` are its own. `unknown` is
  * for a check that could not run because one it depends on failed: it is
  * rendered as a question, its detail names what it waited on, and it counts
  * in neither `blocking` nor `advisory`, so a refusal lists root causes only.
@@ -65,19 +65,28 @@ export class SubmitError extends Error {
  * checklist and official-parser each failed for want of a body nobody could
  * render yet, and the closing refusal listed them with "not rendered" where
  * a remedy goes.
+ *
+ * `skipped` is for a check that was not made because a flag said not to,
+ * independent of `waitedOn`: it never blocks, it counts in `skipped` and
+ * not in `unknown`, and its detail says which flag. Measured on 0.1.6:
+ * `--offline` handed `verdict: true` to the validation-commit check, so
+ * `--json` said `"verdict": "pass"` and the report drew `▁ ok` for a
+ * comparison that never happened, and an agent reading `checks` rather than
+ * the prose could tell the owner every check passed.
  */
 function check(id, fields) {
   const waitedOn = (fields.waitedOn || []).filter(Boolean)
+  const skipped = fields.skipped === true
   return {
     id,
     source: fields.source,
     why: fields.why,
     severity: fields.severity || "blocking",
-    verdict: waitedOn.length ? "unknown" : fields.verdict ? "pass" : "fail",
-    detail: waitedOn.length ? `not checked: it needs ${waitedOn.join(" and ")} to pass first` : fields.detail || "",
+    verdict: skipped ? "skipped" : waitedOn.length ? "unknown" : fields.verdict ? "pass" : "fail",
+    detail: !skipped && waitedOn.length ? `not checked: it needs ${waitedOn.join(" and ")} to pass first` : fields.detail || "",
     paths: fields.paths || [],
     // One arrow, or one per cause in the order they should be read.
-    remedy: waitedOn.length ? null : Array.isArray(fields.remedy) ? (fields.remedy.length ? fields.remedy : null) : fields.remedy || null,
+    remedy: skipped || waitedOn.length ? null : Array.isArray(fields.remedy) ? (fields.remedy.length ? fields.remedy : null) : fields.remedy || null,
   }
 }
 
@@ -405,7 +414,8 @@ export async function submitPreflight(options) {
     source: "omakit",
     why: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited, not the commit checked here. 73% of the 464 submissions parked in the author's court have a HEAD ahead of their validated commit, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
     severity: options.offline ? "advisory" : "blocking",
-    verdict: options.offline ? true : validationMatches === true,
+    skipped: options.offline === true,
+    verdict: validationMatches === true,
     detail: options.offline
       ? `not checked (--offline). Local commit ${subject.commit}.`
       : head
@@ -454,6 +464,7 @@ export async function submitPreflight(options) {
   const blocking = checks.filter((entry) => entry.severity === "blocking" && entry.verdict === "fail")
   const advisory = checks.filter((entry) => entry.severity === "advisory" && entry.verdict === "fail")
   const unknown = checks.filter((entry) => entry.verdict === "unknown")
+  const skipped = checks.filter((entry) => entry.verdict === "skipped")
   // Three outcomes. `refused`: a blocking check failed and no body exists.
   // `listed`: nothing failed and the plugin is already listed by this
   // repository, so there is no body either, and nothing is wrong. `ready`:
@@ -506,6 +517,7 @@ export async function submitPreflight(options) {
     blocking: blocking.map((entry) => entry.id),
     advisory: advisory.map((entry) => entry.id),
     unknown: unknown.map((entry) => entry.id),
+    skipped: skipped.map((entry) => entry.id),
     issue: ready ? issue : null,
     baseline: preflight.invoked
       ? {

@@ -32,7 +32,7 @@ issue. So:
 
 ## One vocabulary
 
-Five states, and only five. Each has one glyph, one word and one tint, and the
+Six states, and only six. Each has one glyph, one word and one tint, and the
 only way to print one is `mark()` in `style.mjs`:
 
 | state | mark | tint | when |
@@ -42,12 +42,19 @@ only way to print one is `mark()` in `style.mjs`:
 | advisory | `▓ note` | yellow | a failure that does not block |
 | info | `░ info` | dim | a fact with no verdict |
 | unknown | `▒ ?` | yellow | a check that could not be made |
+| skipped | `▔ skip` | yellow | a check a flag said not to make (`--offline`) |
+
+`skipped` and `unknown` are one family: no verdict, the same tint, told apart
+by the glyph and the word. The skipped mark is the floor's ink at the ceiling,
+the same weight as a pass and visibly not landed on one, so a monochrome theme
+cannot read it as `ok`. Measured on 0.1.6: `submit --offline` drew the check it
+skipped as `▁ ok`.
 
 Before this, `submit` said `ok  `/`FAIL`, `doctor` said `ok    `/`note  `/
 `PROBLEM`/`?     `, `setup` said `ok `/`PROBLEM`, `upgrade` said `REFUSED` and
 `note`, `pin` said `ok - `. Five spellings of two ideas, four different column
 widths. The test now fails if a status word or a block glyph is typed in any
-file but `style.mjs`, so a sixth state or a second spelling of `ok` cannot
+file but `style.mjs`, so a seventh state or a second spelling of `ok` cannot
 appear without changing the one definition.
 
 A verdict, the closing line of a command, is the same glyph with the verdict's

@@ -8,6 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
+import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -368,14 +369,28 @@ test("a dirty worktree is refused unless it is allowed explicitly", async () => 
   assert.equal(allowed.subject.cleanTree, false)
 })
 
-test("the offline flag makes the validation-commit check advisory, never silent", async () => {
+test("the offline flag makes the validation-commit check skipped: advisory, never silent, never a pass", async () => {
+  // Measured on 0.1.6: this check came out `"verdict": "pass"` under
+  // --offline, `unknown` stayed empty, and the report drew `▁ ok` for a
+  // comparison that never happened.
   const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
   const result = await submitPreflight({
     repoRoot: REPO_ROOT, target: fixture.dir, category: "Other", tags: "system", offline: true,
   })
   const check = result.checks.find((entry) => entry.id === "submission.validation-commit")
   assert.equal(check.severity, "advisory")
-  assert.match(check.detail, /not checked \(--offline\)/)
+  assert.equal(check.verdict, "skipped")
+  assert.equal(check.remedy, null)
+  assert.match(check.detail, /^not checked \(--offline\)\. Local commit [0-9a-f]{40}\.$/)
+  assert.deepEqual(result.skipped, ["submission.validation-commit"], "counted as skipped")
+  assert.deepEqual(result.unknown, [], "not as unknown: nothing was waited on")
+  assert.deepEqual(result.advisory, [], "not as an advisory failure: nothing failed")
+  assert.equal(result.ready, true, "a skipped advisory check does not block READY")
   assert.equal(result.validationCommit.matches, null)
   assert.match(result.validationCommit.note, /watch/)
+
+  const text = renderSubmit(result, { colour: false })
+  assert.ok(text.includes(`${STATUS.skipped.glyph} ${STATUS.skipped.word}  submission.validation-commit`), "drawn with the skipped mark")
+  assert.ok(!text.includes(`${STATUS.pass.glyph} ${STATUS.pass.word}    submission.validation-commit`), "not drawn as a pass")
+  assert.ok(text.includes(`${STATUS.pass.glyph} READY  every blocking check passed. 1 check skipped (--offline).`), "the READY line says so")
 })
