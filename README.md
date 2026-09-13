@@ -53,6 +53,13 @@ npm install --global omakit
 omakit setup
 ```
 
+If `omakit` is not found afterwards, npm's global `bin` is not on your PATH
+(measured: a prefix of `~/.local/share/lerd/node-global` whose `bin` no shell
+searched). Run `"$(npm prefix --global)/bin/omakit" setup` once: it prints the
+one line that puts that directory on PATH for the shell in `$SHELL`, and the
+rc file to keep it in; `omakit doctor` reports the same as `omakit.path`.
+Nothing writes to your rc file.
+
 Or read what you run:
 
 ```bash

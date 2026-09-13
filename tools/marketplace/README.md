@@ -24,6 +24,7 @@ local commit through the transport seam the marketplace tests itself
 | `github.mjs` | Read-only GitHub access. GET only. The credential is your `gh` login, read through one frozen `gh auth token` call, and is never written anywhere. |
 | `style.mjs` | The visual system, defined once: the palette, the status vocabulary, the block ramp, the columns, the motion budgets, and the composition helpers every command draws with. `docs/TUI.md` explains it. |
 | `report.mjs` | Text rendering of submit, watch and doctor for the agent that runs this tool, and the person reading over its shoulder. |
+| `path-hint.mjs` | Is `omakit` reachable as a bare command, and if not, the one line that makes it so for the install that is here: a symlink for a clone, the npm prefix's `bin` on PATH for a package, said for the shell in `$SHELL`. `setup` and `doctor` print it; nothing writes an rc file. |
 | `usage.mjs` | The help text, as data. |
 | `completion.mjs` | A completion script for bash, zsh or fish, derived from the help data and the pin's form: the subcommands and flags are read out of `COMMANDS`, the categories and tags out of the pinned submission form, and the script says which pin it came from. `setup` installs it for the shell in `$SHELL`, the one file this tool writes outside its own checkout. |
 | `banner.mjs` | The wordmark, on a bare `omakit` and in `setup` only. |

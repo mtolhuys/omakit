@@ -9,7 +9,7 @@ import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import { GH_ARGS } from "../../tools/marketplace/github.mjs"
-import { NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
+import { NPM_PREFIX_ARGS, NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
 import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -103,6 +103,9 @@ test("npm is spawned only by upgrade, with frozen arguments, at an exact version
   // ignored, and the spec is `<name>@<version>` with the version the registry
   // just named, never `latest`, so the printed command is the executed one.
   assert.deepEqual([...NPM_UPGRADE_ARGS], ["install", "--global", "--ignore-scripts", "--no-fund", "--no-audit"])
+  // The other two questions npm is asked are where it installs and what its
+  // prefix is, for the PATH hint; both read-only, both frozen.
+  assert.deepEqual([...NPM_PREFIX_ARGS], ["prefix", "--global"])
   for (const { path, text } of sources) {
     const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
     assert.doesNotMatch(code, /\w+\s*\(\s*["'`]sudo["'`]/, `${path} spawns sudo`)
@@ -113,7 +116,7 @@ test("npm is spawned only by upgrade, with frozen arguments, at an exact version
     }
     assert.ok(spawns.length >= 1, "upgrade.mjs spawns npm")
     for (const args of spawns) {
-      assert.match(args, /^\[\.\.\.NPM_UPGRADE_ARGS,spec\]$|^\["root","--global"\]$/, `upgrade.mjs spawns npm as ${args}`)
+      assert.match(args, /^\[\.\.\.NPM_UPGRADE_ARGS,spec\]$|^\["root","--global"\]$|^\[\.\.\.NPM_PREFIX_ARGS\]$/, `upgrade.mjs spawns npm as ${args}`)
     }
     assert.doesNotMatch(code, /@latest["'`]\s*\]|`\$\{name\}@latest`\s*\]/, "the executed spec is never @latest")
   }

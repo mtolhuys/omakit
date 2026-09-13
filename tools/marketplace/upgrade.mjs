@@ -84,6 +84,23 @@ function npmGlobalRoot() {
   }
 }
 
+/**
+ * The frozen shape of the one other question this tool asks npm: where its
+ * global prefix is, whose `bin` is where `npm install --global` put the
+ * `omakit` command. Read-only; tests/unit/read-only.test.mjs holds npm to
+ * this shape, `root --global` and the install above, and to this file.
+ */
+export const NPM_PREFIX_ARGS = Object.freeze(["prefix", "--global"])
+
+/** The `npm` on PATH's global prefix, or null when there is no npm. */
+export function npmGlobalPrefix() {
+  try {
+    return resolve(execFileSync("npm", [...NPM_PREFIX_ARGS], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
+  } catch {
+    return null
+  }
+}
+
 function git(dir, args) {
   return execFileSync("git", ["-C", dir, ...args], {
     encoding: "utf8",

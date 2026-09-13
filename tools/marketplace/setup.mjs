@@ -11,8 +11,6 @@
 // and stops, which is the same contract every other command here keeps.
 
 import { execFileSync } from "node:child_process"
-import { existsSync } from "node:fs"
-import { delimiter, join } from "node:path"
 import { banner } from "./banner.mjs"
 import { credential, UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
@@ -21,6 +19,7 @@ import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 import { TAGLINE } from "./usage.mjs"
 import { installCompletion } from "./completion.mjs"
 import { submissionContract } from "./form.mjs"
+import { pathHint } from "./path-hint.mjs"
 
 function version(command) {
   try {
@@ -30,11 +29,6 @@ function version(command) {
   } catch {
     return null
   }
-}
-
-/** Is `omakit` reachable as a bare command, without asking a shell? */
-export function onPath(name = "omakit", env = process.env) {
-  return (env.PATH || "").split(delimiter).some((dir) => dir && existsSync(join(dir, name)))
 }
 
 /**
@@ -101,9 +95,14 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout }) {
   for (const line of wrap("Every rule omakit checks is read from that checkout, at that exact commit. It never moves on its own. `omakit doctor` says when it is behind.", {}, c)) out(line)
   out()
 
-  if (!onPath()) {
-    step("info", "`omakit` is not on your PATH yet. This puts it there:")
-    fix(`ln -s ${entryPoint} ~/.local/bin/omakit`)
+  // The hint is for the install that is here: a symlink for a clone, the npm
+  // prefix's bin on PATH for a package, in the shell in $SHELL (path-hint.mjs).
+  const reach = pathHint({ repoRoot, entryPoint })
+  if (!reach.reachable) {
+    step("info", reach.line
+      ? `${reach.reason} This puts it there${reach.where ? `; keep it in ${reach.where}` : ""}:`
+      : reach.reason)
+    if (reach.line) fix(reach.line)
     out()
   }
 

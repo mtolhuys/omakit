@@ -32,6 +32,7 @@ import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
 import { latestOnRegistry, upgradeCommand } from "./upgrade.mjs"
+import { pathHint } from "./path-hint.mjs"
 
 function tool(repoRoot) {
   try {
@@ -131,9 +132,10 @@ export function pinFreshness(identity, head, changedPaths = null) {
 }
 
 /**
- * @param {{ repoRoot: string, offline?: boolean }} options
+ * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null }} options
+ *   `env` and `npmPrefix` are injectable for tests of the PATH check.
  */
-export async function doctor({ repoRoot, offline = false, onPhase }) {
+export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix }) {
   // Optional: told what is being read while the network answers. Never
   // affects the result.
   const phase = onPhase || (() => {})
@@ -148,6 +150,16 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
 
   const self = tool(repoRoot)
   add("omakit.version", "info", `${self.name} ${self.version}`)
+
+  // Reachable as a bare command, or the one line that makes it so for this
+  // install (path-hint.mjs). Measured: an npm prefix whose bin is not on PATH
+  // installs a command nobody can run, and nothing said so.
+  const reach = pathHint({ repoRoot, entryPoint: join(repoRoot, "bin/omakit"), env, ...(npmPrefix ? { npmPrefix } : {}) })
+  add("omakit.path", reach.reachable ? "ok" : "advice",
+    reach.reachable
+      ? `\`omakit\` is reachable as a command from PATH (${reach.kind} install)`
+      : `${reach.reason}${reach.where ? ` Keep the line below in ${reach.where}.` : ""}`,
+    reach.reachable ? null : reach.line)
 
   const node = process.versions.node
   const major = Number(node.split(".")[0])
