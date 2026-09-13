@@ -27,6 +27,8 @@ import { requirePin } from "./pin.mjs"
 
 export const SUBMIT_FORM_PATH = ".github/ISSUE_TEMPLATE/submit-plugin.yml"
 export const OFFICIAL_SUBMISSION_MODULE = "scripts/submission.mjs"
+export const VERIFY_FORM_PATH = ".github/ISSUE_TEMPLATE/verify-plugin.yml"
+export const OFFICIAL_VERIFICATION_MODULE = "scripts/plugin-verification-request.mjs"
 
 export class ContractError extends Error {
   constructor(code, message) {
@@ -50,8 +52,8 @@ function loadOfficial(pinDir) {
   return import(pathToFileURL(join(pinDir, OFFICIAL_SUBMISSION_MODULE)).href)
 }
 
-function fieldsOf(form) {
-  if (!Array.isArray(form?.body)) throw new ContractError("form-unreadable", `${SUBMIT_FORM_PATH} has no body`)
+function fieldsOf(form, formPath = SUBMIT_FORM_PATH) {
+  if (!Array.isArray(form?.body)) throw new ContractError("form-unreadable", `${formPath} has no body`)
   return form.body
     .filter((item) => item && item.type !== "markdown")
     .map((item) => ({
@@ -65,12 +67,12 @@ function fieldsOf(form) {
     }))
 }
 
-function only(fields, predicate, what) {
+function only(fields, predicate, what, formPath = SUBMIT_FORM_PATH) {
   const found = fields.filter(predicate)
   if (found.length !== 1) {
     throw new ContractError(
       "form-shape-changed",
-      `${SUBMIT_FORM_PATH} no longer has exactly one ${what} (found ${found.length}); the pin changed shape and the submission contract must be re-read before anything is generated`,
+      `${formPath} no longer has exactly one ${what} (found ${found.length}); the pin changed shape and the submission contract must be re-read before anything is generated`,
     )
   }
   return found[0]
@@ -133,6 +135,36 @@ export async function submissionContract(options = {}) {
 
   assertContractAgrees(contract)
   return contract
+}
+
+/**
+ * The route for a plugin that is already listed: the marketplace's other
+ * form, and the one choice on it that lists a newer commit. Both read from
+ * the pin. The choice text is the option as the form spells it, found by the
+ * name the marketplace's own verification module gives that action; the two
+ * must agree, the way the submission form and `scripts/submission.mjs` must,
+ * because a choice retyped here would drift by a word and send a person to
+ * pick something the form no longer offers.
+ *
+ * @param {{ repoRoot?: string, pinDir?: string }} [options]
+ * @returns {Promise<{ formPath: string, name: string, choice: string }>}
+ */
+export async function newerCommitChoice(options = {}) {
+  const pinDir = options.pinDir || requirePin(options.repoRoot).dir
+  const form = parseYaml(readFileSync(join(pinDir, VERIFY_FORM_PATH), "utf8"))
+  const fields = fieldsOf(form, VERIFY_FORM_PATH)
+  const action = only(fields, (f) => f.type === "dropdown" && !f.multiple && f.required, "required single-select dropdown (verification action)", VERIFY_FORM_PATH)
+  const official = await import(pathToFileURL(join(pinDir, OFFICIAL_VERIFICATION_MODULE)).href)
+  const choice = (action.options || []).find((option) => option === official.upstreamUpdateVerificationAction)
+  if (!choice) {
+    throw new ContractError(
+      "form-shape-changed",
+      `${VERIFY_FORM_PATH} offers no "${official.upstreamUpdateVerificationAction}" under ${action.label}; the form and ${OFFICIAL_VERIFICATION_MODULE} at the pin disagree, and nobody is sent to a choice that is not there`,
+    )
+  }
+  const name = typeof form.name === "string" ? form.name.trim() : ""
+  if (!name) throw new ContractError("form-shape-changed", `${VERIFY_FORM_PATH} has no name`)
+  return { formPath: VERIFY_FORM_PATH, name, choice }
 }
 
 /**

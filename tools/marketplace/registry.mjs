@@ -107,12 +107,32 @@ export function defaultPresentation(presentation, kinds = []) {
   return { category, tags }
 }
 
+/**
+ * "https://github.com/Owner/Name.git" and "owner/name" both become
+ * "owner/name": the path, without surrounding slashes, without a trailing
+ * .git, lowercased. Anything else is "", which matches nothing.
+ */
 function repositorySlug(value) {
+  const text = String(value ?? "").trim()
+  let path
   try {
-    return new URL(String(value)).pathname.replace(/^\/+|\/+$/g, "").replace(/\.git$/i, "").toLowerCase()
+    path = new URL(text).pathname
   } catch {
-    return ""
+    path = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(text) ? text : ""
   }
+  return path.replace(/^\/+|\/+$/g, "").replace(/\.git$/i, "").toLowerCase()
+}
+
+/**
+ * The one rule for "the same repository": owner and name, compared
+ * case-insensitively, with a trailing .git ignored. Measured on 0.1.6: the
+ * author's own listed plugin was rendered as a failed check because the
+ * listing and the subject were compared as two strings, so this is the rule
+ * and its test, not a comparison typed where it is needed.
+ */
+export function sameRepository(a, b) {
+  const slug = repositorySlug(a)
+  return Boolean(slug) && slug === repositorySlug(b)
 }
 
 /**
@@ -400,11 +420,14 @@ export function figure(n) {
 
 /**
  * @param {{ id: string, repositoryUrl?: string|null }} subject
- * @returns {{ ok: boolean, problems: Array<{ code: string, detail: string, repository?: string|null, sameRepository?: boolean }> }}
+ * @returns {{ ok: boolean, own: boolean, problems: Array<{ code: string, detail: string, repository?: string|null, sameRepository?: boolean }> }}
  *   A `plugin-id-listed` problem names the repository that lists the id
  *   (`repository`, a slug, or null when the registry does not say) and
  *   whether that is the subject's own (`sameRepository`), because the two
- *   have different remedies: another id, or nothing to submit at all.
+ *   are different states: another id is needed, or the plugin is listed and
+ *   there is nothing to submit. `own` is the second state on its own: the id
+ *   is listed by this repository and no other code fired, so `ok` is false
+ *   and nothing is wrong.
  */
 export function checkIdentity(universe, subject) {
   const problems = []
@@ -425,18 +448,64 @@ export function checkIdentity(universe, subject) {
   }
   if (universe.listedIds.has(id)) {
     const repository = universe.listedBy?.get(id) || null
-    const sameRepository = Boolean(repository && slug && repository === slug)
     problems.push({
       code: "plugin-id-listed",
       detail: `"${id}" is already listed${repository ? ` by ${repository}` : ""}`,
       repository,
-      sameRepository,
+      sameRepository: sameRepository(repository, slug),
     })
   }
   if (slug && universe.listedRepositories.has(slug)) {
     problems.push({ code: "submission-repository-listed", detail: `${slug} is already listed`, repository: slug, sameRepository: true })
   }
-  return { ok: problems.length === 0, problems }
+  // The subject's own listing: the id is listed, by this repository, and
+  // nothing else is wrong with the id. That is not a problem with the
+  // submission, it is the absence of one; the caller reports it as a state.
+  const own = problems.length > 0
+    && problems.some((problem) => problem.code === "plugin-id-listed" && problem.sameRepository)
+    && problems.every((problem) => problem.sameRepository)
+  return { ok: problems.length === 0, own, problems }
+}
+
+/**
+ * What the marketplace records about one listing, for the plugin that is
+ * already listed by its own repository: read from the catalog first, which
+ * carries the verification fields, and from the registry source when the
+ * catalog has no entry. Every field is null when nothing records it; nothing
+ * is guessed.
+ *
+ * @param {{ registry: object, catalog: object }} live
+ * @param {string} id
+ * @returns {{ repository: string|null, id: string, addedAt: string|null, verificationCommit: string|null,
+ *             verificationStatus: string|null, verificationCheckedAt: string|null }|null}
+ */
+export function listingOf(live, id) {
+  const text = (value) => (typeof value === "string" && value ? value : null)
+  const plugin = (Array.isArray(live.catalog?.plugins) ? live.catalog.plugins : []).find((entry) => entry?.id === id)
+  if (plugin) {
+    return {
+      repository: text(plugin.repo),
+      id,
+      addedAt: text(plugin.addedAt) || text(plugin.listedAt),
+      verificationCommit: text(plugin.verificationCommit)?.toLowerCase() || text(plugin.listingValidatedCommit)?.toLowerCase() || null,
+      verificationStatus: text(plugin.verificationStatus),
+      verificationCheckedAt: text(plugin.verificationCheckedAt) || text(plugin.listingValidatedAt),
+    }
+  }
+  const sources = Array.isArray(live.registry?.sources) ? live.registry.sources : Object.values(live.registry?.sources || {})
+  const source = sources.find((entry) => {
+    const ids = entry?.plugins && typeof entry.plugins === "object" && !Array.isArray(entry.plugins) ? Object.keys(entry.plugins) : []
+    return ids.includes(id) || (entry?.automatedSecurityBaseline?.pluginIds || []).includes(id)
+  })
+  if (!source) return null
+  return {
+    repository: text(source.repo),
+    id,
+    addedAt: text(source.addedAt) || text(source.listedAt),
+    verificationCommit: text(source.listingValidatedCommit)?.toLowerCase() || null,
+    verificationStatus: text(source.automatedSecurityBaseline?.outcome),
+    verificationCheckedAt: text(source.listingValidatedAt),
+  }
 }
 
 export { repositorySlug }

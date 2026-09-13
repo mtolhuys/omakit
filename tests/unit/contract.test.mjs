@@ -88,8 +88,17 @@ test("the id universe refuses listed, retired and reserved ids", () => {
     repositoryUrl: `https://github.com/${[...universe.listedRepositories][0]}`,
   })
   assert.ok(listedRepo.problems.some((problem) => problem.code === "submission-repository-listed"))
+  assert.equal(listedRepo.own, false, "a listed repository with an id it does not list is not its own listing")
 
-  assert.deepEqual(checkIdentity(universe, { id: "omakit-fixture.unused", repositoryUrl: null }), { ok: true, problems: [] })
+  // The subject's own listing: the id, by the repository that lists it.
+  const [ownId, ownRepository] = [...universe.listedBy.entries()][0]
+  const own = checkIdentity(universe, { id: ownId, repositoryUrl: `https://github.com/${ownRepository.toUpperCase()}.git` })
+  assert.equal(own.ok, false)
+  assert.equal(own.own, true, "listed by this repository, compared as owner/name without case or .git")
+  assert.ok(own.problems.every((problem) => problem.sameRepository))
+  assert.equal(checkIdentity(universe, { id: ownId, repositoryUrl: "https://github.com/example/somebody-else" }).own, false)
+
+  assert.deepEqual(checkIdentity(universe, { id: "omakit-fixture.unused", repositoryUrl: null }), { ok: true, own: false, problems: [] })
 })
 
 test("the contract is read relative to the repository root too", async () => {

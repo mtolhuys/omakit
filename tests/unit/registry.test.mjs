@@ -14,7 +14,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import {
-  CATALOG_PATH, LIVE_PATHS, REGISTRY_PATH, RegistryError, idUniverse, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail,
+  CATALOG_PATH, LIVE_PATHS, REGISTRY_PATH, RegistryError, idUniverse, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail, sameRepository,
 } from "../../tools/marketplace/registry.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
@@ -177,4 +177,27 @@ test("identity.available judges against HEAD's registry and names it; the pin's 
   const pinned = offline.checks.find((check) => check.id === "identity.available")
   assert.equal(pinned.verdict, "pass")
   assert.ok(pinned.detail.endsWith("; registry at the pin 38060f89 (offline)"), pinned.detail)
+})
+
+// --- the subject's own listing -------------------------------------------------
+// Measured on 0.1.6: `omakit submit` on the author's own listed plugin (the
+// registry names the subject's declared repository, the catalog carries the
+// manifest id) printed FAIL identity.available and REFUSED, and closed with
+// "Fix it, then run submit again" under a remedy that said there was nothing
+// to submit. The rule for "the same repository" is one function, tested here.
+
+test("the same repository is owner and name, case-insensitively, with a trailing .git ignored", () => {
+  const url = "https://github.com/example/omarchy-plugin-fixture-good"
+  assert.equal(sameRepository(url, url), true)
+  assert.equal(sameRepository(url, "https://github.com/Example/Omarchy-Plugin-Fixture-Good"), true, "case")
+  assert.equal(sameRepository(url, `${url}.git`), true, ".git")
+  assert.equal(sameRepository(url, `${url}.GIT/`), true, ".git in any case, and a trailing slash")
+  assert.equal(sameRepository(url, "example/omarchy-plugin-fixture-good"), true, "a URL against the slug the universe stores")
+  assert.equal(sameRepository("EXAMPLE/OMARCHY-PLUGIN-FIXTURE-GOOD", `${url}.git`), true)
+  assert.equal(sameRepository(url, "https://github.com/example/omarchy-plugin-fixture-good-2"), false, "a longer name")
+  assert.equal(sameRepository(url, "https://github.com/other/omarchy-plugin-fixture-good"), false, "another owner")
+  assert.equal(sameRepository(url, "https://gitlab.com/example/omarchy-plugin-fixture-good"), true, "the host is not part of the rule; the subject is always github.com")
+  assert.equal(sameRepository(url, null), false)
+  assert.equal(sameRepository("", ""), false, "nothing is not the same as nothing")
+  assert.equal(sameRepository("not a repository", "not a repository"), false)
 })
