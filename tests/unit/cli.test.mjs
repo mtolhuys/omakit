@@ -209,6 +209,11 @@ test("submit without --category or --tags is a usage error before any check runs
   assert.deepEqual(Object.keys(parsed.usage), ["missing", "categories", "tags", "maximumTags"], "the JSON shape is unchanged")
 })
 
+/** A wrapped shell command (` \\` newline, indented continuation) as one line. */
+function unwrapped(text) {
+  return text.replace(/ \\\n\s+/g, " ")
+}
+
 test("a listed plugin without flags is refused at identity, never asked for flags", () => {
   // Measured on 0.1.5: exit 2 asking for --category and --tags on a plugin
   // that identity.available would then have refused as already listed.
@@ -221,7 +226,8 @@ test("a listed plugin without flags is refused at identity, never asked for flag
   assert.ok(out.includes(`${DENSITY.full} FAIL  identity.available`))
   assert.ok(out.includes("This plugin is already listed, so there is nothing to submit."))
   assert.ok(out.includes(`${DENSITY.medium} ?     submission.category`))
-  assert.ok(out.trimEnd().endsWith(`omakit submit ${listed.dir} --offline`), "the report ends with the command line that repeats the run")
+  // The command wraps after 80 columns at a long tmp path; read it unwrapped.
+  assert.ok(unwrapped(out).trimEnd().endsWith(`omakit submit ${listed.dir} --offline`), "the report ends with the command line that repeats the run")
   const json = JSON.parse(run(["submit", listed.dir, "--offline", "--json"]).out)
   assert.equal(json.reproduce, `omakit submit ${listed.dir} --offline`)
 })

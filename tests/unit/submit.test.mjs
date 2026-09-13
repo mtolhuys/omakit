@@ -244,7 +244,8 @@ test("a listed plugin without flags is never a usage error: the choice is moot a
   }
   assert.match(result.checks.find((entry) => entry.id === "identity.available").remedy[0], /^This plugin is already listed/)
   assert.equal(result.reproduce, `omakit submit ${fixture.dir} --offline`)
-  assert.match(renderSubmit(result, { colour: false }), /Fix it, then run submit again:\n\S omakit submit \S+ --offline$/)
+  // The command wraps after 80 columns at a long tmp path; read it unwrapped.
+  assert.match(renderSubmit(result, { colour: false }).replace(/ \\\n\s+/g, " "), /Fix it, then run submit again:\n\S omakit submit \S+ --offline$/)
 })
 
 test("an unlisted plugin without flags and without a chooser is the usage error, unchanged", async () => {
