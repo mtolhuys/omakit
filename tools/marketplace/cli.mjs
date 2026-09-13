@@ -14,13 +14,14 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
+import { ensurePin, MARKETPLACE_PIN, requirePin } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
 import { askChoices } from "./ask.mjs"
 import { validationWatch } from "./watch.mjs"
-import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
+import { renderSubmit, renderWatch, renderDoctor, renderVerify } from "./report.mjs"
+import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
@@ -213,7 +214,7 @@ async function cmdVerify(args) {
     fail(error?.code === "marketplace-unavailable" ? error.code : "baseline-unavailable", error.message)
   }
   spinner.done()
-  emit(args, `${JSON.stringify({
+  const document = {
     subject: {
       repository: subject.repository,
       commit: subject.commit,
@@ -221,7 +222,18 @@ async function cmdVerify(args) {
       mode: subject.mode,
     },
     marketplaceBaseline: section,
-  }, null, 2)}\n`)
+  }
+  // The JSON is the document itself, byte for byte what verify always
+  // printed, for --json and for --out; a person at the terminal gets the
+  // report, in the register submit uses for its checks.
+  if (args.includes("--json") || option(args, "--out")) {
+    emit(args, `${JSON.stringify(document, null, 2)}\n`)
+    return
+  }
+  const blockingRules = section.invoked && section.official && !section.official.error
+    ? (await consequence(requirePin(ROOT).dir, section.official)).selectivelyBlockingRules
+    : []
+  emit(args, renderVerify(document, { blockingRules }))
 }
 
 async function cmdParity(args) {

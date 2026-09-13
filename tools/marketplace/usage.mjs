@@ -60,10 +60,11 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit verify <target> [--allow-dirty] [--out <file>]",
+    signature: "omakit verify <target> [--allow-dirty] [--json] [--out <file>]",
     lines: [
       "The official marketplace security baseline over the local Git transport,",
-      "reported verbatim beside the pin identity.",
+      "reported verbatim beside the pin identity. A report for a person; --json",
+      "prints the document itself, and --out writes it to a file.",
     ],
   },
   {

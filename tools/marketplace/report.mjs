@@ -48,12 +48,7 @@ function checkBlock(check, c) {
   if (check.detail) out.push(...wrap(check.detail, { indent: GUTTER }, c))
   if (check.verdict === "fail") {
     // A path is the thing at fault, so it is yellow; its reason wraps under it.
-    for (const path of check.paths) {
-      out.push(...wrap(`- ${path}`, { indent: GUTTER + STEP, first: GUTTER })
-        .map((line, index) => (index === 0
-          ? `${body}${c("fail", "-")} ${c("placeholder", line.trimStart().slice(2))}`
-          : `${" ".repeat(GUTTER + STEP)}${c("placeholder", line.trimStart())}`)))
-    }
+    out.push(...pathLines(check.paths, c))
     for (const remedy of [].concat(check.remedy || [])) out.push(...action(remedy, c))
     // The measured reason is the point of the check, so it is not dimmed: only
     // its label is grey, and on a low-contrast theme the number still reads.
@@ -219,6 +214,79 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
     {},
     c,
   ))
+  return out.join("\n")
+}
+
+/** A list of paths at fault, the way a failing check prints them: a tinted dash, the path in the placeholder tint. */
+function pathLines(paths, c, dash = "fail") {
+  return paths.flatMap((path) => wrap(`- ${path}`, { indent: GUTTER + STEP, first: GUTTER })
+    .map((line, index) => (index === 0
+      ? `${body}${c(dash, "-")} ${c("placeholder", line.trimStart().slice(2))}`
+      : `${" ".repeat(GUTTER + STEP)}${c("placeholder", line.trimStart())}`)))
+}
+
+/**
+ * `omakit verify` for a person: the subject, the pin, the transport and its
+ * assumptions, then the official result in the register submit uses for its
+ * checks, and the statement last. Nothing here is Omakit's judgement: the
+ * outcome, the disposition, each finding's title, reason and actions, and a
+ * refusal's message are the marketplace's own text verbatim; the one thing
+ * added is the tag on each finding, blocks publication or review-required,
+ * which is read from the pinned policy's selectively blocking rules
+ * (`blockingRules`). `--json` prints the document itself.
+ */
+export function renderVerify(document, { colour = colourEnabled(), blockingRules = [] } = {}) {
+  const c = styler(colour)
+  const out = []
+  const { subject, marketplaceBaseline: section } = document
+  const tree = subject.cleanTree?.clean
+    ? `clean tree, proof ${subject.cleanTree.proof}`
+    : c("advisory", "dirty worktree")
+  out.push(...field("subject", subject.repository?.url || "no declared GitHub repository URL", c, { wrapValue: false }))
+  out.push(...field("commit", subject.commit, c, { wrapValue: false }))
+  out.push(...continuation(`${tree}, ${subject.mode} mode`, c))
+  out.push(...field("marketplace", `${section.pin.commit}, baseline ${section.pin.baselineVersion}, ${section.pin.enforcementMode}`, c))
+  out.push(...field("transport", section.transport, c))
+  if (section.assumedByAdapter?.length) out.push(...field("assumed", section.assumedByAdapter.join(", "), c))
+  out.push("")
+
+  const official = section.official
+  if (!section.invoked) {
+    out.push(`${head("unknown", "not run", "marketplace-pin", c)}`)
+    out.push(...wrap(section.skipReason || "the official baseline was not invoked", { indent: GUTTER }, c))
+  } else if (official?.error) {
+    // The official code refused the snapshot: that refusal is the result.
+    out.push(`${head("fail", official.error.code, "marketplace-pin", c)}`)
+    out.push(...wrap(official.error.message, { indent: GUTTER }, c))
+    for (const [key, value] of Object.entries(official.error)) {
+      if (key === "code" || key === "message") continue
+      out.push(...wrap(`- ${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`, { indent: GUTTER + STEP, first: GUTTER }, c))
+    }
+  } else {
+    const findings = official.findings || []
+    const capabilities = official.capabilities || []
+    const state = official.outcome === "passed" ? "pass" : official.blocksApproval ? "fail" : "advisory"
+    out.push(`${head(state, official.outcome, "marketplace-pin", c)}`)
+    out.push(...wrap(official.outcome === "passed"
+      ? "no findings and no capabilities"
+      : `disposition ${official.disposition}, enforcement ${official.enforcementMode}, blocksApproval ${official.blocksApproval}`, { indent: GUTTER }, c))
+    for (const finding of findings) {
+      const blocks = blockingRules.includes(finding.ruleId)
+      out.push("")
+      out.push(head(blocks ? "fail" : "advisory", finding.ruleId, blocks ? "blocks publication" : "review-required", c))
+      out.push(...wrap([finding.title, finding.why].filter(Boolean).join(". ").replace(/\.\.\s/g, ". "), { indent: GUTTER }, c))
+      out.push(...pathLines((finding.evidence || []).map((entry) => `${entry.path}:${entry.line}`), c, blocks ? "fail" : "advisory"))
+      for (const remedy of finding.actions || []) out.push(...action(remedy, c))
+    }
+    for (const capability of capabilities) {
+      out.push("")
+      out.push(head("info", capability.id, "capability", c))
+      out.push(...wrap([capability.title, capability.why].filter(Boolean).join(". ").replace(/\.\.\s/g, ". "), { indent: GUTTER }, c))
+      out.push(...pathLines((capability.evidence || []).map((entry) => `${entry.path}:${entry.line}`), c, "info"))
+    }
+  }
+  out.push("")
+  out.push(...wrap(section.statement, {}, c))
   return out.join("\n")
 }
 

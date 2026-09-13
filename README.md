@@ -107,7 +107,7 @@ owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 omakit setup                 # the environment, the pin, tab completion, and what to try first
 omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
-omakit verify <plugin-repo>  # the official security baseline over the local transport, reported verbatim
+omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
@@ -125,6 +125,14 @@ seven files omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the
 pin's submission form actually has.
+
+`omakit verify` prints the official baseline result alone, with no Omakit
+check around it: the subject, the pin, the transport and what the local
+adapter assumes, then the marketplace's own outcome, each finding as a block
+with its rule id, whether it blocks publication under the pinned policy, the
+file and line, and the official text verbatim, then the marketplace's own
+statement. `--json` prints the document itself, unchanged from earlier
+releases, and `--out <file>` writes it; agents and the skills use those.
 
 `omakit submit` reads the marketplace's registry first. A plugin that is
 already listed is refused there and asked for nothing (measured on 0.1.5: it
