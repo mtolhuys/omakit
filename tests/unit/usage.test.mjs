@@ -1,6 +1,7 @@
 // The help text is data, so it can be coloured without pattern-matching prose,
 // and so a terminal and a pipe get the same words.
 import test from "node:test"
+import { readFileSync } from "node:fs"
 import assert from "node:assert/strict"
 import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
 import { code, paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
@@ -33,6 +34,20 @@ test("what a person has to set up is answered without a credential-variable list
   assert.doesNotMatch(off, /\b(?:GITHUB_TOKEN|GH_TOKEN|OMAKIT_[A-Z_]+)\b/, "no variable named anywhere in the help")
   assert.ok(AUTHENTICATION.join(" ").includes("`gh` login"), "it names the thing they already have")
   assert.ok(AUTHENTICATION.join(" ").includes("optional"), "and says it is optional")
+})
+
+test("help says what verify fetches: nothing once the pin exists, a reviewer-mode target once", () => {
+  // Measured on 0.1.6: help said "`verify` needs no network" and, two
+  // paragraphs up, that a target may be <https url>@<40-char sha>, which
+  // reviewer mode fetches with `git fetch --depth 1 origin <sha>` when the
+  // commit is not already cached (tools/subject/resolve.mjs). The module
+  // README carried the qualification; help did not.
+  const help = renderUsage({ colour: false })
+  assert.match(help, /verify needs no network once the pin\s+exists, except to fetch a reviewer-mode <https url>@<sha> target, once/)
+  assert.doesNotMatch(help, /needs no network[;.]/, "the unconditional claim is gone")
+  // And the skills `help --agent` prints say the same, next to the verify command.
+  const skill = readFileSync(new URL("../../skills/omarchy-plugin-submit/SKILL.md", import.meta.url), "utf8")
+  assert.match(skill, /needs no network once the pin\s+exists; a reviewer-mode target \(`<https url>@<40-char sha>`\) is fetched once,\s+read-only/)
 })
 
 test("prose keeps the terminal's foreground; only what you could type is tinted", () => {

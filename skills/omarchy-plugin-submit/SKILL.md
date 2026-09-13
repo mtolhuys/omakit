@@ -57,7 +57,9 @@ omakit verify <path-to-the-plugin-repo> --json
 ```
 
 `verify` without `--json` prints a report for a person; `--json` is the
-document, unchanged between releases.
+document, unchanged between releases. It needs no network once the pin
+exists; a reviewer-mode target (`<https url>@<40-char sha>`) is fetched once,
+read-only, into omakit's own cache.
 
 Useful flags: `--notes` for the Maintainer notes field, `--suggest-tag` for the
 optional suggestion, `--name` when the manifest has no name, `--json` for a
