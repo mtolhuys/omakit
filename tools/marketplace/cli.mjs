@@ -83,6 +83,18 @@ function positionals(args) {
   return args.filter((value, index) => !value.startsWith("--") && !valued.has(args[index - 1]))
 }
 
+/**
+ * The progress line for a command, or nothing under --json: a machine
+ * reading the document on stdout gets no decoration on stderr either.
+ * Measured on 0.1.6: submit, watch and doctor silenced it and verify did
+ * not, so `verify --json` at a terminal drew a progress line the others
+ * never drew.
+ */
+const SILENT = Object.freeze({ phase: () => {}, done: () => {} })
+function spinnerFor(args) {
+  return args.includes("--json") ? SILENT : progress()
+}
+
 function emit(args, text) {
   const out = option(args, "--out")
   if (out) {
@@ -99,7 +111,7 @@ async function cmdSubmit(args) {
   const target = positionals(args)[0]
   if (!target) fail("usage", "submit needs a target: `omakit submit <target> --category <c> --tags <a,b>`", 2)
   const json = args.includes("--json")
-  const spinner = json ? { phase: () => {}, done: () => {} } : progress()
+  const spinner = spinnerFor(args)
   // A missing --category or --tags on an unlisted plugin is asked for, once
   // each, when a person is at a terminal on both ends and no machine is
   // reading the result. Anything else, a pipe, an agent, --json, gets the
@@ -155,7 +167,7 @@ async function cmdSubmit(args) {
 async function cmdWatch(args) {
   const issueUrl = positionals(args)[0]
   if (!issueUrl) fail("usage", "watch needs an issue: `omakit watch <issue-url>`", 2)
-  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
+  const spinner = spinnerFor(args)
   let result
   try {
     result = await validationWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
@@ -188,7 +200,7 @@ async function cmdUpgrade(args) {
 }
 
 async function cmdDoctor(args) {
-  const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
+  const spinner = spinnerFor(args)
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
   spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
@@ -205,7 +217,7 @@ async function cmdVerify(args) {
     if (error instanceof SubjectError) fail(error.code, error.message, error.code === "usage" ? 2 : 1)
     throw error
   }
-  const spinner = progress()
+  const spinner = spinnerFor(args)
   let section
   try {
     spinner.phase("running the official security baseline over a local snapshot")

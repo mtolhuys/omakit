@@ -9,7 +9,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { cpSync, existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ARROW, COLUMNS, DENSITY, GUTTER, overflows, plain } from "../../tools/marketplace/style.mjs"
@@ -344,4 +344,24 @@ test("every command's bytes are the same with and without ttfx on PATH", () => {
       assert.equal(b.code, a.code)
     }
   }
+})
+
+test("every command that has --json gets its progress line through the one helper that silences it", () => {
+  // Measured on 0.1.6: submit, watch and doctor built a silent spinner under
+  // --json and verify called `progress()` directly, so `verify --json` at a
+  // terminal drew a progress line on stderr that the other three never drew.
+  // A pipe cannot observe the line (progress needs a TTY on stderr), so
+  // this holds the source to the one route, and a fifth command cannot
+  // bypass it.
+  const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
+  const commands = ["cmdSubmit", "cmdWatch", "cmdDoctor", "cmdVerify"]
+  for (const name of commands) {
+    const body = cli.slice(cli.indexOf(`async function ${name}(`), cli.indexOf("\n}\n", cli.indexOf(`async function ${name}(`)))
+    assert.ok(body.includes("spinnerFor(args)"), `${name} takes its spinner from spinnerFor`)
+    assert.ok(!body.includes("progress()"), `${name} calls progress() directly`)
+  }
+  // The bare call survives in exactly two places: the helper, and `pin`,
+  // which has no --json and no document to keep clean.
+  assert.equal((cli.match(/\bprogress\(\)/g) || []).length, 2)
+  assert.match(cli, /function spinnerFor\(args\) \{\n  return args\.includes\("--json"\) \? SILENT : progress\(\)/)
 })
