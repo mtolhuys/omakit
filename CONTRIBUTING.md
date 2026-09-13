@@ -89,6 +89,9 @@ not a list of files or a paraphrase of the diff. For example:
 Keep the package within 21,049 bytes of its measured baseline
 ```
 
-Do not add assistant attribution, session links, `generated with` lines or
-model co-author trailers. Keep each commit green; a red commit is not a useful
-unit for review or bisection.
+The author signs the work and nothing signs under it: no `Co-authored-by`
+trailer at all, no trailer whose key ends in `-by` or `-session` or starts with
+`Generated`, no "Generated with [...]" line, and no `[bot]` or `noreply@`
+identity other than GitHub's own; `tests/unit/hygiene.test.mjs` holds the whole
+history to that, by shape and without naming any tool. Keep each commit green;
+a red commit is not a useful unit for review or bisection.
