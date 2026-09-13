@@ -114,8 +114,12 @@ test("workflow GitHub commands can address only this repository", () => {
 test("secrets occur only in release and are limited to npm and AUR publishing", () => {
   assert.doesNotMatch(workflows["ci.yml"], /secrets\./)
   assert.doesNotMatch(workflows["pin-freshness.yml"], /secrets\./)
-  const names = [...workflows["release.yml"].matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]).sort()
+  const names = [...new Set([...workflows["release.yml"].matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]))].sort()
   assert.deepEqual(names, ["AUR_SSH_PRIVATE_KEY", "NPM_TOKEN"])
+  // Neither secret is a precondition: a tag with no token still produces the
+  // GitHub Release, and the npm publish is then a manual step, named as such.
+  assert.match(workflows["release.yml"], /HAS_NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN != '' \}\}/)
+  assert.match(workflows["release.yml"], /publish omakit@\$VERSION by hand/)
 })
 
 test("contributors meet the invariants before a red structural check", () => {

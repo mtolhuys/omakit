@@ -181,6 +181,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
+          HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
         run: |
           local_integrity=$(cat release-assets/npm-integrity.txt)
           set +e
@@ -190,13 +191,25 @@ jobs:
           if [[ "$status" -eq 0 ]]; then
             remote_integrity=$(node --input-type=module --eval 'const value=JSON.parse(process.argv[1]); process.stdout.write(Array.isArray(value) ? value[0] : value)' "$remote_json")
             if [[ "$remote_integrity" != "$local_integrity" ]]; then
-              echo "omakit@$VERSION exists with different package integrity" >&2
-              exit 1
+              # A version published by hand from another npm client packs to
+              # different bytes for the same tree. Without a token this job
+              # could not replace it anyway, so it is reported, not fatal.
+              if [[ "$HAS_NPM_TOKEN" == "true" ]]; then
+                echo "omakit@$VERSION exists with different package integrity" >&2
+                exit 1
+              fi
+              echo "omakit@$VERSION was published by hand with a different tarball integrity; nothing to do here" >&2
+            else
+              echo "omakit@$VERSION already has the exact package integrity"
             fi
             echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "omakit@$VERSION already has the exact package integrity"
           elif grep -Eq 'E404|404 Not Found|is not in this registry' "$RUNNER_TEMP/npm-view.err"; then
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            if [[ "$HAS_NPM_TOKEN" == "true" ]]; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+              echo "no NPM_TOKEN and no trusted publisher: publish omakit@$VERSION by hand with npm publish from a checkout at the tag" >&2
+            fi
           else
             cat "$RUNNER_TEMP/npm-view.err" >&2
             exit "$status"
