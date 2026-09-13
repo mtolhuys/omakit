@@ -194,7 +194,7 @@ jobs:
         if: steps.registry.outputs.publish == 'true'
         env:
           NPM_FILE: ${{ needs.prepare.outputs.npm-file }}
-        run: npm publish "release-assets/$NPM_FILE" --ignore-scripts --provenance --access public --registry https://registry.npmjs.org
+        run: npm publish "./release-assets/$NPM_FILE" --ignore-scripts --provenance --access public --registry https://registry.npmjs.org
 
       - name: Verify the published package on npm
         env:
