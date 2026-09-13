@@ -200,5 +200,7 @@ are the pin's by design: they are cited in prose that
 `tests/unit/registry-figures.test.mjs` holds to the pin, and a number that
 moved between two runs could not be cited.
 
-Used by: `identity.available`. Not by `baseline.preflight`, whose figures stay
-the pin's.
+Used by: `identity.available`, and by `pin.freshness` in `omakit doctor`, which
+names which of the paths omakit reads changed between the pin and HEAD rather
+than only that HEAD moved, because at this rate HEAD has always moved. Not by
+`baseline.preflight`, whose figures stay the pin's.

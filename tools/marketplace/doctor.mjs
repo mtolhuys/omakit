@@ -17,11 +17,19 @@
 //
 // That the pin goes stale unnoticed is, of course, exactly the defect class
 // `omakit watch` exists to report. It would be poor form not to apply it here.
+//
+// And "behind" is not the same as "behind in something omakit reads". Measured
+// on 2026-09-13 (docs/MEASUREMENTS.md M7): 4,201 of the marketplace's 4,293
+// commits in 30 days touched only registry.json, which omakit now reads live,
+// while nothing under scripts/ or .github/ISSUE_TEMPLATE/ changed since the
+// pin. A doctor that only said "behind" would say it about every run. So it
+// compares each path in PIN_PATHS between the pin and HEAD, by tree or blob
+// id, and names the ones that moved.
 
 import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { MARKETPLACE_PIN, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
 import { latestOnRegistry, upgradeCommand } from "./upgrade.mjs"
 
@@ -42,20 +50,82 @@ function version(command, args = ["--version"]) {
   }
 }
 
-/** Full pin evidence for machines; human output deliberately keeps short hashes. */
-export function pinFreshness(identity, head) {
+/** The object id a path has at a commit in the pinned checkout: a tree id for a directory, a blob id for a file. Local; a blob-filtered clone still has every tree. */
+function pinObjectId(pinDir, commit, path) {
+  return execFileSync("git", ["-C", pinDir, "rev-parse", `${commit}:${path}`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
+}
+
+/**
+ * Which of PIN_PATHS differ between the pin and `headCommit`. The pin side is
+ * read from the local checkout; the HEAD side walks the git-trees API from the
+ * exact commit, one read per tree on the way (three for PIN_PATHS as it
+ * stands), so a directory compares by its tree id and a file by its blob id,
+ * which is what "the blob at HEAD versus the blob at the pin" means for a
+ * directory that omakit reads whole. A path missing at HEAD counts as changed.
+ *
+ * `fetchJson` is injectable for tests; the default is the one GET call site.
+ */
+export async function changedPinPaths({ pinDir, headCommit, pinCommit = MARKETPLACE_PIN.commit, fetchJson = getJson }) {
+  const match = MARKETPLACE_PIN.repository.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)$/)
+  const trees = new Map()
+  const tree = async (sha) => {
+    if (!trees.has(sha)) {
+      const read = await fetchJson(`https://api.github.com/repos/${match[1]}/${match[2]}/git/trees/${sha}`)
+      if (!Array.isArray(read?.tree)) throw new GitHubError("head-unreadable", `the tree ${sha} at the marketplace's HEAD did not read as a tree`)
+      trees.set(sha, read.tree)
+    }
+    return trees.get(sha)
+  }
+  const headObjectId = async (path) => {
+    const segments = path.split("/")
+    let entries = await tree(headCommit)
+    let id = null
+    for (const [index, segment] of segments.entries()) {
+      const entry = entries.find((candidate) => candidate.path === segment)
+      if (!entry) return null
+      id = entry.sha
+      // Descend only on the way to a deeper segment: the path's own tree id
+      // is the comparison, and its contents need no read.
+      if (index < segments.length - 1) {
+        if (entry.type !== "tree") return null
+        entries = await tree(entry.sha)
+      }
+    }
+    return id
+  }
+  const changed = []
+  for (const pattern of PIN_PATHS) {
+    const path = pattern.replace(/^\/|\/$/g, "")
+    if (pinObjectId(pinDir, pinCommit, path) !== await headObjectId(path)) changed.push(pattern)
+  }
+  return changed
+}
+
+/**
+ * Full pin evidence for machines; human output deliberately keeps short
+ * hashes. `changedPaths` is the answer from changedPinPaths(); null when the
+ * comparison was not made, and then the detail says only that HEAD moved.
+ */
+export function pinFreshness(identity, head, changedPaths = null) {
   const current = head.commit === identity.commit
+  const branch = head.branch || "default"
+  const moved = changedPaths === null
+    ? ""
+    : changedPaths.length
+      ? `; changed since the pin: ${changedPaths.join(", ")}`
+      : "; every path omakit reads is unchanged since the pin"
   return {
     id: "pin.freshness",
     state: current ? "ok" : "advice",
     detail: current
-      ? `the pin is the marketplace's current ${head.branch || "default"}-branch HEAD`
-      : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${head.branch || "default"} branch is now at ${head.commit.slice(0, 7)}`,
+      ? `the pin is the marketplace's current ${branch}-branch HEAD`
+      : `the pin is ${identity.commit.slice(0, 7)}; the marketplace's ${branch} branch is now at ${head.commit.slice(0, 7)}${moved}`,
     action: current ? null : "Bumping the pin is a deliberate change: docs/UPSTREAM_CONTRACT.md has the procedure, which ends in re-proving parity and committing its evidence. Nothing here does it for you.",
     evidence: {
       pinCommit: identity.commit,
       marketplaceHead: head.commit,
-      branch: head.branch || "default",
+      branch,
+      ...(changedPaths === null ? {} : { changedPaths: current ? [] : changedPaths }),
     },
   }
 }
@@ -104,7 +174,12 @@ export async function doctor({ repoRoot, offline = false, onPhase }) {
     phase("reading the marketplace's current default-branch HEAD")
     try {
       const head = await defaultBranchHead(MARKETPLACE_PIN.repository)
-      checks.push(pinFreshness(identity, head))
+      let changedPaths = []
+      if (head.commit !== identity.commit) {
+        phase("comparing each path omakit reads between the pin and HEAD")
+        changedPaths = await changedPinPaths({ pinDir: dir, headCommit: head.commit, pinCommit: identity.commit })
+      }
+      checks.push(pinFreshness(identity, head, changedPaths))
     } catch (error) {
       add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`,
         error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null,
