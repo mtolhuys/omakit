@@ -14,7 +14,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { ensurePin, MARKETPLACE_PIN, requirePin } from "./pin.mjs"
+import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
@@ -26,7 +26,6 @@ import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { submissionContract } from "./form.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
