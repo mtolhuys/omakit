@@ -163,6 +163,36 @@ test("a dirty tree is a failure state, and names the two ways out", () => {
   assert.ok(err.includes("uncommitted changes"))
 })
 
+test("submit without --category or --tags is a usage error before any check runs, with the form's lists on stderr", () => {
+  // Measured 2026-09-13: the same run went through every check, the pin
+  // spinner and the baseline, and closed with "6 blocking checks failed"
+  // for what was two missing flags.
+  const { code, out, err } = run(["submit", good.dir])
+  assert.equal(code, 2)
+  assert.equal(out, "", "nothing on stdout")
+  assertFailureState(err, "usage", `omakit submit ${good.dir} --category <c> --tags <a,b>`)
+  assert.ok(err.includes("--category and --tags"), "both flags named")
+  for (const category of ["Appearance", "Desktop", "Developer Tools", "Hardware", "Kids", "Productivity", "System", "Widgets", "Other"]) {
+    assert.ok(err.includes(category), `${category} listed`)
+  }
+  assert.ok(err.includes("tags, 1 to 3"))
+  assert.ok(!err.includes("baseline") && !err.includes("marketplace pin"), "no check ran")
+  for (const line of err.split("\n")) assert.ok(!overflows(plain(line)) || /\//.test(line), `${line.length} columns: ${line}`)
+
+  const one = run(["submit", good.dir, "--category", "Widgets"])
+  assert.equal(one.code, 2)
+  assert.ok(one.err.includes("submit needs --tags"))
+  assert.ok(!one.err.includes("--category and"))
+
+  const json = run(["submit", good.dir, "--json"])
+  assert.equal(json.code, 2)
+  assert.equal(json.err, "")
+  const parsed = JSON.parse(json.out)
+  assert.deepEqual(parsed.usage.missing, ["--category", "--tags"])
+  assert.equal(parsed.usage.categories.length, 9)
+  assert.equal(parsed.usage.tags.length, 13)
+})
+
 test("a usage error says what was expected and exits 2", () => {
   for (const [args, expected] of [[["submit"], "omakit submit <target>"], [["watch"], "omakit watch <issue-url>"], [["verify"], "omakit verify"]]) {
     const { code, err } = run(args)

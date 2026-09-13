@@ -50,6 +50,21 @@ public issue text; it is not marketplace policy and never claims to be.
 Every one of them states its measured reason in the output when it fails, and in
 the source either way. The numbers are in [MEASUREMENTS.md](MEASUREMENTS.md).
 
+A check has three verdicts. `pass` and `fail` are its own. `unknown`, drawn as
+`▒ ?`, is a check that could not run because one it depends on failed:
+`submission.headings`, `submission.checklist` and `submission.official-parser`
+read the rendered body, so when the title, the category, the tags or the
+repository URL failed, they say which check they waited on, and they count in
+neither `blocking` nor `advisory`. The closing refusal lists root causes only
+and says how many checks waited on them. Measured before this: a run with no
+`--category` and no `--tags` on a listed plugin said "6 blocking checks failed"
+for two causes.
+
+No `--category` or no `--tags` is a usage error, decided before any check runs:
+exit 2, the missing flag(s) named, and the form's own category and tag lists
+printed under it, read from the pin. They are an editorial choice nobody else
+can make, so nothing is rendered without them.
+
 ## Nothing about the format is written down here
 
 The title prefix, the six headings, the nine categories, the thirteen tags and

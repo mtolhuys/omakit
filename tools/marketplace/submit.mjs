@@ -32,17 +32,46 @@ export class SubmitError extends Error {
   }
 }
 
+/**
+ * A check has three verdicts. `pass` and `fail` are its own. `unknown` is
+ * for a check that could not run because one it depends on failed: it is
+ * rendered as a question, its detail names what it waited on, and it counts
+ * in neither `blocking` nor `advisory`, so a refusal lists root causes only.
+ * Measured before this: a run with no --category and no --tags on a listed
+ * plugin said "6 blocking checks failed" for two causes, because headings,
+ * checklist and official-parser each failed for want of a body nobody could
+ * render yet, and the closing refusal listed them with "not rendered" where
+ * a remedy goes.
+ */
 function check(id, fields) {
+  const waitedOn = (fields.waitedOn || []).filter(Boolean)
   return {
     id,
     source: fields.source,
     why: fields.why,
     severity: fields.severity || "blocking",
-    verdict: fields.verdict ? "pass" : "fail",
-    detail: fields.detail || "",
+    verdict: waitedOn.length ? "unknown" : fields.verdict ? "pass" : "fail",
+    detail: waitedOn.length ? `not checked: it needs ${waitedOn.join(" and ")} to pass first` : fields.detail || "",
     paths: fields.paths || [],
-    remedy: fields.remedy || null,
+    remedy: waitedOn.length ? null : fields.remedy || null,
   }
+}
+
+/**
+ * What `submit` needs on the command line, decided before any check runs:
+ * the category and the tags are editorial choices nobody else can make, and
+ * a run without them has nothing to render. The controlled values come from
+ * the form at the pin, so the usage message lists exactly what the form
+ * accepts. Null when nothing is missing.
+ *
+ * @returns {{ missing: string[], categories: string[], tags: string[], maximumTags: number }|null}
+ */
+export function missingSubmitFlags(contract, { category, tags } = {}) {
+  const missing = []
+  if (!String(category ?? "").trim()) missing.push("--category")
+  if (!(Array.isArray(tags) ? tags : String(tags ?? "").split(",")).some((value) => String(value).trim())) missing.push("--tags")
+  if (!missing.length) return null
+  return { missing, categories: [...contract.categories], tags: [...contract.tagLabels], maximumTags: contract.maximumTags }
 }
 
 /**
@@ -191,9 +220,17 @@ export async function submitPreflight(options) {
     remedy: tags.ok ? null : "Pass --tags with 1 to 3 comma-separated values from the list.",
   }))
 
+  // The body needs every field above and the repository URL below; the three
+  // checks that read it wait on whichever of those failed.
+  const bodyWaitsOn = [
+    !pluginName && "submission.title",
+    !category.ok && "submission.category",
+    !tags.ok && "submission.tags",
+    !subject.repository.url && "submission.repository-url",
+  ].filter(Boolean)
   let issue = null
   let parsed = null
-  if (pluginName && category.ok && tags.ok && subject.repository.url) {
+  if (!bodyWaitsOn.length) {
     issue = renderIssue(contract, {
       pluginName,
       repositoryUrl: subject.repository.url,
@@ -217,7 +254,8 @@ export async function submitPreflight(options) {
     source: "marketplace-pin",
     why: `The six form headings must appear in exact order: ${contract.headings.join(", ")}. 11 open submissions are malformed in the body and receive "The validation result could not be published to the issue. A maintainer must review the workflow.", which blames the maintainer for the author's mistake; one of them differs from a valid submission by the single word "Suggested" instead of "Suggest". The headings are rendered from the form at the pin, never typed.`,
     verdict: Boolean(issue),
-    detail: issue ? `${contract.headings.length} headings rendered in form order` : "not rendered: an earlier submission field is missing",
+    detail: issue ? `${contract.headings.length} headings rendered in form order` : "not rendered",
+    waitedOn: bodyWaitsOn,
   }))
 
   checks.push(check("submission.checklist", {
@@ -225,6 +263,7 @@ export async function submitPreflight(options) {
     why: `All ${contract.checklist.length} checklist items must be present with their exact text and checked; the marketplace refuses \`submission-checklist-unconfirmed\` otherwise. The text is read from the form at the pin, character for character.`,
     verdict: Boolean(issue),
     detail: issue ? `${contract.checklist.length} items rendered with the form's exact text, all checked` : "not rendered",
+    waitedOn: bodyWaitsOn,
   }))
 
   checks.push(check("submission.official-parser", {
@@ -236,6 +275,7 @@ export async function submitPreflight(options) {
         ? `accepted: repo ${parsed.submission.repo}, category ${parsed.submission.category}, tags ${parsed.submission.tags.join(", ")}`
         : `refused by the marketplace's own parser: ${parsed.code}, ${parsed.message}`
       : "not run: no body was rendered",
+    waitedOn: bodyWaitsOn,
   }))
 
   // --- the commit the marketplace will actually validate ---------------------
@@ -303,6 +343,7 @@ export async function submitPreflight(options) {
 
   const blocking = checks.filter((entry) => entry.severity === "blocking" && entry.verdict === "fail")
   const advisory = checks.filter((entry) => entry.severity === "advisory" && entry.verdict === "fail")
+  const unknown = checks.filter((entry) => entry.verdict === "unknown")
   const ready = blocking.length === 0
 
   return {
@@ -337,6 +378,7 @@ export async function submitPreflight(options) {
     ready,
     blocking: blocking.map((entry) => entry.id),
     advisory: advisory.map((entry) => entry.id),
+    unknown: unknown.map((entry) => entry.id),
     issue: ready ? issue : null,
     baseline: preflight.invoked
       ? {

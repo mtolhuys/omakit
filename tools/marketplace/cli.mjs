@@ -17,7 +17,8 @@ import { fileURLToPath } from "node:url"
 import { ensurePin, MARKETPLACE_PIN } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
-import { submitPreflight } from "./submit.mjs"
+import { missingSubmitFlags, submitPreflight } from "./submit.mjs"
+import { submissionContract } from "./form.mjs"
 import { validationWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
@@ -26,7 +27,7 @@ import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
+import { action, colourEnabled, GUTTER, labelled, mark, styler, wrap } from "./style.mjs"
 import { omakitCacheDir } from "./paths.mjs"
 import { parityOutput } from "./parity-output.mjs"
 
@@ -55,11 +56,12 @@ const REMEDY = Object.freeze({
 /**
  * Every failure, in one register, on stderr. `usage` errors carry the
  * signature that was expected, so the remedy is the reference and not a
- * restatement of the message.
+ * restatement of the message. `body` is extra labelled lines between the
+ * message and the arrow, for a usage error that has values to list.
  */
-function fail(code, message, exit = 1, remedy = REMEDY[code]) {
+function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => []) {
   const c = styler(colourEnabled(process.stderr))
-  const lines = [`${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c)]
+  const lines = [`${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c), ...body(c)]
   if (remedy) lines.push(...action(remedy, c))
   process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)
@@ -96,6 +98,28 @@ function emit(args, text) {
 async function cmdSubmit(args) {
   const target = positionals(args)[0]
   if (!target) fail("usage", "submit needs a target: `omakit submit <target> --category <c> --tags <a,b>`", 2)
+  // A missing category or tag list is a usage error, decided before any check
+  // runs and before the spinner starts: nothing can be rendered without them,
+  // and the values the form accepts are the answer, read from the pin.
+  let usage = null
+  try {
+    usage = missingSubmitFlags(await submissionContract({ repoRoot: ROOT }), { category: option(args, "--category"), tags: option(args, "--tags") })
+  } catch (error) {
+    failFrom(error)
+  }
+  if (usage) {
+    if (args.includes("--json")) {
+      process.stdout.write(`${JSON.stringify({ usage }, null, 2)}\n`)
+      process.exit(2)
+    }
+    const flags = usage.missing.join(" and ")
+    fail("usage", `submit needs ${flags}: ${usage.missing.length === 1 ? "it is" : "they are"} an editorial choice nobody else can make, from the pinned form's own lists.`, 2,
+      `omakit submit ${target} --category <c> --tags <a,b>`,
+      (c) => [
+        ...labelled("categories", usage.categories.join(", "), c),
+        ...labelled(`tags, 1 to ${usage.maximumTags}`, usage.tags.join(", "), c),
+      ])
+  }
   const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   let result
   try {

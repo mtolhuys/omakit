@@ -24,7 +24,9 @@ comes from `origin`. You supply the category and the tags, because nobody else
 can: they are an editorial choice about where the plugin belongs.
 
 If you do not know which category and tags are allowed, run the command without
-them. The failing checks print the controlled lists, read from the pinned form.
+them: that is a usage error (exit 2) whose message lists the controlled values,
+read from the pinned form, before any check runs. With `--json` the same lists
+come back under `usage`.
 
 Useful flags: `--notes` for the Maintainer notes field, `--suggest-tag` for the
 optional suggestion, `--name` when the manifest has no name, `--json` for a
@@ -40,7 +42,12 @@ HEAD, tell the owner and choose another id.
 ## Reading the result
 
 Exit code 0 means every blocking check passed and the output contains the issue
-title and body. Exit code 1 means it refused, and no body was produced.
+title and body. Exit code 1 means it refused, and no body was produced. Exit
+code 2 is a usage error: nothing was checked.
+
+A check drawn as `▒ ?` did not run because one it depends on failed; its detail
+names that check. It is not a failure of its own, and the closing refusal lists
+root causes only. Fix those.
 
 Each check names a source. `[marketplace-pin]` is the marketplace's own rule, read
 from a pinned checkout. `[omakit]` is this tool's own check, derived from public

@@ -23,9 +23,10 @@ import {
 
 const body = " ".repeat(GUTTER)
 
-/** The state a check renders in: an advisory failure is a note, not a FAIL. */
+/** The state a check renders in: an advisory failure is a note, not a FAIL, and a check that waited on another is a question. */
 function stateOf(check) {
   if (check.verdict === "pass") return "pass"
+  if (check.verdict === "unknown") return "unknown"
   return check.severity === "advisory" ? "advisory" : "fail"
 }
 
@@ -69,12 +70,14 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   out.push(...field("marketplace", `${result.pin.commit}, baseline ${result.pin.baselineVersion}, ${result.pin.enforcementMode}`, c))
   out.push("")
 
-  // Passing checks run together; anything else gets a blank line on each side,
+  // Passing checks run together, and so does a check that waited on another:
+  // both are two quiet lines. Anything else gets a blank line on each side,
   // collapsed where two blocks meet.
+  const quiet = (state) => state === "pass" || state === "unknown"
   let previous = "pass"
   for (const [index, check] of result.checks.entries()) {
     const state = stateOf(check)
-    if (index > 0 && (state !== "pass" || previous !== "pass")) out.push("")
+    if (index > 0 && (!quiet(state) || !quiet(previous))) out.push("")
     out.push(...checkBlock(check, c))
     previous = state
   }
@@ -89,9 +92,13 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
   }
 
   if (!result.ready) {
+    // Root causes only: a check that waited on a failed one is not listed,
+    // and the count says how many waited.
     const failed = result.checks.filter((check) => result.blocking.includes(check.id))
+    const waited = result.checks.filter((check) => check.verdict === "unknown").length
     const count = failed.length === 1 ? "1 blocking check" : `${failed.length} blocking checks`
-    out.push(...verdict("fail", "REFUSED", `${count} failed, so no submission body is produced.`, c))
+    const waiting = waited ? ` ${waited === 1 ? "1 check" : `${waited} checks`} could not run until ${failed.length === 1 ? "it passes" : "they pass"}.` : ""
+    out.push(...verdict("fail", "REFUSED", `${count} failed, so no submission body is produced.${waiting}`, c))
     out.push("")
     for (const check of failed) {
       out.push(`${body}${c("name", check.id)}`)

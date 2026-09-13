@@ -2,7 +2,8 @@
 // every measured failure class on a crafted fixture.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { submitPreflight } from "../../tools/marketplace/submit.mjs"
+import { missingSubmitFlags, submitPreflight } from "../../tools/marketplace/submit.mjs"
+import { renderSubmit } from "../../tools/marketplace/report.mjs"
 import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
@@ -68,10 +69,19 @@ test("the crafted fixture is refused, and every measured failure class is named"
     "identity.available",
     "submission.category",
     "submission.tags",
-    "submission.official-parser",
   ]) {
     assert.equal(verdict[id], "fail", `${id} should have failed`)
     assert.ok(result.blocking.includes(id), `${id} should be blocking`)
+  }
+  // The body could not render, so the three checks that read it waited on
+  // the two fields that failed: a question, not a third and fourth failure.
+  for (const id of ["submission.headings", "submission.checklist", "submission.official-parser"]) {
+    assert.equal(verdict[id], "unknown", `${id} waited`)
+    assert.ok(!result.blocking.includes(id) && !result.advisory.includes(id), `${id} counts nowhere`)
+    assert.ok(result.unknown.includes(id))
+    const check = result.checks.find((entry) => entry.id === id)
+    assert.equal(check.detail, "not checked: it needs submission.category and submission.tags to pass first")
+    assert.equal(check.remedy, null)
   }
 
   const agentControl = result.checks.find((check) => check.id === "tree.agent-control")
@@ -112,6 +122,40 @@ test("an agent-control file alone never refuses: the marketplace lists such plug
   assert.equal(check.severity, "advisory")
   assert.deepEqual(check.paths.map((path) => path.split(": ")[0]), ["AGENTS.md"])
   assert.match(check.why, /6 of 34 listed plugins/)
+})
+
+test("a body that cannot render leaves the checks that read it unknown and out of the refusal", async () => {
+  // Measured 2026-09-13: a run with no --category and no --tags on a listed
+  // plugin said "6 blocking checks failed" for two causes, and listed
+  // headings, checklist and official-parser in the refusal with "not
+  // rendered" where a remedy goes. Forced here through the API with no
+  // category, which the CLI now refuses earlier as a usage error.
+  const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+  const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, tags: "bar", offline: true })
+  assert.deepEqual(result.blocking, ["submission.category"], "one root cause")
+  assert.deepEqual(result.unknown, ["submission.headings", "submission.checklist", "submission.official-parser"])
+  for (const id of result.unknown) {
+    const check = result.checks.find((entry) => entry.id === id)
+    assert.equal(check.verdict, "unknown")
+    assert.equal(check.detail, "not checked: it needs submission.category to pass first")
+  }
+  const rendered = renderSubmit(result, { colour: false })
+  assert.match(rendered, /REFUSED  1 blocking check failed, so no submission body is produced\. 3 checks\n\s+could not run until it passes\./)
+  assert.ok(!/^\s+submission\.(headings|checklist|official-parser)$/m.test(rendered), "the refusal lists root causes only")
+  assert.equal((rendered.match(/^\S \?\s+submission\./gm) || []).length, 3, "three questions, none of them a FAIL")
+})
+
+test("missing --category or --tags is known before any check runs, with the form's own lists", async () => {
+  assert.equal(missingSubmitFlags(contract, { category: "Widgets", tags: "bar" }), null)
+  const both = missingSubmitFlags(contract, {})
+  assert.deepEqual(both.missing, ["--category", "--tags"])
+  assert.deepEqual(both.categories, contract.categories)
+  assert.equal(both.categories.length, 9)
+  assert.deepEqual(both.tags, contract.tagLabels)
+  assert.equal(both.tags.length, 13)
+  assert.equal(both.maximumTags, 3)
+  assert.deepEqual(missingSubmitFlags(contract, { category: "Widgets", tags: " , " }).missing, ["--tags"])
+  assert.deepEqual(missingSubmitFlags(contract, { tags: ["bar"] }).missing, ["--category"])
 })
 
 test("a missing root manifest, README and license are each reported", async () => {
