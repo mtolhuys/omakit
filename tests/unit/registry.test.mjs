@@ -41,7 +41,7 @@ function fakes({ commit = HEAD, files = LIVE, fail = null } = {}) {
   return {
     urls,
     resolveHead: async () => {
-      if (fail === "head") throw Object.assign(new Error("api.github.com did not answer (ENOTFOUND)"), { code: "network-unavailable" })
+      if (fail === "head") throw Object.assign(new Error("api.github.com did not answer (EAI_AGAIN) while reading /repos/omacom/omarchy-plugin-marketplace/commits.atom"), { code: "network-unavailable" })
       return { commit, branch: "main" }
     },
     fetchJson: async (url) => {
@@ -119,14 +119,20 @@ test("--offline reads the pin and says so; a HEAD that cannot be read falls back
   assert.equal(offline.registry.sources.length, pinned.sources.length)
   assert.equal(registrySourceDetail(offline), "registry at the pin 38060f89 (offline)")
 
+  // The JSON keeps the whole story; the rendered detail is one clause, with
+  // the transport's own parenthetical and its "while reading" tail replaced
+  // by the failure code. Measured before this: the full text nested three
+  // sets of parentheses and wrapped to three lines at 80 columns.
   const noHead = await liveRegistry({ pinDir, cacheRoot, ...fakes({ fail: "head" }) })
   assert.equal(noHead.source, "pin")
-  assert.match(noHead.reason, /^HEAD unreadable \(network-unavailable\)/)
-  assert.match(registrySourceDetail(noHead), /^registry at the pin 38060f89 \(HEAD unreadable/)
+  assert.equal(noHead.reason, "HEAD unreadable (network-unavailable): api.github.com did not answer (EAI_AGAIN) while reading /repos/omacom/omarchy-plugin-marketplace/commits.atom")
+  assert.equal(registrySourceDetail(noHead), "registry at the pin 38060f89; HEAD unreadable: api.github.com did not answer (network-unavailable)")
+  assert.ok(!/\(.*\(/.test(registrySourceDetail(noHead)), "no nested parentheses")
 
   const noFile = await liveRegistry({ pinDir, cacheRoot, ...fakes({ fail: "fetch" }) })
   assert.equal(noFile.source, "pin")
-  assert.match(noFile.reason, new RegExp(`^registry at ${HEAD} unreadable \\(github-unavailable\\)`))
+  assert.match(noFile.reason, new RegExp(`^registry at ${HEAD} unreadable \\(github-unavailable\\): GET ${RAW}/${HEAD}/registry.json returned 503$`))
+  assert.equal(registrySourceDetail(noFile), `registry at the pin 38060f89; HEAD ${HEAD.slice(0, 7)} unreadable: GET ${RAW}/${HEAD}/registry.json returned 503 (github-unavailable)`)
   assert.ok(!existsSync(liveCacheDir(HEAD, cacheRoot)), "a failed read caches nothing")
 
   const atPin = await liveRegistry({ pinDir, cacheRoot, ...fakes({ commit: MARKETPLACE_PIN.commit }), now: () => "2026-09-13T15:00:00.000Z" })

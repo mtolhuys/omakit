@@ -149,7 +149,10 @@ function writeCached(cacheRoot, commit, fetchedAt, files) {
  *           fetchJson?: (url: string) => Promise<object>, cacheRoot?: string,
  *           now?: () => string }} [options]
  * @returns {Promise<{ source: "head"|"pin", commit: string, fetchedAt: string|null,
- *                     reason: string|null, registry: object, catalog: object }>}
+ *                     reason: string|null, fallback: { what: string, code: string, message: string }|null,
+ *                     registry: object, catalog: object }>}
+ *   `reason` is the whole story, for `--json`; `fallback` is its parts, for
+ *   the one line a person reads (registrySourceDetail).
  */
 export async function liveRegistry(options = {}) {
   const pinDir = options.pinDir || requirePin(options.repoRoot).dir
@@ -157,21 +160,27 @@ export async function liveRegistry(options = {}) {
   const fetchJson = options.fetchJson || getJson
   const cacheRoot = options.cacheRoot || omakitCacheDir("registry")
   const now = options.now || (() => new Date().toISOString())
-  const fromPin = (reason) => ({
+  const fromPin = (reason, fallback = null) => ({
     source: "pin",
     commit: MARKETPLACE_PIN.commit,
     fetchedAt: null,
     reason,
+    fallback,
     registry: readJson(pinDir, REGISTRY_PATH),
     catalog: readJson(pinDir, CATALOG_PATH),
   })
+  const failed = (what, error) => {
+    const code = error?.code || "error"
+    const message = String(error?.message || error)
+    return fromPin(`${what} (${code}): ${message}`, { what, code, message })
+  }
   if (options.offline) return fromPin("--offline")
 
   let commit
   try {
     commit = String((await resolveHead(MARKETPLACE_PIN.repository)).commit).toLowerCase()
   } catch (error) {
-    return fromPin(`HEAD unreadable (${error?.code || "error"}): ${error?.message || error}`)
+    return failed("HEAD unreadable", error)
   }
   if (commit === MARKETPLACE_PIN.commit) {
     // HEAD is the pin, so the pin's files are HEAD's files: nothing to fetch.
@@ -180,14 +189,14 @@ export async function liveRegistry(options = {}) {
 
   const cached = readCached(liveCacheDir(commit, cacheRoot))
   if (cached) {
-    return { source: "head", commit, fetchedAt: cached.fetchedAt, reason: null, registry: cached.files[REGISTRY_PATH], catalog: cached.files[CATALOG_PATH] }
+    return { source: "head", commit, fetchedAt: cached.fetchedAt, reason: null, fallback: null, registry: cached.files[REGISTRY_PATH], catalog: cached.files[CATALOG_PATH] }
   }
 
   const files = {}
   try {
     for (const path of LIVE_PATHS) files[path] = await fetchJson(liveFileUrl(commit, path))
   } catch (error) {
-    return fromPin(`registry at ${commit} unreadable (${error?.code || "error"}): ${error?.message || error}`)
+    return failed(`registry at ${commit} unreadable`, error)
   }
   const fetchedAt = now()
   try {
@@ -196,14 +205,30 @@ export async function liveRegistry(options = {}) {
   } catch {
     // A cache that cannot be written costs the next run a refetch, nothing else.
   }
-  return { source: "head", commit, fetchedAt, reason: null, registry: files[REGISTRY_PATH], catalog: files[CATALOG_PATH] }
+  return { source: "head", commit, fetchedAt, reason: null, fallback: null, registry: files[REGISTRY_PATH], catalog: files[CATALOG_PATH] }
 }
 
-/** How a check names where its registry data came from. Short hash for the pin, which the docs name that way; the full commit for HEAD, which nothing else names. */
+/**
+ * How a check names where its registry data came from. Short hash for the
+ * pin, which the docs name that way; the full commit for HEAD, which nothing
+ * else names.
+ *
+ * A fallback is one clause, not the whole story: the transport error's own
+ * parenthetical and its "while reading <path>" tail are dropped and the
+ * failure code takes their place, so the person reads
+ * "registry at the pin 38060f89; HEAD unreadable: github.com did not answer
+ * (network-unavailable)" on one line. Measured before this: the full text
+ * nested three sets of parentheses and wrapped to three lines at 80 columns.
+ * `--json` keeps the whole text under `registry.reason`.
+ */
 export function registrySourceDetail(live) {
   if (live.source === "head") return `registry at ${live.commit}, read ${live.fetchedAt}`
-  const reason = live.reason === "--offline" ? "offline" : live.reason
-  return `registry at the pin ${live.commit.slice(0, 8)}${reason ? ` (${reason})` : ""}`
+  const pin = `registry at the pin ${live.commit.slice(0, 8)}`
+  if (!live.fallback) return live.reason === "--offline" ? `${pin} (offline)` : pin
+  const { what, code, message } = live.fallback
+  const clause = message.replace(/ while reading .*$/, "").replace(/\s*\([^()]*\)\s*$/, "").trim()
+  const short = what.replace(/^registry at ([0-9a-f]{40}) unreadable$/, (_, sha) => `HEAD ${sha.slice(0, 7)} unreadable`)
+  return `${pin}; ${short}: ${clause} (${code})`
 }
 
 /**
