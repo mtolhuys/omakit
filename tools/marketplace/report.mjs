@@ -122,7 +122,26 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     out.push("")
   }
 
-  if (!result.ready) {
+  if (result.outcome === "listed") {
+    // The third outcome. Nothing was refused and nothing is wrong: the plugin
+    // is listed by this repository, so there is no body and no reproduce
+    // line, and the route to a newer commit is the marketplace's other form.
+    // Measured on 0.1.6: this state was drawn as FAIL and REFUSED, and closed
+    // with "Fix it, then run submit again" under a remedy that said there was
+    // nothing to submit.
+    const listing = result.listing
+    out.push(...verdict("pass", "LISTED", `${listing.id} is already listed by this repository, so the submission form is not the route.`, c))
+    out.push("")
+    out.push(...field("listed", listing.verificationCommit ? c("name", listing.verificationCommit) : "no verification commit recorded", c, { wrapValue: false }))
+    out.push(...continuation(`${listing.verificationStatus || "status unrecorded"}, checked ${listing.verificationCheckedAt || "at an unrecorded time"}, read from the ${listing.source === "head" ? "marketplace's current HEAD" : "pin"}`, c))
+    out.push(...field("local HEAD", c("name", listing.localCommit), c, { wrapValue: false }))
+    out.push(...continuation(listing.sameCommit ? "the same commit" : "not the listed commit", c))
+    out.push("")
+    out.push(...wrap(`${listing.sameCommit ? "To get a newer commit listed later" : "To get it listed"}, open the marketplace's "${listing.updateRoute.form}" form and choose "${listing.updateRoute.choice}". \`omakit watch <the submission issue>\` shows which commit is listed now.`, {}, c))
+    return out.join("\n")
+  }
+
+  if (result.outcome === "refused") {
     // Root causes only: a check that waited on a failed one is not listed,
     // and the count says how many waited.
     const failed = result.checks.filter((check) => result.blocking.includes(check.id))

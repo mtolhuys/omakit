@@ -249,7 +249,9 @@ const result = {
       why: "103 marketplace issues mention agent-control files, and 24 of 328 sampled maintainer review comments are about them: `validateRepositoryDocs` at the pin fails a submission with `license-missing`.",
     },
   ],
+  outcome: "refused",
   ready: false,
+  listing: null,
   blocking: ["two"],
   advisory: ["three.with-a-long-name-that-pushes-the-source-tag"],
   issue: null,
@@ -260,12 +262,26 @@ const result = {
 const ready = {
   ...result,
   checks: [result.checks[0]],
+  outcome: "ready",
   ready: true,
   blocking: [],
   advisory: [],
   validationCommit: { local: "a".repeat(40), defaultBranchHead: "a".repeat(40), branch: "main", matches: true, note: "n" },
   issue: { title: "[Plugin]: Fixture Good", body: "### Repository URL\n\nhttps://github.com/example/p\n" },
   baseline: { invoked: false, skipReason: "none", statement: "s" },
+}
+
+const listed = {
+  ...ready,
+  outcome: "listed",
+  ready: false,
+  issue: null,
+  listing: {
+    repository: "https://github.com/example/p", id: "example.p", addedAt: "2026-08-31",
+    verificationCommit: "d".repeat(40), verificationStatus: "verified", verificationCheckedAt: "2026-09-10T17:40:18.858Z",
+    localCommit: "a".repeat(40), sameCommit: false, source: "head",
+    updateRoute: { form: "Verify or update a listed plugin", choice: "Verify and publish a newer upstream commit" },
+  },
 }
 
 const watch = {
@@ -291,7 +307,7 @@ const doctor = {
 }
 
 test("the coloured and uncoloured renderings say exactly the same thing", () => {
-  for (const [render, input] of [[renderSubmit, result], [renderSubmit, ready], [renderWatch, watch], [renderDoctor, doctor]]) {
+  for (const [render, input] of [[renderSubmit, result], [renderSubmit, ready], [renderSubmit, listed], [renderWatch, watch], [renderDoctor, doctor]]) {
     const off = render(input, { colour: false })
     const on = render(input, { colour: true })
     assert.notEqual(on, off, "colour should actually be applied")
@@ -351,6 +367,7 @@ test("nothing the tool composes is wider than eighty columns", () => {
   // an upgrade refusal 124, and the watch header 99.
   assertWidth(renderSubmit(result, { colour: false }), "submit (refused)", result.baseline.officialReport)
   assertWidth(renderSubmit(ready, { colour: false }), "submit (ready)")
+  assertWidth(renderSubmit(listed, { colour: false }), "submit (listed)")
   assertWidth(renderWatch(watch, { colour: false }), "watch")
   assertWidth(renderDoctor(doctor, { colour: false }), "doctor")
   assertWidth(renderUsage({ colour: false }), "help")
@@ -364,7 +381,7 @@ test("every line starts on the indent scale", () => {
   // verdict's text. Anything else is a fourth indent nobody decided on.
   const allowed = new Set([0, STEP, GUTTER, GUTTER + STEP, LABEL])
   const verdictBodies = new Set()
-  for (const text of [renderSubmit(result, { colour: false }), renderSubmit(ready, { colour: false }), renderWatch(watch, { colour: false }), renderDoctor(doctor, { colour: false })]) {
+  for (const text of [renderSubmit(result, { colour: false }), renderSubmit(ready, { colour: false }), renderSubmit(listed, { colour: false }), renderWatch(watch, { colour: false }), renderDoctor(doctor, { colour: false })]) {
     for (const line of ownLines(text, result.baseline.officialReport)) {
       if (!line.trim()) continue
       const column = line.length - line.trimStart().length

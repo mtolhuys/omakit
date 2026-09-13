@@ -14,7 +14,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import {
-  CATALOG_PATH, LIVE_PATHS, REGISTRY_PATH, RegistryError, idUniverse, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail, sameRepository,
+  CATALOG_PATH, LIVE_PATHS, REGISTRY_PATH, RegistryError, idUniverse, listingOf, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail, sameRepository,
 } from "../../tools/marketplace/registry.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
@@ -27,13 +27,41 @@ const HEAD = "d4321b5b".padEnd(40, "0")
 const NEWER = "e5432c6c".padEnd(40, "0")
 const RAW = "https://raw.githubusercontent.com/omacom/omarchy-plugin-marketplace"
 
-/** A registry and catalog that list one id and one repository the pin does not. */
+/**
+ * A registry and catalog that list one id and one repository the pin does
+ * not: the fixture's id is taken by another repository, and the fixture's
+ * own repository is listed with nothing under it.
+ */
+const OTHER = "https://github.com/example/omarchy-plugin-fixture-other"
 const LIVE = {
   [REGISTRY_PATH]: {
-    sources: [{ repo: "https://github.com/example/omarchy-plugin-fixture-good", plugins: { "omakit-fixture.good": {} } }],
+    sources: [
+      { repo: "https://github.com/example/omarchy-plugin-fixture-good", plugins: {} },
+      { repo: OTHER, plugins: { "omakit-fixture.good": {} } },
+    ],
     retiredPluginIds: ["omakit-fixture.retired"],
   },
-  [CATALOG_PATH]: { plugins: [{ id: "omakit-fixture.good" }] },
+  [CATALOG_PATH]: { plugins: [{ id: "omakit-fixture.good", repo: OTHER }] },
+}
+
+/** The fixture's own listing at HEAD, verified at `commit`, as the catalog records one. */
+function ownListing(commit) {
+  return {
+    [REGISTRY_PATH]: {
+      sources: [{ repo: "https://github.com/Example/omarchy-plugin-fixture-good.git", addedAt: "2026-08-31", listingValidatedCommit: commit, plugins: { "omakit-fixture.good": {} } }],
+      retiredPluginIds: [],
+    },
+    [CATALOG_PATH]: {
+      plugins: [{
+        id: "omakit-fixture.good",
+        repo: "https://github.com/Example/omarchy-plugin-fixture-good.git",
+        addedAt: "2026-08-31",
+        verificationCommit: commit,
+        verificationStatus: "verified",
+        verificationCheckedAt: "2026-09-10T17:40:18.858Z",
+      }],
+    },
+  }
 }
 
 function fakes({ commit = HEAD, files = LIVE, fail = null } = {}) {
@@ -163,8 +191,9 @@ test("identity.available judges against HEAD's registry and names it; the pin's 
 
   assert.deepEqual(result.registry, { source: "head", commit: HEAD, fetchedAt: "2026-09-13T15:00:00.000Z", reason: null })
   const identity = result.checks.find((check) => check.id === "identity.available")
-  assert.equal(identity.verdict, "fail", "HEAD lists the fixture id and repository; the pin does not")
-  assert.match(identity.detail, /plugin-id-listed/)
+  assert.equal(identity.verdict, "fail", "HEAD lists the fixture id under another repository, and the fixture repository; the pin does neither")
+  assert.equal(result.outcome, "refused")
+  assert.match(identity.detail, /plugin-id-listed: "omakit-fixture\.good" is already listed by example\/omarchy-plugin-fixture-other/)
   assert.match(identity.detail, /submission-repository-listed/)
   assert.ok(identity.detail.endsWith(`; registry at ${HEAD}, read 2026-09-13T15:00:00.000Z`), identity.detail)
   assert.match(identity.why, /4,201 of the marketplace's 4,293 commits/)
@@ -200,4 +229,51 @@ test("the same repository is owner and name, case-insensitively, with a trailing
   assert.equal(sameRepository(url, null), false)
   assert.equal(sameRepository("", ""), false, "nothing is not the same as nothing")
   assert.equal(sameRepository("not a repository", "not a repository"), false)
+})
+
+test("a plugin listed by its own repository at HEAD is the listed outcome, at the listed commit or ahead of it", async () => {
+  const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+  const read = (files) => async (options) => liveRegistry({ ...options, offline: false, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-registry-")), ...fakes({ files }), now: () => "2026-09-13T15:00:00.000Z" })
+
+  // At the listed commit: the catalog names the very commit that is checked out.
+  const same = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true, readRegistry: read(ownListing(fixture.commit)) })
+  assert.equal(same.outcome, "listed")
+  assert.equal(same.ready, false)
+  assert.deepEqual(same.blocking, [])
+  assert.deepEqual(same.unknown, [], "nothing waited: the body checks are omitted, not drawn as questions")
+  assert.equal(same.issue, null)
+  assert.deepEqual(same.listing, {
+    repository: "https://github.com/Example/omarchy-plugin-fixture-good.git",
+    id: "omakit-fixture.good",
+    addedAt: "2026-08-31",
+    verificationCommit: fixture.commit,
+    verificationStatus: "verified",
+    verificationCheckedAt: "2026-09-10T17:40:18.858Z",
+    localCommit: fixture.commit,
+    sameCommit: true,
+    source: "head",
+    updateRoute: { form: "Verify or update a listed plugin", choice: "Verify and publish a newer upstream commit" },
+  })
+  const identity = same.checks.find((check) => check.id === "identity.available")
+  assert.equal(identity.verdict, "pass")
+  assert.equal(identity.remedy, null)
+  assert.equal(identity.detail, `listed by this repository since 2026-08-31, verification commit ${fixture.commit} (verified, checked 2026-09-10T17:40:18.858Z); registry at ${HEAD}, read 2026-09-13T15:00:00.000Z`)
+  assert.deepEqual(same.checks.map((check) => check.id), [
+    "plugin.root-manifest", "plugin.root-readme", "plugin.root-license", "plugin.readme-install-removal", "tree.agent-control",
+    "identity.available", "submission.title", "submission.repository-url", "submission.validation-commit", "baseline.preflight",
+  ], "category, tags, headings, checklist and the official parser are not run")
+
+  // Ahead of it: the same outcome, and the listing says which commit is listed.
+  const listedCommit = "5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b"
+  const ahead = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true, readRegistry: read(ownListing(listedCommit)) })
+  assert.equal(ahead.outcome, "listed")
+  assert.equal(ahead.listing.verificationCommit, listedCommit)
+  assert.equal(ahead.listing.localCommit, fixture.commit)
+  assert.equal(ahead.listing.sameCommit, false)
+  assert.equal(ahead.listing.source, "head")
+
+  // The listing the check reads is the catalog's entry, by id.
+  const live = await read(ownListing(listedCommit))({ pinDir })
+  assert.equal(listingOf(live, "omakit-fixture.good").verificationCommit, listedCommit)
+  assert.equal(listingOf(live, "omakit-fixture.nobody"), null)
 })

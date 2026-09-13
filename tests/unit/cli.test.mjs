@@ -38,12 +38,16 @@ function copyOfTool(parent, name = "omakit") {
 }
 
 const good = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+// disk-lens at the pin: the id the catalog lists, from the repository that lists it.
+const LISTED_MANIFEST = JSON.stringify({ ...JSON.parse(GOOD["manifest.json"]), id: "io.github.mtolhuys.disk-lens" }) + "\n"
+const own = materialise({ ...GOOD, "manifest.json": LISTED_MANIFEST }, { origin: "https://github.com/mtolhuys/omarchy-disk-lens" })
+const taken = materialise({ ...GOOD, "manifest.json": LISTED_MANIFEST }, { origin: "https://github.com/example/omarchy-plugin-fixture-taken" })
 
 test("a piped run, a NO_COLOR run and a coloured run say the same words", () => {
   // The words are the contract. FORCE_COLOR stands in for a terminal here,
   // because a test has no pty; what it proves is that colour is the only thing
   // a terminal adds on stdout.
-  for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"]]) {
+  for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"], ["submit", own.dir, "--offline"], ["submit", taken.dir, "--offline"]]) {
     const piped = run(args)
     const dark = run(args, { NO_COLOR: "1" })
     const lit = run(args, { FORCE_COLOR: "1" })
@@ -56,7 +60,7 @@ test("a piped run, a NO_COLOR run and a coloured run say the same words", () => 
 })
 
 test("nothing a command prints is wider than eighty columns", () => {
-  for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"]]) {
+  for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"], ["submit", own.dir, "--offline"], ["submit", taken.dir, "--offline"]]) {
     const { out } = run(args)
     // Two exemptions, both somebody else's text quoted verbatim: the
     // marketplace's own baseline report, and the issue body, whose checklist
@@ -214,22 +218,54 @@ function unwrapped(text) {
   return text.replace(/ \\\n\s+/g, " ")
 }
 
-test("a listed plugin without flags is refused at identity, never asked for flags", () => {
+test("an id taken by another repository is refused at identity, never asked for flags, exit 1", () => {
   // Measured on 0.1.5: exit 2 asking for --category and --tags on a plugin
   // that identity.available would then have refused as already listed.
-  const manifest = { ...JSON.parse(GOOD["manifest.json"]), id: "io.github.mtolhuys.disk-lens" }
-  const listed = materialise({ ...GOOD, "manifest.json": JSON.stringify(manifest) + "\n" }, { origin: "https://github.com/mtolhuys/omarchy-disk-lens" })
-  const { code, out, err } = run(["submit", listed.dir, "--offline"])
+  const { code, out, err } = run(["submit", taken.dir, "--offline"])
   assert.equal(code, 1)
   assert.equal(err, "")
   assert.ok(!out.includes("usage"))
   assert.ok(out.includes(`${DENSITY.full} FAIL  identity.available`))
-  assert.ok(out.includes("This plugin is already listed, so there is nothing to submit."))
+  assert.ok(out.includes("That id is taken by mtolhuys/omarchy-disk-lens; choose another."))
   assert.ok(out.includes(`${DENSITY.medium} ?     submission.category`))
+  assert.ok(out.includes("Fix it, then run submit again:"))
   // The command wraps after 80 columns at a long tmp path; read it unwrapped.
-  assert.ok(unwrapped(out).trimEnd().endsWith(`omakit submit ${listed.dir} --offline`), "the report ends with the command line that repeats the run")
-  const json = JSON.parse(run(["submit", listed.dir, "--offline", "--json"]).out)
-  assert.equal(json.reproduce, `omakit submit ${listed.dir} --offline`)
+  assert.ok(unwrapped(out).trimEnd().endsWith(`omakit submit ${taken.dir} --offline`), "the report ends with the command line that repeats the run")
+  const json = JSON.parse(run(["submit", taken.dir, "--offline", "--json"]).out)
+  assert.equal(json.outcome, "refused")
+  assert.equal(json.ready, false)
+  assert.equal(json.listing, null)
+  assert.equal(json.reproduce, `omakit submit ${taken.dir} --offline`)
+})
+
+test("the author's own listed plugin is LISTED, exit 0: no failure, no refusal, no fix line, nothing asked", () => {
+  // Measured on 0.1.6: `omakit submit ~/Projects/plugins/omarchy-disk-lens`
+  // printed FAIL identity.available, REFUSED 1 blocking check failed, and
+  // "Fix it, then run submit again" with the reproduce line, under a remedy
+  // that said there was nothing to submit.
+  const { code, out, err } = run(["submit", own.dir, "--offline"])
+  assert.equal(code, 0)
+  assert.equal(err, "")
+  assert.ok(out.includes(`${DENSITY.floor} ok    identity.available`))
+  assert.ok(out.includes("listed by this repository since 2026-08-31, verification commit"))
+  assert.ok(out.includes(`${DENSITY.floor} LISTED  io.github.mtolhuys.disk-lens is already listed by this repository, so`))
+  assert.ok(out.includes("read from the pin"), "offline, and it says so")
+  assert.ok(out.includes("not the listed commit"))
+  assert.ok(out.includes('choose "Verify and publish a newer upstream commit"'))
+  for (const absent of ["FAIL", "REFUSED", "READY", "Fix it", "Fix them", "omakit submit ", `${DENSITY.medium} ?`, "submission.category", "submission.official-parser", "--body-file"]) {
+    assert.ok(!out.includes(absent), `${JSON.stringify(absent)} has no place in a LISTED run:\n${out}`)
+  }
+  const json = JSON.parse(run(["submit", own.dir, "--offline", "--json"]).out)
+  assert.equal(json.outcome, "listed")
+  assert.equal(json.ready, false)
+  assert.deepEqual(json.blocking, [])
+  assert.deepEqual(json.unknown, [])
+  assert.equal(json.issue, null)
+  assert.deepEqual(Object.keys(json.listing), ["repository", "id", "addedAt", "verificationCommit", "verificationStatus", "verificationCheckedAt", "localCommit", "sameCommit", "source", "updateRoute"])
+  assert.equal(json.listing.source, "pin")
+  assert.equal(json.listing.sameCommit, false)
+  assert.equal(json.listing.localCommit, own.commit)
+  assert.equal(json.listing.verificationCommit, "5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b")
 })
 
 test("a usage error says what was expected and exits 2", () => {

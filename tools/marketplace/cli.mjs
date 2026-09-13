@@ -148,7 +148,9 @@ async function cmdSubmit(args) {
   }
   spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderSubmit(result))
-  process.exit(result.ready ? 0 : 1)
+  // Three outcomes, two exit codes: `ready` and `listed` are both healthy
+  // states, and only a refusal is a 1.
+  process.exit(result.outcome === "refused" ? 1 : 0)
 }
 
 async function cmdWatch(args) {

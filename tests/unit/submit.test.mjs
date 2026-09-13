@@ -202,22 +202,59 @@ test("an id taken by another repository names that repository", async () => {
   assert.deepEqual(check.remedy, ["That id is taken by mtolhuys/omarchy-disk-lens; choose another."])
 })
 
-test("a plugin listed by its own repository has nothing to submit, and is sent to the verification form", async () => {
-  // disk-lens at the pin: listed id, same repository. Both codes fire, one arrow.
+test("a plugin listed by its own repository is not a failed check: it is listed, and the run says so", async () => {
+  // disk-lens at the pin: listed id, same repository. Measured on 0.1.6: this
+  // printed FAIL identity.available, REFUSED, and "Fix it, then run submit
+  // again" under a remedy saying there was nothing to submit. Offline, so the
+  // listing is read from the pin, and the output says so.
   const { result, check } = await identityOf(withId(LISTED_ID), LISTED_REPO)
-  assert.match(check.detail, /^plugin-id-listed: .* by mtolhuys\/omarchy-disk-lens; submission-repository-listed: mtolhuys\/omarchy-disk-lens is already listed; registry at the pin/)
-  assert.equal(check.remedy.length, 1, "one arrow for one cause, however many codes")
-  assert.equal(check.remedy[0], `This plugin is already listed, so there is nothing to submit. To get a newer commit listed, use the marketplace's verification form and choose "${NEWER_COMMIT}"; \`omakit watch <the submission issue>\` shows which commit is listed now.`)
-  assert.match(NEWER_COMMIT, /newer/, "read from the pin's own module, not typed")
-  const rendered = renderSubmit(result, { colour: false })
-  assert.ok(!rendered.includes("Choose an unused plugin id"), "the old remedy is gone")
-  assert.equal((rendered.match(/This plugin is already listed/g) || []).length, 2, "once under the check, once in the refusal")
+  assert.equal(check.verdict, "pass")
+  assert.equal(check.remedy, null)
+  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b (verified, checked 2026-09-10T17:40:18.858Z); registry at the pin 38060f89 (offline)")
+  assert.equal(result.outcome, "listed")
+  assert.equal(result.ready, false)
+  assert.deepEqual(result.blocking, [])
+  assert.equal(result.issue, null)
+  assert.deepEqual(Object.keys(result.listing), ["repository", "id", "addedAt", "verificationCommit", "verificationStatus", "verificationCheckedAt", "localCommit", "sameCommit", "source", "updateRoute"])
+  assert.equal(result.listing.source, "pin")
+  assert.equal(result.listing.sameCommit, false)
+  assert.equal(result.listing.localCommit, result.subject.commit)
+  assert.equal(result.listing.updateRoute.choice, NEWER_COMMIT)
+  assert.match(NEWER_COMMIT, /newer/, "read from the pin, not typed")
+  assert.ok(!result.checks.some((entry) => /^submission\.(category|tags|headings|checklist|official-parser)$/.test(entry.id)), "no body is rendered on purpose, so the body checks are omitted")
 
-  // A listed repository with a fresh id is the same cause.
+  const rendered = renderSubmit(result, { colour: false })
+  assert.ok(!rendered.includes("FAIL") && !rendered.includes("REFUSED") && !rendered.includes("READY"), rendered)
+  assert.ok(!rendered.includes("Fix it") && !rendered.includes("omakit submit "), "no closing fix line and no reproduce line")
+  assert.ok(!rendered.includes("Choose an unused plugin id"), "the old remedy is gone")
+  const tail = rendered.slice(rendered.indexOf("LISTED"))
+  assert.match(tail, /^LISTED  io\.github\.mtolhuys\.disk-lens is already listed by this repository, so\n {10}the submission form is not the route\./)
+  assert.match(tail, /\nlisted {8}5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b\n {14}verified, checked 2026-09-10T17:40:18\.858Z, read from the pin\n/)
+  assert.match(tail, new RegExp(`\\nlocal HEAD {4}${result.subject.commit}\\n {14}not the listed commit\\n`))
+  assert.match(tail, new RegExp(`To get it listed, open the marketplace's "Verify or update a listed plugin" form\\nand choose "${NEWER_COMMIT}"\\.\\nomakit watch <the submission issue> shows which commit is listed now\\.$`))
+
+  // A listed repository with a manifest id it does not list is still a
+  // failure: the marketplace refuses the repository, and the id is not the
+  // listed one, so nothing here says which plugin this is.
   const fresh = await identityOf(withId("io.github.mtolhuys.fixture-fresh"), LISTED_REPO)
+  assert.equal(fresh.check.verdict, "fail")
+  assert.equal(fresh.result.outcome, "refused")
   assert.match(fresh.check.detail, /^submission-repository-listed: mtolhuys\/omarchy-disk-lens is already listed; registry/)
   assert.equal(fresh.check.remedy.length, 1)
   assert.match(fresh.check.remedy[0], /^This plugin is already listed/)
+})
+
+test("an id taken by another repository is the refusal it was, closing with the fix line and the reproduce line", async () => {
+  const { result, check } = await identityOf(withId(LISTED_ID), "https://github.com/example/omarchy-plugin-fixture-taken")
+  assert.equal(check.verdict, "fail")
+  assert.equal(result.outcome, "refused")
+  assert.equal(result.ready, false)
+  assert.equal(result.listing, null)
+  assert.deepEqual(result.blocking, ["identity.available"])
+  const rendered = renderSubmit(result, { colour: false })
+  assert.match(rendered, /REFUSED  1 blocking check failed, so no submission body is produced\./)
+  assert.match(rendered.replace(/ \\\n\s+/g, " "), /Fix it, then run submit again:\n\S omakit submit \S+ --category Widgets --tags bar --offline$/)
+  assert.ok(!rendered.includes("LISTED"))
 })
 
 test("more than one cause prints the arrows in order: retired, then listed", async () => {
@@ -234,18 +271,30 @@ test("more than one cause prints the arrows in order: retired, then listed", asy
 // --category and --tags, and would then have refused at identity.available
 // with "nothing to submit".
 
-test("a listed plugin without flags is never a usage error: the choice is moot and waits on identity", async () => {
-  const fixture = materialise(withId(LISTED_ID), { origin: LISTED_REPO })
+test("a listed plugin without flags is never a usage error: taken, the choice is moot and waits on identity", async () => {
+  const fixture = materialise(withId(LISTED_ID), { origin: "https://github.com/example/omarchy-plugin-fixture-taken" })
   const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true })
+  assert.equal(result.outcome, "refused")
   assert.deepEqual(result.blocking, ["identity.available"])
   assert.deepEqual(result.unknown, ["submission.category", "submission.tags", "submission.headings", "submission.checklist", "submission.official-parser"])
   for (const id of result.unknown) {
     assert.equal(result.checks.find((entry) => entry.id === id).detail, "not checked: it needs identity.available to pass first")
   }
-  assert.match(result.checks.find((entry) => entry.id === "identity.available").remedy[0], /^This plugin is already listed/)
+  assert.match(result.checks.find((entry) => entry.id === "identity.available").remedy[0], /^That id is taken by mtolhuys\/omarchy-disk-lens/)
   assert.equal(result.reproduce, `omakit submit ${fixture.dir} --offline`)
   // The command wraps after 80 columns at a long tmp path; read it unwrapped.
   assert.match(renderSubmit(result, { colour: false }).replace(/ \\\n\s+/g, " "), /Fix it, then run submit again:\n\S omakit submit \S+ --offline$/)
+})
+
+test("an own listing without flags is asked for nothing, with or without a chooser, and nothing waits", async () => {
+  const fixture = materialise(withId(LISTED_ID), { origin: LISTED_REPO })
+  const chooser = async () => { throw new Error("must not ask") }
+  for (const options of [{}, { chooser }]) {
+    const result = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true, ...options })
+    assert.equal(result.outcome, "listed")
+    assert.deepEqual(result.blocking, [])
+    assert.deepEqual(result.unknown, [])
+  }
 })
 
 test("an unlisted plugin without flags and without a chooser is the usage error, unchanged", async () => {

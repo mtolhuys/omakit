@@ -13,8 +13,8 @@
 
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { requirePin } from "./pin.mjs"
-import { submissionContract, resolveCategory, resolveTags, tagSlug } from "./form.mjs"
-import { idUniverse, checkIdentity, baselineFigures, figure, liveRegistry, registrySourceDetail, catalogPresentation, defaultPresentation } from "./registry.mjs"
+import { submissionContract, newerCommitChoice, resolveCategory, resolveTags, tagSlug } from "./form.mjs"
+import { idUniverse, checkIdentity, listingOf, baselineFigures, figure, liveRegistry, registrySourceDetail, catalogPresentation, defaultPresentation } from "./registry.mjs"
 import { readTree } from "./tree.mjs"
 import { inspectTree } from "./plugin.mjs"
 import { findAgentControl, REMEDY as AGENT_CONTROL_REMEDY } from "./agent-control.mjs"
@@ -23,26 +23,16 @@ import { renderIssue, verifyAgainstOfficialParser } from "./issue.mjs"
 import { defaultBranchHead } from "./github.mjs"
 import { REFRESH_ACTION } from "./watch.mjs"
 import { omakitCacheDir } from "./paths.mjs"
-import { join } from "node:path"
-import { pathToFileURL } from "node:url"
-
-/**
- * The marketplace's own name for the verification action that lists a newer
- * commit of an already listed plugin, read from the pin rather than typed:
- * a form option retyped here would drift by a word, and a person would be
- * sent to choose something the form no longer offers.
- */
-async function newerCommitAction(pinDir) {
-  const verification = await import(pathToFileURL(join(pinDir, "scripts/plugin-verification-request.mjs")).href)
-  return verification.upstreamUpdateVerificationAction
-}
 
 /**
  * One arrow per cause, in this order, so a person fixes the thing that is
  * actually wrong. Measured before this: an id listed by its own repository
  * was told to "choose an unused plugin id outside the reserved namespace",
  * which is the remedy for a different failure, and an author who followed
- * it would have renamed a plugin the marketplace already lists.
+ * it would have renamed a plugin the marketplace already lists. The last
+ * arrow is for a listed repository whose manifest carries another id, or
+ * one with a second cause beside it; a plugin listed by its own repository
+ * with nothing else wrong is not a failure at all (see `listing` below).
  */
 function identityRemedies(identity, universe, newerCommit) {
   const remedies = []
@@ -241,8 +231,29 @@ export async function submitPreflight(options) {
   // --- identity -------------------------------------------------------------
 
   const identity = checkIdentity(universe, { id: tree.pluginId, repositoryUrl: subject.repository.url })
-  const identityRemedy = identity.ok ? null : identityRemedies(identity, universe, await newerCommitAction(pinDir))
+  const update = await newerCommitChoice({ pinDir })
+  const identityRemedy = identity.ok || identity.own ? null : identityRemedies(identity, universe, update.choice)
   const listed = identity.problems.some((problem) => problem.code === "plugin-id-listed" || problem.code === "submission-repository-listed")
+
+  // The subject's own listing is the third outcome of a run, not a failed
+  // check. Measured on 0.1.6: `omakit submit` on the author's own listed
+  // plugin printed FAIL identity.available and REFUSED, closed with "Fix it,
+  // then run submit again", and the remedy under it said there was nothing to
+  // submit. A healthy state was drawn as a failure and the closing line
+  // contradicted the remedy. Now the check passes with what the marketplace
+  // records about the listing, and the run ends in LISTED.
+  const listing = identity.own
+    ? (() => {
+      const record = listingOf(live, tree.pluginId) || { repository: subject.repository.url, id: tree.pluginId, addedAt: null, verificationCommit: null, verificationStatus: null, verificationCheckedAt: null }
+      return {
+        ...record,
+        localCommit: subject.commit,
+        sameCommit: Boolean(record.verificationCommit) && record.verificationCommit === subject.commit.toLowerCase(),
+        source: live.source,
+        updateRoute: { form: update.name, choice: update.choice },
+      }
+    })()
+    : null
 
   // The category and the tags are decided here, after the registry. Measured
   // before this: a listed plugin was asked for both and then told there was
@@ -268,11 +279,13 @@ export async function submitPreflight(options) {
   }
   checks.push(check("identity.available", {
     source: "marketplace-pin",
-    why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${figure(universe.counts.listedIds)} listed ids, ${figure(universe.counts.retiredIds)} retired ids and ${figure(universe.counts.listedRepositories)} listed repositories from the registry and catalog at the commit the detail names, and the reserved namespace from the pinned catalog builder. The registry is read from the marketplace's current HEAD when the network is there because the pin's copy is stale within hours: registry.json changed in 4,201 of the marketplace's 4,293 commits in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md M7). Code and the form are only ever read from the pin.`,
-    verdict: identity.ok,
+    why: `The marketplace refuses \`plugin-id-listed\`, \`plugin-id-retired\`, \`reserved-plugin-id\` and \`submission-repository-listed\`. Checked here against ${figure(universe.counts.listedIds)} listed ids, ${figure(universe.counts.retiredIds)} retired ids and ${figure(universe.counts.listedRepositories)} listed repositories from the registry and catalog at the commit the detail names, and the reserved namespace from the pinned catalog builder. The registry is read from the marketplace's current HEAD when the network is there because the pin's copy is stale within hours: registry.json changed in 4,201 of the marketplace's 4,293 commits in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md M7). Code and the form are only ever read from the pin. A plugin listed by its own repository (owner and name, case-insensitively, a trailing .git ignored) is not refused: it is listed, and this check says since when and at which commit.`,
+    verdict: identity.ok || identity.own,
     detail: `${identity.ok
       ? `id "${tree.pluginId}" is unused, outside the reserved ${universe.reservedPrefix}* namespace, and the repository is not listed`
-      : identity.problems.map((problem) => `${problem.code}: ${problem.detail}`).join("; ")}; ${registrySourceDetail(live)}`,
+      : listing
+        ? `listed by this repository since ${listing.addedAt || "an unrecorded date"}, verification commit ${listing.verificationCommit || "unrecorded"} (${listing.verificationStatus || "status unrecorded"}, checked ${listing.verificationCheckedAt || "at an unrecorded time"})`
+        : identity.problems.map((problem) => `${problem.code}: ${problem.detail}`).join("; ")}; ${registrySourceDetail(live)}`,
     remedy: identityRemedy,
   }))
 
@@ -295,7 +308,11 @@ export async function submitPreflight(options) {
     remedy: "Give the plugin a name in manifest.json, or pass --name.",
   }))
 
-  checks.push(check("submission.category", {
+  // On the subject's own listing no body is rendered, on purpose: the
+  // submission form is not the route. The five checks that exist only for the
+  // body are omitted rather than drawn as questions waiting on identity,
+  // because identity did not fail.
+  if (!listing) checks.push(check("submission.category", {
     source: "marketplace-pin",
     why: `Exactly one category from the form's controlled list; the marketplace refuses \`submission-category-invalid\` otherwise. The list (${contract.categories.length} options) is read from ${contract.formPath} at the pin.`,
     verdict: category.ok,
@@ -304,7 +321,7 @@ export async function submitPreflight(options) {
     waitedOn: mootWaitsOn,
   }))
 
-  checks.push(check("submission.tags", {
+  if (!listing) checks.push(check("submission.tags", {
     source: "marketplace-pin",
     why: `1 to ${contract.maximumTags} tags from the form's controlled list; the marketplace refuses \`submission-tag-count-invalid\` and \`submission-tags-invalid\` otherwise. The list (${contract.tagLabels.length} options) and the maximum are read from the pin.`,
     verdict: tags.ok,
@@ -323,7 +340,7 @@ export async function submitPreflight(options) {
   ].filter(Boolean)
   let issue = null
   let parsed = null
-  if (!bodyWaitsOn.length) {
+  if (!bodyWaitsOn.length && !listing) {
     issue = renderIssue(contract, {
       pluginName,
       repositoryUrl: subject.repository.url,
@@ -343,7 +360,7 @@ export async function submitPreflight(options) {
     remedy: subject.repository.url ? null : "Give the repository a github.com origin remote.",
   }))
 
-  checks.push(check("submission.headings", {
+  if (!listing) checks.push(check("submission.headings", {
     source: "marketplace-pin",
     why: `The six form headings must appear in exact order: ${contract.headings.join(", ")}. 11 open submissions are malformed in the body and receive "The validation result could not be published to the issue. A maintainer must review the workflow.", which blames the maintainer for the author's mistake; one of them differs from a valid submission by the single word "Suggested" instead of "Suggest". The headings are rendered from the form at the pin, never typed.`,
     verdict: Boolean(issue),
@@ -351,7 +368,7 @@ export async function submitPreflight(options) {
     waitedOn: bodyWaitsOn,
   }))
 
-  checks.push(check("submission.checklist", {
+  if (!listing) checks.push(check("submission.checklist", {
     source: "marketplace-pin",
     why: `All ${contract.checklist.length} checklist items must be present with their exact text and checked; the marketplace refuses \`submission-checklist-unconfirmed\` otherwise. The text is read from the form at the pin, character for character.`,
     verdict: Boolean(issue),
@@ -359,7 +376,7 @@ export async function submitPreflight(options) {
     waitedOn: bodyWaitsOn,
   }))
 
-  checks.push(check("submission.official-parser", {
+  if (!listing) checks.push(check("submission.official-parser", {
     source: "marketplace-pin",
     why: "The strongest available proof that the body is well formed: the marketplace's own `parseCurrentSubmission` from the pinned commit is run over the rendered title and body. If it accepts them here it accepts them there, and 0 of the marketplace's heading, tag and checklist rules are duplicated in Omakit, so none of them can drift. This is the check that closes all 50 measured title-and-body failures at once: 39 on the title prefix plus 11 malformed bodies.",
     verdict: Boolean(parsed?.ok),
@@ -437,7 +454,12 @@ export async function submitPreflight(options) {
   const blocking = checks.filter((entry) => entry.severity === "blocking" && entry.verdict === "fail")
   const advisory = checks.filter((entry) => entry.severity === "advisory" && entry.verdict === "fail")
   const unknown = checks.filter((entry) => entry.verdict === "unknown")
-  const ready = blocking.length === 0
+  // Three outcomes. `refused`: a blocking check failed and no body exists.
+  // `listed`: nothing failed and the plugin is already listed by this
+  // repository, so there is no body either, and nothing is wrong. `ready`:
+  // the body. `ready` the boolean stays what it was, true for the third only.
+  const outcome = blocking.length ? "refused" : listing ? "listed" : "ready"
+  const ready = outcome === "ready"
 
   return {
     pin: {
@@ -478,7 +500,9 @@ export async function submitPreflight(options) {
       offline: options.offline === true,
     }),
     checks,
+    outcome,
     ready,
+    listing,
     blocking: blocking.map((entry) => entry.id),
     advisory: advisory.map((entry) => entry.id),
     unknown: unknown.map((entry) => entry.id),
