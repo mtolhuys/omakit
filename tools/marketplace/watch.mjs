@@ -106,12 +106,17 @@ export function validationCommentCommit(comments) {
 }
 
 /**
- * @param {{ repoRoot: string, issueUrl: string }} options
+ * @param {{ repoRoot: string, issueUrl: string, onPhase?: (name: string) => void,
+ *           github?: { issue?: typeof issue, issueComments?: typeof issueComments, defaultBranchHead?: typeof defaultBranchHead } }} options
+ *   `github` is injectable for tests, so the whole path from an issue body to
+ *   a verdict can be run on data that never left the machine; the default is
+ *   the read-only GitHub access in `github.mjs`.
  */
-export async function validationWatch({ repoRoot, issueUrl, onPhase }) {
+export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {} }) {
   // Optional: told the name of the step about to run, so a terminal can say
   // what is happening while the network answers. Never affects the result.
   const phase = onPhase || (() => {})
+  const read = { issue, issueComments, defaultBranchHead, ...github }
   const { dir: pinDir } = requirePin(repoRoot)
   const target = parseIssueUrl(issueUrl)
   if (`${target.owner}/${target.repository}`.toLowerCase() !== MARKETPLACE_SLUG) {
@@ -124,14 +129,14 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase }) {
   const record = await loadRecord(pinDir)
 
   phase(`reading issue #${target.number}`)
-  const subject = await issue(target.owner, target.repository, target.number)
+  const subject = await read.issue(target.owner, target.repository, target.number)
   phase(`reading the comments on issue #${target.number}`)
-  const comments = await issueComments(target.owner, target.repository, target.number)
+  const comments = await read.issueComments(target.owner, target.repository, target.number)
 
-  const read = await repositoryFor(pinDir, subject)
-  const repositoryUrl = read.url
-  const repositoryError = read.error
-  const issueKind = read.kind
+  const repository = await repositoryFor(pinDir, subject)
+  const repositoryUrl = repository.url
+  const repositoryError = repository.error
+  const issueKind = repository.kind
 
   let validated = null
   let baselineError = null
@@ -164,7 +169,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase }) {
   if (repositoryUrl) {
     phase("reading the plugin repository's default-branch HEAD")
     try {
-      head = await defaultBranchHead(repositoryUrl)
+      head = await read.defaultBranchHead(repositoryUrl)
     } catch (error) {
       headError = { code: error.code || "head-unreadable", message: error.message }
     }
@@ -202,11 +207,16 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase }) {
     baselineError,
     head,
     headError,
-    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview }),
+    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl }),
   }
 }
 
-export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl = "unknown" }) {
+// `repositoryUrl` has no default on purpose. Measured on 0.1.6: the command
+// computed it and then did not pass it, and the parameter defaulted to the
+// truthy string "unknown", so an issue whose body named no repository was
+// reported as a HEAD that could not be read, and the branch below that names
+// the real cause was reachable from the unit test alone.
+export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl }) {
   if (baselineError) {
     return {
       state: "unknown",

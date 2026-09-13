@@ -3,12 +3,17 @@
 // by the two real runs recorded in docs/VALIDATION_WATCH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { validationVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
+import { validationWatch, validationVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
+import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
+import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const A = "a".repeat(40)
 const B = "b".repeat(40)
+const REPOSITORY = "https://github.com/example/omarchy-plugin-fixture"
 
 test("issue URLs are parsed, and anything else is refused", () => {
   assert.deepEqual(parseIssueUrl("https://github.com/omacom/omarchy-plugin-marketplace/issues/4829"), {
@@ -23,7 +28,7 @@ test("issue URLs are parsed, and anything else is refused", () => {
 test("a pin that equals the current HEAD needs nothing", () => {
   const verdict = validationVerdict({
     comparable: true, stale: false, validated: { commit: A }, head: { commit: A, branch: "main" },
-    fallback: null, baselineError: null, headError: null, pushedAfterReview: false,
+    fallback: null, baselineError: null, headError: null, pushedAfterReview: false, repositoryUrl: REPOSITORY,
   })
   assert.equal(verdict.state, "current")
   assert.equal(verdict.action, null)
@@ -33,7 +38,7 @@ test("a pin that equals the current HEAD needs nothing", () => {
 test("a stale validation names both commits and the one action that moves it", () => {
   const verdict = validationVerdict({
     comparable: true, stale: true, validated: { commit: A }, head: { commit: B, branch: "master" },
-    fallback: null, baselineError: null, headError: null, pushedAfterReview: false,
+    fallback: null, baselineError: null, headError: null, pushedAfterReview: false, repositoryUrl: REPOSITORY,
   })
   assert.equal(verdict.state, "stale")
   assert.ok(verdict.summary.includes(A))
@@ -46,7 +51,7 @@ test("a stale validation names both commits and the one action that moves it", (
 test("a push after the last human review comment is called out", () => {
   const verdict = validationVerdict({
     comparable: true, stale: true, validated: { commit: A }, head: { commit: B, branch: "main" },
-    fallback: null, baselineError: null, headError: null, pushedAfterReview: true,
+    fallback: null, baselineError: null, headError: null, pushedAfterReview: true, repositoryUrl: REPOSITORY,
   })
   assert.match(verdict.summary, /after the last human review comment/)
 })
@@ -78,7 +83,7 @@ test("an incomplete baseline and an unreadable HEAD are both 'unknown'", () => {
 
   const head = validationVerdict({
     comparable: false, stale: null, validated: { commit: A }, head: null, fallback: null,
-    baselineError: null, headError: { code: "not-found" }, pushedAfterReview: false,
+    baselineError: null, headError: { code: "not-found" }, pushedAfterReview: false, repositoryUrl: REPOSITORY,
   })
   assert.equal(head.state, "unknown")
   assert.match(head.summary, /could not be read \(not-found\)/)
@@ -102,6 +107,59 @@ test("a missing repository URL is reported as that, not as an unreadable HEAD", 
   assert.equal(verdict.state, "unknown")
   assert.match(verdict.summary, /no plugin repository could be read from this issue/)
   assert.doesNotMatch(verdict.summary, /HEAD could not be read/)
+})
+
+test("the command path reaches the missing-repository verdict, not only the helper", async () => {
+  // Measured on 0.1.6: `validationWatch` computed the repository URL and then
+  // did not pass it to `validationVerdict`, whose parameter defaulted to the
+  // truthy string "unknown". An issue whose body named no repository was
+  // therefore diagnosed as a HEAD that could not be read, which sends the
+  // author to troubleshoot GitHub instead of the issue. The unit test above
+  // proved the branch in isolation; this one runs the command's own path on
+  // injected issue data and asserts the verdict that comes out of it.
+  //
+  // The validated commit comes from the marketplace's own baseline marker on
+  // a bot comment. Omakit never emits one (tests/unit/read-only.test.mjs
+  // forbids the serializer and the literal in every source, this file
+  // included), so this test composes one from the pinned policy's prefix
+  // constant, for a comment that exists in memory only and is never posted.
+  const pinDir = requirePinForTests()
+  const policy = await import(pathToFileURL(join(pinDir, "scripts/security-baseline-policy.mjs")).href)
+  const payload = {
+    // `securityBaselineMarkerSchemaVersion` in scripts/security-baseline-record.mjs
+    // at the pin, which does not export it.
+    schemaVersion: 2,
+    baselineVersion: policy.securityBaselineVersion,
+    repository: "example/omarchy-plugin-fixture",
+    pluginIds: ["io.example.fixture"],
+    commitSha: A,
+    checkedAt: "2026-09-01T00:00:00Z",
+    outcome: "passed",
+    enforcementMode: policy.securityBaselineEnforcementMode,
+    findings: [],
+    capabilities: [],
+  }
+  const marker = `${policy.securityBaselineMarkerPrefix}${Buffer.from(JSON.stringify(payload)).toString("base64url")} -->`
+  const heads = []
+  const result = await validationWatch({
+    repoRoot: REPO_ROOT,
+    issueUrl: `${MARKETPLACE_PIN.repository}/issues/1`,
+    github: {
+      issue: async () => ({ title: "[Plugin]: fixture", body: "A body with no Repository URL heading at all.", state: "open", user: { login: "author" }, labels: [] }),
+      issueComments: async () => [{ user: { login: "github-actions[bot]" }, body: `validated
+${marker}`, created_at: "2026-09-01T00:00:00Z" }],
+      defaultBranchHead: async (url) => { heads.push(url); return { commit: B, branch: "main" } },
+    },
+  })
+  assert.equal(result.plugin.repository, null)
+  assert.deepEqual(heads, [], "no repository, so no HEAD is read")
+  assert.equal(result.validated.commit, A)
+  assert.equal(result.verdict.state, "unknown")
+  assert.match(result.verdict.summary, /no plugin repository could be read from this issue/)
+  assert.doesNotMatch(result.verdict.summary, /HEAD could not be read/)
+  // The helper has no truthy default to fall back on: called the way the
+  // command calls it, with the URL left out, it does not invent one.
+  assert.match(readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8"), /pushedAfterReview, repositoryUrl \}\) \{/)
 })
 
 test("the two marketplace issue forms are read by their own parser", () => {
