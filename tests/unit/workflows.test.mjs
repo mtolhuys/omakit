@@ -65,8 +65,8 @@ test("release is tag-only, provenance-carrying, reviewable and replay-safe", () 
   assert.match(source, /tags:\n\s+- "v\*"/)
   assert.match(source, /git merge-base --is-ancestor/)
   assert.match(source, /npm publish .*--provenance --access public/)
-  assert.match(source, /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/)
-  assert.match(source, /publish:[\s\S]*registry-url: https:\/\/registry\.npmjs\.org/)
+  assert.doesNotMatch(source, /NODE_AUTH_TOKEN|NPM_TOKEN/)
+  assert.match(source, /npm publish .*--registry https:\/\/registry\.npmjs\.org/)
   assert.match(source, /id-token: write/)
   assert.match(source, /git archive --format=tar/)
   assert.match(source, /sha256sum/)
@@ -107,15 +107,9 @@ test("workflow GitHub commands can address only this repository", () => {
   assert.doesNotMatch(workflows["release.yml"], /git push/, "release.yml pushes nothing: it publishes a Release and a package")
 })
 
-test("secrets occur only in release and are limited to npm publishing", () => {
-  assert.doesNotMatch(workflows["ci.yml"], /secrets\./)
-  assert.doesNotMatch(workflows["pin-freshness.yml"], /secrets\./)
-  const names = [...new Set([...workflows["release.yml"].matchAll(/secrets\.([A-Z0-9_]+)/g)].map((match) => match[1]))].sort()
-  assert.deepEqual(names, ["NPM_TOKEN"])
-  // Neither secret is a precondition: a tag with no token still produces the
-  // GitHub Release, and the npm publish is then a manual step, named as such.
-  assert.match(workflows["release.yml"], /HAS_NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN != '' \}\}/)
-  assert.match(workflows["release.yml"], /publish omakit@\$VERSION by hand/)
+test("all workflows run without stored secrets", () => {
+  assert.doesNotMatch(all, /secrets\./)
+  assert.doesNotMatch(workflows["release.yml"], /HAS_NPM_TOKEN|by hand/)
 })
 
 test("contributors meet the invariants before a red structural check", () => {
