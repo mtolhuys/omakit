@@ -49,7 +49,10 @@ test("doctor and pin print the pin path with ~ for a person, and --json keeps it
   assert.ok(!human.includes(pinDir), "the absolute path is not printed for a person")
   const json = JSON.parse(run(["doctor", "--offline", "--json"], { HOME: home }).stdout)
   assert.ok(json.checks.find((check) => check.id === "pin.checkout").detail.includes(pinDir), "--json stays absolute")
-  assert.ok(!JSON.stringify(json).includes("~/"), "nowhere in the JSON")
+  // The PATH hint is a shell command a person types, so it may carry ~ even in
+  // --json; the pin path itself never does.
+  const checkout = json.checks.find((check) => check.id === "pin.checkout")
+  assert.ok(!JSON.stringify(checkout).includes("~/"), "not in the pin check")
   const pin = run(["pin"], { HOME: home }).stdout
   assert.ok(pin.includes("present at ~/.cache/omakit/marketplace"), pin)
 

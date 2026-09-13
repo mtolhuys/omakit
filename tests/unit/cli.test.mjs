@@ -149,7 +149,9 @@ test("the eighty-column rule does not depend on where the checkout lives", () =>
   symlinkSync(requirePinForTests(), deep)
   assert.ok(deep.length > COLUMNS, `the path is deliberately wider than the terminal: ${deep.length}`)
 
-  const { code, out, err } = run(["doctor", "--offline"], { XDG_CACHE_HOME: cache }, root)
+  // HOME is placed beside the checkout, not above it, so the path is not
+  // abbreviated to ~ and the rule is tested on the whole absolute path.
+  const { code, out, err } = run(["doctor", "--offline"], { XDG_CACHE_HOME: cache, HOME: join(root, "home") }, root)
   assert.equal(code, 0, err)
   const lines = out.split("\n")
   assert.ok(lines.includes(`${" ".repeat(GUTTER)}${deep}`), `the path is whole, on its own line, in the gutter:\n${out}`)
