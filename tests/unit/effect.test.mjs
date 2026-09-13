@@ -68,7 +68,7 @@ test("a played effect is relayed, then the wordmark is repainted in omakit's tin
   assert.ok(text.includes(`${ESC}${code("typeable")}m`), "the prefix tint is omakit's own")
   assert.doesNotMatch(text, /\[38;[25];/, "no truecolor and no 256-colour anywhere")
   // What follows the walk up is the finished wordmark in omakit's tints, then
-  // the front door's own shine pass over it, frame for frame the scan's, then
+  // the scan's own shine pass over it, frame for frame, then
   // the finished wordmark, the rule and the tagline exactly as the scan paints
   // them, plus the one escape that shows the cursor again.
   const up = `${ESC}${GLYPH_ROWS - 1}A\r`

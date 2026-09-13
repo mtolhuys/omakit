@@ -174,7 +174,7 @@ would be poor form to hide it here.
 ## Evidence, not claims
 
 ```bash
-npm test        # 150 tests, node --test, no dependencies
+npm test        # 149 tests, node --test, no dependencies
 ```
 
 | Claim | Proof |

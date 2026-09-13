@@ -208,10 +208,11 @@ else; the test fails on a literal interval anywhere else.
 - The wordmark scan is `bannerBudgetMs` (220ms) in total, whatever the length
   of the name: the frame delay is derived from the budget. The first version
   took 1.4 seconds, which is long enough to be in the way of someone who ran
-  `help` to read a flag. It draws only when the text that follows it fits on
-  the screen (`fitsOnScreen`), because animating a wordmark the next fifty
-  lines will scroll off is a quarter of a second spent on something nobody
-  sees.
+  `help` to read a flag. The wordmark is drawn in `setup` only now: on
+  `omakit`, `help` and `doctor` it was seven rows a person scrolled past to
+  reach the list they asked for, and on a screen too short for the reference
+  it scrolled off before anyone saw it. `setup` is a first run already
+  spending seconds on the pin, which is the one place it is not in the way.
 - The progress line has no duration of its own; it lasts as long as the work.
   Its budget is a frame rate, `progressFrameMs` (70ms). It is on stderr, it
   names the phase it is in rather than merely moving, and its label is cut to
@@ -229,9 +230,8 @@ else; the test fails on a literal interval anywhere else.
   and the arguments are frozen in `effect.mjs` and asserted by the read-only
   test: stdin only, no file, no path, one effect, one seed. Measured: 42
   frames, 713ms. It lives in `setup` because that is a first run already
-  spending seconds fetching the pin; the front door keeps its 220ms scan,
-  because one wordmark has one identity and it does not change with what
-  happens to be installed. Absent, unexecutable or over budget, `setup` is
+  spending seconds fetching the pin, and `setup` is the only command that
+  draws the wordmark at all. Absent, unexecutable or over budget, `setup` is
   byte for byte what it was, and every other command is byte for byte the
   same whether `ttfx` is there or not; the suite proves both with a fake
   `ttfx` on PATH.
@@ -245,7 +245,7 @@ else; the test fails on a literal interval anywhere else.
   the same in 256-colour. So the effect runs with `--no-color` over the plain
   glyphs, whose `▓`/`█` split survives because it is in the characters, and
   omakit walks back up the five rows, paints the finished wordmark itself and
-  ends it the way the front door ends: the same shine pass, frame for frame,
+  ends it the way the scan ends: the same shine pass, frame for frame,
   on the scan's schedule (about 110ms). `ttfx` has a `highlight` of its own,
   and it was measured: with colour off, 128 of its 129 frames are identical
   to the finished wordmark, because the highlight is carried by colour alone.
@@ -282,6 +282,6 @@ runs each of these against the binary, the no-network case inside
 - No boxes, tables or rules of `─`. The one separator is a heading over a floor
   rule, the shape the wordmark has, used for the issue title, the issue body
   and the marketplace's report.
-- No spinner without a phase name, and no banner outside the front door.
+- No spinner without a phase name, and no banner outside `setup`.
 - No colour that is not a palette index, no dimmed sentence, no backtick that
   reaches the terminal.

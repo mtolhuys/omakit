@@ -2,9 +2,9 @@
 // it may not appear are the part worth testing.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { banner, bannerEnabled, fitsOnScreen, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, INK, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
+import { banner, bannerEnabled, frame, schedule, wordmarkRows, wordmarkLayout, BUDGET_MS, GLYPHS, GLYPH_ROWS, INK, PREFIX_LETTERS } from "../../tools/marketplace/banner.mjs"
 import { DENSITY, MOTION, plain, code } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
@@ -102,18 +102,17 @@ test("a frame emits no colour code it does not use", () => {
   }
 })
 
-test("the banner appears on the front door only", () => {
-  const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
-  // Commands whose output gets pasted into issues or read by an agent.
-  for (const command of ["cmdSubmit", "cmdWatch", "cmdVerify", "cmdParity"]) {
-    const start = cli.indexOf(`function ${command}`)
-    assert.ok(start > 0, `${command} not found`)
-    const body = cli.slice(start, cli.indexOf("\n}", start))
-    assert.ok(!body.includes("banner("), `${command} draws the banner; it must not`)
-  }
-  for (const module of ["report.mjs", "submit.mjs", "watch.mjs", "verify.mjs"]) {
-    const text = readFileSync(join(REPO_ROOT, "tools/marketplace", module), "utf8")
-    assert.ok(!text.includes("banner.mjs"), `${module} imports the banner; it must not`)
+test("the banner appears in setup only", () => {
+  // Read out of the sources rather than trusted. `submit`, `watch` and
+  // `verify` output gets pasted into issues and read by agents, where a banner
+  // costs a submission credibility; `omakit`, `help` and `doctor` are run to
+  // read a list, where it was seven rows to scroll past. The one caller is
+  // `setup`, a first run already spending seconds fetching the pin.
+  const dir = join(REPO_ROOT, "tools/marketplace")
+  for (const module of readdirSync(dir).filter((name) => name.endsWith(".mjs") && name !== "banner.mjs")) {
+    const text = readFileSync(join(dir, module), "utf8")
+    const draws = text.includes("banner.mjs") || /\bbanner\(/.test(text)
+    assert.equal(draws, module === "setup.mjs", module === "setup.mjs" ? "setup draws the banner" : `${module} draws the banner; it must not`)
   }
 })
 
@@ -135,18 +134,15 @@ test("the whole scan fits in one glance, on any name the font can draw", () => {
   }
 })
 
-test("every front-door command may animate, and no other command draws it at all", () => {
-  // The gate that matters is where the banner appears, not whether it moves;
-  // that one is asserted above. Both are read out of the CLI rather than
-  // trusted, because a banner in `submit` output costs a submission credibility.
-  const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
-  const calls = cli.match(/banner\(\{[^}]*\}\)|banner\(\)/g) || []
-  assert.ok(calls.length >= 2, "the front door draws the banner")
-  for (const call of calls) {
-    assert.doesNotMatch(call, /animate:\s*false/, `${call} opts out of the scan; the budget replaced that`)
-  }
+test("setup animates the wordmark, and plays the effect", () => {
+  // Where the banner appears is asserted above; this is how. `setup` never
+  // opts out of the scan (the budget replaced that), and it is the one place
+  // the wordmark goes through `ttfx` when it is there.
   const setup = readFileSync(join(REPO_ROOT, "tools/marketplace/setup.mjs"), "utf8")
-  assert.match(setup, /banner\(\{[^}]*\}\)/, "setup draws the banner")
+  const call = setup.match(/banner\(\{[^}]*\}\)/)?.[0]
+  assert.ok(call, "setup draws the banner")
+  assert.doesNotMatch(call, /animate:\s*false/, `${call} opts out of the scan; the budget replaced that`)
+  assert.match(call, /effect:\s*true/, "setup asks for the effect")
 })
 
 test("a short terminal gets the finished wordmark and no cursor-up at all", async () => {
@@ -158,19 +154,4 @@ test("a short terminal gets the finished wordmark and no cursor-up at all", asyn
   const all = written.join("")
   assert.doesNotMatch(all, /\u001b\[\d+A/, "no frame is redrawn, so nothing can be stranded")
   assert.match(all, /\u2588/, "the wordmark is still drawn")
-})
-
-test("the scan runs only when the wordmark will still be on screen after it", () => {
-  // Animating into a terminal that is about to scroll spends the budget on
-  // something nobody sees, and it is what made a bare `omakit` look static: the
-  // reference printed under it is 53 lines, which no terminal is tall enough
-  // to hold beneath a 7-line banner.
-  const short = "one\ntwo\nthree\n"
-  assert.equal(fitsOnScreen(short, { rows: 40 }), true)
-  assert.equal(fitsOnScreen(short, { rows: 10 }), false)
-  assert.equal(fitsOnScreen("x\n".repeat(53), { rows: 48 }), false)
-  // A pty with no window size (which is what `script` hands a program) reports
-  // 0 rows. Unknown geometry is not room.
-  assert.equal(fitsOnScreen(short, { rows: 0 }), false)
-  assert.equal(fitsOnScreen(short, {}), false)
 })

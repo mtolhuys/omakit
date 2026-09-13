@@ -1,25 +1,26 @@
 // The wordmark, and the one place decoration is allowed.
 //
-// It is drawn on the front door only: `omakit`, `omakit help`, `omakit doctor`
-// and `omakit setup`. Never in `submit`, `watch` or `verify` output, because
-// that output gets pasted into issues and read by agents, and a banner there
-// costs a reader lines and costs a submission credibility.
+// It is drawn in `omakit setup` only: a first run, already spending seconds
+// fetching the pin, is the one moment a wordmark is not in the way of anything.
+// It used to open `omakit`, `omakit help` and `omakit doctor` as well, and on
+// those it was seven rows a person scrolled past to reach the list they asked
+// for. Never in `submit`, `watch` or `verify` output, because that output gets
+// pasted into issues and read by agents, and a banner there costs a reader
+// lines and costs a submission credibility.
 //
-// One more gate. It draws only when stdout is a terminal, so `omakit help |
-// less` and `omakit help --agent` stay plain text; there is no switch of
-// omakit's own, because a pipe and TERM=dumb are the terminal's way of saying
-// the same thing. NO_COLOR does what it says and no
-// more: the wordmark is still drawn, in the terminal's own foreground, because
-// a person who turned colour off did not ask for a different program. The
-// same words arrive either way; a piped run gets them without the wordmark.
+// One more gate. It draws only when stdout is a terminal, so `omakit setup |
+// tee` stays plain text; there is no switch of omakit's own, because a pipe
+// and TERM=dumb are the terminal's way of saying the same thing. NO_COLOR does
+// what it says and no more: the wordmark is still drawn, in the terminal's own
+// foreground, because a person who turned colour off did not ask for a
+// different program. The same words arrive either way; a piped run gets them
+// without the wordmark.
 //
-// Every front-door command animates it, and the animation is on a budget: the
-// whole scan is MOTION.bannerBudgetMs, about a quarter of a second, so the
-// first line of help is on the screen before a person has finished looking at
-// the wordmark. The first version of this took 1.4 seconds, which is long
-// enough to be in the way of someone who only wanted to read the flags. The
-// schedule below is derived from the budget rather than from taste, so the
-// wordmark can grow a letter without the scan growing a delay.
+// The animation is on a budget: the whole scan is MOTION.bannerBudgetMs, about
+// a quarter of a second, so the first status line is on the screen before a
+// person has finished looking at the wordmark. The first version of this took
+// 1.4 seconds. The schedule below is derived from the budget rather than from
+// taste, so the wordmark can grow a letter without the scan growing a delay.
 //
 // How `oma` and `kit` are told apart, and why it is not by colour.
 //
@@ -147,26 +148,6 @@ export function schedule(width, budget = BUDGET_MS) {
   return { stride, shineStride, delay, frames, total: frames * delay }
 }
 
-/**
- * Is there room on screen for the wordmark and the text that follows it?
- *
- * The scan is only worth running when the answer is yes. A terminal that has to
- * scroll takes the wordmark off the top of the screen the moment the next lines
- * arrive, so animating into it spends a quarter of a second on something nobody
- * ever sees, and a redraw that races a scroll is what strands a row of an
- * earlier frame above the letters.
- *
- * @param {string} following the text that will be printed under the wordmark
- * @param {{ rows?: number }} [stream]
- */
-export function fitsOnScreen(following, stream = process.stdout) {
-  const rows = Number.isFinite(stream?.rows) && stream.rows > 0 ? stream.rows : 0
-  if (!rows) return false
-  // The five glyph rows, the rule, the tagline, the blank line after it, and
-  // the prompt line that was already on screen before any of this.
-  return rows >= GLYPH_ROWS + 4 + String(following).split("\n").length
-}
-
 export function bannerEnabled(stream = process.stdout, env = process.env) {
   return motionEnabled(stream, env)
 }
@@ -218,7 +199,7 @@ export function frame(layout, band, revealed = band, { colour = true } = {}) {
  *           enabled?: boolean, animate?: boolean, shines?: number,
  *           effect?: boolean, env?: NodeJS.ProcessEnv }} [options]
  *   `effect: true` runs the wordmark through `ttfx` when it is there (see
- *   effect.mjs); `setup` passes it, nothing else does.
+ *   effect.mjs); `setup`, the one caller, passes it.
  */
 export async function banner(options = {}) {
   const stream = options.stream || process.stdout
@@ -277,7 +258,7 @@ export async function banner(options = {}) {
   const played = animate && options.effect && effectAvailable(env)
     ? await playEffect(draw(-2, width + 2, false), stream, { env })
     : "absent"
-  // The one return pass over the finished wordmark, the front door's shine,
+  // The one return pass over the finished wordmark, the shine,
   // on the scan's own schedule. Two looked better and cost twice the budget,
   // and the budget is the point.
   const step = async (band, revealed, delay) => {
@@ -297,7 +278,7 @@ export async function banner(options = {}) {
 
   if (played === "played") {
     // Back up over the effect's plain rows, paint the wordmark in omakit's
-    // tints, and end it the way the front door ends: with the shine.
+    // tints, and end it the way the scan ends: with the shine.
     stream.write(`${ESC}${GLYPH_ROWS}A`)
     redraw(draw(-2, width + 2))
     await shine()

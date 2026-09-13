@@ -24,9 +24,8 @@ import { renderSubmit, renderWatch, renderDoctor } from "./report.mjs"
 import { doctor } from "./doctor.mjs"
 import { setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
-import { banner, bannerEnabled, fitsOnScreen } from "./banner.mjs"
 import { progress } from "./progress.mjs"
-import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
+import { COMMANDS, COMPLETION_SHELLS, renderSummary, renderUsage } from "./usage.mjs"
 import { renderCompletion } from "./completion.mjs"
 import { submissionContract } from "./form.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
@@ -148,10 +147,6 @@ async function cmdUpgrade(args) {
 }
 
 async function cmdDoctor(args) {
-  // The scan runs here too. It is on a budget now (banner.mjs: BUDGET_MS), so
-  // repeating it on a command people run repeatedly costs a fraction of a
-  // second rather than the second and a half the first version took.
-  if (!args.includes("--json")) await banner()
   const spinner = args.includes("--json") ? { phase: () => {}, done: () => {} } : progress()
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
   spinner.done()
@@ -268,18 +263,9 @@ if (command === "setup") {
     process.stdout.write(`${parts.join("\n\n---\n\n")}\n`)
   } else {
     // A bare `omakit` is the front door and gets the short list; `omakit help`
-    // is the reference and gets all of it. The banner already says the name and
-    // the tagline, so the heading underneath would repeat it.
-    const drew = bannerEnabled()
-    const text = command === undefined
-      ? renderSummary({ heading: !drew })
-      : renderUsage({ heading: !drew })
-    // And the scan only runs when what follows fits on the screen. Animating a
-    // wordmark that the next 50 lines will immediately scroll off the top is
-    // decoration nobody sees, and it is the reason a bare `omakit` looked
-    // static: the reference is 53 lines and a terminal is not 60 rows tall.
-    await banner({ tagline: TAGLINE, animate: fitsOnScreen(text) })
-    process.stdout.write(text)
+    // is the reference and gets all of it. Both open with the name and the
+    // tagline as one line of text: the wordmark is drawn in `setup` only.
+    process.stdout.write(command === undefined ? renderSummary() : renderUsage())
   }
 } else {
   // The short list on a typo, not 53 lines of reference, in the same register

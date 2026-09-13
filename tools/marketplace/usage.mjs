@@ -151,11 +151,10 @@ export function paintSignature(signature, c) {
 /**
  * The front door: the commands and nothing else.
  *
- * The measured reason this exists. The full reference is 53 lines, a wordmark
- * is 7 more, and a terminal is not 60 rows tall, so a bare `omakit` printed a
- * banner that scrolled off the top of the screen before anyone could read it.
- * A list of what you can run fits, which means the wordmark above it stays on
- * screen, and the reference is one command away.
+ * The measured reason this exists. The full reference is 53 lines and a
+ * terminal is not 60 rows tall, so a bare `omakit` scrolled its own first
+ * lines off the top of the screen before anyone could read them. A list of
+ * what you can run fits, and the reference is one command away.
  *
  * @param {{ colour?: boolean, heading?: boolean }} [options]
  */
@@ -173,8 +172,8 @@ export function renderSummary({ colour = colourEnabled(), heading = true } = {})
 
 /**
  * @param {{ colour?: boolean, heading?: boolean }} [options] `heading: false`
- *   when the banner has already said the name and the tagline, so the same
- *   sentence is not printed twice.
+ *   when the line above has already named the tool, as under an unknown
+ *   command, so the same sentence is not printed twice.
  */
 export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
   const c = styler(colour)

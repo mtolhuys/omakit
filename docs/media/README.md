@@ -78,7 +78,8 @@ block of lines the program actually wrote in one go. Without that check the
 replay happily assembled a frame from two different redraws, which looked like a
 wordmark with its bottom row missing and an `I` that read as a `T`.
 
-The scan is what every front-door command draws, `help` and `doctor` included.
+The scan is what `setup` draws when `ttfx` is not on PATH, and its shine pass
+is how `setup` ends the effect when it is; no other command draws the wordmark.
 It is on a budget (`MOTION.bannerBudgetMs` in `tools/marketplace/style.mjs`,
 220ms), so the GIF is brisk because the program is: the first version took 1.4
 seconds, which is long enough to be in the way of someone who ran `help` to
