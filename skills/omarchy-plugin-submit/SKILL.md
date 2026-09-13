@@ -12,6 +12,19 @@ the issue is a separate, explicit act that needs the plugin owner's approval
 first, which is what the marketplace's own agent instructions require. Show the
 owner the title, the body and the verdicts, ask, and only then post it.
 
+## If omakit is not installed
+
+```bash
+npm install --global omakit   # Omarchy ships Node and npm through mise
+omakit doctor                 # node, git, the pin, the credential source, and whether omakit is on PATH
+```
+
+If `omakit` is not found after the install, run
+`"$(npm prefix --global)/bin/omakit" setup`: it prints the one line that puts
+npm's bin on PATH for the shell in `$SHELL`. Keep it current with
+`omakit upgrade`, which updates the tool through npm at the exact version the
+registry names and never moves the marketplace pin.
+
 ## Run it
 
 ```bash
@@ -19,14 +32,32 @@ omakit pin     # once, and after any pin change: fetches the pinned marketplace 
 omakit submit <path-to-the-plugin-repo> --category <category> --tags <a,b>
 ```
 
+The pin is a sparse read-only checkout of one marketplace commit under
+`$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace`). Every
+rule is read from it; nothing about the format is written in the tool.
+
 The plugin's name and id come from the root `manifest.json`. The repository URL
 comes from `origin`. You supply the category and the tags, because nobody else
 can: they are an editorial choice about where the plugin belongs.
 
 If you do not know which category and tags are allowed, run the command without
-them: that is a usage error (exit 2) whose message lists the controlled values,
-read from the pinned form, before any check runs. With `--json` the same lists
-come back under `usage`.
+them: for you, in a pipe or with `--json`, that is a usage error (exit 2) whose
+message lists the controlled values, read from the pinned form; with `--json`
+the same lists come back under `usage`. A person at a terminal is asked
+instead, once each, with the marketplace's own default for the manifest's
+kinds. It is decided after the registry is read: a plugin that is already
+listed is refused at `identity.available` and asked for nothing. Every report
+ends with the command line that repeats the run without asking, and `--json`
+carries it as `reproduce`.
+
+To see the official baseline result alone, with no Omakit check around it:
+
+```bash
+omakit verify <path-to-the-plugin-repo> --json
+```
+
+`verify` without `--json` prints a report for a person; `--json` is the
+document, unchanged between releases.
 
 Useful flags: `--notes` for the Maintainer notes field, `--suggest-tag` for the
 optional suggestion, `--name` when the manifest has no name, `--json` for a

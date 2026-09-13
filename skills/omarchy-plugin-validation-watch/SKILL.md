@@ -29,6 +29,12 @@ push came after a review comment had also commented: engaged, and stuck.
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
 ```
 
+If `omakit` is not installed: `npm install --global omakit` (Omarchy ships Node
+and npm through mise), then `omakit doctor`; if the command is not found after
+the install, `"$(npm prefix --global)/bin/omakit" setup` prints the one line
+that puts npm's bin on PATH. `omakit upgrade` keeps it current through npm.
+Add `--json` for a machine-readable result.
+
 Read-only. It does not comment, label, or edit anything, and it cannot. It reads
 the default branch through the REST API when a credential is available, taking
 it from the operator's `gh` login (which itself honours `GH_TOKEN` and
