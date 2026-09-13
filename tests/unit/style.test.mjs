@@ -188,7 +188,7 @@ test("wrap counts the indent, keeps a typed span whole, and never breaks a word"
   assert.ok(typed.every((line) => !/omakit$/.test(line)), `a typed span is never split: ${JSON.stringify(typed)}`)
   assert.ok(typed.every((line) => !line.includes("`")), "the backticks do not reach the output")
   // Punctuation clings to the span it follows: no space opens up before a comma.
-  assert.deepEqual(wrap("it produced 1,697 `passed`, 1,226 `review-required` and (`needs-fixes`)."), ["it produced 1,697 passed, 1,226 review-required and (needs-fixes)."])
+  assert.deepEqual(wrap("it produced 1,681 `passed`, 1,215 `review-required` and (`needs-fixes`)."), ["it produced 1,681 passed, 1,215 review-required and (needs-fixes)."])
   // And two spans in one sentence are two words, not one word with a space in it.
   assert.deepEqual(
     wrap("`validateRepositoryDocs` at the pin fails a submission with `license-missing`.", { width: 40 }),

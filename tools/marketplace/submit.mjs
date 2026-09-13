@@ -14,7 +14,7 @@
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { requirePin } from "./pin.mjs"
 import { submissionContract, resolveCategory, resolveTags } from "./form.mjs"
-import { idUniverse, checkIdentity } from "./registry.mjs"
+import { idUniverse, checkIdentity, baselineFigures, figure } from "./registry.mjs"
 import { readTree } from "./tree.mjs"
 import { inspectTree } from "./plugin.mjs"
 import { findAgentControl, REMEDY as AGENT_CONTROL_REMEDY } from "./agent-control.mjs"
@@ -61,6 +61,7 @@ export async function submitPreflight(options) {
   const contract = await submissionContract({ repoRoot })
   phase("reading the listed and retired plugin ids")
   const universe = idUniverse({ repoRoot })
+  const figures = baselineFigures({ repoRoot })
 
   phase("resolving the subject commit")
   let subject
@@ -271,7 +272,7 @@ export async function submitPreflight(options) {
   const baselineBlocking = Boolean(consequence?.blocksApproval) || Boolean(preflight.refusal)
   checks.push(check("baseline.preflight", {
     source: "marketplace-pin",
-    why: "The official baseline decides whether a human has to look at all: of 2,990 listings it produced 1,697 `passed`, 1,226 `review-required` and 20 `needs-fixes`. It is the pinned marketplace code itself, run over a local snapshot; Omakit adds no rule and renames no outcome.",
+    why: `The official baseline decides whether a human has to look at all: of the ${figure(figures.withBaseline)} listed sources with a recorded baseline at the pin, it produced ${figure(figures.outcomes.passed || 0)} \`passed\`, ${figure(figures.outcomes["review-required"] || 0)} \`review-required\` and ${figure(figures.outcomes["needs-fixes"] || 0)} \`needs-fixes\`. It is the pinned marketplace code itself, run over a local snapshot; Omakit adds no rule and renames no outcome.`,
     severity: baselineBlocking ? "blocking" : "advisory",
     // `passed` and `review-required` are both acceptable submission states:
     // review-required means a maintainer must look, not that anything is wrong.

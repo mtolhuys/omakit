@@ -67,7 +67,7 @@ Two modules at the pin are deliberately *not* imported:
 | Policy read from the checkout | `securityBaselineVersion` `3`, `securityBaselineEnforcementMode` `selective` |
 | Official limits at the pin | file 512 KiB, snapshot 8 MiB / 1000 files, binary probe 4 KiB, asset probe 256 files / 1 MiB (`scripts/security-baseline-limits.mjs`) |
 | Scope facts the adapter relies on | symlink entries (`120000`) are skipped; executables (`100755`) over the file limit are probed with `Range: bytes=0-4095` and expect `206` with `content-range`; setup-named binary assets are probed with a 1 MiB range and a complete image makes the scan `security-baseline-unavailable`; `.txt` is not a scanned extension |
-| Registry facts | 2,963 sources with `listingValidatedCommit`; 2,916 with an `automatedSecurityBaseline` record (1,681 passed, 1,215 review-required, 20 needs-fixes); 3,001 catalog plugin ids; 22 retired ids; 749 sources (25.3%) with at least one superseded validated commit |
+| Registry facts | 2,963 sources with `listingValidatedCommit`; 2,916 with an `automatedSecurityBaseline` record (1,681 passed, 1,215 review-required, 20 needs-fixes); 3,001 catalog plugin ids; 22 retired ids; 749 sources (25.3%) with at least one superseded validated commit, 1,108 superseded commits in all |
 
 ## Updating the pin
 

@@ -123,6 +123,67 @@ export function idUniverse(options = {}) {
 }
 
 /**
+ * The recorded baseline over every listed source, counted from registry.json at
+ * the pin. This is the one place the figures cited by `baseline.preflight` and
+ * docs/MEASUREMENTS.md M4 come from; tests/unit/registry-figures.test.mjs pins
+ * the values, so a pin bump changes the printed number rather than leaving a
+ * stale literal behind.
+ *
+ * @param {{ repoRoot?: string, pinDir?: string }} [options]
+ * @returns {{ sources: number, withBaseline: number, outcomes: Record<string, number>,
+ *             capabilities: Record<string, number>, findings: Record<string, number>,
+ *             findingsTotal: number, superseded: { sources: number, commits: number, most: number },
+ *             retiredIds: number, catalogPlugins: number }}
+ */
+export function baselineFigures(options = {}) {
+  const pinDir = options.pinDir || requirePin(options.repoRoot).dir
+  const registry = readJson(pinDir, REGISTRY_PATH)
+  const catalog = readJson(pinDir, CATALOG_PATH)
+  const sources = Array.isArray(registry.sources) ? registry.sources : Object.values(registry.sources || {})
+  const count = (table, key) => { table[key] = (table[key] || 0) + 1 }
+  const outcomes = {}
+  const capabilities = {}
+  const findings = {}
+  let withBaseline = 0
+  let findingsTotal = 0
+  let supersededSources = 0
+  let supersededCommits = 0
+  let most = 0
+  for (const source of sources) {
+    const baseline = source?.automatedSecurityBaseline
+    if (baseline && typeof baseline.outcome === "string") {
+      withBaseline += 1
+      count(outcomes, baseline.outcome)
+      for (const capability of baseline.capabilities || []) count(capabilities, typeof capability === "string" ? capability : capability?.id)
+      for (const finding of baseline.findings || []) {
+        count(findings, typeof finding === "string" ? finding : finding?.rule || finding?.id)
+        findingsTotal += 1
+      }
+    }
+    const history = Array.isArray(source?.listingValidationHistory) ? source.listingValidationHistory.length : 0
+    if (history > 0) supersededSources += 1
+    supersededCommits += history
+    if (history > most) most = history
+  }
+  return {
+    sources: sources.length,
+    withBaseline,
+    outcomes,
+    capabilities,
+    findings,
+    findingsTotal,
+    superseded: { sources: supersededSources, commits: supersededCommits, most },
+    retiredIds: (registry.retiredPluginIds || []).length,
+    catalogPlugins: Array.isArray(catalog.plugins) ? catalog.plugins.length : 0,
+  }
+}
+
+/** 1681 -> "1,681", the way the docs print figures. */
+export function figure(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+}
+
+/**
  * @param {{ id: string, repositoryUrl?: string|null }} subject
  * @returns {{ ok: boolean, problems: Array<{ code: string, detail: string }> }}
  */

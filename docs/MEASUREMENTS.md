@@ -22,7 +22,7 @@ stable across the measurement window; absolute counts move by the hour.
 | Population counts | GitHub search API, all 6,391 issues in twelve date slices, deduplicated on issue number. Text searches use `in:comments`, so they count issues, not comments. |
 | Sample | 320 issues with 328 maintainer review comments, four strata, fixed seed: 100 open `needs-fixes`, 120 published, 60 waiting on the maintainer, 40 closed `[Verify]:`. |
 | Validation staleness | The validated commit from the bot's own comment compared with the default branch HEAD from each plugin repository's `commits.atom`. |
-| Registry figures | `registry.json` and `site/catalog.json` at the pinned marketplace commit, recomputed by this repository's own tests. |
+| Registry figures | `registry.json` and `site/catalog.json` at the pinned marketplace commit, counted by `baselineFigures()` in `tools/marketplace/registry.mjs` and pinned by `tests/unit/registry-figures.test.mjs`, which also checks that this document still carries them. |
 
 Known limits, stated rather than buried. A HEAD that is ahead proves the pin is
 stale, not that the findings were fixed; the push may be a README tweak. The
@@ -93,18 +93,22 @@ policy and does not claim to be; its verdict is labelled `omakit`, not
 
 ## M4. The baseline decides whether a human has to look at all
 
-From `registry.json` at the pin, across 2,990 listings:
+From `registry.json` at the pin: 2,963 listed sources, of which 2,916 carry a
+recorded baseline (the rest were listed before the baseline existed or have
+no record):
 
 | Outcome | Count |
 | --- | --- |
-| `passed` | 1,697 |
-| `review-required` | 1,226 |
+| `passed` | 1,681 |
+| `review-required` | 1,215 |
 | `needs-fixes` | 20 |
 | Findings ever recorded, total | 21 (`curl-pipe-shell` 11, `remote-git-execution-unpinned` 10) |
 
-Capabilities recorded: installer 516, privilege 489, package-manager 472,
-service-management 386, remote-build 370, bundled-executable-binary 32,
-sudoers-modification 23.
+Capabilities recorded: installer 514, privilege 485, package-manager 468,
+service-management 382, remote-build 366, bundled-executable-binary 31,
+sudoers-modification 23. Sections are numbered M2, M3, M4 and M6 because M1
+and M5 were population figures that no check cites; their numbers were folded
+into M2 and M6 and the ids were not reused, since checks cite them by number.
 
 `review-required` is not a defect and needs no source change, but it does mean a
 maintainer must look at the exact commit before it can be listed. It is the
@@ -139,7 +143,7 @@ that commit.
 | Listed sources whose validated commit was superseded at least once | 749 of 2,963 (25.3%), 1,108 superseded commits, one source revalidated 9 times |
 
 The last row is this repository's own measurement, recomputed from
-`registry.json` at the pin by `tests/unit/contract.test.mjs`'s neighbours; it
+`registry.json` at the pin by `tests/unit/registry-figures.test.mjs`; it
 shows that revalidation is a normal part of a listing's life, not an edge case.
 
 The mechanism, with `file:line`:
