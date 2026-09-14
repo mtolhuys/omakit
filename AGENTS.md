@@ -52,7 +52,15 @@ stayed in the archive and is a separate decision. `tests/unit/self-containment.t
 fails if a `scaffold`, `vendor` or `template` command appears, and if any
 module gains a file-copying primitive.
 
-Every command is read-only against the user's own machine, with one exception.
+Every command is read-only against the user's own machine, with two
+exceptions, and both say so before they act. `omakit setup` writes the
+completion script where the shell in `$SHELL` loads it from, and edits an rc
+file in exactly one case: when a new shell has no completion loader, it asks
+once and, after an explicit yes (`--yes` for an agent), appends one marked
+block (`# omakit completion` and the guarded `source` line) to `~/.bashrc`
+or `~/.zshrc`; it never appends the block twice, never edits or removes it,
+and writes nothing else to any rc file. `tests/unit/self-containment.test.mjs`
+holds the tree to that one append. The other exception is below.
 `omakit weigh` measures a plugin by restarting the user's shell without it and
 with it, and edits `~/.config/omarchy/shell.json` for the duration of the
 measurement. So it is the single command that confirms before acting: it

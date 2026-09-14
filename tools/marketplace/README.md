@@ -29,6 +29,7 @@ local commit through the transport seam the marketplace tests itself
 | `path-hint.mjs` | Is `omakit` reachable as a bare command, and if not, the one line that makes it so for the install that is here: a symlink for a clone, the npm prefix's `bin` on PATH for a package, said for the shell in `$SHELL`. `setup` and `doctor` print it; nothing writes an rc file. |
 | `usage.mjs` | The help text, as data. |
 | `completion.mjs` | A completion script for bash, zsh or fish, derived from the help data and the pin's form: the subcommands and flags are read out of `COMMANDS`, the categories and tags out of the pinned submission form, and the script says which pin it came from. `setup` installs it for the shell in `$SHELL`, the one file this tool writes outside its own checkout. |
+| `completion-check.mjs` | Whether tab completion actually works: a frozen probe per shell run interactively, asking the loader to load `omakit` the way TAB does; the one marked block `setup` may append to an rc file after a yes, looked for by its marker first; the installed script's version and pin read from its first line; `doctor`'s `omakit.completion`; and the once-a-day stale notice. |
 | `banner.mjs` | The wordmark, on a bare `omakit` and in `setup` only. |
 | `effect.mjs` | The one text effect: the wordmark through `ttfx` where it is drawn, with frozen arguments, a hard budget, no colour of its own, and nothing at all when `ttfx` is not there. |
 | `progress.mjs` | The progress line, on stderr, only when a person is looking. |

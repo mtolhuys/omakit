@@ -23,6 +23,8 @@ omakit help --agent          # the operating instructions, for the agent running
 
 `omakit setup` checks the environment, fetches the marketplace checkout that
 every rule is read from, installs tab completion for the shell you run it from
+and proves it in a new shell (`docs/INSTALL.md` says what it asks when the
+shell has no loader)
 (bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
 idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
 seven files omakit reads out of that repository rather than the 325 MB it is at

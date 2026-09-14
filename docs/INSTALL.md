@@ -16,7 +16,30 @@ If `omakit` is not found afterwards, npm's global `bin` is not on your PATH
 searched). Run `"$(npm prefix --global)/bin/omakit" setup` once: it prints the
 one line that puts that directory on PATH for the shell in `$SHELL`, and the
 rc file to keep it in; `omakit doctor` reports the same as `omakit.path`.
-Nothing writes to your rc file.
+Nothing writes to your rc file for PATH.
+
+`omakit setup` also installs tab completion for the shell in `$SHELL` and
+then asks a new interactive shell whether it can complete `omakit`, the way
+TAB asks (`docs/MEASUREMENTS.md`, M8). On a stock Omarchy it can, and setup
+says `▁ ok`. Where a new shell has no completion loader, setup names what is
+missing and asks once: "Add one guarded line to ~/.bashrc so completions
+load?" On yes (or `--yes`, for an agent), it appends one marked block and
+nothing else:
+
+```bash
+# omakit completion
+[[ -r /usr/share/bash-completion/bash_completion ]] && source /usr/share/bash-completion/bash_completion
+```
+
+(for zsh: the `fpath+=~/.zfunc` and `autoload -Uz compinit && compinit`
+lines under the same marker, in `~/.zshrc`). The marker is looked for first,
+so a second run appends nothing; omakit never edits or removes the block.
+On no, the lines are printed and nothing is written. Open terminals need a
+new shell afterwards (`exec bash`). `omakit doctor` reports the script, its
+omakit version and pin, the loader and the spec as `omakit.completion`, and
+`omakit upgrade` re-runs the completion step through the omakit it just
+installed, so the script always names the version that is on PATH; a script
+from another omakit is noticed at startup, once a day, in one dim line.
 
 Or read what you run:
 
@@ -102,8 +125,10 @@ that:
   arguments of each.
 - **Filesystem.** The pinned marketplace checkout and the live registry cache
   under `$XDG_CACHE_HOME/omakit/` (or `~/.cache/omakit/`), the one completion
-  script `setup` installs where the shell in `$SHELL` loads it from, and the
-  files a `--out` names. `weigh` alone also writes `~/.config/omarchy/shell.json`
+  script `setup` installs where the shell in `$SHELL` loads it from, the one
+  marked block `setup` appends to `~/.bashrc` or `~/.zshrc` after an
+  explicit yes (above), a once-a-day stamp under `$XDG_STATE_HOME/omakit/`
+  behind the stale-completion notice, and the files a `--out` names. `weigh` alone also writes `~/.config/omarchy/shell.json`
   for the duration of a measurement, its timestamped backup beside it, and
   its documents and per-restart timing under `$XDG_STATE_HOME/omakit/weigh/`;
   `tests/unit/self-containment.test.mjs` counts those writes and refuses any

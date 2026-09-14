@@ -205,6 +205,53 @@ names which of the paths omakit reads changed between the pin and HEAD rather
 than only that HEAD moved, because at this rate HEAD has always moved. Not by
 `baseline.preflight`, whose figures stay the pin's.
 
+## M8. Tab completion was written, never proven, and the proof is not `complete -p`
+
+Measured on 15 September 2026 against the installed Omarchy (`OMARCHY_PATH`
+`~/Projects/omarchy/core`, shell `4.0.0.alpha`) and against the packaged
+`/usr/share/omarchy` and the plugin lab's pin `b5589fa`, all three the same
+on every point below.
+
+| Measurement | Value |
+| --- | --- |
+| What `omakit setup` checked after writing the completion script, before this | nothing: it reported "installed" and never asked a shell |
+| Where Omarchy sources bash-completion | `default/bash/shell`, lines 8 and 9, sourced by `default/bash/rc`; not `init`, which sources fzf's and Omarchy's own `omarchy` completion |
+| Since when | commit `5a8687b3`, 6 July 2025, "Enable bash-completion by default", first released in v1.2.0 |
+| `bash-completion` in `install/omarchy-base.packages` | yes; 2.18.0 installed |
+| The user directory bash-completion searches | `${XDG_DATA_HOME:-~/.local/share}/bash-completion/completions/` (`bash_completion` lines 3545 and 3676), where `setup` writes |
+| A user hook directory that Omarchy's rc sources | none: `rc` sources `envs`, `shell`, `aliases`, `functions` and `init`; the skel `~/.bashrc` sources `rc` and says to add your own lines under it, so `~/.bashrc` is the file |
+| `complete -p omakit` in a fresh interactive bash | `no completion specification` |
+| `_comp_load omakit`, then `complete -p omakit` | `complete -F _omakit omakit` |
+| `omakit we<TAB>` in a real pty | `omakit weigh `; `omakit su<TAB>` gives `submit`, `--cat<TAB>` gives `--category` |
+| `complete -p omakit` after the first TAB | `complete -F _fzf_path_completion omakit`: fzf's wrapper, which delegates to `_omakit` |
+
+So the premise that Omarchy never sources bash-completion did not hold on
+any tree examined; the completion worked. What did not hold was the check:
+`complete -p omakit` in a fresh shell is empty because bash-completion loads
+a user-directory script on the first TAB and not before (`complete -D`
+through `_comp_complete_load`), and after that TAB it names fzf's wrapper.
+A check that asserted `complete -p` in a fresh shell would have reported a
+working completion as broken on every stock Omarchy.
+
+Consequences, in `tools/marketplace/completion-check.mjs`: the probe is an
+interactive shell asked to load `omakit` the way TAB does (`_comp_load`,
+then `complete -p`), and reports the loader (`_init_completion` defined) and
+the spec (eager, lazy, none) separately; `setup` prints `▁ ok` only when a
+new shell shows the spec; where the loader is absent (a `~/.bashrc` that no
+longer sources Omarchy's rc, a zsh without `compinit`) it names what is
+missing and asks once before appending one marked block to `~/.bashrc` (or
+`~/.zshrc`), never otherwise; `omakit doctor` reports the same four facts as
+`omakit.completion`; and the script's first line names the omakit version
+and pin it was rendered from, so a script from another omakit is noticed at
+startup, once a day, from one line. Measured while building the probe: a
+stray `; ` before `&&` made bash refuse the whole `-c` string, and the
+first real run reported "no loader" on this machine, which has one; the
+probe now parses in every shell the suite can find.
+
+Used by: `omakit setup`, `omakit doctor` (`omakit.completion`), `omakit
+upgrade` (the completion step re-run through the new omakit), and the
+startup notice in `cli.mjs`.
+
 ## C1. Weigh noise floor
 
 The figures behind `omakit weigh` are the measurements themselves and their
