@@ -32,27 +32,28 @@ export function stats(values) {
 }
 
 /**
- * Within noise: the median delta is not larger in magnitude than the
- * baseline's own spread. Null median (no run completed) is unknown, and a
- * null floor (no baseline run) is unknown too.
+ * Within noise, or above it. A delta is above noise only when its magnitude
+ * exceeds the baseline's own spread and exceeds `quantum`, the smallest
+ * difference the measurement can express. For CPU that is one clock tick
+ * over the window (`tickPercent`); for memory it is zero, because a page is
+ * far below any floor. Measured in the lab on 14 September 2026: a plugin
+ * whose CPU delta was one tick over its 15.003 s window (-0.066662%) read
+ * as above a floor of one tick over a 15.005 s window (0.066653%), and one
+ * tick against one tick is no difference at all. A null median (no run
+ * completed) or a null floor (no baseline run) is unknown.
  *
  * @returns {"within-noise"|"above-noise"|"unknown"}
  */
-export function verdict(delta, floor) {
+export function verdict(delta, floor, quantum = 0) {
   if (delta === null || delta === undefined || floor === null || floor === undefined) return "unknown"
-  return Math.abs(delta) <= floor * (1 + TOLERANCE) ? "within-noise" : "above-noise"
+  const size = Math.abs(delta)
+  return size > floor && size > quantum ? "above-noise" : "within-noise"
 }
 
-/**
- * The relative slack in the comparison, one part in a hundred. Measured in
- * the lab on 14 September 2026: a plugin whose CPU delta was one clock tick
- * over its window (-0.066662%) was judged above a floor of one clock tick
- * over another window (0.066653%), because the two windows differed by 2 ms
- * of the 15 s, 1.3 parts in 10,000. A figure quantised to a tick cannot be
- * above a floor of a tick; one in a hundred covers a window that ran 150 ms
- * long and is far under anything a row would report as a cost.
- */
-export const TOLERANCE = 0.01
+/** One clock tick over the window, as CPU percent: the quantum of every CPU figure here. */
+export function tickPercent(clockTicksPerSecond, windowSeconds) {
+  return 100 / (clockTicksPerSecond * windowSeconds)
+}
 
 /** A number for a person: two decimals, no trailing zeros beyond the first, never "-0". */
 export function figure(value, decimals = 2) {

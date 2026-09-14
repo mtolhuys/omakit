@@ -18,7 +18,12 @@ other omakit command is read-only; this one is not. So:
   front of the person and wait for their answer.
 - Never run it while they are in the middle of something on that desktop.
   The bar, every panel and every plugin go away and come back on each
-  restart, roughly (1 + plugins) × runs times.
+  restart, (1 + plugins) × runs times, and a restart costs about a minute
+  (a 30 s settle and a 15 s window after each). One plugin at three runs is
+  six restarts, about five minutes. `--all` is sized for a lab machine, not
+  a working desktop: 47 enabled plugins is 144 restarts and about two hours
+  at three runs, three and a half at five. Offer `--all` only for a machine
+  nobody is using.
 - Never run it on your own machine's shell as a stand-in for theirs. The
   cost is the cost on the machine the plugin runs on.
 

@@ -204,3 +204,121 @@ Used by: `identity.available`, and by `pin.freshness` in `omakit doctor`, which
 names which of the paths omakit reads changed between the pin and HEAD rather
 than only that HEAD moved, because at this rate HEAD has always moved. Not by
 `baseline.preflight`, whose figures stay the pin's.
+
+## C1. Cost noise floor
+
+The figures behind `omakit cost` are the measurements themselves and their
+noise floor, not a population statistic, so this entry is a different kind
+of evidence from M2 to M7: three runs of `tests/lab/cost.sh` in the Omarchy
+plugin lab guest (stock pin `b5589fa`, shell `4.0.0.alpha`, one 1280x800
+screen, software rendering) on 14 September 2026, each `omakit cost --all
+--runs 5 --yes` over the four fixtures under `tests/fixtures/cost/` and three
+listed plugins (`bjarneo.workspace-layout`, `omaplug`,
+`io.github.calebhat.weather`), 40 restarts per run, `shell.json` md5
+`2caeda7f4da844a0d51b045ae5652346` before and after every run, no backup
+left behind, every document valid against `tools/cost/contract.mjs`. The
+documents are under `docs/evidence/cost/`, with the earlier bash audit's run
+of the same day (`rent-audit-lab-2026-09-14.json`: 24 restarts, 3 runs,
+`VmRSS` at the end of the window).
+
+| Run | Settle | Baseline memory spread, 5 runs | CPU spread |
+| --- | --- | --- | --- |
+| bash audit, 3 runs (`rent-audit-lab-2026-09-14.json`) | 8 s | `VmRSS` at the end of the window: 15.54 MB | 0.06% |
+| 1, memory sampled at the settle (`lab-2026-09-14-sample-at-settle.json`) | 8 s | `Pss` at the settle 70.31 MB, `VmRSS` at the settle 70.63 MB; `VmRSS` at the end of the window 8.67 MB | 0.067% |
+| 2, with a trace (`lab-2026-09-14-settle-8-trace.json`) | 8 s | `Pss` at the settle 41.40 MB; at the end of the window `Pss` 34.61 MB, `VmRSS` 34.95 MB | 0.133% |
+| 3, the shipped defaults (`lab-2026-09-14-settle-30.json`) | 30 s | `Pss` at the settle 7.27 MB, `VmRSS` 6.91 MB; at the end of the window `Pss` 31.99 MB, `VmRSS` 32.00 MB | 0.133% |
+
+The floor before this work was 15.54 MB (`VmRSS`, 3 runs); the floor the
+shipped method reports on the same guest is 31.99 MB (`Pss` at the end of a
+window that opens 30 s after every plugin is reported, 5 runs). It did not
+come down, and the two things that were expected to bring it down did not:
+
+- `Pss` against `VmRSS`. In every one of the 40 samples of run 3 the two
+  differ by 70.3 to 70.7 MB and move together; `Pss` is the right quantity
+  to report (a shared page counted once) and buys no precision.
+- The sampling point. What decides the floor is where the shell is in its
+  own memory life when the sample is taken, and that is bimodal (C2). Run 3's
+  settle-time floor of 7.27 MB is five baseline runs that all landed on the
+  low level; the plugin rows of the same run spread 30 to 63 MB because two
+  to three of their five runs landed on the high one. The floor from five
+  baseline runs can therefore understate the noise, and every row carries
+  its own spread beside the floor for that reason.
+
+The plugin table of run 3, `Pss` at the end of the window, the median over
+five runs of (with the plugin minus without it), spread in brackets:
+
+| Plugin | Shell MB (spread) | Shell CPU (spread) | Children MB | Children CPU | Processes | Verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| bjarneo.workspace-layout | 18.19 (36.11) | 0% (0.13) | 8.18 | 0.13% | 2 | within noise on memory and CPU |
+| omaplug | 16.86 (41.22) | 0% (0.20) | 0 | -0.13% | 0 | within noise on memory and CPU |
+| fixture.idle-panel | 14.20 (62.80) | 0% (0.07) | 0 | -0.33% | 0 | within noise on memory and CPU |
+| fixture.clean | 9.16 (30.28) | 0% (0.20) | 0 | 0.07% | 0 | within noise on memory and CPU |
+| io.github.calebhat.weather | 8.96 (29.82) | 0% (0.20) | 0 | -0.07% | 0 | within noise on memory and CPU |
+| fixture.poller | 3.42 (44.41) | 0% (0.13) | 4.09 | -0.20% | 1 | within noise on memory and CPU |
+| fixture.timer-180ms | -12.21 (56.50) | 2.73% (0.33) | 0 | -0.07% | 0 | above noise on CPU, within noise on memory |
+
+What holds across all three runs: the 180 ms timer costs 2.7 to 2.8% CPU
+(run 3: 2.73, 2.40, 2.66, 2.73, 2.73) against a CPU floor of one or two
+clock ticks over the window (0.067 to 0.133%), the clean fixture is within
+noise on both and the report says so in those words, the poller's
+`inotifywait` (4.1 MB) and workspace-layout's two watchers (8.2 MB) are
+attributed by command line in every run, and the three listed plugins have
+memory medians of 9 to 21 MB in every run against fixture medians of -12 to
+14. What does not hold: at five runs, no plugin's memory median clears a
+32 MB floor, so every memory sentence this guest produces reads "under
+32.0 MB". That is the honest sentence for this machine.
+
+CPU quantum. The CPU floor is one or two clock ticks over the 15 s window,
+and a delta is quantised to ticks too: run 1 judged `fixture.idle-panel`
+above noise on CPU with a median of -0.066662% (one tick over 15.003 s)
+against a floor of 0.066653% (one tick over 15.005 s). The rule is now that
+a CPU delta is above noise only when it exceeds the floor and one tick over
+the window (`docs/COST.md`); under it the same row is within noise, and no
+other verdict in the three runs changes.
+
+Restart timing. From `omarchy-restart-shell` to every plugin reported took
+1 s in 39 of 39 measured restarts of run 3; the 41 restarts of the run took
+1,841 s, 44.9 s each, which is the 30 s settle, the 15 s window and the
+restart. The earlier estimate of 25 s per restart, carried over from the
+bash audit, was its settle and window and not a restart. The estimate the
+confirmation prints is built from this: the shell's own time from the
+previous run on the machine (5 s before one exists), plus the settle and the
+window, about a minute per restart, six restarts and about five minutes for
+one plugin at three runs, and 144 restarts and about two hours for `--all`
+over 47 enabled plugins.
+
+Used by: `omakit cost`, its confirmation, and `docs/COST.md`. Not by any
+`submit` check.
+
+## C2. The shell's memory after a restart has two levels and two events
+
+Shell behaviour, measured while lowering C1's floor, and recorded here as a
+candidate for an upstream report; `omakit cost` does not correct for it, it
+reports the floor it produces. From the `Pss` traces (twice a second through
+every window) of runs 2 and 3, 80 restarts of the same configuration set in
+the same guest:
+
+- After `listPlugins` reports every plugin, 0.3 s after
+  `omarchy-restart-shell` returns, the shell holds a load-time high of 550
+  to 615 MB `Pss`.
+- It then releases 55 to 65 MB in one step. In run 2 (window at 8 s) the
+  release fell inside the window in 27 of 40 restarts, at 1.5 to 14.3 s
+  after the window opened, that is 9.5 to 22 s after ready, most of them at
+  15.6 s; the other 13 had either released before the window or not at all
+  by its end.
+- It comes to rest on one of two levels. In run 3 (window at 30 s), 23 of
+  40 restarts sat at 523 to 535 MB at the settle and 17 at 545 to 572 MB, a
+  difference of about 35 MB between two starts of the same configuration.
+- It then rises 10 to 15 MB in one step, sometimes twice. In run 3 that
+  rise fell inside the window in 16 of 40 restarts, at 2.5 to 13.7 s after
+  the window opened, that is 32 to 44 s after ready.
+
+The consequences for `omakit cost` are the 30 s settle (the window sits
+after the release), the trace kept in every document (a machine whose
+release comes later shows it), and a memory floor that is the shell's, not
+the sampler's: two starts of the same configuration differ by up to 35 MB
+in this guest before any plugin is added, and no sampling point changes
+that. What the two levels and the two events are is not known from
+outside the process; a report to the shell's maintainers would carry the
+traces in `docs/evidence/cost/` and the fixtures under `tests/fixtures/cost/`
+that reproduce them on a stock install.

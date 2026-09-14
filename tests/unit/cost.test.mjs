@@ -13,12 +13,12 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSyn
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
-import { buildDocument, CostError, DEFAULTS, LAB_RESTART_SECONDS, measureCost, planCost, readmeSentence, restartTiming, summaryOf } from "../../tools/cost/audit.mjs"
+import { buildDocument, CostError, DEFAULTS, RESTART_SECONDS, measureCost, planCost, readmeSentence, restartTiming, summaryOf } from "../../tools/cost/audit.mjs"
 import { COMMANDS, commandLine, run } from "../../tools/cost/commands.mjs"
 import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without } from "../../tools/cost/config.mjs"
 import { validateCostDocument } from "../../tools/cost/contract.mjs"
 import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/cost/proc.mjs"
-import { figure, median, spread, stats, verdict } from "../../tools/cost/stats.mjs"
+import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/cost/stats.mjs"
 import { renderCost, renderPlan, rowState } from "../../tools/cost/report.mjs"
 import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -208,11 +208,17 @@ test("median, spread, stats and the verdict", () => {
   assert.equal(verdict(0.5, 1), "within-noise")
   assert.equal(verdict(-0.5, 1), "within-noise", "a negative median is judged by magnitude")
   assert.equal(verdict(1, 1), "within-noise", "equal to the floor is within it")
-  assert.equal(verdict(1.02, 1), "above-noise")
-  // Measured in the lab: one tick over a 15.003 s window against a floor of
-  // one tick over a 15.005 s window is the same tick, not a cost.
-  assert.equal(verdict(-0.06666222014954999, 0.06665333422334721), "within-noise")
-  assert.equal(verdict(0.068, 0.0666), "above-noise", "the slack is one in a hundred, not a rounding")
+  assert.equal(verdict(1.0001, 1), "above-noise", "and anything over it, with no quantum, is above")
+  // The rule for CPU: above noise only when the delta exceeds the floor and
+  // one clock tick over the window. Measured in the lab: one tick over a
+  // 15.003 s window against a floor of one tick over a 15.005 s window is
+  // the same tick, not a cost; two ticks are.
+  const tick = tickPercent(100, 15)
+  assert.ok(Math.abs(tick - 0.0666667) < 1e-6)
+  assert.equal(verdict(-0.06666222014954999, 0.06665333422334721, tick), "within-noise")
+  assert.equal(verdict(2 / 100 / 15.006 * 100 - 1 / 100 / 15.003 * 100, 0.06665333422334721, tick), "within-noise", "two ticks minus one tick is one tick")
+  assert.equal(verdict(0.1333, 0.0667, tick), "above-noise", "two ticks over the floor of one")
+  assert.equal(verdict(0.05, 0.01, tick), "within-noise", "over the floor but under a tick is not expressible")
   assert.equal(verdict(null, 1), "unknown")
   assert.equal(verdict(1, null), "unknown")
   assert.equal(figure(-0.001), "0", "never -0")
@@ -283,9 +289,11 @@ test("the plan counts restarts as (1 + plugins) × runs and estimates from the s
   assert.deepEqual(plan.audited.map((plugin) => plugin.id), ["fixture.clean"])
   assert.equal(plan.audited[0].sourceDir, "/plugins/fixture.clean")
   assert.equal(plan.restarts, (1 + 1) * DEFAULTS.runs)
-  assert.equal(plan.timing.seconds, LAB_RESTART_SECONDS)
-  assert.match(plan.timing.source, /plugin lab/)
-  assert.equal(plan.estimatedMinutes, Math.ceil((6 * (25 + DEFAULTS.settleSeconds + DEFAULTS.windowSeconds)) / 60))
+  assert.equal(plan.timing.seconds, RESTART_SECONDS)
+  assert.match(plan.timing.source, /before any run on this machine; the lab measured 1 s/)
+  assert.equal(plan.perRestartSeconds, 5 + DEFAULTS.settleSeconds + DEFAULTS.windowSeconds, "about a minute per restart")
+  assert.equal(plan.estimatedMinutes, Math.ceil((6 * (5 + DEFAULTS.settleSeconds + DEFAULTS.windowSeconds)) / 60))
+  assert.equal(plan.estimatedMinutes, 5, "six restarts for one plugin at three runs is five minutes")
   assert.equal(plan.shellVersion, "4.0.0.test")
   assert.equal(plan.omarchyPath, m.omarchyPath)
   assert.equal(plan.clockTicksPerSecond, 100)
@@ -298,10 +306,10 @@ test("the plan counts restarts as (1 + plugins) × runs and estimates from the s
   writeFileSync(join(plan.stateDir, "timing.json"), JSON.stringify({ restartSeconds: 4, restarts: 6, measuredAt: "2026-09-14T00:00:00Z" }))
   const again = planCost({ target: "fixture.clean", env: m.env, runs: 5, windowSeconds: 2, settleSeconds: 1 })
   assert.equal(again.timing.seconds, 4)
-  assert.match(again.timing.source, /stored from 6 restart/)
+  assert.match(again.timing.source, /measured over 6 restart/)
   assert.equal(again.restarts, 10)
   assert.equal(again.estimatedMinutes, Math.ceil((10 * (4 + 1 + 2)) / 60))
-  assert.equal(restartTiming(join(m.root, "nowhere")).seconds, LAB_RESTART_SECONDS)
+  assert.equal(restartTiming(join(m.root, "nowhere")).seconds, RESTART_SECONDS)
   // --all is every enabled third-party plugin that is not a whole bar, with the real count.
   const all = planCost({ all: true, env: m.env })
   assert.deepEqual(all.audited.map((plugin) => plugin.id), ["fixture.clean", "fixture.poller"])
@@ -321,8 +329,8 @@ test("the confirmation says the plugins, the restart count, the minutes, the bac
   const text = renderPlan(plan, { colour: false, env: m.env }).join("\n")
   assert.match(text, /^measuring {5}fixture\.clean, fixture\.poller$/m)
   assert.match(text, /^restarts {6}9: \(1 baseline \+ 2 plugins\) × 3 runs$/m)
-  assert.match(text, /^estimate {6}about \d+ minutes: 25 s per restart \(the plugin lab's figure/m)
-  assert.match(text, /30 s settle and a 15 s\n {14}window each/)
+  assert.match(text, /^estimate {6}about 8 minutes, 50 s per restart: 5 s for the shell to come back/m)
+  assert.match(text, /then the\n {14}30 s settle and the 15 s window/)
   assert.match(text, /^shell\.json {4}backed up beside itself and restored on every exit path; the md5/m)
   assert.match(text, /^writes {8}~\/xdg-state\/omakit\/cost\/\d{4}-\d{2}-\d{2}T\d{6}Z\.json$/m)
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
@@ -590,6 +598,7 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   assert.deepEqual(busy.verdict, { memory: "above-noise", cpu: "above-noise", summary: "above noise on memory and CPU" })
   assert.equal(busy.withinNoise.pss, false)
   assert.equal(busy.withinNoise.ownPss, false)
+  assert.ok(Math.abs(busy.withinNoise.cpuTickPercent - tickPercent(100, 15)) < 1e-12)
   near(busy.totalCpuPercent, 3.8, "2.6% in the shell and 1.2% outside it")
   assert.equal(busy.readme, "Costs 12.0 MB and 3.8% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
   assert.equal(quiet.runsCompleted, 2)

@@ -98,19 +98,27 @@ there was 526, 596, 586, 582 and 593 MB, a 70.3 MB spread. A trace of `Pss`
 twice a second through the window then showed why neither point is
 settled: `listPlugins` answers about 0.3 s after the restart, the shell
 holds a load-time high of 550 to 615 MB, and it releases 55 to 65 MB at a
-moment that varied from 10 to 26 s after ready, coming to rest at 516 to
-551 MB. A window opening at 8 s reads either side of that release. So the
-settle is 30 s, the window sits after the release, the headline is read at
-the end of the window, and the settle-time sample and the trace stay in
-every document so a machine whose release comes later shows it. Every
-floor, from every lab run, is in `docs/MEASUREMENTS.md` under C1.
+moment that varied from 9.5 to 22 s after ready, coming to rest on one of
+two levels about 35 MB apart. A window opening at 8 s reads either side of
+that release. So the settle is 30 s, the window sits after the release, the
+headline is read at the end of the window, and the settle-time sample and
+the trace stay in every document so a machine whose release comes later
+shows it. What no sampling point removes is the two levels: two starts of
+the same configuration can differ by 35 MB before any plugin is added, and
+that is the floor this guest reports (32 MB over five runs). Every floor,
+from every lab run, is in `docs/MEASUREMENTS.md` under C1, and the shell
+behaviour behind it under C2.
 
-The comparison carries one part in a hundred of slack on the floor. A CPU
-figure is quantised to clock ticks over the window, and two windows differ
-by milliseconds: measured in the same lab run, a one-tick delta over a
-15.003 s window (-0.066662%) read as above a one-tick floor over a 15.005 s
-window (0.066653%). A figure of one tick cannot be above a floor of one
-tick, and one in a hundred is far under anything a row reports as a cost.
+The rule for CPU has one more clause. A CPU delta is above noise only when
+its magnitude exceeds the baseline spread **and** exceeds one clock tick
+over the window (`100 / (CLK_TCK × window)`, 0.067% at 100 Hz over 15 s),
+which is the smallest difference the measurement can express. Measured in
+the lab: a one-tick delta over a 15.003 s window (-0.066662%) read as above
+a one-tick floor over a 15.005 s window (0.066653%), and one tick against
+one tick is no difference at all. The tick is in every row as
+`withinNoise.cpuTickPercent`, and `tools/cost/contract.mjs` applies the same
+rule when it checks a document. Memory has no such clause: a page is far
+below any floor.
 
 ## The `shell.json` mutation
 
@@ -157,11 +165,19 @@ lock, the command refuses before touching anything.
 
 Because it restarts the shell, the command asks first. The confirmation
 names the plugins, the restart count, `(1 + plugins) × runs`, and an
-estimate in minutes built from a per-restart timing stored from the previous
-run on this machine (`$XDG_STATE_HOME/omakit/cost/timing.json`, or the lab's
-figure of 25 seconds before any run exists) plus the settle and the window.
-At a terminal it waits for `y`; in a pipe, from an agent, or with `--json`,
-it refuses with a usage error unless `--yes` is passed. An agent must never
+estimate in minutes. A restart costs about a minute with the defaults:
+the shell is back and reporting every plugin in about a second in the lab
+guest (39 restarts measured) and a few seconds on a desktop, and then the
+30 s settle and the 15 s window run; the estimate takes the shell's own
+time from the previous run on this machine
+(`$XDG_STATE_HOME/omakit/cost/timing.json`, 5 s before any run exists) and
+adds the settle and the window. So one plugin at three runs is six
+restarts, about five minutes. `--all` is sized for a lab machine rather
+than a working desktop: a desktop with 47 enabled plugins is 144 restarts
+at three runs, about two hours, and 240 at five, about three and a half,
+and the desktop has no bar, panels or plugins for any of it. At a terminal
+the command waits for `y`; in a pipe, from an agent, or with `--json`, it
+refuses with a usage error unless `--yes` is passed. An agent must never
 pass `--yes` without having asked the person whose shell it is.
 
 ## The JSON contract
@@ -218,10 +234,10 @@ verdict           { memory, cpu, summary }
                   memory and cpu are "within-noise", "above-noise" or
                   "unknown"; summary is the sentence the row prints
 withinNoise       { pss, rss, cpu, ownPss, ownCpu, baselinePssSpreadMb,
-                    baselineCpuSpreadPercent, note }
+                    baselineCpuSpreadPercent, cpuTickPercent, note }
                   pss, rss and cpu compare the median delta with the baseline
                   spread; ownPss and ownCpu with the spread of the row's own
-                  deltas
+                  deltas; cpu and ownCpu also require more than one tick
 origin            string   the /proc paths and the arithmetic, in words
 readme            string   the sentence for the plugin's README
 deltas[]          per run: { run, shellPssMb, shellRssMb, shellPssMbSettled,

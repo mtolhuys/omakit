@@ -118,9 +118,13 @@ Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 
 ```
 
 This is the one omakit command that is not read-only against your own
-machine. It restarts your shell (1 + plugins) × runs times and edits
-`~/.config/omarchy/shell.json` for the duration, so it says the count and the
-estimated minutes and asks first (`--yes` answers for you), refuses while the
+machine. It restarts your shell (1 + plugins) × runs times, about a minute
+per restart (a 30 s settle and a 15 s window after each), so one plugin at
+three runs is six restarts and about five minutes, and `--all` is sized for
+a lab machine: 47 enabled plugins is 144 restarts and about two hours with
+no bar and no panels for any of it. It edits `~/.config/omarchy/shell.json`
+for the duration, so it says the count and the estimated minutes and asks
+first (`--yes` answers for you), refuses while the
 session is locked and when the plugin is not enabled, backs `shell.json` up to
 a timestamped copy, restores it on every exit path including an interrupt and
 a shell that does not come back, and prints the md5 before and after. It never

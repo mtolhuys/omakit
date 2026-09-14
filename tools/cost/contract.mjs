@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
-import { verdict as verdictOf } from "./stats.mjs"
+import { tickPercent, verdict as verdictOf } from "./stats.mjs"
 
 const VERDICTS = new Set(["within-noise", "above-noise", "unknown"])
 
@@ -119,12 +119,12 @@ export function validateCostDocument(document) {
       if (verdict.memory !== expected) problems.push(`${at}.verdict.memory is ${verdict.memory}; the median and the floor say ${expected}`)
     }
     if (plugin.shellCpuPercent?.median !== undefined && floor?.cpuPercent !== undefined) {
-      const expected = verdictOf(plugin.shellCpuPercent.median, floor.cpuPercent)
+      const expected = verdictOf(plugin.shellCpuPercent.median, floor.cpuPercent, tickPercent(settings.clockTicksPerSecond, settings.windowSeconds))
       if (verdict.cpu !== expected) problems.push(`${at}.verdict.cpu is ${verdict.cpu}; the median and the floor say ${expected}`)
     }
     const within = plugin.withinNoise || {}
     for (const key of ["pss", "rss", "cpu", "ownPss", "ownCpu"]) if (within[key] !== null && typeof within[key] !== "boolean") problems.push(`${at}.withinNoise.${key} is neither a boolean nor null`)
-    for (const key of ["baselinePssSpreadMb", "baselineCpuSpreadPercent"]) if (within[key] !== null && typeof within[key] !== "number") problems.push(`${at}.withinNoise.${key} is neither a number nor null`)
+    for (const key of ["baselinePssSpreadMb", "baselineCpuSpreadPercent", "cpuTickPercent"]) if (within[key] !== null && typeof within[key] !== "number") problems.push(`${at}.withinNoise.${key} is neither a number nor null`)
     if (typeof within.note !== "string") problems.push(`${at}.withinNoise.note is not a string`)
     if (plugin.readme !== null && typeof plugin.readme !== "string") problems.push(`${at}.readme is neither a string nor null`)
     if (typeof plugin.readme === "string" && !/^Costs (?:[\d.]+ MB|under [\d.?]+ MB) and (?:[\d.]+% CPU|under [\d.?]+% CPU) on Omarchy .+, measured with omakit cost on \d{4}-\d{2}-\d{2}$/.test(plugin.readme)) {

@@ -41,7 +41,7 @@ export function renderPlan(plan, { colour = colourEnabled(), env = process.env }
   out.push(...field("measuring", names.join(", "), c))
   out.push(...field("shell", `${plan.shellVersion} at ${withHomeAbbreviated(plan.omarchyPath, env)}`, c))
   out.push(...field("restarts", `${plan.restarts}: (1 baseline + ${plan.audited.length} plugin${plan.audited.length === 1 ? "" : "s"}) × ${plan.runs} run${plan.runs === 1 ? "" : "s"}`, c))
-  out.push(...field("estimate", `about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}: ${figure(plan.timing.seconds, 1)} s per restart (${plan.timing.source}), plus a ${plan.settleSeconds} s settle and a ${plan.windowSeconds} s window each`, c))
+  out.push(...field("estimate", `about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}, ${figure(plan.perRestartSeconds, 0)} s per restart: ${figure(plan.timing.seconds, 1)} s for the shell to come back (${plan.timing.source}), then the ${plan.settleSeconds} s settle and the ${plan.windowSeconds} s window`, c))
   out.push(...field("shell.json", `backed up beside itself and restored on every exit path; the md5 is printed before and after`, c))
   out.push(...field("writes", withHomeAbbreviated(plan.out, env), c))
   return out

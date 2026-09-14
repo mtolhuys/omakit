@@ -25,18 +25,18 @@ import { dirname, join, resolve } from "node:path"
 import { run } from "./commands.mjs"
 import { backupConfig, configPaths, restoreConfig, verifyRestore, without, writeConfig } from "./config.mjs"
 import { childTicks, cpuTicks, descendants, PROC, pssKb, rssKb } from "./proc.mjs"
-import { median, stats, verdict } from "./stats.mjs"
+import { median, stats, tickPercent, verdict } from "./stats.mjs"
 import { omakitStateDir } from "../marketplace/paths.mjs"
 
 /**
  * The settle is 30 s because the shell is not settled at 8. Measured in the
- * plugin lab on 14 September 2026 with a Pss trace twice a second over 40
- * restarts: after listPlugins answers (0.3 s after the restart) the shell
- * holds a load-time high of 550 to 615 MB Pss and then releases 55 to 65 MB
- * at a moment that varied from 10 to 26 s after ready, settling at 516 to
- * 551 MB. A window that opens at 8 s reads either side of that release,
- * and the baseline spread was 70.3 MB at the settle and 34.6 MB at the end
- * of the window. Thirty seconds puts the whole window after the release.
+ * plugin lab on 14 September 2026 with a Pss trace twice a second over 80
+ * restarts (docs/MEASUREMENTS.md C2): after listPlugins answers (0.3 s
+ * after the restart) the shell holds a load-time high of 550 to 615 MB Pss
+ * and then releases 55 to 65 MB at a moment that varied from 9.5 to 22 s
+ * after ready. A window that opens at 8 s reads either side of that
+ * release, and the baseline spread was 70.3 MB at the settle and 34.6 MB at
+ * the end of the window. Thirty seconds puts the whole window after it.
  */
 export const DEFAULTS = Object.freeze({
   runs: 3,
@@ -47,13 +47,16 @@ export const DEFAULTS = Object.freeze({
 })
 
 /**
- * Seconds one restart took in the plugin lab guest, measured over 24
- * restarts on 14 September 2026 (about 25 s each, in a VM with software
- * rendering). The estimate before this machine has a timing of its own.
+ * Seconds from `omarchy-restart-shell` to every plugin reported, before
+ * this machine has a timing of its own. Measured in the plugin lab on
+ * 14 September 2026 over 39 restarts: 1 s each, in a VM with software
+ * rendering; a desktop with more plugins takes a few seconds. What makes a
+ * restart cost about a minute is the settle and the window that follow it,
+ * and the estimate adds those.
  */
-export const LAB_RESTART_SECONDS = 25
+export const RESTART_SECONDS = 5
 
-export const METHOD = "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle, where they were measured to be 8 times noisier), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise"
+export const METHOD = "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise"
 
 export class CostError extends Error {
   constructor(code, message, remedy = null) {
@@ -99,12 +102,12 @@ export function restartTiming(stateDir) {
   try {
     const stored = JSON.parse(readFileSync(timingFile, "utf8"))
     if (Number.isFinite(stored.restartSeconds) && stored.restartSeconds > 0) {
-      return { seconds: stored.restartSeconds, source: `stored from ${stored.restarts} restart(s) on this machine at ${stored.measuredAt}`, file: timingFile }
+      return { seconds: stored.restartSeconds, source: `measured over ${stored.restarts} restart(s) on this machine at ${stored.measuredAt}`, file: timingFile }
     }
   } catch {
     // No timing yet: the first run on this machine.
   }
-  return { seconds: LAB_RESTART_SECONDS, source: "the plugin lab's figure, before any run on this machine", file: timingFile }
+  return { seconds: RESTART_SECONDS, source: "before any run on this machine; the lab measured 1 s", file: timingFile }
 }
 
 /**
@@ -165,8 +168,8 @@ export function planCost({ target, all = false, runs = DEFAULTS.runs, windowSeco
   const stateDir = omakitStateDir("cost", env)
   const timing = restartTiming(stateDir)
   const restarts = (1 + audited.length) * runs
-  const perRun = timing.seconds + settleSeconds + windowSeconds
-  const estimatedMinutes = Math.ceil((restarts * perRun) / 60)
+  const perRestart = timing.seconds + settleSeconds + windowSeconds
+  const estimatedMinutes = Math.ceil((restarts * perRestart) / 60)
   let shellVersion = "unknown"
   try {
     shellVersion = readFileSync(join(omarchyPath, "version"), "utf8").trim() || "unknown"
@@ -191,6 +194,7 @@ export function planCost({ target, all = false, runs = DEFAULTS.runs, windowSeco
     clockTicksPerSecond,
     restarts,
     timing,
+    perRestartSeconds: perRestart,
     estimatedMinutes,
     configFile,
     stateDir,
@@ -406,8 +410,9 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
     const cpu = stats(deltas.map((delta) => delta.shellCpuPercent))
     const childRss = stats(deltas.map((delta) => delta.childRssMb))
     const childCpu = stats(deltas.map((delta) => delta.childCpuPercent))
+    const tick = tickPercent(clk, plan.windowSeconds)
     const memoryVerdict = verdict(pss.median, noiseFloor.pssMb)
-    const cpuVerdict = verdict(cpu.median, noiseFloor.cpuPercent)
+    const cpuVerdict = verdict(cpu.median, noiseFloor.cpuPercent, tick)
     const totalMb = pss.median === null ? null : pss.median + (childRss.median ?? 0)
     const totalCpuPercent = cpu.median === null ? null : cpu.median + (childCpu.median ?? 0)
     return {
@@ -432,10 +437,11 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
         rss: rss.median === null ? null : verdict(rss.median, noiseFloor.rssMb) === "within-noise",
         cpu: cpu.median === null ? null : cpuVerdict === "within-noise",
         ownPss: pss.median === null ? null : verdict(pss.median, pss.spread) === "within-noise",
-        ownCpu: cpu.median === null ? null : verdict(cpu.median, cpu.spread) === "within-noise",
+        ownCpu: cpu.median === null ? null : verdict(cpu.median, cpu.spread, tick) === "within-noise",
         baselinePssSpreadMb: noiseFloor.pssMb,
         baselineCpuSpreadPercent: noiseFloor.cpuPercent,
-        note: "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas",
+        cpuTickPercent: tick,
+        note: "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas; a CPU delta is above noise only when it also exceeds one clock tick over the window (cpuTickPercent)",
       },
       origin: `plus minus baseline per run over ${deltas.length} run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a ${plan.windowSeconds}s window that opens ${plan.settleSeconds}s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every ${plan.sampleIntervalMs}ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid`,
       readme: readmeSentence({ totalMb, totalCpuPercent, memoryVerdict, cpuVerdict, floorMb: noiseFloor.pssMb, floorCpu: noiseFloor.cpuPercent, shellVersion: plan.shellVersion, date }),
