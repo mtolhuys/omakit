@@ -14,6 +14,12 @@ import { action, colourEnabled, field, GUTTER, labelled, section, STEP, styler, 
 import { head } from "../marketplace/report.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { figure } from "./stats.mjs"
+import { stockShellPath } from "./audit.mjs"
+
+/** The version alone on a stock install; the path beside it only when the running shell is somewhere else. */
+function shellLine(version, omarchyPath, env) {
+  return omarchyPath === stockShellPath(env) ? version : `${version} at ${withHomeAbbreviated(omarchyPath, env)}`
+}
 
 /**
  * The mark a row gets: from its CPU verdict. Memory is a fact about the
@@ -43,7 +49,7 @@ export function renderPlan(plan, { colour = colourEnabled(), env = process.env }
   const out = []
   const names = plan.audited.map((plugin) => plugin.id)
   out.push(...field("weighing", names.join(", "), c))
-  out.push(...field("shell", `${plan.shellVersion} at ${withHomeAbbreviated(plan.omarchyPath, env)}`, c))
+  out.push(...field("shell", shellLine(plan.shellVersion, plan.omarchyPath, env), c))
   out.push(...field("restarts", `${plan.restarts}: (1 baseline + ${plan.audited.length} plugin${plan.audited.length === 1 ? "" : "s"}) × ${plan.runs} run${plan.runs === 1 ? "" : "s"}`, c))
   out.push(...field("estimate", `about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}, ${figure(plan.perRestartSeconds, 0)} s per restart: ${figure(plan.timing.seconds, 1)} s for the shell to come back (${plan.timing.source}), then the ${plan.settleSeconds} s settle and the ${plan.windowSeconds} s window`, c))
   out.push(...field("shell.json", `backed up beside itself and restored on every exit path; the md5 is printed before and after`, c))
@@ -60,7 +66,7 @@ export function renderWeigh(document, { colour = colourEnabled(), env = process.
   const out = []
   const { settings, baseline, noiseFloor, config } = document
   const baseRuns = baseline.pssMb.runs.length
-  out.push(...field("shell", `${document.shell.version} at ${withHomeAbbreviated(document.shell.omarchyPath, env)}, ${document.started}`, c))
+  out.push(...field("shell", `${shellLine(document.shell.version, document.shell.omarchyPath, env)}, ${document.started}`, c))
   out.push(...field("method", `startup A/B, ${settings.runs} run${settings.runs === 1 ? "" : "s"}, a ${settings.windowSeconds} s window after a settle of ${settings.settleSeconds} s; Pss from /proc/<pid>/smaps_rollup at the end of the window, CPU from /proc/<pid>/stat over the window, children from a /proc walk every ${settings.sampleIntervalMs} ms`, c))
   out.push(...field("noise floor", noiseFloor.cpuPercent === null
     ? "unknown: no baseline run completed"

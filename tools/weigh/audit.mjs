@@ -110,6 +110,66 @@ export function restartTiming(stateDir) {
   return { seconds: RESTART_SECONDS, source: "before any run on this machine; the lab measured 1 s", file: timingFile }
 }
 
+/** The IPC functions of the `shell` target that a measurement relies on: two it calls, two the shell's own plugin commands call on its behalf. */
+export const REQUIRED_IPC = Object.freeze(["listPlugins", "listShellConfig", "setPluginEnabled", "enablePlugin"])
+
+/** The shell path a stock install has; printed only when the running shell's differs from it. */
+export function stockShellPath(env = process.env) {
+  return join(env.HOME || "", ".local/share/omarchy")
+}
+
+/**
+ * Is this an Omarchy whose shell can be weighed. Every probe is read-only:
+ * a command on PATH, a file, `ping`, and the IPC listing (`qs ipc show`),
+ * never a call to a method that changes anything. On any failure the
+ * error is one sentence naming what is missing, and cli.mjs prints it
+ * under NOT WEIGHED before anything is confirmed.
+ *
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {{ omarchyPath: string, shellVersion: string, ipc: string[] }}
+ */
+export function compatibility(env = process.env) {
+  if (!onPath("omarchy-shell", env)) throw new WeighError("no-omarchy-shell", "this Omarchy has no omarchy-shell on PATH, so there is no Quattro shell here to weigh a plugin on", "Weigh on an Omarchy with the Quattro shell (4.0 or newer), from a terminal in that session.")
+  if (!onPath("omarchy-restart-shell", env)) throw new WeighError("no-restart-command", "omarchy-restart-shell is not on PATH, and weigh restarts the shell only through it", "Run it from a terminal that has $OMARCHY_PATH/bin on PATH.")
+  for (const command of ["omarchy", "qs"]) {
+    if (!onPath(command, env)) throw new WeighError("command-missing", `${command} is not on PATH, and weigh reads the shell through it`, "Run it from a terminal in an Omarchy session, with $OMARCHY_PATH/bin on PATH.")
+  }
+  const omarchyPath = sessionOmarchyPath(env)
+  if (!omarchyPath || !existsSync(join(omarchyPath, "shell/shell.qml"))) {
+    throw new WeighError("omarchy-path", `OMARCHY_PATH ${omarchyPath ? `(${omarchyPath}) ` : ""}does not point at a shell: no shell/shell.qml under it`, "Log in to an Omarchy session; the shell is read from the session's OMARCHY_PATH.")
+  }
+  let shellVersion
+  try {
+    shellVersion = readFileSync(join(omarchyPath, "version"), "utf8").trim()
+  } catch {
+    shellVersion = ""
+  }
+  if (!shellVersion) throw new WeighError("no-version", `${join(omarchyPath, "version")} is not readable, and the sentence weigh ends with names the Omarchy version`, "Check the Omarchy install under that path.")
+  const shellEnv = { ...env, OMARCHY_PATH: omarchyPath }
+  if (!run("ping", { env: shellEnv }).ok) throw new WeighError("shell-not-running", "omarchy-shell shell ping does not answer, and weigh measures a running shell", "omarchy-restart-shell")
+  const listing = run("ipcShow", { env: shellEnv, extra: [join(omarchyPath, "shell"), "show"] })
+  const ipc = ipcFunctions(listing.ok ? listing.stdout : "")
+  const missing = REQUIRED_IPC.filter((name) => !ipc.includes(name))
+  if (missing.length) throw new WeighError("ipc-missing", `the shell's IPC target has no ${missing.join(", ")} (from qs ipc show), and weigh relies on ${missing.length === 1 ? "it" : "them"}`, "Weigh on an Omarchy whose shell has these; this one is older or newer than what weigh knows.")
+  return { omarchyPath, shellVersion, ipc }
+}
+
+/** The function names under `target shell` in a `qs ipc show` listing. */
+export function ipcFunctions(listing) {
+  const out = []
+  let inShell = false
+  for (const line of String(listing).split("\n")) {
+    const target = line.match(/^target (\S+)/)
+    if (target) {
+      inShell = target[1] === "shell"
+      continue
+    }
+    const fn = inShell && line.match(/^\s+function ([A-Za-z_]\w*)\(/)
+    if (fn) out.push(fn[1])
+  }
+  return out
+}
+
 /**
  * Everything that has to be known before a shell is restarted. Reads only.
  *
@@ -118,19 +178,12 @@ export function restartTiming(stateDir) {
  */
 export function planWeigh({ target, all = false, runs = DEFAULTS.runs, windowSeconds = DEFAULTS.windowSeconds, settleSeconds = DEFAULTS.settleSeconds, out, env = process.env, now = new Date() } = {}) {
   if (!target && !all) throw new WeighError("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin")
-  for (const command of ["omarchy-shell", "omarchy-restart-shell", "omarchy", "qs"]) {
-    if (!onPath(command, env)) throw new WeighError("command-missing", `${command} is not on PATH; weigh measures a running Omarchy shell through its own commands`, "Run it on an Omarchy machine, from a shell that has $OMARCHY_PATH/bin on PATH.")
-  }
-  const omarchyPath = sessionOmarchyPath(env)
-  if (!omarchyPath || !existsSync(join(omarchyPath, "shell/shell.qml"))) {
-    throw new WeighError("omarchy-path", `OMARCHY_PATH ${omarchyPath ? `(${omarchyPath}) ` : ""}does not point at a shell: no shell/shell.qml under it`, "Log in to an Omarchy session; the shell is read from the session's OMARCHY_PATH.")
-  }
+  const { omarchyPath, shellVersion } = compatibility(env)
   // Every Omarchy command from here on sees the session's OMARCHY_PATH, the
   // way it would from a terminal in that session.
   env = { ...env, OMARCHY_PATH: omarchyPath }
   const locked = run("sessionLocked", { env })
   if (locked.status === 0) throw new WeighError("session-locked", "the session is locked, so the shell is not restarted; this is the same check omarchy-restart-shell makes", "Unlock the session, then run it again.")
-  if (!run("ping", { env }).ok) throw new WeighError("shell-not-running", "the shell is not running, and weigh measures a running shell", "omarchy-restart-shell")
 
   const listed = run("listPlugins", { env })
   if (!listed.ok) throw new WeighError("shell-unreadable", "listPlugins failed", "omarchy-restart-shell, then run it again.")
@@ -170,12 +223,6 @@ export function planWeigh({ target, all = false, runs = DEFAULTS.runs, windowSec
   const restarts = (1 + audited.length) * runs
   const perRestart = timing.seconds + settleSeconds + windowSeconds
   const estimatedMinutes = Math.ceil((restarts * perRestart) / 60)
-  let shellVersion = "unknown"
-  try {
-    shellVersion = readFileSync(join(omarchyPath, "version"), "utf8").trim() || "unknown"
-  } catch {
-    // A shell without a version file is still a shell.
-  }
   const ticks = run("clockTicks", { env })
   const clockTicksPerSecond = ticks.ok && /^\d+$/.test(ticks.stdout.trim()) ? Number(ticks.stdout.trim()) : 100
 

@@ -28,8 +28,13 @@ other omakit command is read-only; this one is not. So:
   weight is the weight on the machine the plugin runs on.
 
 Without `--yes`, from a pipe or with `--json`, the command prints the plan
-and refuses with a usage error (exit 2); nothing is touched. That refusal is
-the correct outcome of an agent running it unasked.
+and refuses with `█ NOT WEIGHED` (exit 2); nothing is touched. That refusal
+is the correct outcome of an agent running it unasked. The same word, with
+one sentence naming what is missing, is how it refuses an Omarchy it cannot
+weigh on: no `omarchy-shell` (an install older than the Quattro shell), no
+`omarchy-restart-shell`, no readable version, a shell that does not answer
+`ping`, or an IPC target without the four methods it relies on. Report that
+sentence to the person as it is; do not work around it.
 
 ## When to run it
 

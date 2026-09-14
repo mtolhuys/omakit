@@ -9,11 +9,11 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawn, spawnSync } from "node:child_process"
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
-import { buildDocument, WeighError, DEFAULTS, RESTART_SECONDS, measureWeigh, planWeigh, readmeSentence, restartTiming, summaryOf } from "../../tools/weigh/audit.mjs"
+import { buildDocument, compatibility, WeighError, DEFAULTS, ipcFunctions, RESTART_SECONDS, measureWeigh, planWeigh, readmeSentence, REQUIRED_IPC, restartTiming, stockShellPath, summaryOf } from "../../tools/weigh/audit.mjs"
 import { COMMANDS, commandLine, run } from "../../tools/weigh/commands.mjs"
 import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without } from "../../tools/weigh/config.mjs"
 import { validateWeighDocument } from "../../tools/weigh/contract.mjs"
@@ -41,6 +41,9 @@ const EFFECTIVE = {
   plugins: [{ id: "fixture.poller", every: 5 }, { id: "fixture.off" }],
   disabledPlugins: ["omarchy.image-picker"],
 }
+
+/** What `qs ipc show` prints on a shell that can be weighed: the `shell` target with the four functions, among others, and other targets with functions of the same names that must not count. */
+const IPC_LISTING = "target shell\n  function enablePlugin(id: string, placementJson: string): string\n  function hide(id: string): void\n  function listPlugins(): string\n  function setPluginEnabled(id: string, enabled: string): string\n  function ping(): string\n  function listShellConfig(): string\ntarget other\n  function listPlugins(): string\n"
 
 /** The file the user has: hand-written, not the effective document, so a restore that re-serialised it would be caught. */
 const USER_SHELL_JSON = '{\n  "version": 1,\n  // a comment the shell tolerates and jq would not\n  "bar": { "layout": { "left": [ { "id": "fixture.clean" } ] } },\n  "plugins": [ { "id": "fixture.poller", "every": 5 } ]\n}\n'
@@ -106,7 +109,8 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
   stub("omarchy-shell", `case "$2" in ping) echo ok;; listPlugins) cat ${state}/plugins.json;; listShellConfig) cat ${state}/effective.json;; *) exit 1;; esac`)
   stub("omarchy", `[[ "$1 $2 $3" == "plugin list --json" ]] || exit 1; cat ${state}/plugins.json`)
   stub("omarchy-plugin-catalog", `cat ${state}/catalog.json`)
-  stub("qs", `[[ "$1" == list && "$2" == -p && "$4" == --json ]] || exit 1; echo '[{"pid": ${SHELL_PID}, "path": "'"$3"'"}]'`)
+  writeFileSync(join(state, "ipc.txt"), IPC_LISTING)
+  stub("qs", `if [[ "$1" == ipc && "$2" == -p && "$4" == show ]]; then cat ${state}/ipc.txt; exit 0; fi; [[ "$1" == list && "$2" == -p && "$4" == --json ]] || exit 1; echo '[{"pid": ${SHELL_PID}, "path": "'"$3"'"}]'`)
   stub("getconf", `echo 100`)
   stub("omarchy-restart-shell", [
     `config="${home}/.config/omarchy/shell.json"`,
@@ -116,7 +120,13 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
     `if grep -q '"fixture.poller"' "$config"; then mkdir -p ${proc}/${CHILD_PID}; printf '%s\\n' "${stat(CHILD_PID, "inotifywait", SHELL_PID, { utime: 2, stime: 1 }).trimEnd()}" > ${proc}/${CHILD_PID}/stat; printf 'Name:\\tinotifywait\\nVmRSS:\\t  4096 kB\\n' > ${proc}/${CHILD_PID}/status; printf 'inotifywait\\0-m\\0/tmp\\0' > ${proc}/${CHILD_PID}/cmdline; else rm -rf ${proc}/${CHILD_PID}; fi`,
     "exit 0",
   ].join("\n"))
-  const env = { PATH: `${bin}:/usr/bin:/bin`, HOME: home, XDG_STATE_HOME: join(home, "xdg-state"), NODE_NO_WARNINGS: "1" }
+  // PATH holds the stubs and the few coreutils they use, and nothing from
+  // /usr/bin: this machine has a packaged omarchy-shell there, and a test
+  // that removes a stub must find nothing behind it.
+  const tools = join(root, "coreutils")
+  mkdirSync(tools)
+  for (const name of ["cat", "cut", "grep", "md5sum", "mkdir", "rm", "tr", "wc"]) symlinkSync(`/usr/bin/${name}`, join(tools, name))
+  const env = { PATH: `${bin}:${tools}`, HOME: home, XDG_STATE_HOME: join(home, "xdg-state"), NODE_NO_WARNINGS: "1" }
   // Every restart, with the md5 of shell.json at that moment and, for a
   // measurement configuration, its parsed content; the user's own file has
   // a comment in it and parses as nothing.
@@ -146,6 +156,7 @@ test("the command table is frozen, and every entry is an Omarchy command or a re
     listShellConfig: ["omarchy-shell", "shell", "listShellConfig"],
     catalog: ["omarchy-plugin-catalog"],
     shellPid: ["qs", "list", "-p"],
+    ipcShow: ["qs", "ipc", "-p"],
     restartShell: ["omarchy-restart-shell"],
     clockTicks: ["getconf", "CLK_TCK"],
   })
@@ -346,6 +357,67 @@ test("the confirmation says the plugins, the restart count, the minutes, the bac
   assert.equal(plain(renderPlan(plan, { colour: true, env: m.env }).join("\n")), text, "colour changes nothing about the words")
 })
 
+test("the compatibility preflight refuses, read-only and before any confirmation, an Omarchy that cannot be weighed on", () => {
+  const codeOf = (env) => {
+    try {
+      planWeigh({ target: "fixture.clean", env })
+    } catch (error) {
+      assert.ok(error instanceof WeighError, `${error}`)
+      return { code: error.code, message: error.message, remedy: error.remedy }
+    }
+    return { code: "no error" }
+  }
+  // An Omarchy without omarchy-shell: the case of an install older than the Quattro shell.
+  const bare = machine()
+  rmSync(join(bare.bin, "omarchy-shell"))
+  const none = codeOf(bare.env)
+  assert.equal(none.code, "no-omarchy-shell")
+  assert.equal(none.message, "this Omarchy has no omarchy-shell on PATH, so there is no Quattro shell here to weigh a plugin on")
+  assert.match(none.remedy, /Quattro shell \(4\.0 or newer\)/)
+  // No restart command.
+  const still = machine()
+  rmSync(join(still.bin, "omarchy-restart-shell"))
+  assert.equal(codeOf(still.env).code, "no-restart-command")
+  // The version file.
+  const unversioned = machine()
+  rmSync(join(unversioned.omarchyPath, "version"))
+  const version = codeOf(unversioned.env)
+  assert.equal(version.code, "no-version")
+  assert.match(version.message, /version is not readable/)
+  // ping does not answer.
+  const silent = machine()
+  writeFileSync(join(silent.bin, "omarchy-shell"), "#!/bin/bash\nexit 1\n")
+  const quiet = codeOf(silent.env)
+  assert.equal(quiet.code, "shell-not-running")
+  assert.equal(quiet.message, "omarchy-shell shell ping does not answer, and weigh measures a running shell")
+  // The IPC listing lacks a method weigh relies on; a same-named function on another target does not count.
+  const older = machine()
+  writeFileSync(join(older.state, "ipc.txt"), "target shell\n  function listPlugins(): string\n  function ping(): string\ntarget other\n  function enablePlugin(id: string, placementJson: string): string\n  function setPluginEnabled(id: string, enabled: string): string\n  function listShellConfig(): string\n")
+  const ipc = codeOf(older.env)
+  assert.equal(ipc.code, "ipc-missing")
+  assert.equal(ipc.message, "the shell's IPC target has no listShellConfig, setPluginEnabled, enablePlugin (from qs ipc show), and weigh relies on them")
+  const listing = machine()
+  writeFileSync(join(listing.bin, "qs"), "#!/bin/bash\nexit 1\n")
+  assert.equal(codeOf(listing.env).code, "ipc-missing", "no listing at all is every method missing")
+  assert.deepEqual(ipcFunctions(IPC_LISTING), ["enablePlugin", "hide", "listPlugins", "setPluginEnabled", "ping", "listShellConfig"])
+  assert.deepEqual(REQUIRED_IPC, ["listPlugins", "listShellConfig", "setPluginEnabled", "enablePlugin"])
+  for (const each of [bare, still, unversioned, silent, older, listing]) {
+    assert.deepEqual(each.restarts(), [], "no restart")
+    assert.equal(readdirSync(join(each.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0, "no backup")
+  }
+  // A shell that passes every probe: the path is printed beside the version
+  // only when it is not the stock one.
+  const stock = machine()
+  const good = compatibility(stock.env)
+  assert.equal(good.shellVersion, "4.0.0.test")
+  assert.ok(good.ipc.includes("enablePlugin"))
+  assert.equal(stockShellPath({ HOME: "/home/x" }), "/home/x/.local/share/omarchy")
+  const plan = planWeigh({ target: "fixture.clean", env: stock.env })
+  assert.match(renderPlan(plan, { colour: false, env: stock.env }).join("\n"), /^shell {9}4\.0\.0\.test at ~\/\.\.\/omarchy$|^shell {9}4\.0\.0\.test at \/tmp/m, "a shell elsewhere prints its path")
+  const atStock = { ...plan, omarchyPath: join(stock.home, ".local/share/omarchy") }
+  assert.match(renderPlan(atStock, { colour: false, env: stock.env }).join("\n"), /^shell {9}4\.0\.0\.test$/m, "a stock install prints the version alone")
+})
+
 test("a locked session, a disabled plugin, a whole bar, an unknown id and a missing command are each refused before anything is touched", () => {
   const codeOf = (options) => {
     try {
@@ -365,7 +437,7 @@ test("a locked session, a disabled plugin, a whole bar, an unknown id and a miss
   assert.equal(codeOf({ target: "nobody.nothing", env: m.env }), "plugin-unknown")
   assert.equal(codeOf({ target: join(m.root, "no-such-dir"), env: m.env }), "plugin-unknown")
   assert.equal(codeOf({ env: m.env }), "usage")
-  assert.equal(codeOf({ target: "fixture.clean", env: { ...m.env, PATH: join(m.root, "nowhere") } }), "command-missing")
+  assert.equal(codeOf({ target: "fixture.clean", env: { ...m.env, PATH: join(m.root, "nowhere") } }), "no-omarchy-shell")
   const empty = machine({ installed: INSTALLED.filter((plugin) => plugin.firstParty) })
   assert.equal(codeOf({ all: true, env: empty.env }), "nothing-to-measure")
   const unpinged = machine()

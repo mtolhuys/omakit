@@ -174,6 +174,23 @@ The session-lock check is the one `omarchy-restart-shell` makes,
 `omarchy-hyprland-session-locked`: while the compositor holds a session
 lock, the command refuses before touching anything.
 
+## Compatibility, before the confirmation
+
+Before anything is printed about restarts, the command checks that this is
+an Omarchy whose shell it can weigh on, with probes that read and never
+call a method that changes anything: `omarchy-shell` on PATH (an Omarchy
+older than the Quattro shell has none), `omarchy-restart-shell` on PATH,
+`omarchy` and `qs` on PATH, `$OMARCHY_PATH/shell/shell.qml` present,
+`$OMARCHY_PATH/version` readable, `omarchy-shell shell ping` answering, and
+the shell's IPC listing (`qs ipc -p $OMARCHY_PATH/shell show`) carrying
+`listPlugins`, `listShellConfig`, `setPluginEnabled` and `enablePlugin`
+under the `shell` target; the first two the measurement calls, the other
+two the shell's own plugin commands call on its behalf. Any failure is
+refused as `█ NOT WEIGHED` with one sentence naming what is missing and
+the one thing to do, exit 1, before any confirmation. The shell's path is
+printed beside its version only when the running shell is not the stock
+one at `~/.local/share/omarchy`.
+
 ## Confirmation
 
 Because it restarts the shell, the command asks first. The confirmation

@@ -28,6 +28,8 @@ export const COMMANDS = Object.freeze({
   catalog: Object.freeze({ command: "omarchy-plugin-catalog", args: Object.freeze([]) }),
   /** The shell's pid: `qs list -p <shell dir> --json`, the two extra arguments passed at run time. */
   shellPid: Object.freeze({ command: "qs", args: Object.freeze(["list", "-p"]) }),
+  /** The shell's IPC targets and their functions: `qs ipc -p <shell dir> show`, read-only, for the compatibility preflight. */
+  ipcShow: Object.freeze({ command: "qs", args: Object.freeze(["ipc", "-p"]) }),
   /** The restart, and the readiness poll that comes with it. */
   restartShell: Object.freeze({ command: "omarchy-restart-shell", args: Object.freeze([]) }),
   /** Clock ticks per second, for /proc/<pid>/stat. */
