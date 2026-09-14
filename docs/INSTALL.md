@@ -1,0 +1,130 @@
+# Installing omakit
+
+The README says the one line; this page says the rest: the clone route, PATH,
+what it needs, how it updates, and what a dependency scanner sees in it and
+why.
+
+## Install
+
+```bash
+npm install --global omakit
+omakit setup
+```
+
+If `omakit` is not found afterwards, npm's global `bin` is not on your PATH
+(measured: an npm global prefix under `~/.local/share` whose `bin` no shell
+searched). Run `"$(npm prefix --global)/bin/omakit" setup` once: it prints the
+one line that puts that directory on PATH for the shell in `$SHELL`, and the
+rc file to keep it in; `omakit doctor` reports the same as `omakit.path`.
+Nothing writes to your rc file.
+
+Or read what you run:
+
+```bash
+git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
+ln -s ~/.local/share/omakit/bin/omakit ~/.local/bin/omakit
+omakit setup
+```
+
+| Needs | Why |
+| --- | --- |
+| Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has Node and npm through `mise`, along with `git`, `gh` and `ttfx` |
+| `git` | the pin, and reading a subject's tree at an exact commit |
+| network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
+| 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
+
+`omakit upgrade` updates either install through the installer that made it:
+`npm` for the package, at the exact version the registry names, and a
+fast-forward for a clone. `omakit doctor` says when a newer version is
+published. Nothing in omakit fetches and runs its own replacement, and
+`omarchy-mise-install npm:omakit` would, so it is not the way in.
+
+## Updating
+
+Two different things could mean "upgrade" here, and only one of them may ever
+move on its own. That distinction is now enforced rather than argued.
+
+**The tool:**
+
+```bash
+omakit upgrade          # the npm package, or a clone: through its own installer
+omakit upgrade --dry-run
+```
+
+It is not a self-updater of the kind this repository warns other people
+about: it never fetches and runs its own replacement. On an npm install it asks
+the registry for the newest version and, if that is newer, runs the `npm` on
+PATH with frozen arguments (`npm install --global --ignore-scripts omakit@<that
+version>`, never `@latest`, never with sudo), and it refuses when the npm on
+PATH is not the one that installed it. On a clone it fast-forwards from the
+remote you cloned it from, and refuses a dirty tree, a detached HEAD, a remote
+that is not this repository, and anything that is not a fast-forward. In every
+refusal it names what to run yourself. `git -C ~/.local/share/omakit pull`
+still works on a clone and does the same thing.
+
+**The pin** does not move by itself, ever, and `omakit upgrade` does not move it
+either: a test asserts that its source does not so much as mention the pin or
+the cache. Bumping it changes where the submission contract and the baseline
+policy are read from, and the procedure in
+[UPSTREAM_CONTRACT.md](UPSTREAM_CONTRACT.md) ends in re-proving
+transport parity and committing the evidence. `omakit doctor` tells you when the
+pin is behind in something omakit reads from it, names which paths changed,
+and then leaves it alone: `registry.json` and `site/catalog.json` moving is
+fine, because those are read live from HEAD (about 140 commits a day touch
+only `registry.json`, so "behind" alone would be true of every run); the
+marketplace's code or forms moving is a note, and what you can do about it
+is run `omakit upgrade`, since a newer omakit may already carry the new pin,
+and otherwise open an issue naming the paths. That the
+pin can go stale unnoticed is the same defect class `omakit watch` reports, so it
+would be poor form to hide it here.
+
+
+## What Socket reports and why
+
+A supply-chain scanner such as Socket reads the package for the capabilities
+its code uses, and omakit uses several that a scanner flags by design. Every
+one of them is what the tool is for, and each has the test that holds it to
+that:
+
+- **Process spawning.** `gh auth token --hostname github.com` is the one `gh`
+  invocation, with frozen arguments, to borrow a login for GET requests. `git`
+  is spawned for the pinned marketplace checkout (`fetch`, `checkout`,
+  `rev-parse`, `ls-tree`, `cat-file` and their read-only kin) and for
+  `omakit upgrade` on a clone (`merge` of a fast-forward, local only). `npm`
+  is spawned by `omakit upgrade` alone, with frozen arguments, at an exact
+  version and never `@latest`. `ttfx`, when installed, draws the wordmark
+  from stdin with frozen arguments. `omakit weigh` runs the Omarchy shell
+  commands from one frozen table: `omarchy-shell`, `omarchy-restart-shell`,
+  `omarchy plugin list`, `omarchy-plugin-catalog`, `qs`,
+  `omarchy-hyprland-session-locked`, `systemctl --user show-environment` and
+  `getconf`. No shell is ever invoked with a string; every spawn is a binary
+  and an argument list, and `tests/unit/read-only.test.mjs` asserts the
+  arguments of each.
+- **Filesystem.** The pinned marketplace checkout and the live registry cache
+  under `$XDG_CACHE_HOME/omakit/` (or `~/.cache/omakit/`), the one completion
+  script `setup` installs where the shell in `$SHELL` loads it from, and the
+  files a `--out` names. `weigh` alone also writes `~/.config/omarchy/shell.json`
+  for the duration of a measurement, its timestamped backup beside it, and
+  its documents and per-restart timing under `$XDG_STATE_HOME/omakit/weigh/`;
+  `tests/unit/self-containment.test.mjs` counts those writes and refuses any
+  other, and no code path writes into a plugin tree or copies a file at all.
+- **Environment.** `XDG_CACHE_HOME`, `XDG_STATE_HOME`, `XDG_CONFIG_HOME`,
+  `XDG_DATA_HOME`, `HOME`, `SHELL`, `PATH`, `ZDOTDIR`, and `OMARCHY_PATH` (the
+  session's shell, read the way `omarchy-restart-shell` reads it), plus the
+  terminal's own `NO_COLOR`, `FORCE_COLOR` and `TERM`. Every one is somebody
+  else's convention; omakit reads no variable of its own and never a token
+  (`GH_TOKEN` and `GITHUB_TOKEN` are honoured by `gh` itself).
+- **Network.** GET only, from one call site, to four hosts: `api.github.com`,
+  `github.com` (the public commit feed), `raw.githubusercontent.com` (two
+  registry files at an exact commit) and `registry.npmjs.org` (`upgrade`
+  and `doctor` asking for the newest version). The borrowed credential goes
+  to `api.github.com` and nowhere else. `verify` on a local repository
+  touches no network at all, proven by a run inside `unshare -rn`
+  ([evidence/offline/](evidence/offline/)).
+- **No install scripts.** The package has no `postinstall` or any other
+  lifecycle script, no build step and no runtime dependency; `npm pack` is
+  held to a reviewed file list and a size ceiling by `tests/package-assert.mjs`.
+
+`weigh` is the one command that changes the machine it runs on, and it says
+so and asks before the first restart ([WEIGH.md](WEIGH.md)). Everything else
+reads.

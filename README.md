@@ -2,51 +2,13 @@
   <img src="docs/media/banner.gif" alt="omakit" width="440">
 </p>
 
-[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges)
+The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only, posts nothing, zero dependencies.
 
-**Everything knowable about an Omarchy Quattro plugin submission, checked
-before you post it:** the tree, the manifest, the form, the commit, and the
-marketplace's own security baseline with its outcome reported as it is. A
-submission is judged at one exact commit and drifts from it the moment you
-push; `watch` says when that has happened. All of it runs on your own machine
-and publishes nothing: no issue, no comment, no label, nobody's attention spent
-until you choose to.
+[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
 
-![omakit submit refusing a plugin with no license, a README that never says how to uninstall, and a reserved plugin id](docs/media/submit.gif)
-
-The plugin above is refused for three things the marketplace itself refuses,
-and warned about a fourth: it ships instruction files an agent will read once
-installed. **103 marketplace issues mention exactly that, and no automated check
-reports it, so today an author finds out from a human review round.** It is a
-warning and not a refusal, because the marketplace does list plugins that ship
-them: 6 of 34 inspected do, at the commit that was listed.
-
-```bash
-omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
-```
-
-Fifteen checks, each naming its source and, when it fails, the measured reason it
-exists. A blocking failure produces no submission body at all, because a refusal
-that still hands you the body is only a suggestion.
-
-## Why it exists
-
-Four numbers, all measured on public marketplace data on 2026-09-12. Method,
-limits and the rest of the figures: [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md).
-
-| Measured | Consequence |
-| --- | --- |
-| 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
-| 1,215 of the 2,916 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
-| 103 issues mention agent-control files, which no automated check reports | submit names every one with its remedy, before a reviewer has to |
-| 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
-
-It does not claim to unblock the maintainer. His review writing barely repeats,
-his median time from submission to publication is hours, and the queue waiting on
-him is a median half a day old. The honest size of what this saves him is the
-staleness paragraph he has written by hand on 358 issues, roughly 5.5% of his
-review writing. The rest of the benefit is the submitter's.
-[docs/MARKETPLACE.md](docs/MARKETPLACE.md) states that in full.
+`omakit` is a zero-dependency Node CLI that checks an Omarchy Quattro plugin submission on your machine.
+It is for a coding agent or a person submitting a plugin.
+It never posts to the marketplace or writes into a plugin tree.
 
 ## Install
 
@@ -55,242 +17,64 @@ npm install --global omakit
 omakit setup
 ```
 
-If `omakit` is not found afterwards, npm's global `bin` is not on your PATH
-(measured: an npm global prefix under `~/.local/share` whose `bin` no shell
-searched). Run `"$(npm prefix --global)/bin/omakit" setup` once: it prints the
-one line that puts that directory on PATH for the shell in `$SHELL`, and the
-rc file to keep it in; `omakit doctor` reports the same as `omakit.path`.
-Nothing writes to your rc file.
+See [docs/INSTALL.md](docs/INSTALL.md) for the clone route, PATH, requirements and upgrading.
 
-Or read what you run:
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| [`omakit setup`](docs/COMMANDS.md) | The environment, the pin, tab completion, and what to try first. |
+| [`omakit submit <plugin-repo>`](docs/SUBMIT.md) | Every check, the issue title and body; asks for a category and tags at a terminal. |
+| [`omakit watch <issue-url>`](docs/VALIDATION_WATCH.md) | The commit the marketplace validated, against the plugin's current HEAD. |
+| [`omakit verify <plugin-repo>`](docs/COMMANDS.md) | The official security baseline over the local transport; `--json` for the document. |
+| [`omakit parity`](docs/COMMANDS.md) | The baseline over GitHub versus the local transport, on real listings; writes the evidence. |
+| [`omakit weigh <plugin>`](docs/WEIGH.md) | What a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first. |
+| [`omakit doctor`](docs/COMMANDS.md) | What is installed, what is pinned, and what has moved. |
+| [`omakit pin`](docs/COMMANDS.md) | What setup does for the pin, on its own. |
+| [`omakit upgrade`](docs/COMMANDS.md) | Updates omakit through its own installer: npm, or a fast-forward. |
+| [`omakit help --agent`](docs/COMMANDS.md) | The operating instructions, for the agent running this. |
+
+### `submit`
 
 ```bash
-git clone --depth 1 https://github.com/mtolhuys/omakit ~/.local/share/omakit
-ln -s ~/.local/share/omakit/bin/omakit ~/.local/bin/omakit
-omakit setup
+omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
 ```
 
-| Needs | Why |
-| --- | --- |
-| Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has Node and npm through `mise`, along with `git`, `gh` and `ttfx` |
-| `git` | the pin, and reading a subject's tree at an exact commit |
-| network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
-| 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
+It decides whether the plugin is ready, refused, or already listed; [103 issues mention agent-control files that no automated check reports](docs/MEASUREMENTS.md).
 
-`omakit upgrade` updates either install through the installer that made it:
-`npm` for the package, at the exact version the registry names, and a
-fast-forward for a clone. `omakit doctor` says when a newer version is
-published. Nothing in omakit fetches and runs its own replacement, and
-`omarchy-mise-install npm:omakit` would, so it is not the way in.
+![omakit submit refusing a plugin with no license, a README that never says how to uninstall, and a reserved plugin id](docs/media/submit.gif)
 
-## Watch
+Read more: [docs/SUBMIT.md](docs/SUBMIT.md).
 
-![omakit watch reporting that a validated commit has fallen behind](docs/media/watch.gif)
+### `watch`
 
 ```bash
 omakit watch <submission-issue-url>
 ```
 
-That submission passed validation and passed the security baseline with zero
-findings. It is stuck because the marketplace validated one exact commit, and
-the only action that makes it validate a newer one is editing the issue body. Pushing the fix does
-nothing. Commenting "fixed in `abc123`" does nothing. **73% of the 464
-submissions parked in their author's court have a default-branch HEAD the
-marketplace never saw.**
+It decides whether the marketplace validated the plugin's current commit; [73% of parked submissions have a HEAD the marketplace never saw](docs/MEASUREMENTS.md).
 
-## What your plugin weighs
+![omakit watch reporting that a validated commit has fallen behind](docs/media/watch.gif)
+
+Read more: [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md).
+
+### `weigh`
 
 ```bash
 omakit weigh <plugin-id-or-dir>
 ```
 
-What a plugin weighs on the shell, measured rather than read from its
-source: the shell is restarted without the plugin and with it, three runs
-each, and the difference is the weight, with the baseline's own spread
-printed once as the noise floor and any CPU delta inside it reported as no
-measurable CPU, in words. Child processes the plugin spawns are attributed by pid tree and
-reported separately. Memory is measured and printed too, but labelled as
-the shell's own startup variance and kept out of any sentence about the
-plugin, because the shell comes to rest on one of two levels 35 MB apart
-and no measurement from outside the process yet tells a plugin's memory
-from that ([docs/MEASUREMENTS.md](docs/MEASUREMENTS.md), C1 and C2). Every
-figure carries its origin: the `/proc` path, the window, the run count. It
-ends with the sentence for your README and the JSON that is its evidence:
+It measures what a plugin weighs on the shell, CPU and child processes, against a baseline taken the same minute; [in the lab, a 180 ms timer fixture measured 2.73% CPU above a 0.13% floor](docs/MEASUREMENTS.md).
 
 ```text
 Weighs no CPU above the floor (0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14
 ```
 
-This is the one omakit command that is not read-only against your own
-machine. It restarts your shell (1 + plugins) × runs times, about a minute
-per restart (a 30 s settle and a 15 s window after each), so one plugin at
-three runs is six restarts and about five minutes, and `--all` is sized for
-a lab machine: 47 enabled plugins is 144 restarts and about two hours with
-no bar and no panels for any of it. It edits `~/.config/omarchy/shell.json`
-for the duration, so it says the count and the estimated minutes and asks
-first (`--yes` answers for you), refuses while the
-session is locked and when the plugin is not enabled, backs `shell.json` up to
-a timestamped copy, restores it on every exit path including an interrupt and
-a shell that does not come back, and prints the md5 before and after. It never
-touches the marketplace and never writes into a plugin tree. The method, the
-noise floor, the exact `shell.json` mutation and the JSON contract are in
-[docs/WEIGH.md](docs/WEIGH.md); the lab measurement behind it is
-[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md), C1.
+It restarts your shell and asks first. Memory is a shell fact; CPU and child processes are the weight.
 
-## Commands
-
-Agent-first: the expected user is a coding agent submitting a plugin on an
-owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
-
-```bash
-omakit setup                 # the environment, the pin, tab completion, and what to try first
-omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
-omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
-omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
-omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
-omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
-omakit doctor                # what is installed, what is pinned, and what has moved
-omakit pin                   # what setup does for the pin, on its own
-omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
-omakit help --agent          # the operating instructions, for the agent running this
-```
-
-![omakit setup checking the environment and fetching the pinned checkout](docs/media/setup.gif)
-
-`omakit setup` checks the environment, fetches the marketplace checkout that
-every rule is read from, installs tab completion for the shell you run it from
-(bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
-idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
-seven files omakit reads out of that repository rather than the 325 MB it is at
-that commit. The completion script knows the subcommands and their flags,
-completes a directory for `<target>`, and offers the categories and tags the
-pin's submission form actually has.
-
-`omakit verify` prints the official baseline result alone, with no Omakit
-check around it: the subject, the pin, the transport and what the local
-adapter assumes, then the marketplace's own outcome, each finding as a block
-with its rule id, whether it blocks publication under the pinned policy, the
-file and line, and the official text verbatim, then the marketplace's own
-statement. `--json` prints the document itself, unchanged from earlier
-releases, and `--out <file>` writes it; agents and the skills use those.
-
-`omakit submit` reads the marketplace's registry first, and a run has three
-outcomes. `READY`, exit 0: every blocking check passed and the title and body
-follow. `REFUSED`, exit 1: a blocking check failed and no body is produced.
-`LISTED`, exit 0: the plugin is already listed by its own repository (the
-manifest id is in the catalog, and the listing's repository is the subject's
-declared `origin`, compared as owner and name), so the submission form is not
-the route. Nothing is wrong and nothing was refused: `identity.available`
-passes with the listing's record (since when, which commit, verified or not),
-the five checks that exist only for the body are omitted, nothing is asked,
-and the closing block names the commit the marketplace lists, the local
-commit, whether they are the same, and the marketplace's verification form
-with the choice that lists a newer commit, read from the pin's
-`verify-plugin.yml`. Measured on 0.1.6: this state printed `FAIL
-identity.available`, `REFUSED`, and "Fix it, then run submit again" under a
-remedy that said there was nothing to submit. An id taken by another
-repository, a retired id or a reserved one is still refused. In `--json`, the
-outcome is `outcome: "ready" | "refused" | "listed"`, `ready` stays a boolean
-that is true for the first only, and a listed run carries a `listing` object.
-
-An unlisted plugin needs a category and tags, and they are an editorial
-choice nobody else can make: at a terminal it asks, once each, with the form's
-own lists numbered and the marketplace's own default for the manifest's kinds
-offered where it is on the list; in a pipe, from an agent, or with `--json` it
-is the usage error with the same lists, exit 2. A listed plugin is asked for
-neither. A `READY` or `REFUSED` report ends with the command line that repeats
-the run without asking, and `--json` carries it as `reproduce`.
-
-There is nothing to authenticate. If you have `gh auth login` done, omakit
-reads that credential for GET requests and stores nothing; a token in
-`GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
-those itself. Without either, `watch` and `parity` share GitHub's
-60-requests-an-hour unauthenticated allowance; `submit` reads two things
-online, the subject's default-branch HEAD and the marketplace's current
-registry, and `--offline` turns both off; `verify` on a local repository does
-not touch the network at all (a `<url>@<sha>` target is fetched once, over
-git, into the cache). omakit reads no environment variable of its own, and
-`omakit doctor` names the credential source it found, or that it found none.
-
-Every colour omakit prints is an ANSI palette index, so your Omarchy theme
-decides what it looks like, and nothing is said by colour alone. What the
-terminal shows and why is [docs/TUI.md](docs/TUI.md); which index each role
-gets, measured over all 32 installed themes, is
-[docs/PALETTE.md](docs/PALETTE.md).
-
-## What it is doing
-
-Nothing about the submission format is written down in this repository. The
-title prefix, the six form headings in order, the nine categories, the thirteen
-tags and the exact text of the five checklist items are all read from
-`.github/ISSUE_TEMPLATE/submit-plugin.yml` in a marketplace checkout pinned to an
-exact commit. The rendered body is then handed to the marketplace's own
-`parseCurrentSubmission` from that same commit. If it accepts the body here, it
-accepts it there. The one exception is data, not rules: the registry and the
-catalog that say which ids and repositories are already listed are read from
-the marketplace's current HEAD when the network is there, because the pin's
-copy is stale within hours (4,201 of 4,293 commits in 30 days touched only
-`registry.json`), and from the pin with `--offline`.
-
-This is why the tool is Node: the marketplace's scanner, form parser and
-catalog builder are Node modules, and omakit runs them verbatim from the
-pinned commit instead of reimplementing their rules, where a different
-language would mean a copy that can drift.
-
-The security baseline is the marketplace's own code, imported unmodified and run
-over a local snapshot with no network. Omakit adds no rule, renames no outcome,
-and never restates the result as a safety claim: the baseline does no data-flow
-analysis and is not a security review, and the output says so in the
-marketplace's own words.
-
-Every check is labelled. `[marketplace-pin]` is the marketplace's rule, read from
-the pin. `[omakit]` is this project's own check, derived from public issue data.
-Those are not marketplace policy and do not claim to be.
-
-## Updating
-
-Two different things could mean "upgrade" here, and only one of them may ever
-move on its own. That distinction is now enforced rather than argued.
-
-**The tool:**
-
-```bash
-omakit upgrade          # the npm package, or a clone: through its own installer
-omakit upgrade --dry-run
-```
-
-It is not a self-updater of the kind this repository warns other people
-about: it never fetches and runs its own replacement. On an npm install it asks
-the registry for the newest version and, if that is newer, runs the `npm` on
-PATH with frozen arguments (`npm install --global --ignore-scripts omakit@<that
-version>`, never `@latest`, never with sudo), and it refuses when the npm on
-PATH is not the one that installed it. On a clone it fast-forwards from the
-remote you cloned it from, and refuses a dirty tree, a detached HEAD, a remote
-that is not this repository, and anything that is not a fast-forward. In every
-refusal it names what to run yourself. `git -C ~/.local/share/omakit pull`
-still works on a clone and does the same thing.
-
-**The pin** does not move by itself, ever, and `omakit upgrade` does not move it
-either: a test asserts that its source does not so much as mention the pin or
-the cache. Bumping it changes where the submission contract and the baseline
-policy are read from, and the procedure in
-[docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) ends in re-proving
-transport parity and committing the evidence. `omakit doctor` tells you when the
-pin is behind in something omakit reads from it, names which paths changed,
-and then leaves it alone: `registry.json` and `site/catalog.json` moving is
-fine, because those are read live from HEAD (about 140 commits a day touch
-only `registry.json`, so "behind" alone would be true of every run); the
-marketplace's code or forms moving is a note, and what you can do about it
-is run `omakit upgrade`, since a newer omakit may already carry the new pin,
-and otherwise open an issue naming the paths. That the
-pin can go stale unnoticed is the same defect class `omakit watch` reports, so it
-would be poor form to hide it here.
+Read more: [docs/WEIGH.md](docs/WEIGH.md).
 
 ## Evidence, not claims
-
-```bash
-npm test        # node --test, no dependencies; green from `git archive` too
-```
 
 | Claim | Proof |
 | --- | --- |
@@ -302,14 +86,15 @@ npm test        # node --test, no dependencies; green from `git archive` too
 | `weigh` restores `shell.json` on every exit path, and runs a frozen list of Omarchy commands | `tests/unit/weigh.test.mjs` against a fake `/proc` and stub commands, `tests/unit/read-only.test.mjs` |
 | The GIFs above are real output | captures and renderer in [docs/media/](docs/media/) |
 
-Committed evidence records a digest of each side rather than the results
-themselves: findings about a specific third-party plugin are not this project's
-to publish.
+Committed evidence records a digest of each side rather than the results themselves, because findings about a specific third-party plugin are not this project's to publish.
 
 ## Documentation
 
 | Document | For |
 | --- | --- |
+| [docs/INSTALL.md](docs/INSTALL.md) | install details, PATH, requirements, upgrading, and what Socket reports and why |
+| [docs/HOW.md](docs/HOW.md) | what omakit is doing, why it uses Node, the baseline and check labels |
+| [docs/COMMANDS.md](docs/COMMANDS.md) | command details, authentication and network behaviour |
 | [docs/SUBMIT.md](docs/SUBMIT.md) | every check and what it decides |
 | [docs/WEIGH.md](docs/WEIGH.md) | what `weigh` measures, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md) | the validation watch: what the marketplace validated, and what moves it |
