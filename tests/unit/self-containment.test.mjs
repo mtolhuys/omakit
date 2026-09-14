@@ -67,12 +67,22 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // a subject.
     // The capture takes the rest of the line, because a target like
     // join(dir, ".git/info/x") contains a comma of its own.
+    // `omakit cost` is the one command that writes to the user's own machine
+    // outside those: the shell configuration it measures with (configFile),
+    // the byte-for-byte backup it restores from (backupFile), and the
+    // per-restart timing its confirmation estimates from (timingFile). Only
+    // under tools/cost/, only to those names, and docs/COST.md says what each
+    // one is for.
+    const costWrites = path.startsWith("tools/cost/") ? /^configFile,|^backupFile,|^timingFile,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, nor the completion script`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || costWrites.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files cost may write`,
       )
+    }
+    if (!path.startsWith("tools/cost/")) {
+      assert.doesNotMatch(text, /shell\.json/, `${path} names the shell configuration; only tools/cost/ may touch it`)
     }
     if (path === "tools/marketplace/registry.mjs") {
       assert.match(text, /const liveCache = liveCacheDir\(commit, cacheRoot\)/, "the live registry cache is the path liveCacheDir names")
@@ -114,9 +124,14 @@ test("the command surface is exactly the submission scope", () => {
 })
 
 test("no lab or conformance scope came along with the harvest", () => {
+  // The one file under tests/lab/ is the scenario the plugin lab runs to
+  // measure `omakit cost` against a stock shell, because the cost command
+  // restarts a shell and the desktop is never where that is tested. It is a
+  // scenario for one command, not a conformance suite, and it is not in the
+  // package.
   for (const path of files) {
     assert.ok(!/^tools\/lab\//.test(path), `${path} is out of scope`)
-    assert.ok(!/^tests\/lab\//.test(path), `${path} is out of scope`)
+    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/cost.sh", `${path} is out of scope`)
   }
 })
 
