@@ -10,7 +10,8 @@ import { pathToFileURL } from "node:url"
 // the 0.1.7 measurement, still half the size of an accidental tree with a
 // pin or a cache in it. With `omakit weigh` (eight modules under tools/weigh/
 // and a fourth skill) the package measured 132,544 bytes, 50 files, 21,056
-// under the ceiling.
+// under the ceiling; at 0.2.0, with the command renamed to weigh and the
+// README made the door, 135,136 bytes, 50 files, 18,464 under it.
 export const MAX_PACKED_BYTES = 153_600
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([

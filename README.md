@@ -2,7 +2,7 @@
   <img src="docs/media/banner.gif" alt="omakit" width="440">
 </p>
 
-The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only, posts nothing, zero dependencies.
+The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only against the marketplace, posts nothing, zero dependencies.
 
 [![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
 
