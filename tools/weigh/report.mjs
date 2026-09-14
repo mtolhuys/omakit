@@ -15,6 +15,22 @@ import { head } from "../marketplace/report.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { figure } from "./stats.mjs"
 import { stockShellPath } from "./audit.mjs"
+import { ARG0_CHARS } from "./proc.mjs"
+
+/**
+ * A redacted command for a row. The document carries comm and a first
+ * argument cut to 80 characters (docs/WEIGH.md), which can end mid-word
+ * (`.../helper/sideca`); a person reads better when the cut falls at the
+ * last path separator, with an ellipsis saying it was cut. Nothing is
+ * added back: the row shows less than the document, never more.
+ */
+export function redactedCommand(command, limit = ARG0_CHARS) {
+  const [comm, ...rest] = String(command).split(" ")
+  const arg0 = rest.join(" ")
+  if (arg0.length < limit) return command
+  const cut = arg0.lastIndexOf("/")
+  return cut > 0 ? `${comm} ${arg0.slice(0, cut + 1)}...` : `${comm} ${arg0}...`
+}
 
 /** The version alone on a stock install; the path beside it only when the running shell is somewhere else. */
 function shellLine(version, omarchyPath, env) {
@@ -109,7 +125,7 @@ export function renderWeigh(document, { colour = colourEnabled(), env = process.
     const extras = plugin.unattributedChildren?.runs || []
     const runsWithExtras = extras.filter((count) => count > 0).length
     const extra = plugin.unattributedChildren?.median || 0
-    const commands = `(commands: ${(plugin.unattributedCommands || []).map((command) => withHomeAbbreviated(command, env)).join("; ")})`
+    const commands = `(commands: ${(plugin.unattributedCommands || []).map((command) => withHomeAbbreviated(redactedCommand(command), env)).join("; ")})`
     const unattributed = extra > 0
       ? `${figure(extra, 0)} unattributed child process${extra === 1 ? "" : "es"} ${commands}`
       : runsWithExtras > 0

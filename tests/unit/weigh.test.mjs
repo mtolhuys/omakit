@@ -19,7 +19,7 @@ import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without }
 import { validateWeighDocument } from "../../tools/weigh/contract.mjs"
 import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/weigh/proc.mjs"
 import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/weigh/stats.mjs"
-import { confirmationQuestion, renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
+import { confirmationQuestion, redactedCommand, renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
 import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
@@ -778,7 +778,14 @@ test("a difference in child count is never lost: extra children the baseline als
   assert.equal(quiet.unattributedChildren.median, 0)
   assert.deepEqual(quiet.unattributedCommands, [])
   const text = renderWeigh(document, { colour: false, env: { HOME: "/home/someone" } })
-  assert.match(text.replace(/\n {8,}/g, " "), /children {2}2 unattributed child processes \(commands: sidecarctl ~\/\.config\/omarchy\/plugins\/io\.github\.mtolhuys\.sidecar\/helper\/sidecarc\)/)
+  // A first argument the sampler cut at 80 characters ends mid-word in the
+  // document; the row cuts it again at the last path separator, with an
+  // ellipsis, and never shows more than the document holds.
+  assert.match(text.replace(/\n {8,}/g, " "), /children {2}2 unattributed child processes \(commands: sidecarctl ~\/\.config\/omarchy\/plugins\/io\.github\.mtolhuys\.sidecar\/helper\/\.\.\.\)/)
+  assert.equal(redactedCommand(`sidecarctl ${arg0}`), "sidecarctl /home/someone/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/...")
+  assert.equal(redactedCommand("inotifywait -m"), "inotifywait -m", "a short argument is left alone")
+  assert.equal(redactedCommand(`x ${"a".repeat(80)}`), `x ${"a".repeat(80)}...`, "no separator: the cut stays where the sampler made it, with the ellipsis")
+  assert.equal(redactedCommand("x " + "b".repeat(79)), "x " + "b".repeat(79), "under the cut, nothing to say")
   assert.match(text, /^ {8}children {2}none attributed$/m, "the quiet row still says none attributed")
   // Extras in one run of three are not rounded away by the median.
   const once = buildDocument(PLAN, [1, 2, 3].flatMap((runIndex) => [
