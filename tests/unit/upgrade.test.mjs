@@ -233,8 +233,13 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
   write("commit", "-q", "-am", "three")
   write("push", "-q", "origin", "main")
 
+  // The completion refresh is the new omakit's own step, run as a child of
+  // the entry point just installed; here the clone has no entry point, so a
+  // stub records the call and what root it was given.
+  const refreshed = []
+  const refreshCompletion = (root, stream) => { refreshed.push(root); stream.write("completion refreshed\n"); return { ran: true, ok: true } }
   const dry = collect()
-  const preview = await upgrade({ repoRoot: clone, stream: dry.stream, dryRun: true, expectedRemote: origin })
+  const preview = await upgrade({ repoRoot: clone, stream: dry.stream, dryRun: true, expectedRemote: origin, refreshCompletion })
   assert.equal(preview.ok, true)
   assert.equal(preview.changed, false)
   assert.equal(preview.available, 2)
@@ -243,7 +248,7 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
     "a dry run must not move anything")
 
   const io = collect()
-  const result = await upgrade({ repoRoot: clone, stream: io.stream, expectedRemote: origin })
+  const result = await upgrade({ repoRoot: clone, stream: io.stream, expectedRemote: origin, refreshCompletion })
   assert.equal(result.ok, true)
   assert.equal(result.changed, true)
   assert.equal(result.commits, 2)
@@ -251,9 +256,14 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
   assert.match(io.text(), /2 commit\(s\)/)
   assert.match(io.text(), /The marketplace pin did not move/)
   assert.equal(readFileSync(join(clone, "f"), "utf8"), "three\n", "the working tree is actually updated")
+  // After the fast-forward, and only then: the completion step of the new
+  // omakit, at the clone's root, its output relayed.
+  assert.deepEqual(refreshed, [clone], "refreshed once, after the install, never on the dry run")
+  assert.match(io.text(), /completion refreshed/)
+  assert.deepEqual(result.completion, { ran: true, ok: true })
 
   const again = collect()
-  const second = await upgrade({ repoRoot: clone, stream: again.stream, expectedRemote: origin })
+  const second = await upgrade({ repoRoot: clone, stream: again.stream, expectedRemote: origin, refreshCompletion })
   assert.equal(second.changed, false)
   assert.match(again.text(), /already current/)
 })

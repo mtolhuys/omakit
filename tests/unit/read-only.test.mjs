@@ -9,7 +9,8 @@ import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import { CREDENTIAL_HOST, GH_ARGS, getJson } from "../../tools/marketplace/github.mjs"
-import { NPM_PREFIX_ARGS, NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
+import { COMPLETION_REFRESH_ARGS, NPM_PREFIX_ARGS, NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
+import { PROBES } from "../../tools/marketplace/completion-check.mjs"
 import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
@@ -149,6 +150,32 @@ test("only the weigh command spawns an Omarchy command, only from its command ta
     }
     assert.equal(spawns.length, 1, "commands.mjs has exactly one spawn call site")
     assert.match(code, /spawnSync\(entry\.command, \[\.\.\.entry\.args, \.\.\.extra\]/, "and it runs a frozen entry of the command table")
+  }
+})
+
+test("a shell is asked about completion only with the frozen probes, and the completion refresh after an upgrade is the new omakit's own setup step", () => {
+  // `setup` and `doctor` run an interactive shell to ask whether `omakit`
+  // completes; the probe is a frozen argument list per shell and prints two
+  // words. `upgrade` re-runs the completion step through the entry point it
+  // just installed, with frozen arguments and never the rc question.
+  assert.deepEqual(Object.keys(PROBES), ["bash", "zsh", "fish"])
+  for (const [shell, probe] of Object.entries(PROBES)) {
+    assert.ok(Object.isFrozen(probe), `${shell}: frozen`)
+    assert.equal(probe.length, 2, `${shell}: one option and one script`)
+    assert.doesNotMatch(probe[1], /\b(?:rm|mv|cp|>>?\s*[~/$])/, `${shell}: the probe writes nothing`)
+  }
+  assert.deepEqual([...COMPLETION_REFRESH_ARGS], ["setup", "--completion"])
+  for (const { path, text } of sources) {
+    if (path.startsWith("tests/")) continue
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    for (const match of code.matchAll(/spawnSync\(\s*shell\s*,\s*(\[[^\]]*\])/g)) {
+      assert.equal(path, "tools/marketplace/completion-check.mjs", `${path} spawns a shell by name`)
+      assert.equal(match[1].replace(/\s+/g, ""), "[...probe]", `${path} spawns a shell with arguments other than the frozen probe`)
+    }
+    for (const match of code.matchAll(/execFileSync\(\s*process\.execPath\s*,\s*(\[[^\]]*\])/g)) {
+      assert.equal(path, "tools/marketplace/upgrade.mjs", `${path} runs node`)
+      assert.equal(match[1].replace(/\s+/g, ""), "[entryPoint,...COMPLETION_REFRESH_ARGS]", `upgrade.mjs runs the entry point as ${match[1]}`)
+    }
   }
 })
 

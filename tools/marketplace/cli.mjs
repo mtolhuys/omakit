@@ -27,6 +27,7 @@ import { renderSubmit, renderWatch, renderDoctor, renderVerify } from "./report.
 import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
 import { completionStep, setup } from "./setup.mjs"
+import { staleCompletionNotice } from "./completion-check.mjs"
 import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
@@ -424,6 +425,15 @@ async function cmdWeigh(args) {
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
 
 const [command, ...rest] = process.argv.slice(2)
+
+// Once a day, one dim line on stderr, only at a terminal: the installed
+// completion script names another omakit, so `omakit we<TAB>` may not know
+// `weigh`. One stat and one short read; never under a pipe, whose stderr
+// stays empty on success, and never for setup, which is the fix.
+if (command !== "setup" && process.stderr.isTTY) {
+  const notice = staleCompletionNotice({ version: VERSION })
+  if (notice) process.stderr.write(`${styler(colourEnabled(process.stderr))("label", notice)}\n`)
+}
 
 if (command === "setup") {
   await cmdSetup(rest)

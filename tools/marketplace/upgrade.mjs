@@ -144,7 +144,29 @@ export function isExpectedRemote(url, expected = REPOSITORY) {
  *   a way to point the command at somebody else's repository, because nothing
  *   on the command line reaches it.
  */
-export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY, latest = latestOnRegistry, npmRoot = npmGlobalRoot, name = "omakit" }) {
+/**
+ * After a successful install, the completion step of the omakit that was
+ * just installed: it renders the script with its own version and proves it
+ * in a new shell, and never asks the rc question (the loader does not
+ * change with an upgrade). Run as a child of the new entry point, not in
+ * this process, whose code is the old version's. Frozen arguments.
+ */
+export const COMPLETION_REFRESH_ARGS = Object.freeze(["setup", "--completion"])
+
+function refreshCompletionWith(root, stream) {
+  const entryPoint = join(root, "bin/omakit")
+  if (!existsSync(entryPoint)) return { ran: false, reason: `${entryPoint} is not there` }
+  try {
+    const out = execFileSync(process.execPath, [entryPoint, ...COMPLETION_REFRESH_ARGS], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    stream.write(out)
+    return { ran: true, ok: true }
+  } catch (error) {
+    stream.write(error.stdout || "")
+    return { ran: true, ok: false, reason: String(error.stderr || error.message).trim() }
+  }
+}
+
+export async function upgrade({ repoRoot, stream = process.stdout, dryRun = false, expectedRemote = REPOSITORY, latest = latestOnRegistry, npmRoot = npmGlobalRoot, name = "omakit", refreshCompletion = refreshCompletionWith }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
   const lines = (list) => { for (const line of list) out(line) }
@@ -160,7 +182,7 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
     if (installKind(repoRoot) === "distro") {
       return refuse("this is a distro package under /usr, so omakit leaves upgrades to the package manager.", upgradeCommand(repoRoot))
     }
-    return upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c })
+    return upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c, refreshCompletion })
   }
 
   let remote
@@ -245,15 +267,17 @@ export async function upgrade({ repoRoot, stream = process.stdout, dryRun = fals
   ok(`${before.slice(0, 7)} to ${after.slice(0, 7)} on ${branch}, ${log.length} commit(s)`)
   for (const line of log) out(subject(line))
   out()
+  const completion = refreshCompletion(resolve(repoRoot), stream)
+  if (completion.ran === false) note(`tab completion was not refreshed: ${completion.reason}. Run \`omakit setup\`.`)
   lines(wrap("The marketplace pin did not move: this updated the tool, not the commit its rules are read from. `omakit doctor` says whether that pin is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", {}, c))
-  return { ok: true, changed: true, from: before, to: after, commits: log.length }
+  return { ok: true, changed: true, from: before, to: after, commits: log.length, completion }
 }
 
 /**
  * The npm route. `latest` and `npmRoot` are injectable for the tests only, the
  * way `expectedRemote` is: nothing on the command line reaches them.
  */
-async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c }) {
+async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, refuse, note, ok, out, lines, c, refreshCompletion }) {
   const root = resolve(repoRoot)
   const globalRoot = npmRoot()
   if (!globalRoot) {
@@ -302,6 +326,8 @@ async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, ref
   }
   ok(`${current} to ${after}, through the npm that installed it`)
   out()
+  const completion = refreshCompletion(root, stream)
+  if (completion.ran === false) note(`tab completion was not refreshed: ${completion.reason}. Run \`omakit setup\`.`)
   lines(wrap("The marketplace pin did not move: this updated the tool, not the commit its rules are read from. `omakit doctor` says whether that pin is behind, and docs/UPSTREAM_CONTRACT.md says what moving it involves.", {}, c))
-  return { ok: true, changed: true, from: current, to: after }
+  return { ok: true, changed: true, from: current, to: after, completion }
 }
