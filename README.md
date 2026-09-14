@@ -104,17 +104,21 @@ marketplace never saw.**
 omakit cost <plugin-id-or-dir>
 ```
 
-What a plugin costs the shell, in MB and CPU, measured rather than read
-from its source: the shell is restarted without the plugin and with it, three
-runs each, and the difference is the cost, with the baseline's own spread
-printed once as the noise floor and any delta inside it reported as within
-noise, in words. Child processes the plugin spawns are attributed by pid tree
-and reported separately. Every figure carries its origin: the `/proc` path,
-the window, the run count. It ends with the sentence for your README and the
-JSON that is its evidence:
+What a plugin costs the shell, measured rather than read from its source:
+the shell is restarted without the plugin and with it, three runs each, and
+the difference is the cost, with the baseline's own spread printed once as
+the noise floor and any CPU delta inside it reported as no measurable CPU,
+in words. Child processes the plugin spawns are attributed by pid tree and
+reported separately. Memory is measured and printed too, but labelled as
+the shell's own startup variance and kept out of any sentence about the
+plugin, because the shell comes to rest on one of two levels 35 MB apart
+and no measurement from outside the process yet tells a plugin's memory
+from that ([docs/MEASUREMENTS.md](docs/MEASUREMENTS.md), C1 and C2). Every
+figure carries its origin: the `/proc` path, the window, the run count. It
+ends with the sentence for your README and the JSON that is its evidence:
 
 ```text
-Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
 ```
 
 This is the one omakit command that is not read-only against your own

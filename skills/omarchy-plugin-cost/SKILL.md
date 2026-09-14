@@ -63,17 +63,24 @@ network.
 ## Reading the verdicts
 
 The header prints the **noise floor** once: the spread of the baseline's
-own memory and CPU across its runs. A plugin whose median delta is not
-larger than that floor is **within noise**, in those words, and the row is
-`ok`. A row is `note` when memory or CPU is above the floor, and `?` when
-no run of it completed.
+own CPU across its runs. A plugin whose median CPU delta is not larger than
+that floor has **no measurable CPU**, in those words, and the row is `ok`.
+A row is `note` when CPU is above the floor, and `?` when no run of it
+completed.
 
-- `within noise` means the measurement cannot tell the plugin from nothing
-  at this run count and window. It does not mean zero. Say "within the
-  noise floor of N MB and N% CPU", with the numbers.
-- `above noise` is a measured cost. Report the median and its spread, and
-  the children line separately: a plugin that costs 2 MB inside the shell
-  and 40 MB in a helper process costs both.
+- `no measurable CPU` means the measurement cannot tell the plugin from
+  nothing at this run count and window. It does not mean zero. Say "no
+  measurable CPU against a floor of N%", with the number.
+- `above noise on CPU` is a measured cost. Report the median and its
+  spread, and the children line separately: a plugin that adds 0.1% in the
+  shell and runs a 40 MB helper costs both.
+- **Memory is the shell's, not the plugin's, for now.** The memory delta is
+  printed with its spread, and the header labels it "within the shell's own
+  startup variance (N MB)". Never turn it into a sentence about the plugin
+  ("costs N MB", "under N MB"): the shell comes to rest on one of two
+  levels 35 MB apart after a restart, and that difference is not the
+  plugin's (`docs/MEASUREMENTS.md`, C1 and C2). If the owner asks about
+  memory, say exactly that and show the figure with the variance beside it.
 - A negative median is printed as measured. Do not round it to zero and do
   not explain it away; it means the delta is inside the noise.
 - Never describe a cost as acceptable or unacceptable. The verdict is a
@@ -94,13 +101,14 @@ The last thing the command prints is the sentence, per plugin, and the path
 of the JSON that is its evidence:
 
 ```text
-Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
 ```
 
 Paste it as it is, under a heading such as "What it costs", and keep the
-JSON with the plugin's evidence or link to it. A plugin within noise gets
-"under N MB and under N% CPU", the floor, and that is the honest sentence
-for it. Re-run and replace the sentence after any change that adds a timer,
+JSON with the plugin's evidence or link to it. It names the CPU floor even
+when the plugin is under it, and the child processes with their memory;
+it never names the shell's memory, and neither should you in that README.
+Re-run and replace the sentence after any change that adds a timer,
 a process or a watcher; a sentence measured on an older commit is a claim
 about a plugin that no longer exists.
 

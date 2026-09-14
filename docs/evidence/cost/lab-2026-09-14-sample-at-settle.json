@@ -572,7 +572,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "within-noise",
-        "summary": "within noise on memory and CPU"
+        "summary": "no measurable CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -585,7 +585,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds no measurable CPU (floor 0.07%) and runs 2 child processes using 8.2 MB and 0.4% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -1345,7 +1345,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "within-noise",
-        "summary": "within noise on memory and CPU"
+        "summary": "no measurable CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -1358,7 +1358,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -1889,7 +1889,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "within-noise",
-        "summary": "within noise on memory and CPU"
+        "summary": "no measurable CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -1902,7 +1902,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -2455,7 +2455,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "above-noise",
-        "summary": "above noise on CPU, within noise on memory"
+        "summary": "above noise on CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -2468,7 +2468,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and 3.4% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds 2.8% CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -2999,7 +2999,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "within-noise",
-        "summary": "within noise on memory and CPU"
+        "summary": "no measurable CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -3012,7 +3012,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds no measurable CPU (floor 0.07%) and runs 1 child process using 4.1 MB and 0.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -3621,7 +3621,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "within-noise",
-        "summary": "within noise on memory and CPU"
+        "summary": "no measurable CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -3634,7 +3634,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -4154,7 +4154,7 @@
       "verdict": {
         "memory": "within-noise",
         "cpu": "above-noise",
-        "summary": "above noise on CPU, within noise on memory"
+        "summary": "above noise on CPU"
       },
       "withinNoise": {
         "pss": true,
@@ -4167,7 +4167,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Costs under 70.3 MB and 0.5% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Adds -0.1% CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -4530,5 +4530,6 @@
       ]
     }
   ],
-  "out": "/tmp/omakit-cost.json"
+  "out": "/tmp/omakit-cost.json",
+  "note": "On 2026-09-15 the readme sentence and verdict.summary were regenerated in the CPU-and-children form (memory is the shell's until C2 is understood); the samples and every figure are as the guest wrote them."
 }

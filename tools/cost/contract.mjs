@@ -127,10 +127,11 @@ export function validateCostDocument(document) {
     for (const key of ["baselinePssSpreadMb", "baselineCpuSpreadPercent", "cpuTickPercent"]) if (within[key] !== null && typeof within[key] !== "number") problems.push(`${at}.withinNoise.${key} is neither a number nor null`)
     if (typeof within.note !== "string") problems.push(`${at}.withinNoise.note is not a string`)
     if (plugin.readme !== null && typeof plugin.readme !== "string") problems.push(`${at}.readme is neither a string nor null`)
-    if (typeof plugin.readme === "string" && !/^Costs (?:[\d.]+ MB|under [\d.?]+ MB) and (?:[\d.]+% CPU|under [\d.?]+% CPU) on Omarchy .+, measured with omakit cost on \d{4}-\d{2}-\d{2}$/.test(plugin.readme)) {
+    if (typeof plugin.readme === "string" && !/^Adds (?:[\d.]+% CPU|no measurable CPU) \(floor [\d.?]+%\) and runs (?:no child process|\d+ child process(?:es)? using [\d.]+ MB(?: and [\d.]+% CPU)?), on Omarchy .+, measured with omakit cost on \d{4}-\d{2}-\d{2}$/.test(plugin.readme)) {
       problems.push(`${at}.readme is not the README sentence: ${plugin.readme}`)
     }
-    if ((verdict.memory === "unknown" || verdict.cpu === "unknown") !== (plugin.readme === null)) problems.push(`${at}.readme is ${plugin.readme === null ? "null with a verdict" : "present without one"}`)
+    if ((verdict.cpu === "unknown") !== (plugin.readme === null)) problems.push(`${at}.readme is ${plugin.readme === null ? "null with a verdict" : "present without one"}`)
+    if (typeof plugin.readme === "string" && /\bMB\b(?!.*child process)/.test(plugin.readme.split(" and runs ")[0])) problems.push(`${at}.readme speaks about the shell's memory`)
     if (!Array.isArray(plugin.deltas)) {
       problems.push(`${at}.deltas is not a list`)
     } else {

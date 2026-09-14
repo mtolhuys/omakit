@@ -15,11 +15,15 @@ import { head } from "../marketplace/report.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { figure } from "./stats.mjs"
 
-/** The mark a row gets from its two verdicts. */
+/**
+ * The mark a row gets: from its CPU verdict. Memory is a fact about the
+ * shell's start until its two resting levels are understood (C1 and C2),
+ * so it is printed with its figure and never turns a row into a note.
+ */
 export function rowState(plugin) {
   const { memory, cpu } = plugin.verdict
   if (memory === "unknown" || cpu === "unknown") return "unknown"
-  return memory === "within-noise" && cpu === "within-noise" ? "pass" : "advisory"
+  return cpu === "within-noise" ? "pass" : "advisory"
 }
 
 /** A figure with its spread, and the words when it is within noise. */
@@ -58,9 +62,12 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
   const baseRuns = baseline.pssMb.runs.length
   out.push(...field("shell", `${document.shell.version} at ${withHomeAbbreviated(document.shell.omarchyPath, env)}, ${document.started}`, c))
   out.push(...field("method", `startup A/B, ${settings.runs} run${settings.runs === 1 ? "" : "s"}, a ${settings.windowSeconds} s window after a settle of ${settings.settleSeconds} s; Pss from /proc/<pid>/smaps_rollup at the end of the window, CPU from /proc/<pid>/stat over the window, children from a /proc walk every ${settings.sampleIntervalMs} ms`, c))
-  out.push(...field("noise floor", noiseFloor.pssMb === null
+  out.push(...field("noise floor", noiseFloor.cpuPercent === null
     ? "unknown: no baseline run completed"
-    : `${figure(noiseFloor.pssMb)} MB and ${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a delta inside it is within noise. At the settle, before the window, the same runs spread ${figure(noiseFloor.pssMbSettled)} MB`, c))
+    : `${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a CPU delta inside it is within noise`, c))
+  out.push(...field("memory", noiseFloor.pssMb === null
+    ? "unknown: no baseline run completed"
+    : `within the shell's own startup variance (${figure(noiseFloor.pssMb)} MB over ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}, ${figure(noiseFloor.pssMbSettled)} MB at the settle): a fact about the shell's start, not a cost of a plugin, until its two resting levels are understood (docs/MEASUREMENTS.md C1, C2)`, c))
   if (baseline.pssMb.median !== null) {
     out.push(...field("baseline", `${figure(baseline.pssMb.median, 1)} MB Pss and ${figure(baseline.cpuPercent.median)}% CPU, the median of ${baseRuns} run${baseRuns === 1 ? "" : "s"} without ${document.audited.length === 1 ? "the plugin" : `the ${document.audited.length} plugins`}`, c))
   }
@@ -77,7 +84,7 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
     const state = rowState(plugin)
     out.push(head(state, plugin.id, plugin.kinds.join(", ") || "no kinds", c))
     out.push(...wrap(`${plugin.name === plugin.id ? "" : `${plugin.name}: `}${plugin.verdict.summary}${plugin.runsCompleted < settings.runs ? ` (${plugin.runsCompleted} of ${settings.runs} runs completed)` : ""}`, { indent: GUTTER }, c))
-    out.push(...labelled("memory", measured(plugin.shellPssMb, "MB", plugin.withinNoise.pss), c))
+    out.push(...labelled("memory", measured(plugin.shellPssMb, "MB", false), c))
     out.push(...labelled("cpu", measured(plugin.shellCpuPercent, "%", plugin.withinNoise.cpu), c))
     const spawns = plugin.childSpawns.median
     out.push(...labelled("children", spawns === null
@@ -90,7 +97,8 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
   out.push(...wrap(`Every figure is the median over ${settings.runs} run${settings.runs === 1 ? "" : "s"} of (with the plugin minus without it) with its spread, and carries its origin in the document under \`origin\`.`, {}, c))
 
   // Last, because it is what an author came for: the sentence to paste, and
-  // the document that is its evidence.
+  // the document that is its evidence. CPU and child processes only; the
+  // memory figures above are the shell's until C2 is understood.
   const written = document.plugins.filter((plugin) => plugin.readme)
   if (written.length) {
     out.push("")

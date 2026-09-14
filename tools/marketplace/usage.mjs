@@ -106,9 +106,10 @@ export const COMMANDS = Object.freeze([
       "omakit cost --all",
     ],
     lines: [
-      "What a plugin costs the shell, in MB and CPU, measured: the shell is",
-      "restarted without it and with it, several runs, and the difference is",
-      "the cost, with the baseline's own spread as the noise floor. The one",
+      "What a plugin costs the shell, measured: the shell is restarted without",
+      "it and with it, several runs, and the difference is the cost, with the",
+      "baseline's own spread as the noise floor; memory is printed as the",
+      "shell's own startup variance, CPU and child processes as the cost. The one",
       "command that changes your machine: it edits shell.json for the",
       "duration, backs it up first, restores it on every exit path, and asks",
       "before the first restart (--yes answers for you): about a minute per",

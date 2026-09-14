@@ -103,7 +103,7 @@ omarchy_host_test() {
       and $busy.verdict.cpu == "above-noise"
       and $clean.verdict.cpu == "within-noise"
       and $clean.verdict.memory == "within-noise"
-      and $clean.verdict.summary == "within noise on memory and CPU"
+      and $clean.verdict.summary == "no measurable CPU"
       and .config.restored == true
       and .config.md5Before == $before and .config.md5After == $before
       and (.plugins | length) == 7' "$out/omakit-cost.json" || {
@@ -112,7 +112,8 @@ omarchy_host_test() {
     return 1
   }
   grep -Eq "^▁ ok +fixture\.clean " "$out/omakit-cost.log" || { echo "the report does not mark fixture.clean ok" >&2; return 1; }
-  grep -A1 -E "ok +fixture\.clean " "$out/omakit-cost.log" | grep -q "within noise on memory and CPU" || { echo "the report does not say within noise for fixture.clean" >&2; return 1; }
+  grep -A1 -E "ok +fixture\.clean " "$out/omakit-cost.log" | grep -q "no measurable CPU" || { echo "the report does not say no measurable CPU for fixture.clean" >&2; return 1; }
+  grep -q "^memory        within the shell's own startup variance" "$out/omakit-cost.log" || { echo "the header does not label memory as the shell's" >&2; return 1; }
   grep -q "^for the README" "$out/omakit-cost.log" || { echo "no README sentence" >&2; return 1; }
 
   jq -r '.noiseFloor | "noise floor: Pss \(.pssMb) MB and VmRSS \(.rssMb) MB at the end of the window, Pss \(.pssMbSettled) MB at the settle, CPU \(.cpuPercent)%"' "$out/omakit-cost.json"

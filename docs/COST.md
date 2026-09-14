@@ -75,18 +75,30 @@ baseline runs measure that: the spread of the baseline's own Pss and CPU
 across its runs is the noise floor, and it is printed once, in the header,
 before any plugin row.
 
-A plugin whose median delta is not larger in magnitude than the baseline
-spread is reported as **within noise**, in those words. It is not rounded to
-zero and it is not hidden: the median and its spread are printed beside the
-words, and the raw deltas are in the JSON. Within noise means the measurement
-cannot tell this plugin from nothing at this run count and window; it does
-not mean the cost is zero. Memory and CPU are judged separately, so a plugin
-can be within noise on memory and above it on CPU, and the row says which.
+A CPU delta whose median is not larger in magnitude than the baseline
+spread is reported as **no measurable CPU**, in those words. It is not
+rounded to zero and it is not hidden: the median and its spread are printed
+beside the words, and the raw deltas are in the JSON. It means the
+measurement cannot tell this plugin from nothing at this run count and
+window; it does not mean the cost is zero.
 
-A row is marked `ok` when both are within noise, `note` when either is above
+A row is marked `ok` when its CPU is within noise, `note` when it is above
 the floor, and `?` when no run of that plugin completed. The verdict is a
 comparison, never a judgement about whether the cost is acceptable; that is
 the author's to make with the number in front of them.
+
+**Memory is a fact about the shell's start, not a cost of the plugin, until
+the shell's two resting levels are understood.** The memory delta stays in
+the table and in the JSON (`shellPssMb`, `verdict.memory`), but the header
+labels it "within the shell's own startup variance (N MB)", no row is marked
+on it, and no sentence about the plugin carries it. The measured reason, in
+`docs/MEASUREMENTS.md`: the shell comes to rest on one of two levels about
+35 MB apart, the high one seen in 0 of 10 baseline restarts and 19 of 70
+plugin restarts, so a memory delta against the baseline mixes what the
+plugin holds with which level the shell landed on, and no pairing of runs
+separates the two from outside the process (C1); what the levels are is
+recorded as a hypothesis (C2). A sentence that said "under N MB" or
+"costs N MB" would be a claim about the wrong thing.
 
 The floor was measured before this command shipped, and two ideas did not
 survive it. The audit it was ported from read `VmRSS` at the end of a
@@ -267,16 +279,21 @@ run and never reaches the file, because a command line can carry a token.
 ## The README sentence
 
 The last thing the command prints, per plugin, is the sentence to paste into
-the plugin's README, and the path of the JSON as its evidence:
+the plugin's README, and the path of the JSON as its evidence. It speaks
+about CPU and about child processes, never about the shell's memory (see
+above):
 
 ```text
-Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+Adds 2.7% CPU (floor 0.13%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
 ```
 
-A plugin within noise gets the floor instead of a figure that would be
-smaller than the measurement's own uncertainty: `Costs under 3.1 MB and
-under 0.06% CPU on Omarchy ...`. The figures are the totals, shell plus
-attributed children. `--json` carries the sentence as `readme`.
+The CPU figure is the shell's own median delta when it is above noise, and
+the floor is stated either way; the child processes are the ones attributed
+to the plugin, with their memory and, when it rounds to a tenth of a
+percent, their CPU. `--json` carries the sentence as `readme`, and
+`tools/cost/contract.mjs` refuses a sentence that carries a memory figure
+about the plugin.
 
 ## Limits
 

@@ -224,22 +224,27 @@ test("median, spread, stats and the verdict", () => {
   assert.equal(figure(-0.001), "0", "never -0")
   assert.equal(figure(19.79296875), "19.79")
   assert.equal(figure(null), "?")
-  assert.equal(summaryOf("within-noise", "within-noise"), "within noise on memory and CPU")
-  assert.equal(summaryOf("within-noise", "above-noise"), "above noise on CPU, within noise on memory")
-  assert.equal(summaryOf("above-noise", "within-noise"), "above noise on memory, within noise on CPU")
-  assert.equal(summaryOf("above-noise", "above-noise"), "above noise on memory and CPU")
+  // The summary speaks about CPU: memory is the shell's until C2 is understood.
+  assert.equal(summaryOf("within-noise", "within-noise"), "no measurable CPU")
+  assert.equal(summaryOf("above-noise", "within-noise"), "no measurable CPU")
+  assert.equal(summaryOf("within-noise", "above-noise"), "above noise on CPU")
+  assert.equal(summaryOf("above-noise", "above-noise"), "above noise on CPU")
   assert.equal(summaryOf("unknown", "above-noise"), "no completed run, so nothing is claimed")
 })
 
-test("the README sentence carries the totals above noise and the floor within it", () => {
-  const base = { floorMb: 3.1234, floorCpu: 0.0629, shellVersion: "4.0.0.alpha", date: "2026-09-14" }
-  assert.equal(readmeSentence({ ...base, totalMb: 19.79, totalCpuPercent: 0.14, memoryVerdict: "above-noise", cpuVerdict: "above-noise" }),
-    "Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
-  assert.equal(readmeSentence({ ...base, totalMb: -0.5, totalCpuPercent: 2.62, memoryVerdict: "within-noise", cpuVerdict: "above-noise" }),
-    "Costs under 3.1 MB and 2.6% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
-  assert.equal(readmeSentence({ ...base, totalMb: 0.2, totalCpuPercent: 0.01, memoryVerdict: "within-noise", cpuVerdict: "within-noise" }),
-    "Costs under 3.1 MB and under 0.06% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
-  assert.equal(readmeSentence({ ...base, totalMb: null, totalCpuPercent: null, memoryVerdict: "unknown", cpuVerdict: "unknown" }), null)
+test("the README sentence speaks about CPU and child processes, never about the shell's memory", () => {
+  const base = { floorCpu: 0.1333, shellVersion: "4.0.0.alpha", date: "2026-09-14" }
+  assert.equal(readmeSentence({ ...base, cpuVerdict: "above-noise", shellCpuPercent: 2.73, childSpawns: 0, childMb: 0, childCpuPercent: -0.07 }),
+    "Adds 2.7% CPU (floor 0.13%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: 0, childSpawns: 2, childMb: 8.18, childCpuPercent: 0.13 }),
+    "Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: -0.07, childSpawns: 1, childMb: 4.09, childCpuPercent: -0.2 }),
+    "Adds no measurable CPU (floor 0.13%) and runs 1 child process using 4.1 MB, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(readmeSentence({ ...base, cpuVerdict: "unknown", shellCpuPercent: null, childSpawns: null, childMb: null, childCpuPercent: null }), null)
+  for (const sentence of [
+    readmeSentence({ ...base, cpuVerdict: "above-noise", shellCpuPercent: 2.73, childSpawns: 0, childMb: 0, childCpuPercent: 0 }),
+    readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: 0, childSpawns: 0, childMb: 0, childCpuPercent: 0 }),
+  ]) assert.ok(!/MB/.test(sentence), `no memory figure about the plugin: ${sentence}`)
 })
 
 test("backup and restore are byte for byte, keep the mode, and verify by md5", () => {
@@ -428,8 +433,8 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(row.shellPssMb.median, 0)
   assert.equal(row.shellCpuPercent.median, 0)
   assert.equal(document.noiseFloor.pssMb, 0)
-  assert.deepEqual(row.verdict, { memory: "within-noise", cpu: "within-noise", summary: "within noise on memory and CPU" })
-  assert.equal(row.readme, "Costs under 0.0 MB and under 0.00% CPU on Omarchy 4.0.0.test, measured with omakit cost on " + document.started.slice(0, 10))
+  assert.deepEqual(row.verdict, { memory: "within-noise", cpu: "within-noise", summary: "no measurable CPU" })
+  assert.equal(row.readme, "Adds no measurable CPU (floor 0.00%) and runs 1 child process using 4.0 MB, on Omarchy 4.0.0.test, measured with omakit cost on " + document.started.slice(0, 10))
   assert.match(row.origin, /smaps_rollup/)
   assert.equal(document.plugins[0].runs[0].shell.memoryAt, "window-end")
   assert.equal(document.plugins[0].runs[0].shell.pssKb, 470_000)
@@ -447,16 +452,18 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   // Rendered, within eighty columns, ending with the README sentence and the evidence.
   const text = renderCost(document, { colour: false, env: m.env })
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
-  assert.match(text, /^noise floor {3}0 MB and 0% CPU, the spread of 2 baseline runs; a delta inside it$/m)
-  assert.match(text, /At the settle, before the window, the same runs\n {14}spread 0 MB$/m)
+  assert.match(text, /^noise floor {3}0% CPU, the spread of 2 baseline runs; a CPU delta inside it is\n {14}within noise$/m)
+  assert.match(text.replace(/\n {14}/g, " "), /^memory {8}within the shell's own startup variance \(0 MB over 2 baseline runs, 0 MB at the settle\): a fact about the shell's start, not a cost of a plugin/m)
   assert.match(text, new RegExp(`^shell\\.json {4}md5 ${md5Before} before,\\n {${LABEL}}${md5Before} after: restored and verified,\\n {${LABEL}}backup removed$`, "m"))
   assert.match(text, new RegExp(`^${DENSITY.floor} ok {4}fixture\\.poller +\\[service\\]$`, "m"))
-  assert.match(text, /^ {8}Fixture: poller: within noise on memory and CPU$/m)
-  assert.match(text, /^ {8}memory {2}0 MB \(spread 0\), within noise$/m)
+  assert.match(text, /^ {8}Fixture: poller: no measurable CPU$/m)
+  assert.match(text, /^ {8}memory {2}0 MB \(spread 0\)$/m, "the memory figure, with no verdict attached")
   assert.match(text, /^ {8}cpu {2}0% \(spread 0\), within noise$/m)
   assert.match(text, /^ {8}children {2}4 MB and 0% CPU outside the shell, 1 process per window$/m)
   const readme = text.slice(text.indexOf("for the README"))
-  assert.match(readme, new RegExp(`^for the README\\n${DENSITY.floor}+\\n {${STEP}}fixture\\.poller\\n {${GUTTER}}Costs under 0\\.0 MB and under 0\\.00% CPU on Omarchy 4\\.0\\.0\\.test, measured\\n {${GUTTER}}with omakit cost on \\d{4}-\\d{2}-\\d{2}\\n {${GUTTER}}evidence {2}~/xdg-state/omakit/cost/\\d{4}-\\d{2}-\\d{2}T\\d{6}Z\\.json$`))
+  // The sentence wraps at eighty columns; joined back, it is the row's readme, then the evidence path.
+  const unwrapped = readme.replace(new RegExp(`(?<=[^\\n]{60,})\\n {${GUTTER}}(?!evidence)`, "g"), " ")
+  assert.match(unwrapped, new RegExp(`^for the README\\n${DENSITY.floor}+\\n {${STEP}}fixture\\.poller\\n {${GUTTER}}${row.readme.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n {${GUTTER}}evidence {2}~/xdg-state/omakit/cost/\\d{4}-\\d{2}-\\d{2}T\\d{6}Z\\.json$`))
   assert.ok(text.endsWith(".json"), "the evidence path is the last thing printed")
   assert.equal(plain(renderCost(document, { colour: true, env: m.env })), text)
   assert.equal(rowState(row), "pass")
@@ -486,6 +493,7 @@ test("a restart that does not answer produces no sample, the row says how many c
   assert.deepEqual(validateCostDocument(empty), [])
   assert.equal(empty.plugins[0].runsCompleted, 0)
   assert.deepEqual(empty.plugins[0].verdict, { memory: "unknown", cpu: "unknown", summary: "no completed run, so nothing is claimed" })
+  assert.match(renderCost(empty, { colour: false, env: none.env }), /^memory {8}unknown: no baseline run completed$/m)
   assert.equal(empty.plugins[0].readme, null)
   assert.equal(empty.config.shellAnsweredAfterRestore, false)
   assert.equal(readFileSync(none.configFile, "utf8"), USER_SHELL_JSON, "restored even though the shell never answered")
@@ -595,28 +603,28 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   near(busy.childCpuPercent.median, (15 / 100 / 15) * 100 + (3 / 100 / 15) * 100, "the child's own ticks plus the reaped-child delta")
   assert.deepEqual(busy.deltas[0].children, [{ comm: "inotifywait", arg0: "-m", rssKb: 2048, cpuSeconds: 0.15, firstSeen: 0, lastSeen: 14.5 }])
   assert.equal(busy.totalMb, 12)
-  assert.deepEqual(busy.verdict, { memory: "above-noise", cpu: "above-noise", summary: "above noise on memory and CPU" })
+  assert.deepEqual(busy.verdict, { memory: "above-noise", cpu: "above-noise", summary: "above noise on CPU" })
   assert.equal(busy.withinNoise.pss, false)
   assert.equal(busy.withinNoise.ownPss, false)
   assert.ok(Math.abs(busy.withinNoise.cpuTickPercent - tickPercent(100, 15)) < 1e-12)
   near(busy.totalCpuPercent, 3.8, "2.6% in the shell and 1.2% outside it")
-  assert.equal(busy.readme, "Costs 12.0 MB and 3.8% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(busy.readme, "Adds 2.6% CPU (floor 0.07%) and runs 1 child process using 2.0 MB and 1.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
   assert.equal(quiet.runsCompleted, 2)
   assert.equal(quiet.shellPssMb.median, ((512 / 1024) + (-1024 / 1024)) / 2, "run 1: +0.5 MB, run 2: -1 MB; the median of two is their mean")
-  assert.deepEqual(quiet.verdict, { memory: "within-noise", cpu: "within-noise", summary: "within noise on memory and CPU" })
+  assert.deepEqual(quiet.verdict, { memory: "within-noise", cpu: "within-noise", summary: "no measurable CPU" })
   assert.equal(quiet.withinNoise.pss, true)
-  assert.equal(quiet.readme, "Costs under 2.0 MB and under 0.07% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(quiet.readme, "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
   assert.equal(rowState(busy), "advisory")
   assert.equal(rowState(quiet), "pass")
   const text = renderCost(document, { colour: false, env: { HOME: "/h" } })
   assert.match(text, new RegExp(`^${DENSITY.dark} note {2}busy +\\[bar-widget\\]$`, "m"))
-  assert.match(text, /^ {8}Busy: above noise on memory and CPU$/m)
+  assert.match(text, /^ {8}Busy: above noise on CPU$/m)
   assert.match(text, /^ {8}memory {2}10 MB \(spread 2\)$/m)
   assert.match(text, /^ {8}cpu {2}2\.6% \(spread 0\.2\)$/m)
   assert.match(text, /^ {8}children {2}2 MB and 1\.2% CPU outside the shell, 1 process per window$/m)
-  assert.match(text, /^ {8}Quiet: within noise on memory and CPU \(2 of 3 runs completed\)$/m)
-  assert.match(text, /^noise floor {3}2 MB and 0\.07% CPU, the spread of 3 baseline runs; a delta inside$/m)
-  assert.match(text, /the same\n {14}runs spread 2 MB$/m)
+  assert.match(text, /^ {8}Quiet: no measurable CPU \(2 of 3 runs completed\)$/m)
+  assert.match(text, /^noise floor {3}0\.07% CPU, the spread of 3 baseline runs; a CPU delta inside it is/m)
+  assert.match(text, /^memory {8}within the shell's own startup variance \(2 MB over 3 baseline\n {14}runs, 2 MB at the settle\)/m)
   assert.match(text, /^baseline {6}460 MB Pss and 0\.2% CPU, the median of 3 runs without the 2\n {14}plugins$/m)
   assert.match(text, /^incomplete {4}run 3 of quiet: no shell pid$/m)
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
@@ -713,7 +721,9 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
   assert.equal(human.err, "", "nothing on a piped stderr on success")
   const at = (pattern) => human.out.search(pattern)
   assert.ok(at(/^measuring/m) < at(/backed up to/) && at(/backed up to/) < at(/restored and verified/) && at(/restored and verified/) < at(/^noise floor/m) && at(/^noise floor/m) < at(/^for the README$/m), human.out)
-  assert.match(human.out, /^ {8}Costs under 0\.0 MB and under 0\.00% CPU on Omarchy 4\.0\.0\.test, measured\n {8}with omakit cost on \d{4}-\d{2}-\d{2}$/m)
+  // The entry point reads the real /proc, where the fake shell pid has no
+  // children; attribution is proven in-process above.
+  assert.match(human.out.replace(/\n {8}/g, " "), /Adds no measurable CPU \(floor 0\.00%\) and runs no child process, on Omarchy 4\.0\.0\.test, measured with omakit cost on \d{4}-\d{2}-\d{2}/)
   for (const line of human.out.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
   assert.doesNotMatch(human.out, /\u001b/)
 })

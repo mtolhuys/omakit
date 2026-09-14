@@ -249,13 +249,13 @@ five runs of (with the plugin minus without it), spread in brackets:
 
 | Plugin | Shell MB (spread) | Shell CPU (spread) | Children MB | Children CPU | Processes | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| bjarneo.workspace-layout | 18.19 (36.11) | 0% (0.13) | 8.18 | 0.13% | 2 | within noise on memory and CPU |
-| omaplug | 16.86 (41.22) | 0% (0.20) | 0 | -0.13% | 0 | within noise on memory and CPU |
-| fixture.idle-panel | 14.20 (62.80) | 0% (0.07) | 0 | -0.33% | 0 | within noise on memory and CPU |
-| fixture.clean | 9.16 (30.28) | 0% (0.20) | 0 | 0.07% | 0 | within noise on memory and CPU |
-| io.github.calebhat.weather | 8.96 (29.82) | 0% (0.20) | 0 | -0.07% | 0 | within noise on memory and CPU |
-| fixture.poller | 3.42 (44.41) | 0% (0.13) | 4.09 | -0.20% | 1 | within noise on memory and CPU |
-| fixture.timer-180ms | -12.21 (56.50) | 2.73% (0.33) | 0 | -0.07% | 0 | above noise on CPU, within noise on memory |
+| bjarneo.workspace-layout | 18.19 (36.11) | 0% (0.13) | 8.18 | 0.13% | 2 | no measurable CPU |
+| omaplug | 16.86 (41.22) | 0% (0.20) | 0 | -0.13% | 0 | no measurable CPU |
+| fixture.idle-panel | 14.20 (62.80) | 0% (0.07) | 0 | -0.33% | 0 | no measurable CPU |
+| fixture.clean | 9.16 (30.28) | 0% (0.20) | 0 | 0.07% | 0 | no measurable CPU |
+| io.github.calebhat.weather | 8.96 (29.82) | 0% (0.20) | 0 | -0.07% | 0 | no measurable CPU |
+| fixture.poller | 3.42 (44.41) | 0% (0.13) | 4.09 | -0.20% | 1 | no measurable CPU |
+| fixture.timer-180ms | -12.21 (56.50) | 2.73% (0.33) | 0 | -0.07% | 0 | above noise on CPU |
 
 What holds across all three runs: the 180 ms timer costs 2.7 to 2.8% CPU
 (run 3: 2.73, 2.40, 2.66, 2.73, 2.73) against a CPU floor of one or two
@@ -265,8 +265,9 @@ noise on both and the report says so in those words, the poller's
 attributed by command line in every run, and the three listed plugins have
 memory medians of 9 to 21 MB in every run against fixture medians of -12 to
 14. What does not hold: at five runs, no plugin's memory median clears a
-32 MB floor, so every memory sentence this guest produces reads "under
-32.0 MB". That is the honest sentence for this machine.
+32 MB floor, and the memory column is a fact about the shell's start rather
+than a cost of a plugin until C2 is understood, so the README sentence
+speaks about CPU and child processes and not about memory at all.
 
 CPU quantum. The CPU floor is one or two clock ticks over the 15 s window,
 and a delta is quantised to ticks too: run 1 judged `fixture.idle-panel`

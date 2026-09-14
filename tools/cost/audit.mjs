@@ -339,20 +339,33 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
 
 const KB = 1024
 
-/** The sentence for a plugin's README: the totals when they are above noise, the floor when they are not, nothing when no run completed. */
-export function readmeSentence({ totalMb, totalCpuPercent, memoryVerdict, cpuVerdict, floorMb, floorCpu, shellVersion, date }) {
-  if (memoryVerdict === "unknown" || cpuVerdict === "unknown") return null
-  const mb = memoryVerdict === "above-noise" ? `${totalMb.toFixed(1)} MB` : `under ${floorMb === null ? "?" : floorMb.toFixed(1)} MB`
-  const cpu = cpuVerdict === "above-noise" ? `${totalCpuPercent.toFixed(1)}% CPU` : `under ${floorCpu === null ? "?" : floorCpu.toFixed(2)}% CPU`
-  return `Costs ${mb} and ${cpu} on Omarchy ${shellVersion}, measured with omakit cost on ${date}`
+/**
+ * The sentence for a plugin's README. It speaks about CPU and about child
+ * processes, and never about the shell's memory: until the shell's two
+ * resting levels are understood (docs/MEASUREMENTS.md C1 and C2), a memory
+ * delta is a fact about the shell's start, not a cost of the plugin, and a
+ * sentence that said "under N MB" would be a claim about the wrong thing.
+ * Null when no run completed.
+ */
+export function readmeSentence({ cpuVerdict, shellCpuPercent, floorCpu, childSpawns, childMb, childCpuPercent, shellVersion, date }) {
+  if (cpuVerdict === "unknown") return null
+  const floor = `(floor ${floorCpu === null ? "?" : floorCpu.toFixed(2)}%)`
+  const cpu = cpuVerdict === "above-noise" ? `Adds ${shellCpuPercent.toFixed(1)}% CPU ${floor}` : `Adds no measurable CPU ${floor}`
+  const spawns = Math.round(childSpawns ?? 0)
+  const childCpu = childCpuPercent !== null && childCpuPercent >= 0.05 ? ` and ${childCpuPercent.toFixed(1)}% CPU` : ""
+  const children = spawns === 0 ? "runs no child process" : `runs ${spawns} child process${spawns === 1 ? "" : "es"} using ${(childMb ?? 0).toFixed(1)} MB${childCpu}`
+  return `${cpu} and ${children}, on Omarchy ${shellVersion}, measured with omakit cost on ${date}`
 }
 
-/** The row's one-line verdict, the same words the report prints and `verdict.summary` carries. */
+/**
+ * The row's one-line verdict, the same words the report prints and
+ * `verdict.summary` carries. About CPU only: the memory verdict stays in
+ * the document as `verdict.memory`, but a sentence about the plugin does
+ * not carry it (see readmeSentence).
+ */
 export function summaryOf(memoryVerdict, cpuVerdict) {
-  if (memoryVerdict === "unknown" || cpuVerdict === "unknown") return "no completed run, so nothing is claimed"
-  if (memoryVerdict === "within-noise" && cpuVerdict === "within-noise") return "within noise on memory and CPU"
-  if (memoryVerdict === "above-noise" && cpuVerdict === "above-noise") return "above noise on memory and CPU"
-  return memoryVerdict === "above-noise" ? "above noise on memory, within noise on CPU" : "above noise on CPU, within noise on memory"
+  if (cpuVerdict === "unknown" || memoryVerdict === "unknown") return "no completed run, so nothing is claimed"
+  return cpuVerdict === "above-noise" ? "above noise on CPU" : "no measurable CPU"
 }
 
 /** The samples of every run, into the document docs/COST.md describes. */
@@ -444,7 +457,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
         note: "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas; a CPU delta is above noise only when it also exceeds one clock tick over the window (cpuTickPercent)",
       },
       origin: `plus minus baseline per run over ${deltas.length} run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a ${plan.windowSeconds}s window that opens ${plan.settleSeconds}s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every ${plan.sampleIntervalMs}ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid`,
-      readme: readmeSentence({ totalMb, totalCpuPercent, memoryVerdict, cpuVerdict, floorMb: noiseFloor.pssMb, floorCpu: noiseFloor.cpuPercent, shellVersion: plan.shellVersion, date }),
+      readme: readmeSentence({ cpuVerdict, shellCpuPercent: cpu.median, floorCpu: noiseFloor.cpuPercent, childSpawns: stats(deltas.map((delta) => delta.childSpawns)).median, childMb: childRss.median, childCpuPercent: childCpu.median, shellVersion: plan.shellVersion, date }),
       deltas,
       runs: plus.map(strip),
     }
