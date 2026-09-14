@@ -2,7 +2,7 @@
 // it so, for the install that is actually here.
 //
 // Measured: after `npm install --global omakit` on a machine whose npm prefix
-// was ~/.local/share/lerd/node-global, the command was missing, because that
+// was a directory under ~/.local/share, the command was missing, because that
 // prefix's `bin` was not on PATH. `omakit setup` then printed the `ln -s` hint
 // written for a clone, which points at a bin/omakit that npm did not lay out
 // where the hint assumes. An npm install needs the npm prefix's `bin` on PATH,

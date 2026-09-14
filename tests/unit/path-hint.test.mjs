@@ -1,5 +1,5 @@
 // After `npm install --global omakit` the command is missing when npm's
-// global bin is not on PATH. Measured: a prefix of ~/.local/share/lerd/node-global
+// global bin is not on PATH. Measured: an npm global prefix under ~/.local/share
 // whose bin no shell searched, and `omakit setup` answered with the `ln -s`
 // hint written for a clone. The hint has to be for the install that is here,
 // said for the shell in $SHELL, and it never writes an rc file.
@@ -22,7 +22,7 @@ requirePinForTests()
  */
 function npmInstall() {
   const home = mkdtempSync(join(tmpdir(), "omakit-path-"))
-  const prefix = join(home, ".local/share/lerd/node-global")
+  const prefix = join(home, ".local/share/node-global")
   const pkg = join(prefix, "lib/node_modules/omakit")
   mkdirSync(join(pkg, "bin"), { recursive: true })
   mkdirSync(join(prefix, "bin"), { recursive: true })
