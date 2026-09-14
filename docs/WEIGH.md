@@ -207,8 +207,23 @@ than a working desktop: a desktop with 47 enabled plugins is 144 restarts
 at three runs, about two hours, and 240 at five, about three and a half,
 and the desktop has no bar, panels or plugins for any of it. At a terminal
 the command waits for `y`; in a pipe, from an agent, or with `--json`, it
-refuses with a usage error unless `--yes` is passed. An agent must never
+refuses with `█ NOT WEIGHED` unless `--yes` is passed. An agent must never
 pass `--yes` without having asked the person whose shell it is.
+
+The question states the knob that sets the count and the minutes:
+
+```text
+Restart the shell 6 times now, about 5 minutes? (--runs 3; --runs 1 for a quick look without a spread) [y/N]:
+```
+
+`--runs 1` is the quick look: two restarts for one plugin, about two
+minutes, and an honest result. One baseline run has no spread, so there is
+no noise floor; every row is `▒ ?` with "one run, no spread: no floor to
+judge against (--runs 3 gives one)" as its reason, `noiseFloor` carries
+nulls with `origin` saying why, `verdict.memory` and `verdict.cpu` are
+`unknown`, `readme` is null and no README sentence is printed, and the
+report closes with `▒ WEIGHED`. The figures are all there, median of one;
+what a quick look cannot give is the verdict.
 
 ## The JSON contract
 

@@ -95,8 +95,12 @@ export function validateWeighDocument(document) {
   } else {
     for (const key of ["pssMb", "rssMb", "pssMbSettled", "rssMbSettled", "cpuPercent"]) if (floor[key] !== null && typeof floor[key] !== "number") problems.push(`noiseFloor.${key} is neither a number nor null`)
     if (typeof floor.origin !== "string") problems.push("noiseFloor.origin is not a string")
-    if (baseline?.pssMb && floor.pssMb !== baseline.pssMb.spread) problems.push("noiseFloor.pssMb is not the baseline Pss spread")
-    if (baseline?.cpuPercent && floor.cpuPercent !== baseline.cpuPercent.spread) problems.push("noiseFloor.cpuPercent is not the baseline CPU spread")
+    // The floor is the baseline spread over two or more runs, and null for
+    // fewer: one run has no spread, and a spread of zero would read as a
+    // floor everything clears.
+    const enough = Array.isArray(baseline?.runs) && baseline.runs.length >= 2
+    if (baseline?.pssMb && floor.pssMb !== (enough ? baseline.pssMb.spread : null)) problems.push(enough ? "noiseFloor.pssMb is not the baseline Pss spread" : "noiseFloor.pssMb is set from fewer than two baseline runs")
+    if (baseline?.cpuPercent && floor.cpuPercent !== (enough ? baseline.cpuPercent.spread : null)) problems.push(enough ? "noiseFloor.cpuPercent is not the baseline CPU spread" : "noiseFloor.cpuPercent is set from fewer than two baseline runs")
   }
 
   if (!Array.isArray(document.plugins)) {

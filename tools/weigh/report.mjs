@@ -58,6 +58,16 @@ export function renderPlan(plan, { colour = colourEnabled(), env = process.env }
 }
 
 /**
+ * The one question, from the plan: the count, the minutes, and the knob
+ * that sets both, so a person who wants a quick look knows what to type
+ * before the shell goes down once.
+ */
+export function confirmationQuestion(plan) {
+  const knob = plan.runs === 1 ? "(--runs 1: a quick look, no spread and no verdict)" : `(--runs ${plan.runs}; --runs 1 for a quick look without a spread)`
+  return `Restart the shell ${plan.restarts} times now, about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}? ${knob}`
+}
+
+/**
  * @param {object} document the weigh document, docs/WEIGH.md
  * @param {{ colour?: boolean, env?: object }} [options] `env` is where `$HOME` is read from for `~/` in paths; the document keeps them absolute.
  */
@@ -69,10 +79,10 @@ export function renderWeigh(document, { colour = colourEnabled(), env = process.
   out.push(...field("shell", `${shellLine(document.shell.version, document.shell.omarchyPath, env)}, ${document.started}`, c))
   out.push(...field("method", `startup A/B, ${settings.runs} run${settings.runs === 1 ? "" : "s"}, a ${settings.windowSeconds} s window after a settle of ${settings.settleSeconds} s; Pss from /proc/<pid>/smaps_rollup at the end of the window, CPU from /proc/<pid>/stat over the window, children from a /proc walk every ${settings.sampleIntervalMs} ms`, c))
   out.push(...field("noise floor", noiseFloor.cpuPercent === null
-    ? "unknown: no baseline run completed"
+    ? (baseRuns === 1 ? "none: one run has no spread, so no verdict is given (--runs 3 gives a floor)" : "unknown: no baseline run completed")
     : `${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a CPU delta inside it is within noise`, c))
   out.push(...field("memory", noiseFloor.pssMb === null
-    ? "unknown: no baseline run completed"
+    ? (baseRuns === 1 ? `${figure(baseline.pssMb.median, 1)} MB Pss in the one baseline run; no spread, so no variance to state` : "unknown: no baseline run completed")
     : `within the shell's own startup variance (${figure(noiseFloor.pssMb)} MB over ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}, ${figure(noiseFloor.pssMbSettled)} MB at the settle): a fact about the shell's start, not a plugin's weight, until its two resting levels are understood (docs/MEASUREMENTS.md C1, C2)`, c))
   if (baseline.pssMb.median !== null) {
     out.push(...field("baseline", `${figure(baseline.pssMb.median, 1)} MB Pss and ${figure(baseline.cpuPercent.median)}% CPU, the median of ${baseRuns} run${baseRuns === 1 ? "" : "s"} without ${document.audited.length === 1 ? "the plugin" : `the ${document.audited.length} plugins`}`, c))

@@ -34,7 +34,7 @@ import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
-import { renderWeigh, renderPlan } from "../weigh/report.mjs"
+import { confirmationQuestion, renderWeigh, renderPlan } from "../weigh/report.mjs"
 import { askYes } from "../weigh/confirm.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
@@ -331,7 +331,7 @@ async function cmdWeigh(args) {
   if (!args.includes("--yes")) {
     const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
     if (!interactive) notWeighed("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is.`, REMEDY["not-confirmed"], 2)
-    const agreed = await askYes({ question: `Restart the shell ${plan.restarts} times now, about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}?` })
+    const agreed = await askYes({ question: confirmationQuestion(plan) })
     if (!agreed) notWeighed("not-confirmed", "not confirmed; nothing was changed.", REMEDY["not-confirmed"], 2)
   }
   narrate.write("\n")

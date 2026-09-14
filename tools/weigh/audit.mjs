@@ -424,8 +424,12 @@ export function readmeSentence({ cpuVerdict, shellCpuPercent, floorCpu, childSpa
  * the document as `verdict.memory`, but a sentence about the plugin does
  * not carry it (see readmeSentence).
  */
-export function summaryOf(memoryVerdict, cpuVerdict) {
-  if (cpuVerdict === "unknown" || memoryVerdict === "unknown") return "no completed run, so nothing is claimed"
+export function summaryOf(memoryVerdict, cpuVerdict, { completed = null, baselineRuns = null } = {}) {
+  if (cpuVerdict === "unknown" || memoryVerdict === "unknown") {
+    if (completed === 0) return "no completed run, so nothing is claimed"
+    if (baselineRuns !== null && baselineRuns < 2) return "one run, no spread: no floor to judge against (--runs 3 gives one)"
+    return "no completed run, so nothing is claimed"
+  }
   return cpuVerdict === "above-noise" ? "above noise on CPU" : "no measurable CPU"
 }
 
@@ -447,13 +451,19 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
     childRssMb: stats(base.map((sample) => sample.children.reduce((sum, child) => sum + child.rssLast, 0) / KB)),
     runs: base.map(strip),
   }
+  // One baseline run has no spread, so there is no floor: every verdict is
+  // then unknown with that reason, and no README sentence is produced.
+  // --runs 1 is the quick look the confirmation offers; it says so.
+  const floorOf = (figure) => (base.length >= 2 ? figure.spread : null)
   const noiseFloor = {
-    pssMb: baseline.pssMb.spread,
-    rssMb: baseline.rssMb.spread,
-    pssMbSettled: baseline.pssMbSettled.spread,
-    rssMbSettled: baseline.rssMbSettled.spread,
-    cpuPercent: baseline.cpuPercent.spread,
-    origin: `the spread (max minus min) of the ${base.length} baseline run(s): Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window`,
+    pssMb: floorOf(baseline.pssMb),
+    rssMb: floorOf(baseline.rssMb),
+    pssMbSettled: floorOf(baseline.pssMbSettled),
+    rssMbSettled: floorOf(baseline.rssMbSettled),
+    cpuPercent: floorOf(baseline.cpuPercent),
+    origin: base.length >= 2
+      ? `the spread (max minus min) of the ${base.length} baseline runs: Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window`
+      : `none: ${base.length === 1 ? "one baseline run has no spread" : "no baseline run completed"}`,
   }
   const date = started.slice(0, 10)
   const plugins = plan.audited.map((plugin) => {
@@ -505,11 +515,11 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
       childSpawns: stats(deltas.map((delta) => delta.childSpawns)),
       totalMb,
       totalCpuPercent,
-      verdict: { memory: memoryVerdict, cpu: cpuVerdict, summary: summaryOf(memoryVerdict, cpuVerdict) },
+      verdict: { memory: memoryVerdict, cpu: cpuVerdict, summary: summaryOf(memoryVerdict, cpuVerdict, { completed: deltas.length, baselineRuns: base.length }) },
       withinNoise: {
-        pss: pss.median === null ? null : memoryVerdict === "within-noise",
-        rss: rss.median === null ? null : verdict(rss.median, noiseFloor.rssMb) === "within-noise",
-        cpu: cpu.median === null ? null : cpuVerdict === "within-noise",
+        pss: memoryVerdict === "unknown" ? null : memoryVerdict === "within-noise",
+        rss: rss.median === null || noiseFloor.rssMb === null ? null : verdict(rss.median, noiseFloor.rssMb) === "within-noise",
+        cpu: cpuVerdict === "unknown" ? null : cpuVerdict === "within-noise",
         ownPss: pss.median === null ? null : verdict(pss.median, pss.spread) === "within-noise",
         ownCpu: cpu.median === null ? null : verdict(cpu.median, cpu.spread, tick) === "within-noise",
         baselinePssSpreadMb: noiseFloor.pssMb,
