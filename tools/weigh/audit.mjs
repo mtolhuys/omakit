@@ -473,6 +473,21 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
       const pair = base.find((candidate) => candidate.run === sample.run)
       if (!pair) continue
       const own = sample.children.filter((child) => !baseKeys.has(child.key))
+      // A difference in count is never lost. A child whose command line the
+      // baseline also runs is not attributed, but when the with-plugin
+      // restart has more of them than the paired baseline restart, the
+      // extra ones are reported as unattributed with their commands, so a
+      // helper the shell also spawns on its own (measured on a desktop:
+      // four sidecarctl against two, a difference of two) is seen.
+      const counts = new Map()
+      for (const child of pair.children) counts.set(child.key, (counts.get(child.key) || 0) + 1)
+      const unattributed = []
+      for (const child of sample.children) {
+        if (!baseKeys.has(child.key)) continue
+        const left = counts.get(child.key) || 0
+        if (left > 0) counts.set(child.key, left - 1)
+        else unattributed.push({ comm: child.comm, arg0: child.arg0 })
+      }
       const ownCpuSeconds = own.reduce((sum, child) => sum + (child.cpuLast - child.cpuFirst), 0) / clk
       const reaped = sample.shell.reapedChildCpuPercent - pair.shell.reapedChildCpuPercent
       deltas.push({
@@ -486,6 +501,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
         reapedChildCpuPercent: reaped,
         childSpawns: own.length,
         children: own.map((child) => ({ comm: child.comm, arg0: child.arg0, rssKb: child.rssLast, cpuSeconds: (child.cpuLast - child.cpuFirst) / clk, firstSeen: child.firstSeen, lastSeen: child.lastSeen })),
+        unattributedChildren: unattributed,
       })
     }
     const pss = stats(deltas.map((delta) => delta.shellPssMb))
@@ -513,6 +529,8 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
       childRssMb: childRss,
       childCpuPercent: childCpu,
       childSpawns: stats(deltas.map((delta) => delta.childSpawns)),
+      unattributedChildren: stats(deltas.map((delta) => delta.unattributedChildren.length)),
+      unattributedCommands: [...new Set(deltas.flatMap((delta) => delta.unattributedChildren.map((child) => `${child.comm} ${child.arg0}`.trim())))].sort(),
       totalMb,
       totalCpuPercent,
       verdict: { memory: memoryVerdict, cpu: cpuVerdict, summary: summaryOf(memoryVerdict, cpuVerdict, { completed: deltas.length, baselineRuns: base.length }) },

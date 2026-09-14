@@ -742,6 +742,64 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   }
 })
 
+test("a difference in child count is never lost: extra children the baseline also runs are reported as unattributed, with their commands", () => {
+  // The shape measured on a desktop: ten children in the baseline restart
+  // (three inotifywait watchers, one sidecarctl helper with a path argument,
+  // two voxtype, two wl-paste, udevadm, one more sidecarctl), twelve with
+  // the plugin, and none attributable, because every extra command line is
+  // one the baseline runs too.
+  const child = (pid, comm, arg0, key) => ({ pid, comm, arg0, key, firstSeen: 0, lastSeen: 14.5, cpuFirst: 0, cpuLast: 0, rssLast: 1024, samples: 30 })
+  const helper = "sidecarctl /home/someone/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sidecarctl"
+  // arg0 as the sampler records it: the first argument cut to 80 characters.
+  const arg0 = helper.slice("sidecarctl ".length).slice(0, ARG0_CHARS)
+  const ten = [
+    child(1, "inotifywait", "-m", "inotifywait -m -r /a"), child(2, "inotifywait", "-m", "inotifywait -m -r /b"), child(3, "inotifywait", "-m", "inotifywait -m -r /c"),
+    child(4, "sidecarctl", arg0, `${helper} status --follow`), child(5, "sidecarctl", arg0, `${helper} status --follow`),
+    child(6, "voxtype", "status", "voxtype status --follow"), child(7, "voxtype", "status", "voxtype status --follow"),
+    child(8, "wl-paste", "--type", "wl-paste --type text --watch x"), child(9, "wl-paste", "--type", "wl-paste --type image/png --watch x"),
+    child(10, "udevadm", "monitor", "udevadm monitor --subsystem-match=block"),
+  ]
+  const twelve = [...ten, child(11, "sidecarctl", arg0, `${helper} status --follow`), child(12, "sidecarctl", arg0, `${helper} status --follow`)]
+  const samples = [1, 2, 3].flatMap((runIndex) => [
+    sample("baseline", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+    sample("busy", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: twelve }),
+    sample("quiet", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+  ])
+  const document = buildDocument(PLAN, samples, { started: "2026-09-14T21:52:52Z", ended: "2026-09-14T21:57:42Z", config: { path: "p", backup: "b", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true }, host: "h", omakitVersion: "v" })
+  assert.deepEqual(validateWeighDocument(document), [])
+  const busy = document.plugins.find((plugin) => plugin.id === "busy")
+  assert.equal(busy.childSpawns.median, 0, "nothing attributable by command line")
+  assert.equal(busy.unattributedChildren.median, 2, "but the two extra helpers are counted")
+  assert.deepEqual(busy.unattributedChildren.runs, [2, 2, 2])
+  assert.deepEqual(busy.unattributedCommands, [`sidecarctl ${arg0}`])
+  assert.ok(arg0.endsWith("/helper/sidecarc") && arg0.length === ARG0_CHARS, "the argument is cut, so the command is redacted the way every child is")
+  assert.deepEqual(busy.deltas[0].unattributedChildren, [{ comm: "sidecarctl", arg0 }, { comm: "sidecarctl", arg0 }], "comm and arg0 only, never the command line")
+  const quiet = document.plugins.find((plugin) => plugin.id === "quiet")
+  assert.equal(quiet.unattributedChildren.median, 0)
+  assert.deepEqual(quiet.unattributedCommands, [])
+  const text = renderWeigh(document, { colour: false, env: { HOME: "/home/someone" } })
+  assert.match(text.replace(/\n {8,}/g, " "), /children {2}2 unattributed child processes \(commands: sidecarctl ~\/\.config\/omarchy\/plugins\/io\.github\.mtolhuys\.sidecar\/helper\/sidecarc\)/)
+  assert.match(text, /^ {8}children {2}none attributed$/m, "the quiet row still says none attributed")
+  // Extras in one run of three are not rounded away by the median.
+  const once = buildDocument(PLAN, [1, 2, 3].flatMap((runIndex) => [
+    sample("baseline", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+    sample("busy", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: runIndex === 3 ? twelve : ten }),
+    sample("quiet", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+  ]), { started: "2026-09-14T21:52:52Z", ended: "2026-09-14T21:57:42Z", config: { path: "p", backup: "b", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true }, host: "h", omakitVersion: "v" })
+  const onceBusy = once.plugins.find((plugin) => plugin.id === "busy")
+  assert.deepEqual(onceBusy.unattributedChildren.runs, [0, 0, 2])
+  assert.equal(onceBusy.unattributedChildren.median, 0)
+  assert.match(renderWeigh(once, { colour: false, env: { HOME: "/home/someone" } }).replace(/\n {8,}/g, " "), /children {2}up to 2 unattributed child processes in 1 of 3 runs \(commands: sidecarctl ~\/\.config/)
+  // Attributed and unattributed together, on one line.
+  const both = buildDocument(PLAN, [1, 2].flatMap((runIndex) => [
+    sample("baseline", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+    sample("busy", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: [...twelve, child(13, "inotifywait", "-m", "inotifywait -m /own")] }),
+    sample("quiet", runIndex, { pssKb: 500_000, rssKb: 570_000, cpuTicks: 3, children: ten }),
+  ]), { started: "2026-09-14T21:52:52Z", ended: "2026-09-14T21:57:42Z", config: { path: "p", backup: "b", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true }, host: "h", omakitVersion: "v" })
+  const line = renderWeigh(both, { colour: false, env: { HOME: "/home/someone" } }).replace(/\n {8,}/g, " ")
+  assert.match(line, /children {2}1 MB and 0% CPU outside the shell, 1 process per window; 2 unattributed child processes \(commands: sidecarctl/)
+})
+
 test("the contract refuses what it should", () => {
   const document = buildDocument(PLAN, [sample("baseline", 1, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 }), sample("baseline", 2, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 }), sample("busy", 1, { pssKb: 2048, rssKb: 2048, cpuTicks: 1 }), sample("busy", 2, { pssKb: 2048, rssKb: 2048, cpuTicks: 1 }), sample("quiet", 1, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 }), sample("quiet", 2, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 })], { started: "2026-09-14T00:00:00Z", ended: "2026-09-14T00:01:00Z", config: { path: "p", backup: "b", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true }, host: "h", omakitVersion: "v" })
   assert.deepEqual(validateWeighDocument(document), [])

@@ -103,11 +103,23 @@ export function renderWeigh(document, { colour = colourEnabled(), env = process.
     out.push(...labelled("memory", measured(plugin.shellPssMb, "MB", false), c))
     out.push(...labelled("cpu", measured(plugin.shellCpuPercent, "%", plugin.withinNoise.cpu), c))
     const spawns = plugin.childSpawns.median
+    // Unattributed extras in every run are stated as a count; extras seen
+    // in some runs only are stated with how many runs, so a difference in
+    // one run of three is never rounded away by the median.
+    const extras = plugin.unattributedChildren?.runs || []
+    const runsWithExtras = extras.filter((count) => count > 0).length
+    const extra = plugin.unattributedChildren?.median || 0
+    const commands = `(commands: ${(plugin.unattributedCommands || []).map((command) => withHomeAbbreviated(command, env)).join("; ")})`
+    const unattributed = extra > 0
+      ? `${figure(extra, 0)} unattributed child process${extra === 1 ? "" : "es"} ${commands}`
+      : runsWithExtras > 0
+        ? `up to ${figure(Math.max(...extras), 0)} unattributed child process${Math.max(...extras) === 1 ? "" : "es"} in ${runsWithExtras} of ${extras.length} runs ${commands}`
+        : ""
     out.push(...labelled("children", spawns === null
       ? "no completed run"
       : spawns === 0
-        ? "none attributed"
-        : `${figure(plugin.childRssMb.median)} MB and ${figure(plugin.childCpuPercent.median)}% CPU outside the shell, ${figure(spawns, 0)} process${spawns === 1 ? "" : "es"} per window`, c))
+        ? (unattributed || "none attributed")
+        : `${figure(plugin.childRssMb.median)} MB and ${figure(plugin.childCpuPercent.median)}% CPU outside the shell, ${figure(spawns, 0)} process${spawns === 1 ? "" : "es"} per window${unattributed ? `; ${unattributed}` : ""}`, c))
   }
   out.push("")
   out.push(...wrap(`Every figure is the median over ${settings.runs} run${settings.runs === 1 ? "" : "s"} of (with the plugin minus without it) with its spread, and carries its origin in the document under \`origin\`.`, {}, c))

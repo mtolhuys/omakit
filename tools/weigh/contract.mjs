@@ -114,7 +114,8 @@ export function validateWeighDocument(document) {
     if (!Array.isArray(plugin.kinds)) problems.push(`${at}.kinds is not a list`)
     if (typeof plugin.firstParty !== "boolean") problems.push(`${at}.firstParty is not a boolean`)
     if (typeof plugin.runsCompleted !== "number") problems.push(`${at}.runsCompleted is not a number`)
-    for (const key of ["shellPssMb", "shellRssMb", "shellPssMbSettled", "shellCpuPercent", "childRssMb", "childCpuPercent", "childSpawns"]) isStats(plugin[key], `${at}.${key}`, problems)
+    for (const key of ["shellPssMb", "shellRssMb", "shellPssMbSettled", "shellCpuPercent", "childRssMb", "childCpuPercent", "childSpawns", "unattributedChildren"]) isStats(plugin[key], `${at}.${key}`, problems)
+    if (!Array.isArray(plugin.unattributedCommands) || plugin.unattributedCommands.some((command) => typeof command !== "string" || command.length > 100)) problems.push(`${at}.unattributedCommands is not a list of short commands`)
     for (const key of ["totalMb", "totalCpuPercent"]) if (plugin[key] !== null && typeof plugin[key] !== "number") problems.push(`${at}.${key} is neither a number nor null`)
     const verdict = plugin.verdict || {}
     for (const key of ["memory", "cpu"]) if (!VERDICTS.has(verdict[key])) problems.push(`${at}.verdict.${key} is not a verdict`)
@@ -146,6 +147,7 @@ export function validateWeighDocument(document) {
           if (typeof delta[key] !== "number") problems.push(`${at}.deltas[${run}].${key} is not a number`)
         }
         if (!Array.isArray(delta.children)) problems.push(`${at}.deltas[${run}].children is not a list`)
+        if (!Array.isArray(delta.unattributedChildren) || delta.unattributedChildren.some((child) => typeof child.comm !== "string" || typeof child.arg0 !== "string" || "key" in child)) problems.push(`${at}.deltas[${run}].unattributedChildren is not a list of {comm, arg0}`)
       }
     }
     if (!Array.isArray(plugin.runs)) problems.push(`${at}.runs is not a list`)

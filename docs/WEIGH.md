@@ -66,7 +66,14 @@ spread (highest minus lowest). Child processes are attributed to the plugin
 when their full command line appears in the "plus one" runs and in none of
 the baseline runs, and are reported separately from the shell's own figures,
 so a plugin that adds 2 MB inside the shell and 40 MB in a helper reads as
-both. Every figure in the output carries its origin: the `/proc` path it was
+both. A difference in count is never lost either: when the with-plugin
+restart has more children than the paired baseline restart and the extra
+ones run a command line the baseline also runs, they cannot be attributed,
+and the row says "N unattributed child process(es)" with their commands,
+or "up to N unattributed child process(es) in 1 of 3 runs" when the
+difference was in some runs only, so the median does not round it away
+(measured on a desktop: four `sidecarctl` helpers against two in one run
+of three, twelve children against ten, none attributable by command line). Every figure in the output carries its origin: the `/proc` path it was
 read from, the window, and the run count.
 
 ## The noise floor, and what "within noise" means
@@ -273,6 +280,13 @@ childRssMb        stats    VmRSS of attributed descendants, last seen
 childCpuPercent   stats    attributed descendants' CPU over the window, plus
                            the delta in reaped-child CPU
 childSpawns       stats    distinct attributed pids per window
+unattributedChildren
+                  stats    children the with-plugin restart had beyond the
+                           paired baseline restart whose command line the
+                           baseline also runs: a difference in count that
+                           attribution cannot claim and never loses
+unattributedCommands
+                  string[] their commands, comm and first argument only
 totalMb           number   shellPssMb.median + childRssMb.median
 totalCpuPercent   number   shellCpuPercent.median + childCpuPercent.median
 verdict           { memory, cpu, summary }
@@ -287,7 +301,8 @@ origin            string   the /proc paths and the arithmetic, in words
 readme            string   the sentence for the plugin's README
 deltas[]          per run: { run, shellPssMb, shellRssMb, shellPssMbSettled,
                     shellCpuPercent, childRssMb, childCpuPercent,
-                    reapedChildCpuPercent, childSpawns, children[] }
+                    reapedChildCpuPercent, childSpawns, children[],
+                    unattributedChildren[] }
 runs[]            the raw "plus one" samples
 ```
 
