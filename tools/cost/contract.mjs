@@ -10,6 +10,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
+import { verdict as verdictOf } from "./stats.mjs"
 
 const VERDICTS = new Set(["within-noise", "above-noise", "unknown"])
 
@@ -33,8 +34,13 @@ function isSample(sample, at, problems) {
     problems.push(`${at}.shell is missing`)
     return
   }
-  for (const key of ["pssKb", "rssKb", "rssKbWindowEnd"]) if (shell[key] !== null && typeof shell[key] !== "number") problems.push(`${at}.shell.${key} is neither a number nor null`)
-  if (shell.memoryAt !== "settled") problems.push(`${at}.shell.memoryAt is not "settled"`)
+  for (const key of ["pssKb", "rssKb", "pssKbSettled", "rssKbSettled"]) if (shell[key] !== null && typeof shell[key] !== "number") problems.push(`${at}.shell.${key} is neither a number nor null`)
+  if (shell.memoryAt !== "window-end") problems.push(`${at}.shell.memoryAt is not "window-end"`)
+  if (!Array.isArray(shell.trace)) problems.push(`${at}.shell.trace is not a list`)
+  else for (const [index, point] of shell.trace.entries()) {
+    if (typeof point.t !== "number") problems.push(`${at}.shell.trace[${index}].t is not a number`)
+    for (const key of ["pssKb", "rssKb"]) if (point[key] !== null && typeof point[key] !== "number") problems.push(`${at}.shell.trace[${index}].${key} is neither a number nor null`)
+  }
   for (const key of ["cpuTicksStart", "cpuTicksEnd", "cpuSeconds", "cpuPercent", "reapedChildTicksStart", "reapedChildTicksEnd", "reapedChildCpuSeconds", "reapedChildCpuPercent"]) {
     if (typeof shell[key] !== "number") problems.push(`${at}.shell.${key} is not a number`)
   }
@@ -78,7 +84,7 @@ export function validateCostDocument(document) {
     problems.push("baseline is missing")
   } else {
     if (!baseline.config || typeof baseline.config !== "object") problems.push("baseline.config is not the configuration the baseline ran with")
-    for (const key of ["pssMb", "rssMb", "rssMbWindowEnd", "cpuPercent", "childRssMb"]) isStats(baseline[key], `baseline.${key}`, problems)
+    for (const key of ["pssMb", "rssMb", "pssMbSettled", "rssMbSettled", "cpuPercent", "childRssMb"]) isStats(baseline[key], `baseline.${key}`, problems)
     if (!Array.isArray(baseline.runs)) problems.push("baseline.runs is not a list")
     else for (const [index, sample] of baseline.runs.entries()) isSample(sample, `baseline.runs[${index}]`, problems)
   }
@@ -86,7 +92,7 @@ export function validateCostDocument(document) {
   if (!floor || typeof floor !== "object") {
     problems.push("noiseFloor is missing")
   } else {
-    for (const key of ["pssMb", "rssMb", "rssMbWindowEnd", "cpuPercent"]) if (floor[key] !== null && typeof floor[key] !== "number") problems.push(`noiseFloor.${key} is neither a number nor null`)
+    for (const key of ["pssMb", "rssMb", "pssMbSettled", "rssMbSettled", "cpuPercent"]) if (floor[key] !== null && typeof floor[key] !== "number") problems.push(`noiseFloor.${key} is neither a number nor null`)
     if (typeof floor.origin !== "string") problems.push("noiseFloor.origin is not a string")
     if (baseline?.pssMb && floor.pssMb !== baseline.pssMb.spread) problems.push("noiseFloor.pssMb is not the baseline Pss spread")
     if (baseline?.cpuPercent && floor.cpuPercent !== baseline.cpuPercent.spread) problems.push("noiseFloor.cpuPercent is not the baseline CPU spread")
@@ -103,17 +109,17 @@ export function validateCostDocument(document) {
     if (!Array.isArray(plugin.kinds)) problems.push(`${at}.kinds is not a list`)
     if (typeof plugin.firstParty !== "boolean") problems.push(`${at}.firstParty is not a boolean`)
     if (typeof plugin.runsCompleted !== "number") problems.push(`${at}.runsCompleted is not a number`)
-    for (const key of ["shellPssMb", "shellRssMb", "shellCpuPercent", "childRssMb", "childCpuPercent", "childSpawns"]) isStats(plugin[key], `${at}.${key}`, problems)
+    for (const key of ["shellPssMb", "shellRssMb", "shellPssMbSettled", "shellCpuPercent", "childRssMb", "childCpuPercent", "childSpawns"]) isStats(plugin[key], `${at}.${key}`, problems)
     for (const key of ["totalMb", "totalCpuPercent"]) if (plugin[key] !== null && typeof plugin[key] !== "number") problems.push(`${at}.${key} is neither a number nor null`)
     const verdict = plugin.verdict || {}
     for (const key of ["memory", "cpu"]) if (!VERDICTS.has(verdict[key])) problems.push(`${at}.verdict.${key} is not a verdict`)
     if (typeof verdict.summary !== "string") problems.push(`${at}.verdict.summary is not a string`)
     if (plugin.shellPssMb?.median !== undefined && floor?.pssMb !== undefined) {
-      const expected = plugin.shellPssMb.median === null || floor.pssMb === null ? "unknown" : Math.abs(plugin.shellPssMb.median) <= floor.pssMb ? "within-noise" : "above-noise"
+      const expected = verdictOf(plugin.shellPssMb.median, floor.pssMb)
       if (verdict.memory !== expected) problems.push(`${at}.verdict.memory is ${verdict.memory}; the median and the floor say ${expected}`)
     }
     if (plugin.shellCpuPercent?.median !== undefined && floor?.cpuPercent !== undefined) {
-      const expected = plugin.shellCpuPercent.median === null || floor.cpuPercent === null ? "unknown" : Math.abs(plugin.shellCpuPercent.median) <= floor.cpuPercent ? "within-noise" : "above-noise"
+      const expected = verdictOf(plugin.shellCpuPercent.median, floor.cpuPercent)
       if (verdict.cpu !== expected) problems.push(`${at}.verdict.cpu is ${verdict.cpu}; the median and the floor say ${expected}`)
     }
     const within = plugin.withinNoise || {}

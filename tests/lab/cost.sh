@@ -114,7 +114,7 @@ omarchy_host_test() {
   grep -A1 -E "ok +fixture\.clean " "$out/omakit-cost.log" | grep -q "within noise on memory and CPU" || { echo "the report does not say within noise for fixture.clean" >&2; return 1; }
   grep -q "^for the README" "$out/omakit-cost.log" || { echo "no README sentence" >&2; return 1; }
 
-  jq -r '.noiseFloor | "noise floor: Pss \(.pssMb) MB, VmRSS at the fixed event \(.rssMb) MB, VmRSS at the end of the window \(.rssMbWindowEnd) MB, CPU \(.cpuPercent)%"' "$out/omakit-cost.json"
+  jq -r '.noiseFloor | "noise floor: Pss \(.pssMb) MB and VmRSS \(.rssMb) MB at the end of the window, Pss \(.pssMbSettled) MB at the settle, CPU \(.cpuPercent)%"' "$out/omakit-cost.json"
   jq -r '.plugins[] | [.id, (.shellPssMb.median * 100 | round / 100), (.shellPssMb.spread * 100 | round / 100), (.shellCpuPercent.median * 100 | round / 100), (.shellCpuPercent.spread * 100 | round / 100), (.childRssMb.median * 100 | round / 100), (.childCpuPercent.median * 100 | round / 100), .childSpawns.median, .verdict.summary] | @tsv' "$out/omakit-cost.json"
   ssh_session "test -z \"\$(hyprctl configerrors)\"" || return 1
   printf 'ok - omakit cost measured seven plugins over five runs each, told the 180 ms timer from the clean fixture, said within noise in words, restored shell.json byte for byte, and the document follows docs/COST.md\n'

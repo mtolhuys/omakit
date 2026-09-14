@@ -208,7 +208,11 @@ test("median, spread, stats and the verdict", () => {
   assert.equal(verdict(0.5, 1), "within-noise")
   assert.equal(verdict(-0.5, 1), "within-noise", "a negative median is judged by magnitude")
   assert.equal(verdict(1, 1), "within-noise", "equal to the floor is within it")
-  assert.equal(verdict(1.01, 1), "above-noise")
+  assert.equal(verdict(1.02, 1), "above-noise")
+  // Measured in the lab: one tick over a 15.003 s window against a floor of
+  // one tick over a 15.005 s window is the same tick, not a cost.
+  assert.equal(verdict(-0.06666222014954999, 0.06665333422334721), "within-noise")
+  assert.equal(verdict(0.068, 0.0666), "above-noise", "the slack is one in a hundred, not a rounding")
   assert.equal(verdict(null, 1), "unknown")
   assert.equal(verdict(1, null), "unknown")
   assert.equal(figure(-0.001), "0", "never -0")
@@ -382,6 +386,11 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(document.config.shellAnsweredAfterRestore, true)
   assert.match(lines[0].text, new RegExp(`backed up to .*omakit-backup-\\d{14}, md5 ${md5Before}`))
   assert.equal(lines[0].state, "info")
+  // One line per configuration, so a piped log shows the run going by.
+  const samplesNarrated = lines.filter((line) => /^run \d of 2, /.test(line.text))
+  assert.equal(samplesNarrated.length, 4)
+  assert.match(samplesNarrated[0].text, /^run 1 of 2, baseline: 459\.0 MB Pss, 0\.00% CPU, 0 child processes, ready after \d+\.\d s$/)
+  assert.match(samplesNarrated[1].text, /^run 1 of 2, fixture\.poller: 459\.0 MB Pss, 0\.00% CPU, 1 child process, ready after/)
   assert.match(lines.at(-1).text, new RegExp(`restored and verified, md5 ${md5Before} \\(before: ${md5Before}\\)`))
   assert.equal(lines.at(-1).state, "pass")
   assert.ok(phases.some((text) => /run 1 of 2: baseline, restarting the shell/.test(text)))
@@ -414,9 +423,14 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.deepEqual(row.verdict, { memory: "within-noise", cpu: "within-noise", summary: "within noise on memory and CPU" })
   assert.equal(row.readme, "Costs under 0.0 MB and under 0.00% CPU on Omarchy 4.0.0.test, measured with omakit cost on " + document.started.slice(0, 10))
   assert.match(row.origin, /smaps_rollup/)
-  assert.equal(document.plugins[0].runs[0].shell.memoryAt, "settled")
+  assert.equal(document.plugins[0].runs[0].shell.memoryAt, "window-end")
   assert.equal(document.plugins[0].runs[0].shell.pssKb, 470_000)
   assert.equal(document.plugins[0].runs[0].shell.rssKb, 500_000)
+  assert.equal(document.plugins[0].runs[0].shell.pssKbSettled, 470_000)
+  const trace = document.plugins[0].runs[0].shell.trace
+  assert.ok(trace.length >= 1 && trace[0].t === 0 && trace[0].pssKb === 470_000, "the trace starts as the window opens")
+  assert.equal(document.baseline.pssMbSettled.median, 470_000 / 1024)
+  assert.equal(document.noiseFloor.pssMbSettled, 0)
   assert.equal(document.out, plan.out)
   assert.deepEqual(JSON.parse(readFileSync(plan.out, "utf8")), document, "the document on disk is the one returned")
   const timing = JSON.parse(readFileSync(join(plan.stateDir, "timing.json"), "utf8"))
@@ -426,6 +440,7 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   const text = renderCost(document, { colour: false, env: m.env })
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
   assert.match(text, /^noise floor {3}0 MB and 0% CPU, the spread of 2 baseline runs; a delta inside it$/m)
+  assert.match(text, /At the settle, before the window, the same runs\n {14}spread 0 MB$/m)
   assert.match(text, new RegExp(`^shell\\.json {4}md5 ${md5Before} before,\\n {${LABEL}}${md5Before} after: restored and verified,\\n {${LABEL}}backup removed$`, "m"))
   assert.match(text, new RegExp(`^${DENSITY.floor} ok {4}fixture\\.poller +\\[service\\]$`, "m"))
   assert.match(text, /^ {8}Fixture: poller: within noise on memory and CPU$/m)
@@ -446,7 +461,7 @@ test("a restart that does not answer produces no sample, the row says how many c
   const document = await measureCost(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
   assert.deepEqual(validateCostDocument(document), [])
   assert.deepEqual(document.failedRuns, [{ label: "fixture.clean", run: 1, reason: "the shell did not answer after the restart" }])
-  assert.ok(lines.some((line) => line.state === "advisory" && /run 1, fixture\.clean: the shell did not answer after the restart; no sample/.test(line.text)))
+  assert.ok(lines.some((line) => line.state === "advisory" && /run 1 of 2, fixture\.clean: the shell did not answer after the restart; no sample/.test(line.text)))
   const row = document.plugins[0]
   assert.equal(row.runsCompleted, 1)
   assert.equal(row.deltas.length, 1)
@@ -529,7 +544,7 @@ test("a restore whose md5 differs keeps the backup and says so", async () => {
 function sample(label, runIndex, { pssKb, rssKb, cpuTicks: ticks, children = [], reaped = 0, window = 15 }) {
   return {
     label, run: runIndex, shellPid: 1, started: "2026-09-14T00:00:00Z", ended: "2026-09-14T00:00:15Z", readyAfterSeconds: 0, windowSeconds: window,
-    shell: { pssKb, rssKb, memoryAt: "settled", rssKbWindowEnd: rssKb + 1024, cpuTicksStart: 0, cpuTicksEnd: ticks, cpuSeconds: ticks / 100, cpuPercent: (ticks / 100 / window) * 100, reapedChildTicksStart: 0, reapedChildTicksEnd: reaped, reapedChildCpuSeconds: reaped / 100, reapedChildCpuPercent: (reaped / 100 / window) * 100 },
+    shell: { pssKb, rssKb, memoryAt: "window-end", pssKbSettled: pssKb - 20_480, rssKbSettled: rssKb - 20_480, trace: [{ t: 0, pssKb: pssKb - 20_480, rssKb: rssKb - 20_480 }, { t: window, pssKb, rssKb }], cpuTicksStart: 0, cpuTicksEnd: ticks, cpuSeconds: ticks / 100, cpuPercent: (ticks / 100 / window) * 100, reapedChildTicksStart: 0, reapedChildTicksEnd: reaped, reapedChildCpuSeconds: reaped / 100, reapedChildCpuPercent: (reaped / 100 / window) * 100 },
     children,
   }
 }
@@ -554,12 +569,14 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   assert.equal(document.baseline.pssMb.median, 471_000 / 1024)
   assert.equal(document.noiseFloor.pssMb, 2048 / 1024, "the baseline Pss spread: 2 MB")
   assert.equal(document.noiseFloor.rssMb, 2)
-  assert.equal(document.noiseFloor.rssMbWindowEnd, 2)
+  assert.equal(document.noiseFloor.pssMbSettled, 2)
+  assert.equal(document.baseline.pssMbSettled.median, 471_000 / 1024 - 20)
   const near = (actual, expected, what) => assert.ok(Math.abs(actual - expected) < 1e-9, `${what}: ${actual} is not ${expected}`)
   near(document.noiseFloor.cpuPercent, (1 / 100 / 15) * 100, "the CPU floor")
   assert.deepEqual(document.failedRuns, [{ label: "quiet", run: 3, reason: "no shell pid" }])
   const [busy, quiet] = document.plugins
   assert.equal(busy.id, "busy", "sorted by total MB, descending")
+  assert.deepEqual(busy.shellPssMbSettled.runs, busy.shellPssMb.runs, "a constant offset leaves the deltas alone")
   assert.deepEqual(busy.shellPssMb.runs, [10_240 / 1024, 10_240 / 1024, 8192 / 1024])
   assert.equal(busy.shellPssMb.median, 10)
   assert.equal(busy.shellPssMb.spread, 2)
@@ -590,7 +607,7 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   assert.match(text, /^ {8}children {2}2 MB and 1\.2% CPU outside the shell, 1 process per window$/m)
   assert.match(text, /^ {8}Quiet: within noise on memory and CPU \(2 of 3 runs completed\)$/m)
   assert.match(text, /^noise floor {3}2 MB and 0\.07% CPU, the spread of 3 baseline runs; a delta inside$/m)
-  assert.match(text, /window spread 2 MB$/m)
+  assert.match(text, /the same\n {14}runs spread 2 MB$/m)
   assert.match(text, /^baseline {6}460 MB Pss and 0\.2% CPU, the median of 3 runs without the 2\n {14}plugins$/m)
   assert.match(text, /^incomplete {4}run 3 of quiet: no shell pid$/m)
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)

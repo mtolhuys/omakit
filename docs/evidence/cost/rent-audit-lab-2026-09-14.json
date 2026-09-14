@@ -1,0 +1,2473 @@
+{
+  "audit": "rent-audit 0.1",
+  "method": "startup A/B: the shell is restarted with the enabled set minus every audited plugin (baseline) and with that set plus one plugin; after listPlugins answers and a settle, VmRSS at the end of the window and utime+stime over the window are read from /proc for the shell pid; descendants are sampled once a second; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise",
+  "started": "2026-09-14T18:52:30Z",
+  "ended": "2026-09-14T19:02:25Z",
+  "host": "omarchy-test",
+  "shell": {
+    "version": "4.0.0.alpha",
+    "omarchyPath": "/home/omarchy/.local/share/omarchy"
+  },
+  "settings": {
+    "runs": 3,
+    "windowSeconds": 15,
+    "settleSeconds": 8,
+    "clockTicksPerSecond": 100
+  },
+  "audited": [
+    "fixture.clean",
+    "fixture.timer-180ms",
+    "fixture.poller",
+    "fixture.idle-panel",
+    "io.github.calebhat.weather",
+    "bjarneo.workspace-layout",
+    "omaplug"
+  ],
+  "baseline": {
+    "config": {
+      "version": 1,
+      "idle": {
+        "screensaver": 150,
+        "lock": 300
+      },
+      "bar": {
+        "position": "top",
+        "transparent": false,
+        "centerAnchor": "omarchy.clock",
+        "layout": {
+          "left": [
+            {
+              "id": "omarchy.menu"
+            },
+            {
+              "id": "omarchy.workspaces"
+            }
+          ],
+          "center": [
+            {
+              "id": "omarchy.indicators"
+            },
+            {
+              "id": "omarchy.clock",
+              "format": "dddd HH:mm",
+              "formatAlt": "d MMMM 'W'ww yyyy",
+              "verticalFormat": "HH\n—\nmm"
+            },
+            {
+              "id": "omarchy.keyboard-layout"
+            },
+            {
+              "id": "omarchy.weather"
+            },
+            {
+              "id": "omarchy.system-update"
+            }
+          ],
+          "right": [
+            {
+              "id": "omarchy.tray"
+            },
+            {
+              "id": "omarchy.agents"
+            },
+            {
+              "id": "omarchy.bluetooth"
+            },
+            {
+              "id": "omarchy.network"
+            },
+            {
+              "id": "omarchy.audio"
+            },
+            {
+              "id": "omarchy.monitor"
+            },
+            {
+              "id": "omarchy.power"
+            }
+          ]
+        }
+      },
+      "plugins": [
+        {
+          "id": "mtolhuijs.rent"
+        }
+      ]
+    },
+    "rssMb": {
+      "median": 599.80859375,
+      "spread": 15.54296875,
+      "min": 595.99609375,
+      "max": 611.5390625,
+      "runs": [
+        595.99609375,
+        611.5390625,
+        599.80859375
+      ]
+    },
+    "cpuPercent": {
+      "median": 0.1873009926952613,
+      "spread": 0.06289265268004893,
+      "min": 0.12538398846467305,
+      "max": 0.18827664114472198,
+      "runs": [
+        0.18827664114472198,
+        0.1873009926952613,
+        0.12538398846467305
+      ]
+    },
+    "childRssMb": {
+      "median": 8.37890625,
+      "spread": 30.47265625,
+      "min": 8.2578125,
+      "max": 38.73046875,
+      "runs": [
+        8.2578125,
+        8.37890625,
+        38.73046875
+      ]
+    },
+    "runs": [
+      {
+        "label": "baseline",
+        "run": 1,
+        "shellPid": 18125,
+        "started": "2026-09-14T18:52:39Z",
+        "ended": "2026-09-14T18:52:55Z",
+        "readyAfterSeconds": 0,
+        "windowSeconds": 15.934,
+        "shell": {
+          "rssKb": 610300,
+          "cpuTicksStart": 94,
+          "cpuTicksEnd": 97,
+          "cpuSeconds": 0.03,
+          "cpuPercent": 0.18827664114472198
+        },
+        "children": [
+          {
+            "pid": 18409,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4212,
+            "samples": 16
+          },
+          {
+            "pid": 18784,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2124,
+            "samples": 16
+          },
+          {
+            "pid": 18785,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2120,
+            "samples": 16
+          },
+          {
+            "pid": 19322,
+            "comm": "powerprofilesct",
+            "arg0": "",
+            "firstSeen": 14,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 2,
+        "shellPid": 28913,
+        "started": "2026-09-14T18:55:57Z",
+        "ended": "2026-09-14T18:56:13Z",
+        "readyAfterSeconds": 0,
+        "windowSeconds": 16.017,
+        "shell": {
+          "rssKb": 626216,
+          "cpuTicksStart": 105,
+          "cpuTicksEnd": 108,
+          "cpuSeconds": 0.03,
+          "cpuPercent": 0.1873009926952613
+        },
+        "children": [
+          {
+            "pid": 29184,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4332,
+            "samples": 16
+          },
+          {
+            "pid": 29544,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2124,
+            "samples": 16
+          },
+          {
+            "pid": 29545,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2124,
+            "samples": 16
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 3,
+        "shellPid": 39811,
+        "started": "2026-09-14T18:59:15Z",
+        "ended": "2026-09-14T18:59:31Z",
+        "readyAfterSeconds": 0,
+        "windowSeconds": 15.951,
+        "shell": {
+          "rssKb": 614204,
+          "cpuTicksStart": 92,
+          "cpuTicksEnd": 94,
+          "cpuSeconds": 0.02,
+          "cpuPercent": 0.12538398846467305
+        },
+        "children": [
+          {
+            "pid": 40075,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4328,
+            "samples": 16
+          },
+          {
+            "pid": 40407,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2100,
+            "samples": 16
+          },
+          {
+            "pid": 40408,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2124,
+            "samples": 16
+          },
+          {
+            "pid": 40960,
+            "comm": "powerprofilesct",
+            "arg0": "/usr/bin/powerprofilesctl",
+            "firstSeen": 12,
+            "lastSeen": 12,
+            "cpuFirst": 10,
+            "cpuLast": 10,
+            "rssLast": 31108,
+            "samples": 1
+          }
+        ]
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "id": "omaplug",
+      "name": "Plugin Manager",
+      "kinds": [
+        "bar-widget"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": 19.79296875,
+        "spread": 19.96875,
+        "min": 4.95703125,
+        "max": 24.92578125,
+        "runs": [
+          24.92578125,
+          4.95703125,
+          19.79296875
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.062248689519032535,
+        "spread": 0.06462002510684675,
+        "min": -0.06352614214272598,
+        "max": 0.0010938829641207737,
+        "runs": [
+          -0.06352614214272598,
+          0.0010938829641207737,
+          -0.062248689519032535
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": 19.79296875,
+      "totalCpuPercent": -0.062248689519032535,
+      "withinNoise": {
+        "rss": false,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 24.92578125,
+          "shellCpuPercent": -0.06352614214272598,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": 4.95703125,
+          "shellCpuPercent": 0.0010938829641207737,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": 19.79296875,
+          "shellCpuPercent": -0.062248689519032535,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "omaplug",
+          "run": 1,
+          "shellPid": 27553,
+          "started": "2026-09-14T18:55:32Z",
+          "ended": "2026-09-14T18:55:48Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 16.032,
+          "shell": {
+            "rssKb": 635824,
+            "cpuTicksStart": 108,
+            "cpuTicksEnd": 110,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.124750499001996
+          },
+          "children": [
+            {
+              "pid": 27758,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4328,
+              "samples": 16
+            },
+            {
+              "pid": 28131,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 28132,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 28748,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 10,
+              "cpuLast": 10,
+              "rssLast": 32184,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omaplug",
+          "run": 2,
+          "shellPid": 38403,
+          "started": "2026-09-14T18:58:51Z",
+          "ended": "2026-09-14T18:59:07Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.924,
+          "shell": {
+            "rssKb": 631292,
+            "cpuTicksStart": 109,
+            "cpuTicksEnd": 112,
+            "cpuSeconds": 0.03,
+            "cpuPercent": 0.18839487565938207
+          },
+          "children": [
+            {
+              "pid": 38671,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 39033,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 39034,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 39644,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 18144,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omaplug",
+          "run": 3,
+          "shellPid": 49330,
+          "started": "2026-09-14T19:02:09Z",
+          "ended": "2026-09-14T19:02:25Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.839,
+          "shell": {
+            "rssKb": 634472,
+            "cpuTicksStart": 114,
+            "cpuTicksEnd": 115,
+            "cpuSeconds": 0.01,
+            "cpuPercent": 0.06313529894564052
+          },
+          "children": [
+            {
+              "pid": 49548,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4336,
+              "samples": 16
+            },
+            {
+              "pid": 49895,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 49896,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 50563,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 7,
+              "cpuLast": 7,
+              "rssLast": 27328,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bjarneo.workspace-layout",
+      "name": "Workspace Layout",
+      "kinds": [
+        "bar-widget",
+        "service"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": 17.06640625,
+        "spread": 23.79296875,
+        "min": 6.2578125,
+        "max": 30.05078125,
+        "runs": [
+          30.05078125,
+          6.2578125,
+          17.06640625
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.05518287658759147,
+        "spread": 0.12436983396528611,
+        "min": -0.06204264735800322,
+        "max": 0.0623271866072829,
+        "runs": [
+          -0.05518287658759147,
+          -0.06204264735800322,
+          0.0623271866072829
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": 17.06640625,
+      "totalCpuPercent": -0.05518287658759147,
+      "withinNoise": {
+        "rss": false,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 30.05078125,
+          "shellCpuPercent": -0.05518287658759147,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": 6.2578125,
+          "shellCpuPercent": -0.06204264735800322,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": 17.06640625,
+          "shellCpuPercent": 0.0623271866072829,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "bjarneo.workspace-layout",
+          "run": 1,
+          "shellPid": 26017,
+          "started": "2026-09-14T18:55:08Z",
+          "ended": "2026-09-14T18:55:23Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.027,
+          "shell": {
+            "rssKb": 641072,
+            "cpuTicksStart": 107,
+            "cpuTicksEnd": 109,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.1330937645571305
+          },
+          "children": [
+            {
+              "pid": 26300,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4328,
+              "samples": 15
+            },
+            {
+              "pid": 26616,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4196,
+              "samples": 15
+            },
+            {
+              "pid": 26690,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4204,
+              "samples": 15
+            },
+            {
+              "pid": 26698,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 15
+            },
+            {
+              "pid": 26699,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 15
+            }
+          ]
+        },
+        {
+          "label": "bjarneo.workspace-layout",
+          "run": 2,
+          "shellPid": 36832,
+          "started": "2026-09-14T18:58:26Z",
+          "ended": "2026-09-14T18:58:42Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.967,
+          "shell": {
+            "rssKb": 632624,
+            "cpuTicksStart": 99,
+            "cpuTicksEnd": 101,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12525834533725808
+          },
+          "children": [
+            {
+              "pid": 37121,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 37430,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4196,
+              "samples": 16
+            },
+            {
+              "pid": 37500,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4200,
+              "samples": 16
+            },
+            {
+              "pid": 37502,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 37503,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 38022,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 9,
+              "cpuLast": 9,
+              "rssLast": 30988,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "bjarneo.workspace-layout",
+          "run": 3,
+          "shellPid": 47778,
+          "started": "2026-09-14T19:01:44Z",
+          "ended": "2026-09-14T19:02:00Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.982,
+          "shell": {
+            "rssKb": 631680,
+            "cpuTicksStart": 94,
+            "cpuTicksEnd": 97,
+            "cpuSeconds": 0.03,
+            "cpuPercent": 0.18771117507195595
+          },
+          "children": [
+            {
+              "pid": 48061,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 48339,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4084,
+              "samples": 16
+            },
+            {
+              "pid": 48438,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4196,
+              "samples": 16
+            },
+            {
+              "pid": 48441,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 48443,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 48961,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 19696,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "io.github.calebhat.weather",
+      "name": "Detailed Weather",
+      "kinds": [
+        "service",
+        "bar-widget"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": 9.15234375,
+        "spread": 13.015625,
+        "min": -3.53125,
+        "max": 9.484375,
+        "runs": [
+          9.15234375,
+          -3.53125,
+          9.484375
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.06175959541950962,
+        "spread": 0.06518303148579958,
+        "min": -0.0635183603138318,
+        "max": 0.0016646711719677798,
+        "runs": [
+          -0.0635183603138318,
+          -0.06175959541950962,
+          0.0016646711719677798
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": 9.15234375,
+      "totalCpuPercent": -0.06175959541950962,
+      "withinNoise": {
+        "rss": true,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 9.15234375,
+          "shellCpuPercent": -0.0635183603138318,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": -3.53125,
+          "shellCpuPercent": -0.06175959541950962,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": 9.484375,
+          "shellCpuPercent": 0.0016646711719677798,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "io.github.calebhat.weather",
+          "run": 1,
+          "shellPid": 24565,
+          "started": "2026-09-14T18:54:43Z",
+          "ended": "2026-09-14T18:54:59Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 16.031,
+          "shell": {
+            "rssKb": 619672,
+            "cpuTicksStart": 109,
+            "cpuTicksEnd": 111,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12475828083089018
+          },
+          "children": [
+            {
+              "pid": 24835,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 25144,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 25145,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 25688,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 10,
+              "cpuLast": 10,
+              "rssLast": 32072,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "io.github.calebhat.weather",
+          "run": 2,
+          "shellPid": 35373,
+          "started": "2026-09-14T18:58:01Z",
+          "ended": "2026-09-14T18:58:17Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.931,
+          "shell": {
+            "rssKb": 622600,
+            "cpuTicksStart": 104,
+            "cpuTicksEnd": 106,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12554139727575167
+          },
+          "children": [
+            {
+              "pid": 35637,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 35989,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 35990,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 36505,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 18020,
+              "samples": 1
+            },
+            {
+              "pid": 36542,
+              "comm": "powerprofilesct",
+              "arg0": "",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "io.github.calebhat.weather",
+          "run": 3,
+          "shellPid": 46227,
+          "started": "2026-09-14T19:01:19Z",
+          "ended": "2026-09-14T19:01:35Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.742,
+          "shell": {
+            "rssKb": 623916,
+            "cpuTicksStart": 111,
+            "cpuTicksEnd": 113,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12704865963664083
+          },
+          "children": [
+            {
+              "pid": 46499,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 46867,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 46868,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 47508,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 14,
+              "lastSeen": 14,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 31472,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fixture.poller",
+      "name": "Fixture: poller",
+      "kinds": [
+        "service"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": 8.4609375,
+        "spread": 12.58984375,
+        "min": -3.65234375,
+        "max": 8.9375,
+        "runs": [
+          8.4609375,
+          8.9375,
+          -3.65234375
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.06130880421094731,
+        "spread": 0.0729304277041774,
+        "min": -0.06205677676180432,
+        "max": 0.010873650942373081,
+        "runs": [
+          0.010873650942373081,
+          -0.06130880421094731,
+          -0.06205677676180432
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": 8.4609375,
+      "totalCpuPercent": -0.06130880421094731,
+      "withinNoise": {
+        "rss": true,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 8.4609375,
+          "shellCpuPercent": 0.010873650942373081,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": 8.9375,
+          "shellCpuPercent": -0.06130880421094731,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": -3.65234375,
+          "shellCpuPercent": -0.06205677676180432,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "fixture.poller",
+          "run": 1,
+          "shellPid": 21978,
+          "started": "2026-09-14T18:53:54Z",
+          "ended": "2026-09-14T18:54:09Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.064,
+          "shell": {
+            "rssKb": 618964,
+            "cpuTicksStart": 105,
+            "cpuTicksEnd": 108,
+            "cpuSeconds": 0.03,
+            "cpuPercent": 0.19915029208709506
+          },
+          "children": [
+            {
+              "pid": 22247,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4184,
+              "samples": 15
+            },
+            {
+              "pid": 22251,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 15
+            },
+            {
+              "pid": 22612,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 15
+            },
+            {
+              "pid": 22613,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 15
+            },
+            {
+              "pid": 23122,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 23252,
+              "samples": 1
+            },
+            {
+              "pid": 23164,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 11,
+              "cpuLast": 11,
+              "rssLast": 30836,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.poller",
+          "run": 2,
+          "shellPid": 32735,
+          "started": "2026-09-14T18:57:11Z",
+          "ended": "2026-09-14T18:57:27Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.874,
+          "shell": {
+            "rssKb": 635368,
+            "cpuTicksStart": 99,
+            "cpuTicksEnd": 101,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12599218848431398
+          },
+          "children": [
+            {
+              "pid": 33001,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4068,
+              "samples": 16
+            },
+            {
+              "pid": 33005,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 33389,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 33390,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 33915,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 18396,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.poller",
+          "run": 3,
+          "shellPid": 43651,
+          "started": "2026-09-14T19:00:30Z",
+          "ended": "2026-09-14T19:00:46Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.791,
+          "shell": {
+            "rssKb": 610464,
+            "cpuTicksStart": 102,
+            "cpuTicksEnd": 103,
+            "cpuSeconds": 0.01,
+            "cpuPercent": 0.06332721170286873
+          },
+          "children": [
+            {
+              "pid": 43915,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4188,
+              "samples": 16
+            },
+            {
+              "pid": 43919,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4220,
+              "samples": 16
+            },
+            {
+              "pid": 44292,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 44293,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 44878,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 14,
+              "lastSeen": 14,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 23196,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fixture.idle-panel",
+      "name": "Fixture: idle when closed",
+      "kinds": [
+        "panel"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": -0.515625,
+        "spread": 13.6875,
+        "min": -8.34765625,
+        "max": 5.33984375,
+        "runs": [
+          5.33984375,
+          -8.34765625,
+          -0.515625
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.06099849822099543,
+        "spread": 0.12825920723096373,
+        "min": -0.06343269607605781,
+        "max": 0.06482651115490592,
+        "runs": [
+          -0.06343269607605781,
+          -0.06099849822099543,
+          0.06482651115490592
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": -0.515625,
+      "totalCpuPercent": -0.06099849822099543,
+      "withinNoise": {
+        "rss": true,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 5.33984375,
+          "shellCpuPercent": -0.06343269607605781,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": -8.34765625,
+          "shellCpuPercent": -0.06099849822099543,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": -0.515625,
+          "shellCpuPercent": 0.06482651115490592,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "fixture.idle-panel",
+          "run": 1,
+          "shellPid": 23246,
+          "started": "2026-09-14T18:54:18Z",
+          "ended": "2026-09-14T18:54:34Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 16.020,
+          "shell": {
+            "rssKb": 615768,
+            "cpuTicksStart": 94,
+            "cpuTicksEnd": 96,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12484394506866417
+          },
+          "children": [
+            {
+              "pid": 23508,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4220,
+              "samples": 16
+            },
+            {
+              "pid": 23870,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2116,
+              "samples": 16
+            },
+            {
+              "pid": 23871,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2116,
+              "samples": 16
+            },
+            {
+              "pid": 24350,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 23884,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.idle-panel",
+          "run": 2,
+          "shellPid": 34051,
+          "started": "2026-09-14T18:57:36Z",
+          "ended": "2026-09-14T18:57:52Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.835,
+          "shell": {
+            "rssKb": 617668,
+            "cpuTicksStart": 98,
+            "cpuTicksEnd": 100,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12630249447426586
+          },
+          "children": [
+            {
+              "pid": 34318,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4328,
+              "samples": 16
+            },
+            {
+              "pid": 34683,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 34684,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 35195,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 18936,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.idle-panel",
+          "run": 3,
+          "shellPid": 44970,
+          "started": "2026-09-14T19:00:54Z",
+          "ended": "2026-09-14T19:01:10Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.772,
+          "shell": {
+            "rssKb": 613676,
+            "cpuTicksStart": 89,
+            "cpuTicksEnd": 92,
+            "cpuSeconds": 0.03,
+            "cpuPercent": 0.19021049961957898
+          },
+          "children": [
+            {
+              "pid": 45168,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4212,
+              "samples": 16
+            },
+            {
+              "pid": 45464,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 45465,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 46085,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 14,
+              "lastSeen": 14,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 23752,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fixture.clean",
+      "name": "Fixture: clean",
+      "kinds": [
+        "bar-widget"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": -0.5390625,
+        "spread": 12.54296875,
+        "min": -10.953125,
+        "max": 1.58984375,
+        "runs": [
+          1.58984375,
+          -10.953125,
+          -0.5390625
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.054056489031037436,
+        "spread": 0.12571057197148705,
+        "min": -0.12556892182447366,
+        "max": 0.00014165014701339462,
+        "runs": [
+          -0.12556892182447366,
+          -0.054056489031037436,
+          0.00014165014701339462
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": -0.5390625,
+      "totalCpuPercent": -0.054056489031037436,
+      "withinNoise": {
+        "rss": true,
+        "cpu": true,
+        "ownRss": true,
+        "ownCpu": true,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": 1.58984375,
+          "shellCpuPercent": -0.12556892182447366,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": -10.953125,
+          "shellCpuPercent": -0.054056489031037436,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": -0.5390625,
+          "shellCpuPercent": 0.00014165014701339462,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "fixture.clean",
+          "run": 1,
+          "shellPid": 19418,
+          "started": "2026-09-14T18:53:04Z",
+          "ended": "2026-09-14T18:53:20Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.947,
+          "shell": {
+            "rssKb": 611928,
+            "cpuTicksStart": 116,
+            "cpuTicksEnd": 117,
+            "cpuSeconds": 0.01,
+            "cpuPercent": 0.06270771932024832
+          },
+          "children": [
+            {
+              "pid": 19690,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4284,
+              "samples": 16
+            },
+            {
+              "pid": 20077,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 20078,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 20536,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 9,
+              "cpuLast": 9,
+              "rssLast": 32072,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.clean",
+          "run": 2,
+          "shellPid": 30190,
+          "started": "2026-09-14T18:56:22Z",
+          "ended": "2026-09-14T18:56:37Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.010,
+          "shell": {
+            "rssKb": 615000,
+            "cpuTicksStart": 105,
+            "cpuTicksEnd": 107,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.13324450366422386
+          },
+          "children": [
+            {
+              "pid": 30454,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4308,
+              "samples": 15
+            },
+            {
+              "pid": 30837,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 15
+            },
+            {
+              "pid": 30838,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 13,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 15
+            },
+            {
+              "pid": 31299,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 10,
+              "lastSeen": 10,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 23200,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.clean",
+          "run": 3,
+          "shellPid": 41092,
+          "started": "2026-09-14T18:59:40Z",
+          "ended": "2026-09-14T18:59:56Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.933,
+          "shell": {
+            "rssKb": 613652,
+            "cpuTicksStart": 101,
+            "cpuTicksEnd": 103,
+            "cpuSeconds": 0.02,
+            "cpuPercent": 0.12552563861168645
+          },
+          "children": [
+            {
+              "pid": 41364,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 41721,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2096,
+              "samples": 16
+            },
+            {
+              "pid": 41722,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2088,
+              "samples": 16
+            },
+            {
+              "pid": 42237,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 8,
+              "cpuLast": 8,
+              "rssLast": 27780,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fixture.timer-180ms",
+      "name": "Fixture: 180 ms timer",
+      "kinds": [
+        "bar-widget"
+      ],
+      "firstParty": false,
+      "runsCompleted": 3,
+      "shellRssMb": {
+        "median": -8.80859375,
+        "spread": 14.1328125,
+        "min": -15.1171875,
+        "max": -0.984375,
+        "runs": [
+          -8.80859375,
+          -15.1171875,
+          -0.984375
+        ]
+      },
+      "shellCpuPercent": {
+        "median": 2.6238718402950987,
+        "spread": 0.36705123828059705,
+        "min": 2.2862196516885787,
+        "max": 2.6532708899691757,
+        "runs": [
+          2.6238718402950987,
+          2.2862196516885787,
+          2.6532708899691757
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "totalMb": -8.80859375,
+      "totalCpuPercent": 2.6238718402950987,
+      "withinNoise": {
+        "rss": true,
+        "cpu": false,
+        "ownRss": true,
+        "ownCpu": false,
+        "baselineRssSpreadMb": 15.54296875,
+        "baselineCpuSpreadPercent": 0.06289265268004893,
+        "note": "rss and cpu compare the median delta with the baseline spread; ownRss and ownCpu compare it with the spread of its own three deltas"
+      },
+      "origin": "rent-audit: /proc/<shell pid>/status VmRSS and /proc/<shell pid>/stat utime+stime, plus minus baseline per run; children from /proc descendant sampling",
+      "deltas": [
+        {
+          "run": 1,
+          "shellRssMb": -8.80859375,
+          "shellCpuPercent": 2.6238718402950987,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 2,
+          "shellRssMb": -15.1171875,
+          "shellCpuPercent": 2.2862196516885787,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        },
+        {
+          "run": 3,
+          "shellRssMb": -0.984375,
+          "shellCpuPercent": 2.6532708899691757,
+          "childRssMb": 0,
+          "childCpuPercent": 0,
+          "childSpawns": 0,
+          "children": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "fixture.timer-180ms",
+          "run": 1,
+          "shellPid": 20702,
+          "started": "2026-09-14T18:53:29Z",
+          "ended": "2026-09-14T18:53:45Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 16.002,
+          "shell": {
+            "rssKb": 601280,
+            "cpuTicksStart": 129,
+            "cpuTicksEnd": 174,
+            "cpuSeconds": 0.45,
+            "cpuPercent": 2.8121484814398205
+          },
+          "children": [
+            {
+              "pid": 20966,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4328,
+              "samples": 16
+            },
+            {
+              "pid": 21291,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 21292,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 21845,
+              "comm": "powerprofilesct",
+              "arg0": "",
+              "firstSeen": 12,
+              "lastSeen": 12,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.timer-180ms",
+          "run": 2,
+          "shellPid": 31449,
+          "started": "2026-09-14T18:56:47Z",
+          "ended": "2026-09-14T18:57:02Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.767,
+          "shell": {
+            "rssKb": 610736,
+            "cpuTicksStart": 175,
+            "cpuTicksEnd": 214,
+            "cpuSeconds": 0.39,
+            "cpuPercent": 2.47352064438384
+          },
+          "children": [
+            {
+              "pid": 31700,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 16
+            },
+            {
+              "pid": 32079,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 32080,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2120,
+              "samples": 16
+            },
+            {
+              "pid": 32498,
+              "comm": "powerprofilesct",
+              "arg0": "",
+              "firstSeen": 6,
+              "lastSeen": 6,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "fixture.timer-180ms",
+          "run": 3,
+          "shellPid": 42371,
+          "started": "2026-09-14T19:00:05Z",
+          "ended": "2026-09-14T19:00:21Z",
+          "readyAfterSeconds": 0,
+          "windowSeconds": 15.835,
+          "shell": {
+            "rssKb": 613196,
+            "cpuTicksStart": 111,
+            "cpuTicksEnd": 155,
+            "cpuSeconds": 0.44,
+            "cpuPercent": 2.7786548784338487
+          },
+          "children": [
+            {
+              "pid": 42631,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4224,
+              "samples": 16
+            },
+            {
+              "pid": 42977,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 42978,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2124,
+              "samples": 16
+            },
+            {
+              "pid": 43549,
+              "comm": "powerprofilesct",
+              "arg0": "/usr/bin/powerprofilesctl",
+              "firstSeen": 14,
+              "lastSeen": 14,
+              "cpuFirst": 10,
+              "cpuLast": 10,
+              "rssLast": 31880,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

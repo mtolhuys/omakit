@@ -40,8 +40,19 @@ export function stats(values) {
  */
 export function verdict(delta, floor) {
   if (delta === null || delta === undefined || floor === null || floor === undefined) return "unknown"
-  return Math.abs(delta) <= floor ? "within-noise" : "above-noise"
+  return Math.abs(delta) <= floor * (1 + TOLERANCE) ? "within-noise" : "above-noise"
 }
+
+/**
+ * The relative slack in the comparison, one part in a hundred. Measured in
+ * the lab on 14 September 2026: a plugin whose CPU delta was one clock tick
+ * over its window (-0.066662%) was judged above a floor of one clock tick
+ * over another window (0.066653%), because the two windows differed by 2 ms
+ * of the 15 s, 1.3 parts in 10,000. A figure quantised to a tick cannot be
+ * above a floor of a tick; one in a hundred covers a window that ran 150 ms
+ * long and is far under anything a row would report as a cost.
+ */
+export const TOLERANCE = 0.01
 
 /** A number for a person: two decimals, no trailing zeros beyond the first, never "-0". */
 export function figure(value, decimals = 2) {

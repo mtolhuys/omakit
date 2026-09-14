@@ -57,10 +57,10 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
   const { settings, baseline, noiseFloor, config } = document
   const baseRuns = baseline.pssMb.runs.length
   out.push(...field("shell", `${document.shell.version} at ${withHomeAbbreviated(document.shell.omarchyPath, env)}, ${document.started}`, c))
-  out.push(...field("method", `startup A/B, ${settings.runs} run${settings.runs === 1 ? "" : "s"}, a ${settings.windowSeconds} s window after a settle of ${settings.settleSeconds} s; Pss from /proc/<pid>/smaps_rollup at the fixed event, CPU from /proc/<pid>/stat over the window, children from a /proc walk every ${settings.sampleIntervalMs} ms`, c))
+  out.push(...field("method", `startup A/B, ${settings.runs} run${settings.runs === 1 ? "" : "s"}, a ${settings.windowSeconds} s window after a settle of ${settings.settleSeconds} s; Pss from /proc/<pid>/smaps_rollup at the end of the window, CPU from /proc/<pid>/stat over the window, children from a /proc walk every ${settings.sampleIntervalMs} ms`, c))
   out.push(...field("noise floor", noiseFloor.pssMb === null
     ? "unknown: no baseline run completed"
-    : `${figure(noiseFloor.pssMb)} MB and ${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a delta inside it is within noise. The same runs read as VmRSS at the end of the window spread ${figure(noiseFloor.rssMbWindowEnd)} MB`, c))
+    : `${figure(noiseFloor.pssMb)} MB and ${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a delta inside it is within noise. At the settle, before the window, the same runs spread ${figure(noiseFloor.pssMbSettled)} MB`, c))
   if (baseline.pssMb.median !== null) {
     out.push(...field("baseline", `${figure(baseline.pssMb.median, 1)} MB Pss and ${figure(baseline.cpuPercent.median)}% CPU, the median of ${baseRuns} run${baseRuns === 1 ? "" : "s"} without ${document.audited.length === 1 ? "the plugin" : `the ${document.audited.length} plugins`}`, c))
   }

@@ -35,16 +35,18 @@ For each configuration, `--runs` runs (default 3). A run is: write the
 configuration to `shell.json`, `omarchy-restart-shell`, wait until
 `listPlugins` reports every installed plugin, then a settle period
 (`--settle`, default 8 seconds), then a sample window (`--window`, default
-15 seconds). At the fixed event that ends the settle, before the window
-opens, the memory sample is taken:
+15 seconds). The memory sample is taken at the end of the window:
 
 - `Pss` of the shell pid from `/proc/<pid>/smaps_rollup`, in MB. This is
   the headline memory figure: proportional set size counts a shared page
   once, divided among the processes that share it, so the number moves with
   what the shell itself holds and not with what a library happened to map.
 - `VmRSS` of the shell pid from `/proc/<pid>/status`, at the same moment,
-  kept in the raw samples for comparison with the earlier method, and again
-  at the end of the window, which is where that earlier method read it.
+  kept in the raw samples for comparison with the earlier method.
+- Both again at the settle, before the window opened (`pssKbSettled`,
+  `rssKbSettled`), and both traced twice a second through the window
+  (`trace`), so the document shows the shell's climb to its plateau and the
+  settle can be judged from the data rather than assumed.
 
 Over the window:
 
@@ -86,15 +88,30 @@ the floor, and `?` when no run of that plugin completed. The verdict is a
 comparison, never a judgement about whether the cost is acceptable; that is
 the author's to make with the number in front of them.
 
-The floor was lowered before this command shipped. The audit it was ported
-from read `VmRSS` at the end of the window and measured a baseline memory
-spread of 15.54 MB over three runs in the plugin lab guest, so only the two
-largest plugins in that run rose above it and every fixture read within
-noise. Two changes brought it down: `Pss` instead of `VmRSS`, and the memory
-sample taken at a fixed event (every plugin reported loaded, plus the
-settle) instead of at a wall-clock offset. Both floors, measured in the same
-lab run, are recorded in `docs/MEASUREMENTS.md` under C1, so the claim that
-the second is lower is a number and not a sentence.
+The floor was measured before this command shipped, and one idea did not
+survive it. The audit it was ported from read `VmRSS` at the end of the
+window and measured a baseline memory spread of 15.54 MB over three runs in
+the plugin lab guest, so only the two largest plugins in that run rose
+above it and every fixture read within noise. The first port took the
+memory sample at a fixed event instead, every plugin reported by
+`listPlugins` plus the settle, on the reasoning that two runs should be
+read at the same point of the shell's life rather than at the same
+wall-clock offset. Measured over five baseline runs in the lab, that event
+is not a point of the shell's life at all: `listPlugins` answers about
+0.3 s after the restart, long before loading is finished, and at the 8 s
+settle the baseline `Pss` was 526, 596, 586, 582 and 593 MB, a 70.3 MB
+spread, while `VmRSS` at the end of the same windows spread 8.7 MB. So the
+headline is read at the end of the window, where the shell has reached its
+plateau, and the settle-time sample and the trace stay in the document as
+the evidence for that choice. All three floors, from the same lab runs, are
+in `docs/MEASUREMENTS.md` under C1.
+
+The comparison carries one part in a hundred of slack on the floor. A CPU
+figure is quantised to clock ticks over the window, and two windows differ
+by milliseconds: measured in the same lab run, a one-tick delta over a
+15.003 s window (-0.066662%) read as above a one-tick floor over a 15.005 s
+window (0.066653%). A figure of one tick cannot be above a floor of one
+tick, and one in a hundred is far under anything a row reports as a cost.
 
 ## The `shell.json` mutation
 
@@ -169,12 +186,13 @@ settings          { runs, windowSeconds, settleSeconds, readyTimeoutSeconds,
 config            { path, backup, md5Before, md5After, restored }
                   restored is true when md5After equals md5Before
 audited           string[] the measured plugin ids
-baseline          { config, pssMb, rssMb, rssMbWindowEnd, cpuPercent,
-                    childRssMb, runs }
+baseline          { config, pssMb, rssMb, pssMbSettled, rssMbSettled,
+                    cpuPercent, childRssMb, runs }
                   each figure is a stats object; runs is the raw samples
-noiseFloor        { pssMb, rssMb, rssMbWindowEnd, cpuPercent, origin }
+noiseFloor        { pssMb, rssMb, pssMbSettled, rssMbSettled, cpuPercent,
+                    origin }
                   the baseline spreads; the headline floors are pssMb and
-                  cpuPercent
+                  cpuPercent, both at the end of the window
 plugins[]         one row per measured plugin, sorted by totalMb descending
 out               string   the path the document was written to
 ```
@@ -187,8 +205,9 @@ A plugin row:
 ```text
 id, name, kinds, firstParty
 runsCompleted     number   runs that produced a sample on both sides
-shellPssMb        stats    plus minus baseline, Pss at the fixed event
-shellRssMb        stats    the same delta in VmRSS at the fixed event
+shellPssMb        stats    plus minus baseline, Pss at the end of the window
+shellRssMb        stats    the same delta in VmRSS
+shellPssMbSettled stats    the same delta in Pss at the settle, for comparison
 shellCpuPercent   stats    utime+stime over the window, plus minus baseline
 childRssMb        stats    VmRSS of attributed descendants, last seen
 childCpuPercent   stats    attributed descendants' CPU over the window, plus
@@ -206,9 +225,9 @@ withinNoise       { pss, rss, cpu, ownPss, ownCpu, baselinePssSpreadMb,
                   deltas
 origin            string   the /proc paths and the arithmetic, in words
 readme            string   the sentence for the plugin's README
-deltas[]          per run: { run, shellPssMb, shellRssMb, shellCpuPercent,
-                    childRssMb, childCpuPercent, reapedChildCpuPercent,
-                    childSpawns, children[] }
+deltas[]          per run: { run, shellPssMb, shellRssMb, shellPssMbSettled,
+                    shellCpuPercent, childRssMb, childCpuPercent,
+                    reapedChildCpuPercent, childSpawns, children[] }
 runs[]            the raw "plus one" samples
 ```
 
@@ -216,10 +235,12 @@ A raw sample, on both sides:
 
 ```text
 label, run, shellPid, started, ended, readyAfterSeconds, windowSeconds
-shell             { pssKb, rssKb, memoryAt: "settled", rssKbWindowEnd,
+shell             { pssKb, rssKb, memoryAt: "window-end", pssKbSettled,
+                    rssKbSettled, trace: [{ t, pssKb, rssKb }],
                     cpuTicksStart, cpuTicksEnd, cpuSeconds, cpuPercent,
                     reapedChildTicksStart, reapedChildTicksEnd,
                     reapedChildCpuSeconds, reapedChildCpuPercent }
+                  t is seconds since the window opened
 children[]        { pid, comm, arg0, firstSeen, lastSeen, cpuFirst, cpuLast,
                     rssLast, samples }
 ```

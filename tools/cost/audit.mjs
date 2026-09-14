@@ -15,8 +15,9 @@
 //
 // The method is a port of the audit described in docs/COST.md, and that
 // document is the contract for what comes out; the bash it was ported from
-// is the reference for the behaviour, and the differences that lower the
-// noise floor (Pss, and the memory sample at a fixed event) are named there.
+// is the reference for the behaviour. What differs from it, Pss beside VmRSS
+// and a memory trace through the window, and what was tried and measured
+// worse (the memory sample at the settle), are named there with the figures.
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { hostname } from "node:os"
@@ -42,7 +43,7 @@ export const DEFAULTS = Object.freeze({
  */
 export const LAB_RESTART_SECONDS = 25
 
-export const METHOD = "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are read at that fixed event, then utime+stime over the window from /proc/<pid>/stat; descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise"
+export const METHOD = "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle, where they were measured to be 8 times noisier), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise"
 
 export class CostError extends Error {
   constructor(code, message, remedy = null) {
@@ -260,18 +261,24 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   const pid = shellPid(omarchyPath, env)
   if (pid === null) return { label, run: runIndex, failed: "no shell pid" }
 
-  // The fixed event: every plugin reported loaded, plus the settle. Memory
-  // is read here, before the window opens, so two runs read it at the same
-  // point of the shell's life rather than at the same wall-clock offset.
-  const memory = { pssKb: pssKb(procRoot, pid), rssKb: rssKb(procRoot, pid), memoryAt: "settled" }
+  // Memory at the settle, kept as raw data. Measured in the lab on
+  // 14 September 2026 (docs/MEASUREMENTS.md C1): listPlugins answers about
+  // 0.3 s after the restart, long before loading is finished, so at the
+  // settle the baseline Pss was bimodal (525 to 596 MB, a 70 MB spread)
+  // while at the end of the window it spread 8.7 MB. The headline memory
+  // is therefore the end of the window, and the trace below records the
+  // climb between the two so the settle can be judged from the document.
+  const settled = { pssKbSettled: pssKb(procRoot, pid), rssKbSettled: rssKb(procRoot, pid) }
   onPhase(`run ${runIndex} of ${plan.runs}: ${label}, sampling for ${windowSeconds}s`)
   const started = utc()
   const t0 = Date.now()
   const cpu0 = cpuTicks(procRoot, pid) ?? 0
   const child0 = childTicks(procRoot, pid) ?? 0
   const rows = []
+  const trace = []
   let elapsed = 0
   for (;;) {
+    trace.push({ t: Number(elapsed.toFixed(3)), pssKb: pssKb(procRoot, pid), rssKb: rssKb(procRoot, pid) })
     for (const entry of descendants(procRoot, pid)) rows.push({ t: elapsed, ...entry })
     elapsed = (Date.now() - t0) / 1000
     if (elapsed >= windowSeconds) break
@@ -281,7 +288,7 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   const t1 = Date.now()
   const cpu1 = cpuTicks(procRoot, pid) ?? cpu0
   const child1 = childTicks(procRoot, pid) ?? child0
-  const rssKbWindowEnd = rssKb(procRoot, pid)
+  const memory = { pssKb: pssKb(procRoot, pid), rssKb: rssKb(procRoot, pid), memoryAt: "window-end", ...settled, trace }
   const seconds = (t1 - t0) / 1000
   const byPid = new Map()
   for (const row of rows) {
@@ -305,7 +312,6 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
     windowSeconds: Number(seconds.toFixed(3)),
     shell: {
       ...memory,
-      rssKbWindowEnd,
       cpuTicksStart: cpu0,
       cpuTicksEnd: cpu1,
       cpuSeconds: (cpu1 - cpu0) / clk,
@@ -349,7 +355,8 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
     config: plan.baselineConfig,
     pssMb: stats(base.map((sample) => (sample.shell.pssKb ?? 0) / KB)),
     rssMb: stats(base.map((sample) => (sample.shell.rssKb ?? 0) / KB)),
-    rssMbWindowEnd: stats(base.map((sample) => (sample.shell.rssKbWindowEnd ?? 0) / KB)),
+    pssMbSettled: stats(base.map((sample) => (sample.shell.pssKbSettled ?? 0) / KB)),
+    rssMbSettled: stats(base.map((sample) => (sample.shell.rssKbSettled ?? 0) / KB)),
     cpuPercent: stats(base.map((sample) => sample.shell.cpuPercent)),
     childRssMb: stats(base.map((sample) => sample.children.reduce((sum, child) => sum + child.rssLast, 0) / KB)),
     runs: base.map(strip),
@@ -357,9 +364,10 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
   const noiseFloor = {
     pssMb: baseline.pssMb.spread,
     rssMb: baseline.rssMb.spread,
-    rssMbWindowEnd: baseline.rssMbWindowEnd.spread,
+    pssMbSettled: baseline.pssMbSettled.spread,
+    rssMbSettled: baseline.rssMbSettled.spread,
     cpuPercent: baseline.cpuPercent.spread,
-    origin: `the spread (max minus min) of the ${base.length} baseline run(s): Pss and VmRSS at the fixed event, VmRSS at the end of the window, and CPU percent over the window`,
+    origin: `the spread (max minus min) of the ${base.length} baseline run(s): Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window`,
   }
   const date = started.slice(0, 10)
   const plugins = plan.audited.map((plugin) => {
@@ -375,6 +383,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
         run: sample.run,
         shellPssMb: ((sample.shell.pssKb ?? 0) - (pair.shell.pssKb ?? 0)) / KB,
         shellRssMb: ((sample.shell.rssKb ?? 0) - (pair.shell.rssKb ?? 0)) / KB,
+        shellPssMbSettled: ((sample.shell.pssKbSettled ?? 0) - (pair.shell.pssKbSettled ?? 0)) / KB,
         shellCpuPercent: sample.shell.cpuPercent - pair.shell.cpuPercent,
         childRssMb: own.reduce((sum, child) => sum + child.rssLast, 0) / KB,
         childCpuPercent: (ownCpuSeconds / sample.windowSeconds) * 100 + reaped,
@@ -385,6 +394,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
     }
     const pss = stats(deltas.map((delta) => delta.shellPssMb))
     const rss = stats(deltas.map((delta) => delta.shellRssMb))
+    const pssSettled = stats(deltas.map((delta) => delta.shellPssMbSettled))
     const cpu = stats(deltas.map((delta) => delta.shellCpuPercent))
     const childRss = stats(deltas.map((delta) => delta.childRssMb))
     const childCpu = stats(deltas.map((delta) => delta.childCpuPercent))
@@ -401,6 +411,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
       runsCompleted: deltas.length,
       shellPssMb: pss,
       shellRssMb: rss,
+      shellPssMbSettled: pssSettled,
       shellCpuPercent: cpu,
       childRssMb: childRss,
       childCpuPercent: childCpu,
@@ -409,16 +420,16 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
       totalCpuPercent,
       verdict: { memory: memoryVerdict, cpu: cpuVerdict, summary: summaryOf(memoryVerdict, cpuVerdict) },
       withinNoise: {
-        pss: pss.median === null ? null : Math.abs(pss.median) <= noiseFloor.pssMb,
-        rss: rss.median === null ? null : Math.abs(rss.median) <= noiseFloor.rssMb,
-        cpu: cpu.median === null ? null : Math.abs(cpu.median) <= noiseFloor.cpuPercent,
-        ownPss: pss.median === null ? null : Math.abs(pss.median) <= pss.spread,
-        ownCpu: cpu.median === null ? null : Math.abs(cpu.median) <= cpu.spread,
+        pss: pss.median === null ? null : memoryVerdict === "within-noise",
+        rss: rss.median === null ? null : verdict(rss.median, noiseFloor.rssMb) === "within-noise",
+        cpu: cpu.median === null ? null : cpuVerdict === "within-noise",
+        ownPss: pss.median === null ? null : verdict(pss.median, pss.spread) === "within-noise",
+        ownCpu: cpu.median === null ? null : verdict(cpu.median, cpu.spread) === "within-noise",
         baselinePssSpreadMb: noiseFloor.pssMb,
         baselineCpuSpreadPercent: noiseFloor.cpuPercent,
         note: "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas",
       },
-      origin: `plus minus baseline per run over ${deltas.length} run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a ${plan.settleSeconds}s settle); utime+stime from /proc/<shell pid>/stat over a ${plan.windowSeconds}s window; children from a /proc descendant walk every ${plan.sampleIntervalMs}ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid`,
+      origin: `plus minus baseline per run over ${deltas.length} run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a ${plan.windowSeconds}s window that opens ${plan.settleSeconds}s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every ${plan.sampleIntervalMs}ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid`,
       readme: readmeSentence({ totalMb, totalCpuPercent, memoryVerdict, cpuVerdict, floorMb: noiseFloor.pssMb, floorCpu: noiseFloor.cpuPercent, shellVersion: plan.shellVersion, date }),
       deltas,
       runs: plus.map(strip),
@@ -483,7 +494,12 @@ export async function measureCost(plan, { env = plan.env || process.env, procRoo
       for (const { label, config } of configs) {
         checkAbort(signal)
         const sample = await sampleConfig({ label, runIndex, config, plan, env, procRoot, signal, onPhase, restartTimes })
-        if (sample.failed) onLine({ state: "advisory", text: `run ${runIndex}, ${label}: ${sample.failed}; no sample` })
+        // One line per configuration, on the record: a forty-restart run
+        // in a pipe would otherwise be silent for half an hour, and the
+        // figures here are the raw samples a reader can check the medians
+        // against.
+        if (sample.failed) onLine({ state: "advisory", text: `run ${runIndex} of ${plan.runs}, ${label}: ${sample.failed}; no sample` })
+        else onLine({ state: "info", text: `run ${runIndex} of ${plan.runs}, ${label}: ${((sample.shell.pssKb ?? 0) / KB).toFixed(1)} MB Pss, ${sample.shell.cpuPercent.toFixed(2)}% CPU, ${sample.children.length} child process${sample.children.length === 1 ? "" : "es"}, ready after ${sample.readyAfterSeconds.toFixed(1)} s` })
         samples.push(sample)
       }
     }
