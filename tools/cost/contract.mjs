@@ -29,6 +29,7 @@ function isStats(value, at, problems) {
 function isSample(sample, at, problems) {
   for (const key of ["label", "started", "ended"]) if (typeof sample[key] !== "string") problems.push(`${at}.${key} is not a string`)
   for (const key of ["run", "shellPid", "readyAfterSeconds", "windowSeconds"]) if (typeof sample[key] !== "number") problems.push(`${at}.${key} is not a number`)
+  if ("configRewritten" in sample && sample.configRewritten !== null && typeof sample.configRewritten !== "boolean") problems.push(`${at}.configRewritten is neither a boolean nor null`)
   const shell = sample.shell
   if (!shell || typeof shell !== "object") {
     problems.push(`${at}.shell is missing`)

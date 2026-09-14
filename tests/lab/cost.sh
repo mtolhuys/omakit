@@ -80,6 +80,10 @@ omarchy_host_test() {
     return 1
   }
   ssh_guest "cat /tmp/omakit-cost.log" > "$out/omakit-cost.log" 2>/dev/null || true
+  # The shell's own journal over the run, for C2: a rescan or a bar rebuild
+  # ("Handler was registered but will not be used") between two levels.
+  ssh_session "journalctl --user -t omarchy-shell --no-pager -o short-iso --since '-2 hours'" > "$out/omarchy-shell.journal" 2>/dev/null || true
+  ssh_session "ls \$XDG_RUNTIME_DIR/omarchy/plugin-runtime/" > "$out/plugin-runtime-generations.txt" 2>/dev/null || true
   ssh_guest "cat /tmp/omakit-cost.json" > "$out/omakit-cost.json" || return 1
   [[ $(ssh_guest "cat /tmp/omakit-cost.done") == 0 ]] || { echo "omakit cost exited non-zero" >&2; tail -n 40 "$out/omakit-cost.log" >&2; return 1; }
 

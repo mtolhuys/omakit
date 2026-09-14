@@ -262,6 +262,10 @@ A raw sample, on both sides:
 
 ```text
 label, run, shellPid, started, ended, readyAfterSeconds, windowSeconds
+configRewritten   boolean  whether shell.json differed at the end of the
+                           window from what this run wrote (a plugin that
+                           rewrites it as it starts rebuilds the bar);
+                           absent in documents from before it was recorded
 shell             { pssKb, rssKb, memoryAt: "window-end", pssKbSettled,
                     rssKbSettled, trace: [{ t, pssKb, rssKb }],
                     cpuTicksStart, cpuTicksEnd, cpuSeconds, cpuPercent,

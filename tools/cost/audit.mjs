@@ -23,7 +23,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { hostname } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { run } from "./commands.mjs"
-import { backupConfig, configPaths, restoreConfig, verifyRestore, without, writeConfig } from "./config.mjs"
+import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without, writeConfig } from "./config.mjs"
 import { childTicks, cpuTicks, descendants, PROC, pssKb, rssKb } from "./proc.mjs"
 import { median, stats, tickPercent, verdict } from "./stats.mjs"
 import { omakitStateDir } from "../marketplace/paths.mjs"
@@ -298,6 +298,16 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
     elapsed = (Date.now() - t0) / 1000
   }
   const t1 = Date.now()
+  // Was the configuration this run started from still on disk at the end
+  // of the window? A plugin that rewrites shell.json as it starts makes the
+  // bar rebuild every widget (docs/COST.md, Limits), which is one of the
+  // hypotheses for the shell's high resting level (docs/MEASUREMENTS.md C2).
+  let configRewritten = null
+  try {
+    configRewritten = md5(readFileSync(configFile)) !== md5(Buffer.from(`${JSON.stringify(config, null, 2)}\n`))
+  } catch {
+    configRewritten = null
+  }
   const cpu1 = cpuTicks(procRoot, pid) ?? cpu0
   const child1 = childTicks(procRoot, pid) ?? child0
   const memory = { pssKb: pssKb(procRoot, pid), rssKb: rssKb(procRoot, pid), memoryAt: "window-end", ...settled, trace }
@@ -322,6 +332,7 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
     ended: utc(),
     readyAfterSeconds,
     windowSeconds: Number(seconds.toFixed(3)),
+    configRewritten,
     shell: {
       ...memory,
       cpuTicksStart: cpu0,

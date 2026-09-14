@@ -269,6 +269,31 @@ memory medians of 9 to 21 MB in every run against fixture medians of -12 to
 than a cost of a plugin until C2 is understood, so the README sentence
 speaks about CPU and child processes and not about memory at all.
 
+Pairing by resting level, tried offline and not adopted. On 15 September
+2026 every restart of the two traced runs was classified by its resting
+level, the minimum `Pss` of its trace (two-means over the 40 levels of each
+run: centres 529.9 and 554.9 MB in run 3, 528.4 and 543.3 in run 2), and
+every plugin delta was recomputed against baseline runs of the same level
+only. The floor within the low level is 7.27 MB at the settle and 7.41 MB
+at the trace minimum in run 3 (five baseline runs), and 15.46 MB in run 2
+(four), so a same-level floor does land near the 8.67 MB first seen within
+a level. It cannot be used, for a reason the classification itself shows:
+**the high level was never seen in a baseline restart**, 0 of 10 across the
+two runs, and was seen in 19 of 70 plugin restarts, 7 of `omaplug`'s 10,
+6 of `bjarneo.workspace-layout`'s 10, and 6 of the other five plugins' 50.
+There is no high-level baseline to pair a high plugin run with (in run 3,
+`omaplug` had no same-level peer in any of its five runs), and pairing
+would treat as noise a level that appears only when a plugin is present,
+which is the opposite of what a cost measurement may do. Within the low
+level the same-level deltas are what the medians already say (run 3, at
+the settle: fixtures -1.9 to 2.7 MB, `io.github.calebhat.weather` 10.2,
+`bjarneo.workspace-layout` 10.3, spreads 4 to 11 MB), so the low-level
+figure is not wrong; it is the high level that is not understood. Until it
+is (C2), memory stays a fact about the shell's start, not a cost of the
+plugin, and interleaved or per-level runs are not implemented. The
+classification script's inputs are the three traced documents under
+`docs/evidence/cost/` and nothing else.
+
 CPU quantum. The CPU floor is one or two clock ticks over the 15 s window,
 and a delta is quantised to ticks too: run 1 judged `fixture.idle-panel`
 above noise on CPU with a median of -0.066662% (one tick over 15.003 s)
@@ -316,10 +341,43 @@ the same guest:
 
 The consequences for `omakit cost` are the 30 s settle (the window sits
 after the release), the trace kept in every document (a machine whose
-release comes later shows it), and a memory floor that is the shell's, not
-the sampler's: two starts of the same configuration differ by up to 35 MB
-in this guest before any plugin is added, and no sampling point changes
-that. What the two levels and the two events are is not known from
-outside the process; a report to the shell's maintainers would carry the
-traces in `docs/evidence/cost/` and the fixtures under `tests/fixtures/cost/`
-that reproduce them on a stock install.
+release comes later shows it), and memory reported as the shell's own
+startup variance rather than as a plugin's cost (C1), because the high
+level is not understood.
+
+What is known about the high level, from the traces alone: it was never
+seen in a baseline restart (0 of 10) and was seen in 19 of 70 plugin
+restarts, concentrated on `omaplug` (7 of 10) and `bjarneo.workspace-layout`
+(6 of 10), which are the two plugins that do the most at start (an update
+check spawned per bar instance; two `inotifywait` watchers and a service).
+The guest's journal was not captured in these runs, so what follows is a
+hypothesis, not a finding, in the order it would be tested:
+
+1. A bar rebuild after start. Any change to `bar.layout` rebuilds every
+   widget on every monitor, and the first such rebuild cost 19 MB on the
+   installed shell with nothing returned afterwards (`docs/COST.md`,
+   Limits). A plugin that writes `shell.json` as it starts, to persist a
+   setting, would trigger one. Test: `configRewritten` per sample
+   (recorded from the next run on), and `Handler was registered but will
+   not be used` in the shell's journal, which a rebuild logs for every
+   widget with an `IpcHandler`.
+2. A plugin reload after start. A `close_write`, `create`, `delete` or
+   `move` anywhere under `~/.config/omarchy/plugins/` except a `.git/` or
+   a hidden entry makes the registry rescan 150 ms later and re-instantiate
+   every plugin into a new runtime generation (`PluginRegistry.qml`,
+   `localPluginWatcher` and `localPluginIdForPath` at the pin), and memory
+   is not returned on unload. `omaplug` writes its state under
+   `$XDG_RUNTIME_DIR`, not the plugin tree, so no trigger has been found
+   yet. Test: the generation directories under
+   `$XDG_RUNTIME_DIR/omarchy/plugin-runtime/` after a run (one per rescan),
+   captured by the lab scenario from the next run on.
+3. A race between the 55 to 65 MB release and a plugin that is still
+   initialising: a release that lands while a plugin is mid-load could be
+   smaller or skipped. Test: the moment of the release in each high-level
+   trace against the plugin's own start-time work, from the journal.
+
+The lab scenario now copies `journalctl --user -t omarchy-shell` and the
+generation listing next to the document, so the next cycle can settle 1
+and 2 without a fourth kind of run. A report to the shell's maintainers,
+`docs/evidence/cost/upstream-memory.md`, carries the three observations,
+the traces and the reproduction, and is a draft a person files.

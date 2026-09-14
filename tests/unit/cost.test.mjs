@@ -437,6 +437,7 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(row.readme, "Adds no measurable CPU (floor 0.00%) and runs 1 child process using 4.0 MB, on Omarchy 4.0.0.test, measured with omakit cost on " + document.started.slice(0, 10))
   assert.match(row.origin, /smaps_rollup/)
   assert.equal(document.plugins[0].runs[0].shell.memoryAt, "window-end")
+  assert.equal(document.plugins[0].runs[0].configRewritten, false, "nothing rewrote the measurement configuration during the window")
   assert.equal(document.plugins[0].runs[0].shell.pssKb, 470_000)
   assert.equal(document.plugins[0].runs[0].shell.rssKb, 500_000)
   assert.equal(document.plugins[0].runs[0].shell.pssKbSettled, 470_000)
