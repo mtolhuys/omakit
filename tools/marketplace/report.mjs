@@ -35,7 +35,7 @@ function stateOf(check) {
 /**
  * A check's head line: the mark, the id in bold, and the source in brackets
  * pushed to the right edge, so the sources form a column of their own and the
- * ids form another. Exported for the cost report, whose rows are plugins
+ * ids form another. Exported for the weigh report, whose rows are plugins
  * with their kinds where a check has its source.
  */
 export function head(state, id, source, c) {

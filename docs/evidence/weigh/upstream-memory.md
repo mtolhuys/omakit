@@ -2,7 +2,7 @@
 
 **Status: a draft for a person to file against the Omarchy shell. Not
 filed. Everything below is measured from outside the process with
-`omakit cost`; nothing here says what inside the shell causes it.**
+`omakit weigh`; nothing here says what inside the shell causes it.**
 
 ## Summary
 
@@ -35,12 +35,12 @@ it. CPU is unaffected (floor 0.13% over the same runs).
   5120 MiB, one 1280x800 screen, software rendering, user `omarchy`).
 - Third-party plugins installed with `omarchy-plugin-add <dir> --enable
   --yes`: `io.github.calebhat.weather`, `bjarneo.workspace-layout`,
-  `omaplug`, and four fixtures from omakit's `tests/fixtures/cost/`
+  `omaplug`, and four fixtures from omakit's `tests/fixtures/weigh/`
   (`clean`: a bar widget with nothing in it; `timer-180ms`: one repeating
   180 ms timer; `poller`: a service with a 5 s poller, an `inotifywait`
   watcher and a helper; `idle-panel`: a panel whose timers run only while
   open).
-- Measurement: `omakit cost --all --runs 5 --yes` (defaults: 30 s settle
+- Measurement: `omakit weigh --all --runs 5 --yes` (defaults: 30 s settle
   after `listPlugins` reports every plugin, then a 15 s window; an earlier
   run used an 8 s settle). For each of the seven plugins the shell is
   restarted with the enabled set minus all seven (baseline) and with that
@@ -159,23 +159,23 @@ order:
 ## Reproduction
 
 On a stock install (or the plugin lab guest), from a checkout of omakit at
-the commit that carries `tools/cost/` and `tests/fixtures/cost/`:
+the commit that carries `tools/weigh/` and `tests/fixtures/weigh/`:
 
 ```bash
-for f in clean timer-180ms poller idle-panel; do omarchy-plugin-add tests/fixtures/cost/$f --enable --yes; done
+for f in clean timer-180ms poller idle-panel; do omarchy-plugin-add tests/fixtures/weigh/$f --enable --yes; done
 # plus any third-party plugins already enabled; the lab used weather, workspace-layout and omaplug
-node bin/omakit cost --all --runs 5 --yes --out ~/omakit-cost.json
+node bin/omakit weigh --all --runs 5 --yes --out ~/omakit-weigh.json
 ```
 
 This restarts the shell (1 + plugins) × 5 times, about a minute each, and
 restores `shell.json` afterwards (the md5 before and after is printed). Then:
 
 ```bash
-jq -r '[.baseline.runs[], (.plugins[] | .runs[])] | .[] | "\(.label) \(.run) " + ([.shell.trace[] | select((.t*2|floor) % 10 == 0) | (.pssKb/1024|round|tostring)] | join(" / "))' ~/omakit-cost.json
+jq -r '[.baseline.runs[], (.plugins[] | .runs[])] | .[] | "\(.label) \(.run) " + ([.shell.trace[] | select((.t*2|floor) % 10 == 0) | (.pssKb/1024|round|tostring)] | join(" / "))' ~/omakit-weigh.json
 ```
 
 prints one line per restart with `Pss` every 5 s through the window; the
 two levels and the rise are visible by eye. In the lab this is one
-command, `./bin/lab plugin <omakit>/tests/lab/cost.sh`, which installs the
+command, `./bin/lab plugin <omakit>/tests/lab/weigh.sh`, which installs the
 seven plugins into a fresh guest, runs the measurement and copies the
 document and the journal into the run directory.

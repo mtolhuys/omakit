@@ -205,19 +205,19 @@ names which of the paths omakit reads changed between the pin and HEAD rather
 than only that HEAD moved, because at this rate HEAD has always moved. Not by
 `baseline.preflight`, whose figures stay the pin's.
 
-## C1. Cost noise floor
+## C1. Weigh noise floor
 
-The figures behind `omakit cost` are the measurements themselves and their
+The figures behind `omakit weigh` are the measurements themselves and their
 noise floor, not a population statistic, so this entry is a different kind
-of evidence from M2 to M7: three runs of `tests/lab/cost.sh` in the Omarchy
+of evidence from M2 to M7: three runs of `tests/lab/weigh.sh` in the Omarchy
 plugin lab guest (stock pin `b5589fa`, shell `4.0.0.alpha`, one 1280x800
-screen, software rendering) on 14 September 2026, each `omakit cost --all
---runs 5 --yes` over the four fixtures under `tests/fixtures/cost/` and three
+screen, software rendering) on 14 September 2026, each `omakit weigh --all
+--runs 5 --yes` over the four fixtures under `tests/fixtures/weigh/` and three
 listed plugins (`bjarneo.workspace-layout`, `omaplug`,
 `io.github.calebhat.weather`), 40 restarts per run, `shell.json` md5
 `2caeda7f4da844a0d51b045ae5652346` before and after every run, no backup
-left behind, every document valid against `tools/cost/contract.mjs`. The
-documents are under `docs/evidence/cost/`, with the earlier bash audit's run
+left behind, every document valid against `tools/weigh/contract.mjs`. The
+documents are under `docs/evidence/weigh/`, with the earlier bash audit's run
 of the same day (`rent-audit-lab-2026-09-14.json`: 24 restarts, 3 runs,
 `VmRSS` at the end of the window).
 
@@ -257,7 +257,7 @@ five runs of (with the plugin minus without it), spread in brackets:
 | fixture.poller | 3.42 (44.41) | 0% (0.13) | 4.09 | -0.20% | 1 | no measurable CPU |
 | fixture.timer-180ms | -12.21 (56.50) | 2.73% (0.33) | 0 | -0.07% | 0 | above noise on CPU |
 
-What holds across all three runs: the 180 ms timer costs 2.7 to 2.8% CPU
+What holds across all three runs: the 180 ms timer weighs 2.7 to 2.8% CPU
 (run 3: 2.73, 2.40, 2.66, 2.73, 2.73) against a CPU floor of one or two
 clock ticks over the window (0.067 to 0.133%), the clean fixture is within
 noise on both and the report says so in those words, the poller's
@@ -266,7 +266,7 @@ attributed by command line in every run, and the three listed plugins have
 memory medians of 9 to 21 MB in every run against fixture medians of -12 to
 14. What does not hold: at five runs, no plugin's memory median clears a
 32 MB floor, and the memory column is a fact about the shell's start rather
-than a cost of a plugin until C2 is understood, so the README sentence
+than a plugin's weight until C2 is understood, so the README sentence
 speaks about CPU and child processes and not about memory at all.
 
 Pairing by resting level, tried offline and not adopted. On 15 September
@@ -284,22 +284,22 @@ two runs, and was seen in 19 of 70 plugin restarts, 7 of `omaplug`'s 10,
 There is no high-level baseline to pair a high plugin run with (in run 3,
 `omaplug` had no same-level peer in any of its five runs), and pairing
 would treat as noise a level that appears only when a plugin is present,
-which is the opposite of what a cost measurement may do. Within the low
+which is the opposite of what a weighing may do. Within the low
 level the same-level deltas are what the medians already say (run 3, at
 the settle: fixtures -1.9 to 2.7 MB, `io.github.calebhat.weather` 10.2,
 `bjarneo.workspace-layout` 10.3, spreads 4 to 11 MB), so the low-level
 figure is not wrong; it is the high level that is not understood. Until it
-is (C2), memory stays a fact about the shell's start, not a cost of the
-plugin, and interleaved or per-level runs are not implemented. The
+is (C2), memory stays a fact about the shell's start, not the plugin's
+weight, and interleaved or per-level runs are not implemented. The
 classification script's inputs are the three traced documents under
-`docs/evidence/cost/` and nothing else.
+`docs/evidence/weigh/` and nothing else.
 
 CPU quantum. The CPU floor is one or two clock ticks over the 15 s window,
 and a delta is quantised to ticks too: run 1 judged `fixture.idle-panel`
 above noise on CPU with a median of -0.066662% (one tick over 15.003 s)
 against a floor of 0.066653% (one tick over 15.005 s). The rule is now that
 a CPU delta is above noise only when it exceeds the floor and one tick over
-the window (`docs/COST.md`); under it the same row is within noise, and no
+the window (`docs/WEIGH.md`); under it the same row is within noise, and no
 other verdict in the three runs changes.
 
 Restart timing. From `omarchy-restart-shell` to every plugin reported took
@@ -313,13 +313,13 @@ window, about a minute per restart, six restarts and about five minutes for
 one plugin at three runs, and 144 restarts and about two hours for `--all`
 over 47 enabled plugins.
 
-Used by: `omakit cost`, its confirmation, and `docs/COST.md`. Not by any
+Used by: `omakit weigh`, its confirmation, and `docs/WEIGH.md`. Not by any
 `submit` check.
 
 ## C2. The shell's memory after a restart has two levels and two events
 
 Shell behaviour, measured while lowering C1's floor, and recorded here as a
-candidate for an upstream report; `omakit cost` does not correct for it, it
+candidate for an upstream report; `omakit weigh` does not correct for it, it
 reports the floor it produces. From the `Pss` traces (twice a second through
 every window) of runs 2 and 3, 80 restarts of the same configuration set in
 the same guest:
@@ -339,10 +339,10 @@ the same guest:
   rise fell inside the window in 16 of 40 restarts, at 2.5 to 13.7 s after
   the window opened, that is 32 to 44 s after ready.
 
-The consequences for `omakit cost` are the 30 s settle (the window sits
+The consequences for `omakit weigh` are the 30 s settle (the window sits
 after the release), the trace kept in every document (a machine whose
 release comes later shows it), and memory reported as the shell's own
-startup variance rather than as a plugin's cost (C1), because the high
+startup variance rather than as a plugin's weight (C1), because the high
 level is not understood.
 
 What is known about the high level, from the traces alone: it was never
@@ -355,7 +355,7 @@ hypothesis, not a finding, in the order it would be tested:
 
 1. A bar rebuild after start. Any change to `bar.layout` rebuilds every
    widget on every monitor, and the first such rebuild cost 19 MB on the
-   installed shell with nothing returned afterwards (`docs/COST.md`,
+   installed shell with nothing returned afterwards (`docs/WEIGH.md`,
    Limits). A plugin that writes `shell.json` as it starts, to persist a
    setting, would trigger one. Test: `configRewritten` per sample
    (recorded from the next run on), and `Handler was registered but will
@@ -379,5 +379,5 @@ hypothesis, not a finding, in the order it would be tested:
 The lab scenario now copies `journalctl --user -t omarchy-shell` and the
 generation listing next to the document, so the next cycle can settle 1
 and 2 without a fourth kind of run. A report to the shell's maintainers,
-`docs/evidence/cost/upstream-memory.md`, carries the three observations,
+`docs/evidence/weigh/upstream-memory.md`, carries the three observations,
 the traces and the reproduction, and is a draft a person files.

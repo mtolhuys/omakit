@@ -1,10 +1,10 @@
-// The Omarchy commands `omakit cost` runs, as a frozen table, and the one call
+// The Omarchy commands `omakit weigh` runs, as a frozen table, and the one call
 // site that runs them.
 //
 // This is the one part of omakit that changes the user's own machine: it
 // restarts their shell. So what it can run is a list, not a search. Every
 // entry names its binary and its arguments; `run()` is the only spawn under
-// tools/cost/ (tests/unit/read-only.test.mjs holds it to that), and the only
+// tools/weigh/ (tests/unit/read-only.test.mjs holds it to that), and the only
 // entry that takes an argument at run time is the shell pid lookup, which
 // needs the shell's configuration directory. No `quickshell kill`, no
 // `hyprctl`, no `systemctl` beyond reading the session's environment: the
@@ -44,7 +44,7 @@ export const COMMANDS = Object.freeze({
  */
 export function run(name, { env = process.env, extra = [], timeoutMs = 30_000 } = {}) {
   const entry = COMMANDS[name]
-  if (!entry) throw new Error(`cost: no command named ${name}`)
+  if (!entry) throw new Error(`weigh: no command named ${name}`)
   const result = spawnSync(entry.command, [...entry.args, ...extra], {
     encoding: "utf8",
     env,

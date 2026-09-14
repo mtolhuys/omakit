@@ -1,11 +1,11 @@
 // The startup A/B measurement, in two halves.
 //
-// `planCost()` reads and decides: the shell that runs, whether the session is
+// `planWeigh()` reads and decides: the shell that runs, whether the session is
 // locked, what is installed and enabled, which plugins will be measured, how
 // many restarts that is and how long it will take. It writes nothing, so the
 // confirmation is made from it and a refusal costs nothing.
 //
-// `measureCost()` is the half that changes the user's machine, and the only
+// `measureWeigh()` is the half that changes the user's machine, and the only
 // one in omakit that does. For every run: write a configuration, restart the
 // shell, wait until every installed plugin is reported, settle, sample; then
 // the next configuration. The backup is taken before the first write and
@@ -13,7 +13,7 @@
 // run, a restart that did not answer, a thrown error, and an interrupt, which
 // arrives here as an aborted signal rather than a dead process.
 //
-// The method is a port of the audit described in docs/COST.md, and that
+// The method is a port of the audit described in docs/WEIGH.md, and that
 // document is the contract for what comes out; the bash it was ported from
 // is the reference for the behaviour. What differs from it, Pss beside VmRSS
 // and a memory trace through the window, and what was tried and measured
@@ -58,10 +58,10 @@ export const RESTART_SECONDS = 5
 
 export const METHOD = "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise"
 
-export class CostError extends Error {
+export class WeighError extends Error {
   constructor(code, message, remedy = null) {
     super(message)
-    this.name = "CostError"
+    this.name = "WeighError"
     this.code = code
     this.remedy = remedy
   }
@@ -85,7 +85,7 @@ function parseJson(text, what) {
   try {
     return JSON.parse(text)
   } catch {
-    throw new CostError("shell-unreadable", `${what} did not answer with JSON`, "omarchy-restart-shell, then run it again.")
+    throw new WeighError("shell-unreadable", `${what} did not answer with JSON`, "omarchy-restart-shell, then run it again.")
   }
 }
 
@@ -116,27 +116,27 @@ export function restartTiming(stateDir) {
  * @param {{ target?: string, all?: boolean, runs?: number, windowSeconds?: number, settleSeconds?: number,
  *           out?: string, env?: NodeJS.ProcessEnv, now?: Date }} options
  */
-export function planCost({ target, all = false, runs = DEFAULTS.runs, windowSeconds = DEFAULTS.windowSeconds, settleSeconds = DEFAULTS.settleSeconds, out, env = process.env, now = new Date() } = {}) {
-  if (!target && !all) throw new CostError("usage", "cost needs a plugin: `omakit cost <plugin-id-or-dir>`, or `omakit cost --all` for every enabled third-party plugin")
+export function planWeigh({ target, all = false, runs = DEFAULTS.runs, windowSeconds = DEFAULTS.windowSeconds, settleSeconds = DEFAULTS.settleSeconds, out, env = process.env, now = new Date() } = {}) {
+  if (!target && !all) throw new WeighError("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin")
   for (const command of ["omarchy-shell", "omarchy-restart-shell", "omarchy", "qs"]) {
-    if (!onPath(command, env)) throw new CostError("command-missing", `${command} is not on PATH; cost measures a running Omarchy shell through its own commands`, "Run it on an Omarchy machine, from a shell that has $OMARCHY_PATH/bin on PATH.")
+    if (!onPath(command, env)) throw new WeighError("command-missing", `${command} is not on PATH; weigh measures a running Omarchy shell through its own commands`, "Run it on an Omarchy machine, from a shell that has $OMARCHY_PATH/bin on PATH.")
   }
   const omarchyPath = sessionOmarchyPath(env)
   if (!omarchyPath || !existsSync(join(omarchyPath, "shell/shell.qml"))) {
-    throw new CostError("omarchy-path", `OMARCHY_PATH ${omarchyPath ? `(${omarchyPath}) ` : ""}does not point at a shell: no shell/shell.qml under it`, "Log in to an Omarchy session; the shell is read from the session's OMARCHY_PATH.")
+    throw new WeighError("omarchy-path", `OMARCHY_PATH ${omarchyPath ? `(${omarchyPath}) ` : ""}does not point at a shell: no shell/shell.qml under it`, "Log in to an Omarchy session; the shell is read from the session's OMARCHY_PATH.")
   }
   // Every Omarchy command from here on sees the session's OMARCHY_PATH, the
   // way it would from a terminal in that session.
   env = { ...env, OMARCHY_PATH: omarchyPath }
   const locked = run("sessionLocked", { env })
-  if (locked.status === 0) throw new CostError("session-locked", "the session is locked, so the shell is not restarted; this is the same check omarchy-restart-shell makes", "Unlock the session, then run it again.")
-  if (!run("ping", { env }).ok) throw new CostError("shell-not-running", "the shell is not running, and cost measures a running shell", "omarchy-restart-shell")
+  if (locked.status === 0) throw new WeighError("session-locked", "the session is locked, so the shell is not restarted; this is the same check omarchy-restart-shell makes", "Unlock the session, then run it again.")
+  if (!run("ping", { env }).ok) throw new WeighError("shell-not-running", "the shell is not running, and weigh measures a running shell", "omarchy-restart-shell")
 
   const listed = run("listPlugins", { env })
-  if (!listed.ok) throw new CostError("shell-unreadable", "listPlugins failed", "omarchy-restart-shell, then run it again.")
+  if (!listed.ok) throw new WeighError("shell-unreadable", "listPlugins failed", "omarchy-restart-shell, then run it again.")
   const installed = parseJson(listed.stdout, "listPlugins")
   const effectiveRun = run("listShellConfig", { env })
-  if (!effectiveRun.ok) throw new CostError("shell-unreadable", "listShellConfig failed", "omarchy-restart-shell, then run it again.")
+  if (!effectiveRun.ok) throw new WeighError("shell-unreadable", "listShellConfig failed", "omarchy-restart-shell, then run it again.")
   const effective = parseJson(effectiveRun.stdout, "listShellConfig")
   const catalogRun = run("catalog", { env })
   const catalog = catalogRun.ok ? parseJson(catalogRun.stdout, "omarchy-plugin-catalog") : []
@@ -145,27 +145,27 @@ export function planCost({ target, all = false, runs = DEFAULTS.runs, windowSeco
   let audited
   if (all) {
     audited = installed.filter((plugin) => plugin.enabled === true && plugin.firstParty === false && !(plugin.kinds || []).includes("bar"))
-    if (!audited.length) throw new CostError("nothing-to-measure", "no enabled third-party plugin is installed; --all measures every enabled plugin that is not first-party and not a whole bar")
+    if (!audited.length) throw new WeighError("nothing-to-measure", "no enabled third-party plugin is installed; --all measures every enabled plugin that is not first-party and not a whole bar")
   } else {
     let id = target
     const manifest = join(resolve(target), "manifest.json")
     if (existsSync(manifest)) {
       const declared = parseJson(readFileSync(manifest, "utf8"), manifest).id
-      if (!declared) throw new CostError("plugin-unknown", `${manifest} declares no id`)
+      if (!declared) throw new WeighError("plugin-unknown", `${manifest} declares no id`)
       id = declared
     } else if (target.includes("/") || target === "." || target === "..") {
-      throw new CostError("plugin-unknown", `${resolve(target)} has no manifest.json, and ${target} is not an installed plugin id`, "Pass the plugin's id from `omarchy plugin list`, or the directory its manifest.json is in.")
+      throw new WeighError("plugin-unknown", `${resolve(target)} has no manifest.json, and ${target} is not an installed plugin id`, "Pass the plugin's id from `omarchy plugin list`, or the directory its manifest.json is in.")
     }
     const plugin = installed.find((entry) => entry.id === id)
-    if (!plugin) throw new CostError("plugin-unknown", `${id} is not an installed plugin; cost measures a plugin the shell can load`, "omarchy plugin list, then pass one of its ids, or install the plugin first.")
-    if ((plugin.kinds || []).includes("bar")) throw new CostError("plugin-is-bar", `${id} is a whole bar, and replacing the bar is not a cost`)
-    if (plugin.enabled !== true) throw new CostError("plugin-disabled", `${id} is not enabled, so there is no place in the layout to put it back into`, `omarchy plugin enable ${id}, then run it again.`)
+    if (!plugin) throw new WeighError("plugin-unknown", `${id} is not an installed plugin; weigh measures a plugin the shell can load`, "omarchy plugin list, then pass one of its ids, or install the plugin first.")
+    if ((plugin.kinds || []).includes("bar")) throw new WeighError("plugin-is-bar", `${id} is a whole bar, and replacing the bar is not a weight`)
+    if (plugin.enabled !== true) throw new WeighError("plugin-disabled", `${id} is not enabled, so there is no place in the layout to put it back into`, `omarchy plugin enable ${id}, then run it again.`)
     audited = [plugin]
   }
   audited = audited.map((plugin) => ({ id: plugin.id, name: plugin.name || plugin.id, kinds: plugin.kinds || [], firstParty: plugin.firstParty === true, sourceDir: sourceDirOf(plugin.id) }))
 
   const { file: configFile } = configPaths(env)
-  const stateDir = omakitStateDir("cost", env)
+  const stateDir = omakitStateDir("weigh", env)
   const timing = restartTiming(stateDir)
   const restarts = (1 + audited.length) * runs
   const perRestart = timing.seconds + settleSeconds + windowSeconds
@@ -206,7 +206,7 @@ export function planCost({ target, all = false, runs = DEFAULTS.runs, windowSeco
 function sleep(ms, signal) {
   return new Promise((resolveSleep, reject) => {
     if (signal?.aborted) {
-      reject(new CostError("interrupted", "interrupted"))
+      reject(new WeighError("interrupted", "interrupted"))
       return
     }
     const timer = setTimeout(() => {
@@ -215,14 +215,14 @@ function sleep(ms, signal) {
     }, ms)
     function onAbort() {
       clearTimeout(timer)
-      reject(new CostError("interrupted", "interrupted"))
+      reject(new WeighError("interrupted", "interrupted"))
     }
     signal?.addEventListener("abort", onAbort, { once: true })
   })
 }
 
 function checkAbort(signal) {
-  if (signal?.aborted) throw new CostError("interrupted", "interrupted")
+  if (signal?.aborted) throw new WeighError("interrupted", "interrupted")
 }
 
 /** Wait until listPlugins reports every installed plugin, polling once a second; null when it does not within the timeout. */
@@ -300,7 +300,7 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   const t1 = Date.now()
   // Was the configuration this run started from still on disk at the end
   // of the window? A plugin that rewrites shell.json as it starts makes the
-  // bar rebuild every widget (docs/COST.md, Limits), which is one of the
+  // bar rebuild every widget (docs/WEIGH.md, Limits), which is one of the
   // hypotheses for the shell's high resting level (docs/MEASUREMENTS.md C2).
   let configRewritten = null
   try {
@@ -354,18 +354,21 @@ const KB = 1024
  * The sentence for a plugin's README. It speaks about CPU and about child
  * processes, and never about the shell's memory: until the shell's two
  * resting levels are understood (docs/MEASUREMENTS.md C1 and C2), a memory
- * delta is a fact about the shell's start, not a cost of the plugin, and a
+ * delta is a fact about the shell's start, not the plugin's weight, and a
  * sentence that said "under N MB" would be a claim about the wrong thing.
- * Null when no run completed.
+ * Null when no run completed or when one run gave no floor.
  */
 export function readmeSentence({ cpuVerdict, shellCpuPercent, floorCpu, childSpawns, childMb, childCpuPercent, shellVersion, date }) {
   if (cpuVerdict === "unknown") return null
-  const floor = `(floor ${floorCpu === null ? "?" : floorCpu.toFixed(2)}%)`
-  const cpu = cpuVerdict === "above-noise" ? `Adds ${shellCpuPercent.toFixed(1)}% CPU ${floor}` : `Adds no measurable CPU ${floor}`
+  const floor = `(${floorCpu === null ? "?" : floorCpu.toFixed(2)}%)`
   const spawns = Math.round(childSpawns ?? 0)
-  const childCpu = childCpuPercent !== null && childCpuPercent >= 0.05 ? ` and ${childCpuPercent.toFixed(1)}% CPU` : ""
-  const children = spawns === 0 ? "runs no child process" : `runs ${spawns} child process${spawns === 1 ? "" : "es"} using ${(childMb ?? 0).toFixed(1)} MB${childCpu}`
-  return `${cpu} and ${children}, on Omarchy ${shellVersion}, measured with omakit cost on ${date}`
+  const tail = `on Omarchy ${shellVersion}, measured with omakit weigh on ${date}`
+  if (cpuVerdict === "within-noise" && spawns === 0) return `Weighs nothing measurable: no CPU above the floor ${floor} and no child process, ${tail}`
+  const cpu = cpuVerdict === "above-noise" ? `${shellCpuPercent.toFixed(1)}% CPU` : `no CPU above the floor ${floor}`
+  const children = spawns === 0
+    ? "runs no child process"
+    : `runs ${spawns} child process${spawns === 1 ? "" : "es"} using ${(childMb ?? 0).toFixed(1)} MB and ${Math.max(0, childCpuPercent ?? 0).toFixed(1)}% CPU`
+  return `Weighs ${cpu} and ${children}, ${tail}`
 }
 
 /**
@@ -379,7 +382,7 @@ export function summaryOf(memoryVerdict, cpuVerdict) {
   return cpuVerdict === "above-noise" ? "above noise on CPU" : "no measurable CPU"
 }
 
-/** The samples of every run, into the document docs/COST.md describes. */
+/** The samples of every run, into the document docs/WEIGH.md describes. */
 export function buildDocument(plan, samples, { started, ended, config, host = hostname(), omakitVersion }) {
   const clk = plan.clockTicksPerSecond
   const completed = samples.filter((sample) => !sample.failed)
@@ -475,7 +478,7 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
   }).sort((a, b) => (b.totalMb ?? -Infinity) - (a.totalMb ?? -Infinity))
   return {
     omakit: omakitVersion,
-    command: "cost",
+    command: "weigh",
     method: METHOD,
     started,
     ended,
@@ -505,11 +508,11 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
  * the user's own configuration; the document records the md5 before and
  * after and whether they matched.
  *
- * @param {ReturnType<typeof planCost>} plan
+ * @param {ReturnType<typeof planWeigh>} plan
  * @param {{ env?: NodeJS.ProcessEnv, procRoot?: string, signal?: AbortSignal, omakitVersion?: string,
  *           onPhase?: (text: string) => void, onLine?: (line: { state: string, text: string }) => void }} [options]
  */
-export async function measureCost(plan, { env = plan.env || process.env, procRoot = PROC, signal, omakitVersion = "unknown", onPhase = () => {}, onLine = () => {} } = {}) {
+export async function measureWeigh(plan, { env = plan.env || process.env, procRoot = PROC, signal, omakitVersion = "unknown", onPhase = () => {}, onLine = () => {} } = {}) {
   const stamp = fileStamp().replace(/[-T]/g, "").replace(/Z$/, "")
   const ids = plan.audited.map((plugin) => plugin.id)
   plan.baselineConfig = without(plan.effective, ids, plan.installed)
@@ -564,7 +567,7 @@ export async function measureCost(plan, { env = plan.env || process.env, procRoo
       onLine({ state: "fail", text: `the restore failed: ${error.message}; the backup is ${backup.backupFile}` })
     }
   }
-  if (restoreProblem) throw new CostError("restore-failed", `shell.json could not be restored from ${backup.backupFile}: ${restoreProblem.message}`, `Copy ${backup.backupFile} over ${plan.configFile} yourself, then run omarchy-restart-shell.`)
+  if (restoreProblem) throw new WeighError("restore-failed", `shell.json could not be restored from ${backup.backupFile}: ${restoreProblem.message}`, `Copy ${backup.backupFile} over ${plan.configFile} yourself, then run omarchy-restart-shell.`)
   const ended = utc()
   const config = {
     path: plan.configFile,
@@ -583,6 +586,6 @@ export async function measureCost(plan, { env = plan.env || process.env, procRoo
     const timingFile = plan.timing.file
     writeFileSync(timingFile, `${JSON.stringify({ restartSeconds: Number(median(restartTimes).toFixed(1)), restarts: restartTimes.length, measuredAt: ended }, null, 2)}\n`)
   }
-  if (!restore.restored) throw new CostError("restore-unverified", `shell.json differs from the backup after the restore; the backup ${backup.backupFile} is kept and the document is at ${out}`, `Compare ${backup.backupFile} with ${plan.configFile} and copy it over if the difference is not yours.`)
+  if (!restore.restored) throw new WeighError("restore-unverified", `shell.json differs from the backup after the restore; the backup ${backup.backupFile} is kept and the document is at ${out}`, `Compare ${backup.backupFile} with ${plan.configFile} and copy it over if the difference is not yours.`)
   return document
 }

@@ -125,25 +125,25 @@ test("npm is spawned only by upgrade, with frozen arguments, at an exact version
   }
 })
 
-test("only the cost command spawns an Omarchy command, only from its command table, and only tools/cost may name a shell restart", () => {
-  // `omakit cost` is the one command that changes the user's own machine,
+test("only the weigh command spawns an Omarchy command, only from its command table, and only tools/weigh may name a shell restart", () => {
+  // `omakit weigh` is the one command that changes the user's own machine,
   // and it does so through the Omarchy commands and nothing else: no
   // `quickshell kill`, no `hyprctl`, no `systemctl` beyond reading the
-  // session environment. Every spawn under tools/cost/ goes through one
+  // session environment. Every spawn under tools/weigh/ goes through one
   // call site in commands.mjs whose binary and arguments come from a frozen
   // table, so what the command can run is a list, not a search. Nothing
-  // outside tools/cost/ may name a restart at all.
+  // outside tools/weigh/ may name a restart at all.
   const RESTART = /omarchy-restart-shell|quickshell kill|["'`]hyprctl["'`]/
   const SPAWN = /\b(?:spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\(/g
   for (const { path, text } of sources) {
     if (path.startsWith("tests/")) continue
     const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
-    if (!path.startsWith("tools/cost/")) {
-      assert.doesNotMatch(code, RESTART, `${path} names a shell restart; only tools/cost/ may`)
+    if (!path.startsWith("tools/weigh/")) {
+      assert.doesNotMatch(code, RESTART, `${path} names a shell restart; only tools/weigh/ may`)
       continue
     }
     const spawns = [...code.matchAll(SPAWN)]
-    if (path !== "tools/cost/commands.mjs") {
+    if (path !== "tools/weigh/commands.mjs") {
       assert.deepEqual(spawns, [], `${path} spawns a process; only commands.mjs may`)
       continue
     }

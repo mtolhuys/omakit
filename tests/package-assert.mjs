@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url"
 // 102,177 bytes, 223 under that ceiling, and the fixes to the 0.1.6 review
 // could not land under it, so the ceiling is 153,600 bytes: 51,423 bytes over
 // the 0.1.7 measurement, still half the size of an accidental tree with a
-// pin or a cache in it. With `omakit cost` (eight modules under tools/cost/
+// pin or a cache in it. With `omakit weigh` (eight modules under tools/weigh/
 // and a fourth skill) the package measured 132,544 bytes, 50 files, 21,056
 // under the ceiling.
 export const MAX_PACKED_BYTES = 153_600
@@ -19,19 +19,19 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "bin/omakit",
   "package.json",
   "skills/omarchy-plugin-check/SKILL.md",
-  "skills/omarchy-plugin-cost/SKILL.md",
+  "skills/omarchy-plugin-weigh/SKILL.md",
   "skills/omarchy-plugin-submit/SKILL.md",
   "skills/omarchy-plugin-validation-watch/SKILL.md",
   "tests/parity/corpus.mjs",
   "tests/parity/run.mjs",
-  "tools/cost/audit.mjs",
-  "tools/cost/commands.mjs",
-  "tools/cost/config.mjs",
-  "tools/cost/confirm.mjs",
-  "tools/cost/contract.mjs",
-  "tools/cost/proc.mjs",
-  "tools/cost/report.mjs",
-  "tools/cost/stats.mjs",
+  "tools/weigh/audit.mjs",
+  "tools/weigh/commands.mjs",
+  "tools/weigh/config.mjs",
+  "tools/weigh/confirm.mjs",
+  "tools/weigh/contract.mjs",
+  "tools/weigh/proc.mjs",
+  "tools/weigh/report.mjs",
+  "tools/weigh/stats.mjs",
   "tools/marketplace/agent-control.mjs",
   "tools/marketplace/ask.mjs",
   "tools/marketplace/banner.mjs",

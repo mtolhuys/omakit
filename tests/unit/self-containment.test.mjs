@@ -67,29 +67,29 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // a subject.
     // The capture takes the rest of the line, because a target like
     // join(dir, ".git/info/x") contains a comma of its own.
-    // `omakit cost` is the one command that writes to the user's own machine
+    // `omakit weigh` is the one command that writes to the user's own machine
     // outside those: the shell configuration it measures with (configFile),
     // the byte-for-byte backup it restores from (backupFile), and the
     // per-restart timing its confirmation estimates from (timingFile). Only
-    // under tools/cost/, only to those names, and docs/COST.md says what each
+    // under tools/weigh/, only to those names, and docs/WEIGH.md says what each
     // one is for.
-    const costWrites = path.startsWith("tools/cost/") ? /^configFile,|^backupFile,|^timingFile,/ : /$^/
+    const weighWrites = path.startsWith("tools/weigh/") ? /^configFile,|^backupFile,|^timingFile,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || costWrites.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files cost may write`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files weigh may write`,
       )
     }
-    if (path.startsWith("tools/cost/")) {
+    if (path.startsWith("tools/weigh/")) {
       // Five writes in all, each to one of the names above or to --out, and
       // the count is asserted so a sixth cannot appear unnoticed.
       const writes = (text.match(/writeFileSync\(/g) || []).length
-      if (path === "tools/cost/config.mjs") assert.equal(writes, 3, "config.mjs writes the backup and the configuration (once per run, once to restore)")
-      else if (path === "tools/cost/audit.mjs") assert.equal(writes, 2, "audit.mjs writes --out and the timing file")
+      if (path === "tools/weigh/config.mjs") assert.equal(writes, 3, "config.mjs writes the backup and the configuration (once per run, once to restore)")
+      else if (path === "tools/weigh/audit.mjs") assert.equal(writes, 2, "audit.mjs writes --out and the timing file")
       else assert.equal(writes, 0, `${path} writes a file`)
     } else {
-      assert.doesNotMatch(text, /\b(?:configFile|backupFile)\b|writeFileSync\([^)]*shell\.json/, `${path} reaches the shell configuration; only tools/cost/ may`)
+      assert.doesNotMatch(text, /\b(?:configFile|backupFile)\b|writeFileSync\([^)]*shell\.json/, `${path} reaches the shell configuration; only tools/weigh/ may`)
     }
     if (path === "tools/marketplace/registry.mjs") {
       assert.match(text, /const liveCache = liveCacheDir\(commit, cacheRoot\)/, "the live registry cache is the path liveCacheDir names")
@@ -116,7 +116,7 @@ test("the command surface is exactly the submission scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "cost", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "weigh", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately
@@ -132,13 +132,13 @@ test("the command surface is exactly the submission scope", () => {
 
 test("no lab or conformance scope came along with the harvest", () => {
   // The one file under tests/lab/ is the scenario the plugin lab runs to
-  // measure `omakit cost` against a stock shell, because the cost command
+  // measure `omakit weigh` against a stock shell, because the weigh command
   // restarts a shell and the desktop is never where that is tested. It is a
   // scenario for one command, not a conformance suite, and it is not in the
   // package.
   for (const path of files) {
     assert.ok(!/^tools\/lab\//.test(path), `${path} is out of scope`)
-    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/cost.sh", `${path} is out of scope`)
+    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh", `${path} is out of scope`)
   }
 })
 

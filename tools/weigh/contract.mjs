@@ -1,10 +1,10 @@
-// The JSON contract of docs/COST.md, executable. `validateCostDocument()`
+// The JSON contract of docs/WEIGH.md, executable. `validateWeighDocument()`
 // returns every way a document departs from it, as sentences, and an empty
-// list when it does not. tests/unit/cost.test.mjs holds every produced
+// list when it does not. tests/unit/weigh.test.mjs holds every produced
 // document to it, and the lab scenario runs it over the document a real
 // shell produced, so the prose and the code cannot drift apart unnoticed.
 //
-// Run as a program: `node tools/cost/contract.mjs <document.json>` prints
+// Run as a program: `node tools/weigh/contract.mjs <document.json>` prints
 // the problems and exits 1 on any.
 
 import { readFileSync } from "node:fs"
@@ -61,11 +61,11 @@ function isSample(sample, at, problems) {
  * @param {object} document
  * @returns {string[]} problems; empty when the document follows the contract
  */
-export function validateCostDocument(document) {
+export function validateWeighDocument(document) {
   const problems = []
   if (!document || typeof document !== "object") return ["the document is not an object"]
   if (typeof document.omakit !== "string") problems.push("omakit is not a string")
-  if (document.command !== "cost") problems.push('command is not "cost"')
+  if (document.command !== "weigh") problems.push('command is not "weigh"')
   for (const key of ["method", "started", "ended", "host", "out"]) if (typeof document[key] !== "string") problems.push(`${key} is not a string`)
   if (!document.shell || typeof document.shell.version !== "string" || typeof document.shell.omarchyPath !== "string") problems.push("shell lacks version and omarchyPath")
   const settings = document.settings || {}
@@ -128,7 +128,7 @@ export function validateCostDocument(document) {
     for (const key of ["baselinePssSpreadMb", "baselineCpuSpreadPercent", "cpuTickPercent"]) if (within[key] !== null && typeof within[key] !== "number") problems.push(`${at}.withinNoise.${key} is neither a number nor null`)
     if (typeof within.note !== "string") problems.push(`${at}.withinNoise.note is not a string`)
     if (plugin.readme !== null && typeof plugin.readme !== "string") problems.push(`${at}.readme is neither a string nor null`)
-    if (typeof plugin.readme === "string" && !/^Adds (?:[\d.]+% CPU|no measurable CPU) \(floor [\d.?]+%\) and runs (?:no child process|\d+ child process(?:es)? using [\d.]+ MB(?: and [\d.]+% CPU)?), on Omarchy .+, measured with omakit cost on \d{4}-\d{2}-\d{2}$/.test(plugin.readme)) {
+    if (typeof plugin.readme === "string" && !/^Weighs (?:nothing measurable: no CPU above the floor \([\d.?]+%\) and no child process|(?:[\d.]+% CPU|no CPU above the floor \([\d.?]+%\)) and runs (?:no child process|\d+ child process(?:es)? using [\d.]+ MB and [\d.]+% CPU)), on Omarchy .+, measured with omakit weigh on \d{4}-\d{2}-\d{2}$/.test(plugin.readme)) {
       problems.push(`${at}.readme is not the README sentence: ${plugin.readme}`)
     }
     if ((verdict.cpu === "unknown") !== (plugin.readme === null)) problems.push(`${at}.readme is ${plugin.readme === null ? "null with a verdict" : "present without one"}`)
@@ -153,9 +153,9 @@ export function validateCostDocument(document) {
 const invoked = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 if (invoked) {
   const input = process.argv[2]
-  if (!input) throw new Error("usage: node tools/cost/contract.mjs <document.json>")
-  const problems = validateCostDocument(JSON.parse(readFileSync(resolve(input), "utf8")))
+  if (!input) throw new Error("usage: node tools/weigh/contract.mjs <document.json>")
+  const problems = validateWeighDocument(JSON.parse(readFileSync(resolve(input), "utf8")))
   for (const problem of problems) process.stdout.write(`${problem}\n`)
-  process.stdout.write(problems.length ? `${problems.length} problem(s)\n` : "ok: the document follows the contract in docs/COST.md\n")
+  process.stdout.write(problems.length ? `${problems.length} problem(s)\n` : "ok: the document follows the contract in docs/WEIGH.md\n")
   process.exit(problems.length ? 1 : 0)
 }

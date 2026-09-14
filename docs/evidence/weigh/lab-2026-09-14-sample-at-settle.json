@@ -1,6 +1,6 @@
 {
   "omakit": "0.1.9",
-  "command": "cost",
+  "command": "weigh",
   "method": "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are read at that fixed event, then utime+stime over the window from /proc/<pid>/stat; descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise",
   "started": "2026-09-14T20:09:29Z",
   "ended": "2026-09-14T20:25:34Z",
@@ -585,7 +585,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds no measurable CPU (floor 0.07%) and runs 2 child processes using 8.2 MB and 0.4% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs no CPU above the floor (0.07%) and runs 2 child processes using 8.2 MB and 0.4% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -1358,7 +1358,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs nothing measurable: no CPU above the floor (0.07%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -1902,7 +1902,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs nothing measurable: no CPU above the floor (0.07%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -2468,7 +2468,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds 2.8% CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs 2.8% CPU and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -3012,7 +3012,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds no measurable CPU (floor 0.07%) and runs 1 child process using 4.1 MB and 0.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs no CPU above the floor (0.07%) and runs 1 child process using 4.1 MB and 0.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -3634,7 +3634,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs nothing measurable: no CPU above the floor (0.07%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -4167,7 +4167,7 @@
         "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas"
       },
       "origin": "plus minus baseline per run over 5 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the fixed event (every plugin loaded, plus a 8s settle); utime+stime from /proc/<shell pid>/stat over a 15s window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
-      "readme": "Adds -0.1% CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14",
+      "readme": "Weighs -0.1% CPU and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14",
       "deltas": [
         {
           "run": 1,
@@ -4531,5 +4531,5 @@
     }
   ],
   "out": "/tmp/omakit-cost.json",
-  "note": "On 2026-09-15 the readme sentence and verdict.summary were regenerated in the CPU-and-children form (memory is the shell's until C2 is understood); the samples and every figure are as the guest wrote them."
+  "note": "On 2026-09-15 the readme sentence and verdict.summary were regenerated in the CPU-and-children form (memory is the shell's until C2 is understood); the samples and every figure are as the guest wrote them. On 2026-09-15 the command was renamed from cost to weigh; command and the readme sentences were regenerated in the weigh form, every figure as the guest wrote it."
 }

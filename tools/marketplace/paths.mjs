@@ -11,7 +11,7 @@ export function omakitCacheDir(name = "", env = process.env) {
 
 /**
  * Omakit's user-writable state, following XDG with the usual ~/.local/state
- * fallback: where `omakit cost` keeps its documents and its per-restart
+ * fallback: where `omakit weigh` keeps its documents and its per-restart
  * timing. State, not cache, because a measurement is not something to
  * fetch again.
  */

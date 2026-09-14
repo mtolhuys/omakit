@@ -1,5 +1,5 @@
 // The arithmetic behind every figure: a median with its spread, and the
-// comparison that decides "within noise". Kept apart so tests/unit/cost.test.mjs
+// comparison that decides "within noise". Kept apart so tests/unit/weigh.test.mjs
 // can hold it to known inputs without a shell.
 
 /** The median of a list; null when the list is empty. */

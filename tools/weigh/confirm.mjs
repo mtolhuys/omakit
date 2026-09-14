@@ -1,4 +1,4 @@
-// The one question `omakit cost` asks: may it restart the shell that many
+// The one question `omakit weigh` asks: may it restart the shell that many
 // times. Asked at a terminal only, on stderr so stdout stays the report;
 // anywhere else, a pipe, an agent, --json, the answer has to arrive as
 // --yes, and cli.mjs refuses with a usage error when it does not. Nothing

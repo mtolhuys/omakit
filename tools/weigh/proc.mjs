@@ -1,6 +1,6 @@
 // Reading /proc, and nothing else. Every function takes the root of the
 // tree, `/proc` on a real machine and a directory of fixtures in
-// tests/unit/cost.test.mjs, so the sampler is tested without a shell.
+// tests/unit/weigh.test.mjs, so the sampler is tested without a shell.
 //
 // What is read, and from where, is the origin every figure carries:
 //

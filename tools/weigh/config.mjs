@@ -1,7 +1,7 @@
-// The shell configuration: where it is, the one transform `omakit cost`
-// applies to it, and the backup it restores from. docs/COST.md, "The
+// The shell configuration: where it is, the one transform `omakit weigh`
+// applies to it, and the backup it restores from. docs/WEIGH.md, "The
 // shell.json mutation", is the prose form of `without()` below; the two are
-// held together by tests/unit/cost.test.mjs.
+// held together by tests/unit/weigh.test.mjs.
 //
 // The transform is pure and works on the effective configuration the shell
 // reports, not on the file. The file itself is touched in exactly two ways:

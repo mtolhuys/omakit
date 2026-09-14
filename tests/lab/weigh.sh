@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# The lab gate for `omakit cost`, run by the Omarchy plugin lab in a
+# The lab gate for `omakit weigh`, run by the Omarchy plugin lab in a
 # disposable guest against the stock pin:
 #
-#   cd ~/Projects/omarchy/plugin-lab && ./bin/lab plugin /path/to/omakit/tests/lab/cost.sh
+#   cd ~/Projects/omarchy/plugin-lab && ./bin/lab plugin /path/to/omakit/tests/lab/weigh.sh
 #
 # Stages omakit (bin/, tools/, package.json), the four fixtures under
-# tests/fixtures/cost/ and three real third-party plugins from checkouts on
+# tests/fixtures/weigh/ and three real third-party plugins from checkouts on
 # the host, installs and enables the seven plugins, runs
-# `omakit cost --all --runs 5 --yes` (the default window and settle) inside
+# `omakit weigh --all --runs 5 --yes` (the default window and settle) inside
 # the guest session, and asserts:
 # the 180 ms timer fixture is above noise on CPU; the clean fixture is within
 # noise and the report says so in words; shell.json is byte-identical before
-# and after and no backup is left; the document follows docs/COST.md
-# (tools/cost/contract.mjs). The document and the log are copied next to
-# host-test.log in the run directory; the document is what docs/evidence/cost/
+# and after and no backup is left; the document follows docs/WEIGH.md
+# (tools/weigh/contract.mjs). The document and the log are copied next to
+# host-test.log in the run directory; the document is what docs/evidence/weigh/
 # carries and docs/MEASUREMENTS.md C1 cites.
 #
 # The desktop is never where this runs: the command restarts a shell forty
@@ -23,7 +23,7 @@
 omarchy_host_test() {
   local omakit_dir fixtures_dir name real real_dir md5_before md5_after out
   omakit_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-  fixtures_dir="$omakit_dir/tests/fixtures/cost"
+  fixtures_dir="$omakit_dir/tests/fixtures/weigh"
   out="${RUN_DIR:-/tmp}"
   local -a reals=(io.github.calebhat.weather bjarneo.workspace-layout omaplug)
   local -a fixtures=(clean timer-180ms poller idle-panel)
@@ -58,7 +58,7 @@ omarchy_host_test() {
        [\"fixture.clean\", \"fixture.timer-180ms\", \"fixture.poller\", \"fixture.idle-panel\",
         \"io.github.calebhat.weather\", \"bjarneo.workspace-layout\", \"omaplug\"] as \$want
        | . as \$list | all(\$want[]; . as \$id | any(\$list[]; .id == \$id and .enabled == true))'" || return 1
-  capture_console "success-omakit-cost-01-installed"
+  capture_console "success-omakit-weigh-01-installed"
 
   md5_before=$(ssh_session "md5sum < \"\$HOME/.config/omarchy/shell.json\"")
   [[ -n $md5_before ]] || return 1
@@ -66,36 +66,36 @@ omarchy_host_test() {
 
   # The plan, refused: without --yes in a pipe the command prints the count
   # and touches nothing. Exit 2 is the expected outcome.
-  ssh_session "$guest_path node /tmp/omakit/bin/omakit cost --all --runs 5 </dev/null; test \$? -eq 2" || { echo "the unconfirmed run did not refuse with exit 2" >&2; return 1; }
+  ssh_session "$guest_path node /tmp/omakit/bin/omakit weigh --all --runs 5 </dev/null; test \$? -eq 2" || { echo "the unconfirmed run did not refuse with exit 2" >&2; return 1; }
   [[ $(ssh_session "md5sum < \"\$HOME/.config/omarchy/shell.json\"") == "$md5_before" ]] || { echo "the refused run touched shell.json" >&2; return 1; }
 
   # The measurement restarts the shell, so it runs detached from this ssh
   # call and reports through a done file.
-  log "Running omakit cost --all --runs 5 in the guest (40 restarts, the default 30 s settle and 15 s window)"
-  ssh_session "rm -f /tmp/omakit-cost.done /tmp/omakit-cost.log /tmp/omakit-cost.json; \
-    setsid bash -c '$guest_path node /tmp/omakit/bin/omakit cost --all --runs 5 --yes --out /tmp/omakit-cost.json \
-      > /tmp/omakit-cost.log 2>&1; echo \$? > /tmp/omakit-cost.done' >/dev/null 2>&1 < /dev/null &" || return 1
-  wait_for_guest_state "omakit cost finished" 3600 ssh_guest "test -f /tmp/omakit-cost.done" || {
-    ssh_guest "tail -n 60 /tmp/omakit-cost.log" || true
+  log "Running omakit weigh --all --runs 5 in the guest (40 restarts, the default 30 s settle and 15 s window)"
+  ssh_session "rm -f /tmp/omakit-weigh.done /tmp/omakit-weigh.log /tmp/omakit-weigh.json; \
+    setsid bash -c '$guest_path node /tmp/omakit/bin/omakit weigh --all --runs 5 --yes --out /tmp/omakit-weigh.json \
+      > /tmp/omakit-weigh.log 2>&1; echo \$? > /tmp/omakit-weigh.done' >/dev/null 2>&1 < /dev/null &" || return 1
+  wait_for_guest_state "omakit weigh finished" 3600 ssh_guest "test -f /tmp/omakit-weigh.done" || {
+    ssh_guest "tail -n 60 /tmp/omakit-weigh.log" || true
     return 1
   }
-  ssh_guest "cat /tmp/omakit-cost.log" > "$out/omakit-cost.log" 2>/dev/null || true
+  ssh_guest "cat /tmp/omakit-weigh.log" > "$out/omakit-weigh.log" 2>/dev/null || true
   # The shell's own journal over the run, for C2: a rescan or a bar rebuild
   # ("Handler was registered but will not be used") between two levels.
   ssh_session "journalctl --user -t omarchy-shell --no-pager -o short-iso --since '-2 hours'" > "$out/omarchy-shell.journal" 2>/dev/null || true
   ssh_session "ls \$XDG_RUNTIME_DIR/omarchy/plugin-runtime/" > "$out/plugin-runtime-generations.txt" 2>/dev/null || true
-  ssh_guest "cat /tmp/omakit-cost.json" > "$out/omakit-cost.json" || return 1
-  [[ $(ssh_guest "cat /tmp/omakit-cost.done") == 0 ]] || { echo "omakit cost exited non-zero" >&2; tail -n 40 "$out/omakit-cost.log" >&2; return 1; }
+  ssh_guest "cat /tmp/omakit-weigh.json" > "$out/omakit-weigh.json" || return 1
+  [[ $(ssh_guest "cat /tmp/omakit-weigh.done") == 0 ]] || { echo "omakit weigh exited non-zero" >&2; tail -n 40 "$out/omakit-weigh.log" >&2; return 1; }
 
   md5_after=$(ssh_session "md5sum < \"\$HOME/.config/omarchy/shell.json\"")
   log "shell.json after: $md5_after"
   [[ $md5_after == "$md5_before" ]] || { echo "shell.json changed" >&2; return 1; }
   ssh_session "test -z \"\$(ls \"\$HOME/.config/omarchy/\" | grep omakit-backup)\"" || { echo "a backup was left behind" >&2; return 1; }
   ssh_session "omarchy-shell shell ping | grep -qx ok" || return 1
-  capture_console "success-omakit-cost-02-restored"
+  capture_console "success-omakit-weigh-02-restored"
 
   # The document follows the contract, on the host, with the tool's own validator.
-  node "$omakit_dir/tools/cost/contract.mjs" "$out/omakit-cost.json" || return 1
+  node "$omakit_dir/tools/weigh/contract.mjs" "$out/omakit-weigh.json" || return 1
 
   # The acceptance line: the busy fixture is above noise on CPU; the clean
   # fixture is within noise on both and the report says so in words; every
@@ -110,18 +110,18 @@ omarchy_host_test() {
       and $clean.verdict.summary == "no measurable CPU"
       and .config.restored == true
       and .config.md5Before == $before and .config.md5After == $before
-      and (.plugins | length) == 7' "$out/omakit-cost.json" || {
-    jq -c '.noiseFloor' "$out/omakit-cost.json" >&2
-    jq -c '.plugins[] | {id, runsCompleted, shellPssMb, shellCpuPercent, verdict}' "$out/omakit-cost.json" >&2
+      and (.plugins | length) == 7' "$out/omakit-weigh.json" || {
+    jq -c '.noiseFloor' "$out/omakit-weigh.json" >&2
+    jq -c '.plugins[] | {id, runsCompleted, shellPssMb, shellCpuPercent, verdict}' "$out/omakit-weigh.json" >&2
     return 1
   }
-  grep -Eq "^▁ ok +fixture\.clean " "$out/omakit-cost.log" || { echo "the report does not mark fixture.clean ok" >&2; return 1; }
-  grep -A1 -E "ok +fixture\.clean " "$out/omakit-cost.log" | grep -q "no measurable CPU" || { echo "the report does not say no measurable CPU for fixture.clean" >&2; return 1; }
-  grep -q "^memory        within the shell's own startup variance" "$out/omakit-cost.log" || { echo "the header does not label memory as the shell's" >&2; return 1; }
-  grep -q "^for the README" "$out/omakit-cost.log" || { echo "no README sentence" >&2; return 1; }
+  grep -Eq "^▁ ok +fixture\.clean " "$out/omakit-weigh.log" || { echo "the report does not mark fixture.clean ok" >&2; return 1; }
+  grep -A1 -E "ok +fixture\.clean " "$out/omakit-weigh.log" | grep -q "no measurable CPU" || { echo "the report does not say no measurable CPU for fixture.clean" >&2; return 1; }
+  grep -q "^memory        within the shell's own startup variance" "$out/omakit-weigh.log" || { echo "the header does not label memory as the shell's" >&2; return 1; }
+  grep -q "^for the README" "$out/omakit-weigh.log" || { echo "no README sentence" >&2; return 1; }
 
-  jq -r '.noiseFloor | "noise floor: Pss \(.pssMb) MB and VmRSS \(.rssMb) MB at the end of the window, Pss \(.pssMbSettled) MB at the settle, CPU \(.cpuPercent)%"' "$out/omakit-cost.json"
-  jq -r '.plugins[] | [.id, (.shellPssMb.median * 100 | round / 100), (.shellPssMb.spread * 100 | round / 100), (.shellCpuPercent.median * 100 | round / 100), (.shellCpuPercent.spread * 100 | round / 100), (.childRssMb.median * 100 | round / 100), (.childCpuPercent.median * 100 | round / 100), .childSpawns.median, .verdict.summary] | @tsv' "$out/omakit-cost.json"
+  jq -r '.noiseFloor | "noise floor: Pss \(.pssMb) MB and VmRSS \(.rssMb) MB at the end of the window, Pss \(.pssMbSettled) MB at the settle, CPU \(.cpuPercent)%"' "$out/omakit-weigh.json"
+  jq -r '.plugins[] | [.id, (.shellPssMb.median * 100 | round / 100), (.shellPssMb.spread * 100 | round / 100), (.shellCpuPercent.median * 100 | round / 100), (.shellCpuPercent.spread * 100 | round / 100), (.childRssMb.median * 100 | round / 100), (.childCpuPercent.median * 100 | round / 100), .childSpawns.median, .verdict.summary] | @tsv' "$out/omakit-weigh.json"
   ssh_session "test -z \"\$(hyprctl configerrors)\"" || return 1
-  printf 'ok - omakit cost measured seven plugins over five runs each, told the 180 ms timer from the clean fixture, said within noise in words, restored shell.json byte for byte, and the document follows docs/COST.md\n'
+  printf 'ok - omakit weigh measured seven plugins over five runs each, told the 180 ms timer from the clean fixture, said within noise in words, restored shell.json byte for byte, and the document follows docs/WEIGH.md\n'
 }

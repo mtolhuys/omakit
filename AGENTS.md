@@ -7,7 +7,7 @@ the refusals up front, in one pass, with the reason attached.
 Four skills cover the four jobs:
 
 - `skills/omarchy-plugin-check/SKILL.md`: checking a plugin while it is being built.
-- `skills/omarchy-plugin-cost/SKILL.md`: measuring what a plugin costs the shell.
+- `skills/omarchy-plugin-weigh/SKILL.md`: weighing a plugin on the shell.
 - `skills/omarchy-plugin-submit/SKILL.md`: submitting a plugin.
 - `skills/omarchy-plugin-validation-watch/SKILL.md`: a submission that has gone quiet.
 
@@ -34,7 +34,7 @@ drifts, and drift is the failure this repository was built to remove.
 does not ship, and `tests/unit/submit.test.mjs` fails if one appears. Put the
 reason in the check's `why` field, with the figure in it, and cite it in
 `docs/MEASUREMENTS.md`. If you cannot measure it, do not add it. In `omakit
-cost` the numbers are the measurements themselves and their noise floor: a
+weigh` the numbers are the measurements themselves and their noise floor: a
 figure without its origin (the `/proc` path, the window, the run count) does
 not ship, and a delta inside the baseline's own spread is reported as within
 noise, in words, never rounded to zero and never hidden.
@@ -46,14 +46,14 @@ Zero runtime dependencies. Plain ESM. `node --test`. One executable entry point,
 wrong change or it belongs somewhere else.
 
 The scope is submission readiness: everything an author can know about a
-plugin before posting it, including what it costs. It is not a scaffolder, not
+plugin before posting it, including what it weighs. It is not a scaffolder, not
 a plugin framework, not a conformance suite; the disposable-VM conformance work
 stayed in the archive and is a separate decision. `tests/unit/self-containment.test.mjs`
 fails if a `scaffold`, `vendor` or `template` command appears, and if any
 module gains a file-copying primitive.
 
 Every command is read-only against the user's own machine, with one exception.
-`omakit cost` measures a plugin by restarting the user's shell without it and
+`omakit weigh` measures a plugin by restarting the user's shell without it and
 with it, and edits `~/.config/omarchy/shell.json` for the duration of the
 measurement. So it is the single command that confirms before acting: it
 states the restart count and the estimated minutes, accepts `--yes`, refuses
@@ -61,8 +61,8 @@ while the session is locked and when the plugin is not enabled, backs
 `shell.json` up to a timestamped copy, restores it on every exit path
 including an interrupt and a shell that does not come back, and prints the
 md5 before and after. It never touches the marketplace, never posts, and
-never writes into a plugin tree; `docs/COST.md` says exactly what it writes.
-`tests/unit/read-only.test.mjs` holds `tools/cost/` to a frozen list of
+never writes into a plugin tree; `docs/WEIGH.md` says exactly what it writes.
+`tests/unit/read-only.test.mjs` holds `tools/weigh/` to a frozen list of
 Omarchy commands, and `tests/unit/self-containment.test.mjs` to the files it
 may write.
 
@@ -102,7 +102,7 @@ else.
 | --- | --- |
 | `README.md` | one command and its output |
 | `docs/SUBMIT.md` | every check and what it decides |
-| `docs/COST.md` | what `cost` measures, how, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
+| `docs/WEIGH.md` | what `weigh` measures, how, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | `docs/VALIDATION_WATCH.md` | the validation watch and why it is the centre |
 | `docs/MEASUREMENTS.md` | every number, its method and its limits |
 | `docs/UPSTREAM_CONTRACT.md` | the seam, the pin, the boundaries |

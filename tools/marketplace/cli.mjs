@@ -6,13 +6,13 @@
 //   omakit watch <issue-url>         is this submission's validated commit still current?
 //   omakit verify <target>           the official baseline over the local transport, verbatim
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
-//   omakit cost <plugin> | --all     what a plugin costs the shell, measured by restarting it
+//   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
-// proves it. `cost` is the one command that changes the user's own machine,
+// proves it. `weigh` is the one command that changes the user's own machine,
 // their shell and its configuration for the duration of a measurement, and
-// it confirms first; docs/COST.md says what it writes and how it restores.
+// it confirms first; docs/WEIGH.md says what it writes and how it restores.
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
@@ -31,11 +31,11 @@ import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { action, colourEnabled, GUTTER, labelled, mark, styler, wrap } from "./style.mjs"
+import { action, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
-import { DEFAULTS as COST_DEFAULTS, measureCost, planCost } from "../cost/audit.mjs"
-import { renderCost, renderPlan } from "../cost/report.mjs"
-import { askYes } from "../cost/confirm.mjs"
+import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
+import { renderWeigh, renderPlan } from "../weigh/report.mjs"
+import { askYes } from "../weigh/confirm.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -289,19 +289,34 @@ function integerOption(args, name, fallback, { min = 1 } = {}) {
   return Number(raw)
 }
 
-async function cmdCost(args) {
+/**
+ * Every way `weigh` stops without weighing, in one register: the closing
+ * word a report would have ended with, negated, then the sentence naming
+ * what is missing, then the one thing to do. Exit 2 for a usage error and
+ * an unanswered confirmation, 130 for an interrupt, 1 for the rest.
+ */
+function notWeighed(code, message, remedy, exit = 1) {
+  const c = styler(colourEnabled(process.stderr))
+  const lines = verdict("fail", "NOT WEIGHED", message, c)
+  if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
+  process.stderr.write(`${lines.join("\n")}\n`)
+  process.exit(exit)
+}
+
+async function cmdWeigh(args) {
   const json = args.includes("--json")
   const all = args.includes("--all")
   const target = positionals(args)[0]
-  if (!target && !all) fail("usage", "cost needs a plugin: `omakit cost <plugin-id-or-dir>`, or `omakit cost --all` for every enabled third-party plugin", 2, "omakit cost <plugin-id-or-dir>")
-  const runs = integerOption(args, "--runs", COST_DEFAULTS.runs)
-  const windowSeconds = integerOption(args, "--window", COST_DEFAULTS.windowSeconds)
-  const settleSeconds = integerOption(args, "--settle", COST_DEFAULTS.settleSeconds, { min: 0 })
+  if (!target && !all) notWeighed("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin.", "omakit weigh <plugin-id-or-dir>", 2)
+  const runs = integerOption(args, "--runs", WEIGH_DEFAULTS.runs)
+  const windowSeconds = integerOption(args, "--window", WEIGH_DEFAULTS.windowSeconds)
+  const settleSeconds = integerOption(args, "--settle", WEIGH_DEFAULTS.settleSeconds, { min: 0 })
   let plan
   try {
-    plan = planCost({ target, all, runs, windowSeconds, settleSeconds, out: option(args, "--out") })
+    plan = planWeigh({ target, all, runs, windowSeconds, settleSeconds, out: option(args, "--out") })
   } catch (error) {
-    failFrom(error)
+    if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code], error.code === "usage" ? 2 : 1)
+    throw error
   }
   // The narration: what was backed up and with which md5, and what was
   // restored. For a person it is part of the report, on stdout; under
@@ -315,9 +330,9 @@ async function cmdCost(args) {
   narrate.write(`${renderPlan(plan, { colour: colourEnabled(narrate) }).join("\n")}\n`)
   if (!args.includes("--yes")) {
     const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
-    if (!interactive) fail("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is`, 2)
+    if (!interactive) notWeighed("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is.`, REMEDY["not-confirmed"], 2)
     const agreed = await askYes({ question: `Restart the shell ${plan.restarts} times now, about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}?` })
-    if (!agreed) fail("not-confirmed", "not confirmed; nothing was changed", 2)
+    if (!agreed) notWeighed("not-confirmed", "not confirmed; nothing was changed.", REMEDY["not-confirmed"], 2)
   }
   narrate.write("\n")
   // An interrupt is a request to stop, not a reason to leave the user's
@@ -334,11 +349,12 @@ async function cmdCost(args) {
   const spinner = spinnerFor(args)
   let document
   try {
-    document = await measureCost(plan, { signal: controller.signal, omakitVersion: VERSION, onPhase: spinner.phase, onLine: (line) => { spinner.done(); say(line) } })
+    document = await measureWeigh(plan, { signal: controller.signal, omakitVersion: VERSION, onPhase: spinner.phase, onLine: (line) => { spinner.done(); say(line) } })
   } catch (error) {
     spinner.done()
-    if (error?.code === "interrupted") fail("interrupted", "interrupted before the measurement completed", 130)
-    failFrom(error)
+    if (error?.code === "interrupted") notWeighed("interrupted", "interrupted before the measurement completed.", REMEDY.interrupted, 130)
+    if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code])
+    throw error
   } finally {
     process.off("SIGINT", interrupt)
     process.off("SIGTERM", interrupt)
@@ -347,7 +363,7 @@ async function cmdCost(args) {
   if (json) {
     process.stdout.write(`${JSON.stringify(document, null, 2)}\n`)
   } else {
-    process.stdout.write(`\n${renderCost(document)}\n`)
+    process.stdout.write(`\n${renderWeigh(document)}\n`)
   }
   process.exit(0)
 }
@@ -384,8 +400,8 @@ if (command === "setup") {
   await cmdVerify(rest.filter((value, index) => value !== "marketplace" || rest[index - 1] !== "--profile"))
 } else if (command === "parity") {
   await cmdParity(rest)
-} else if (command === "cost") {
-  await cmdCost(rest)
+} else if (command === "weigh") {
+  await cmdWeigh(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install

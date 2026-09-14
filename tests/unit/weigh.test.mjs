@@ -1,11 +1,11 @@
-// `omakit cost` without a shell: a fake /proc tree and stub Omarchy commands
+// `omakit weigh` without a shell: a fake /proc tree and stub Omarchy commands
 // first on PATH, so every code path that restarts a shell on a real machine
 // runs here against a directory, and the desktop is never restarted by a
 // test. What is proven: the confirmation text and its counts, the refusals
 // (locked, disabled, a bar, unknown), the backup and its restore on a normal
 // exit, on a thrown error and on SIGINT, the md5 equality, the shell.json
 // transform, median and spread, the within-noise verdict, children
-// attribution, and that every produced document follows docs/COST.md.
+// attribution, and that every produced document follows docs/WEIGH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawn, spawnSync } from "node:child_process"
@@ -13,13 +13,13 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSyn
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
-import { buildDocument, CostError, DEFAULTS, RESTART_SECONDS, measureCost, planCost, readmeSentence, restartTiming, summaryOf } from "../../tools/cost/audit.mjs"
-import { COMMANDS, commandLine, run } from "../../tools/cost/commands.mjs"
-import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without } from "../../tools/cost/config.mjs"
-import { validateCostDocument } from "../../tools/cost/contract.mjs"
-import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/cost/proc.mjs"
-import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/cost/stats.mjs"
-import { renderCost, renderPlan, rowState } from "../../tools/cost/report.mjs"
+import { buildDocument, WeighError, DEFAULTS, RESTART_SECONDS, measureWeigh, planWeigh, readmeSentence, restartTiming, summaryOf } from "../../tools/weigh/audit.mjs"
+import { COMMANDS, commandLine, run } from "../../tools/weigh/commands.mjs"
+import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without } from "../../tools/weigh/config.mjs"
+import { validateWeighDocument } from "../../tools/weigh/contract.mjs"
+import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/weigh/proc.mjs"
+import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/weigh/stats.mjs"
+import { renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
 import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
@@ -81,7 +81,7 @@ function writeProc(root, { shellRssKb = 500_000, shellPssKb = 470_000, child = f
  * has to see.
  */
 function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE, shellJson = USER_SHELL_JSON, restartFailsAt = null } = {}) {
-  const root = mkdtempSync(join(tmpdir(), "omakit-cost-"))
+  const root = mkdtempSync(join(tmpdir(), "omakit-weigh-"))
   const home = join(root, "home")
   const bin = join(root, "bin")
   const proc = join(root, "proc")
@@ -212,7 +212,7 @@ test("median, spread, stats and the verdict", () => {
   // The rule for CPU: above noise only when the delta exceeds the floor and
   // one clock tick over the window. Measured in the lab: one tick over a
   // 15.003 s window against a floor of one tick over a 15.005 s window is
-  // the same tick, not a cost; two ticks are.
+  // the same tick, not a weight; two ticks are.
   const tick = tickPercent(100, 15)
   assert.ok(Math.abs(tick - 0.0666667) < 1e-6)
   assert.equal(verdict(-0.06666222014954999, 0.06665333422334721, tick), "within-noise")
@@ -235,11 +235,13 @@ test("median, spread, stats and the verdict", () => {
 test("the README sentence speaks about CPU and child processes, never about the shell's memory", () => {
   const base = { floorCpu: 0.1333, shellVersion: "4.0.0.alpha", date: "2026-09-14" }
   assert.equal(readmeSentence({ ...base, cpuVerdict: "above-noise", shellCpuPercent: 2.73, childSpawns: 0, childMb: 0, childCpuPercent: -0.07 }),
-    "Adds 2.7% CPU (floor 0.13%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+    "Weighs 2.7% CPU and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
   assert.equal(readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: 0, childSpawns: 2, childMb: 8.18, childCpuPercent: 0.13 }),
-    "Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+    "Weighs no CPU above the floor (0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
   assert.equal(readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: -0.07, childSpawns: 1, childMb: 4.09, childCpuPercent: -0.2 }),
-    "Adds no measurable CPU (floor 0.13%) and runs 1 child process using 4.1 MB, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+    "Weighs no CPU above the floor (0.13%) and runs 1 child process using 4.1 MB and 0.0% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
+  assert.equal(readmeSentence({ ...base, cpuVerdict: "within-noise", shellCpuPercent: 0.01, childSpawns: 0, childMb: 0, childCpuPercent: 0 }),
+    "Weighs nothing measurable: no CPU above the floor (0.13%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
   assert.equal(readmeSentence({ ...base, cpuVerdict: "unknown", shellCpuPercent: null, childSpawns: null, childMb: null, childCpuPercent: null }), null)
   for (const sentence of [
     readmeSentence({ ...base, cpuVerdict: "above-noise", shellCpuPercent: 2.73, childSpawns: 0, childMb: 0, childCpuPercent: 0 }),
@@ -290,7 +292,7 @@ test("backup and restore are byte for byte, keep the mode, and verify by md5", (
 
 test("the plan counts restarts as (1 + plugins) × runs and estimates from the stored timing, or the lab's before one exists", () => {
   const m = machine()
-  const plan = planCost({ target: "fixture.clean", env: m.env, now: new Date("2026-09-14T19:02:25.123Z") })
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, now: new Date("2026-09-14T19:02:25.123Z") })
   assert.deepEqual(plan.audited.map((plugin) => plugin.id), ["fixture.clean"])
   assert.equal(plan.audited[0].sourceDir, "/plugins/fixture.clean")
   assert.equal(plan.restarts, (1 + 1) * DEFAULTS.runs)
@@ -303,43 +305,43 @@ test("the plan counts restarts as (1 + plugins) × runs and estimates from the s
   assert.equal(plan.omarchyPath, m.omarchyPath)
   assert.equal(plan.clockTicksPerSecond, 100)
   assert.equal(plan.started, "2026-09-14T19:02:25Z")
-  assert.equal(plan.out, join(m.env.XDG_STATE_HOME, "omakit/cost/2026-09-14T190225Z.json"))
+  assert.equal(plan.out, join(m.env.XDG_STATE_HOME, "omakit/weigh/2026-09-14T190225Z.json"))
   assert.equal(plan.configFile, join(m.home, ".config/omarchy/shell.json"))
   assert.equal(plan.env.OMARCHY_PATH, m.omarchyPath, "every command sees the session's OMARCHY_PATH")
   // With a stored timing, the estimate is this machine's.
   mkdirSync(plan.stateDir, { recursive: true })
   writeFileSync(join(plan.stateDir, "timing.json"), JSON.stringify({ restartSeconds: 4, restarts: 6, measuredAt: "2026-09-14T00:00:00Z" }))
-  const again = planCost({ target: "fixture.clean", env: m.env, runs: 5, windowSeconds: 2, settleSeconds: 1 })
+  const again = planWeigh({ target: "fixture.clean", env: m.env, runs: 5, windowSeconds: 2, settleSeconds: 1 })
   assert.equal(again.timing.seconds, 4)
   assert.match(again.timing.source, /measured over 6 restart/)
   assert.equal(again.restarts, 10)
   assert.equal(again.estimatedMinutes, Math.ceil((10 * (4 + 1 + 2)) / 60))
   assert.equal(restartTiming(join(m.root, "nowhere")).seconds, RESTART_SECONDS)
   // --all is every enabled third-party plugin that is not a whole bar, with the real count.
-  const all = planCost({ all: true, env: m.env })
+  const all = planWeigh({ all: true, env: m.env })
   assert.deepEqual(all.audited.map((plugin) => plugin.id), ["fixture.clean", "fixture.poller"])
   assert.equal(all.restarts, (1 + 2) * DEFAULTS.runs)
   // A directory with a manifest resolves to its id.
   const dir = join(m.root, "checkout")
   mkdirSync(dir)
   writeFileSync(join(dir, "manifest.json"), JSON.stringify({ id: "fixture.poller" }))
-  assert.equal(planCost({ target: dir, env: m.env }).audited[0].id, "fixture.poller")
+  assert.equal(planWeigh({ target: dir, env: m.env }).audited[0].id, "fixture.poller")
   // --out is honoured, absolute.
-  assert.equal(planCost({ target: "fixture.clean", env: m.env, out: join(m.root, "here.json") }).out, join(m.root, "here.json"))
+  assert.equal(planWeigh({ target: "fixture.clean", env: m.env, out: join(m.root, "here.json") }).out, join(m.root, "here.json"))
 })
 
 test("the confirmation says the plugins, the restart count, the minutes, the backup and the file, within eighty columns", () => {
   const m = machine()
-  const plan = planCost({ all: true, env: m.env })
+  const plan = planWeigh({ all: true, env: m.env })
   const text = renderPlan(plan, { colour: false, env: m.env }).join("\n")
-  assert.match(text, /^measuring {5}fixture\.clean, fixture\.poller$/m)
+  assert.match(text, /^weighing {6}fixture\.clean, fixture\.poller$/m)
   assert.match(text, /^restarts {6}9: \(1 baseline \+ 2 plugins\) × 3 runs$/m)
   assert.match(text, /^estimate {6}about 8 minutes, 50 s per restart: 5 s for the shell to come back/m)
   assert.match(text, /then the\n {14}30 s settle and the 15 s window/)
   assert.match(text, /^shell\.json {4}backed up beside itself and restored on every exit path; the md5/m)
-  assert.match(text, /^writes {8}~\/xdg-state\/omakit\/cost\/\d{4}-\d{2}-\d{2}T\d{6}Z\.json$/m)
+  assert.match(text, /^writes {8}~\/xdg-state\/omakit\/weigh\/\d{4}-\d{2}-\d{2}T\d{6}Z\.json$/m)
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
-  const single = renderPlan(planCost({ target: "fixture.clean", env: m.env, runs: 1 }), { colour: false, env: m.env }).join("\n")
+  const single = renderPlan(planWeigh({ target: "fixture.clean", env: m.env, runs: 1 }), { colour: false, env: m.env }).join("\n")
   assert.match(single, /^restarts {6}2: \(1 baseline \+ 1 plugin\) × 1 run$/m)
   assert.equal(plain(renderPlan(plan, { colour: true, env: m.env }).join("\n")), text, "colour changes nothing about the words")
 })
@@ -347,9 +349,9 @@ test("the confirmation says the plugins, the restart count, the minutes, the bac
 test("a locked session, a disabled plugin, a whole bar, an unknown id and a missing command are each refused before anything is touched", () => {
   const codeOf = (options) => {
     try {
-      planCost(options)
+      planWeigh(options)
     } catch (error) {
-      assert.ok(error instanceof CostError, `${error}`)
+      assert.ok(error instanceof WeighError, `${error}`)
       return error.code
     }
     return "no error"
@@ -382,8 +384,8 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   const md5Before = md5(readFileSync(m.configFile))
   const lines = []
   const phases = []
-  const plan = planCost({ target: "fixture.poller", env: m.env, ...FAST })
-  const document = await measureCost(plan, { procRoot: m.proc, omakitVersion: "0.0.0-test", onLine: (line) => lines.push(line), onPhase: (text) => phases.push(text) })
+  const plan = planWeigh({ target: "fixture.poller", env: m.env, ...FAST })
+  const document = await measureWeigh(plan, { procRoot: m.proc, omakitVersion: "0.0.0-test", onLine: (line) => lines.push(line), onPhase: (text) => phases.push(text) })
   const restarts = m.restarts()
   assert.equal(restarts.length, (1 + 1) * 2 + 1, "baseline and plus per run, then the restore")
   assert.deepEqual(restarts[0].config.plugins, [{ id: "fixture.off" }], "baseline: the plugin is out of plugins[]")
@@ -410,9 +412,9 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.ok(phases.some((text) => /run 2 of 2: fixture\.poller, sampling for 0\.2s/.test(text)))
   assert.equal(phases.at(-1), "restoring shell.json and restarting the shell")
   // The document.
-  assert.deepEqual(validateCostDocument(document), [])
+  assert.deepEqual(validateWeighDocument(document), [])
   assert.equal(document.omakit, "0.0.0-test")
-  assert.equal(document.command, "cost")
+  assert.equal(document.command, "weigh")
   assert.deepEqual(document.audited, ["fixture.poller"])
   assert.equal(document.baseline.pssMb.runs.length, 2)
   assert.deepEqual(document.baseline.config, restarts[0].config)
@@ -434,7 +436,7 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(row.shellCpuPercent.median, 0)
   assert.equal(document.noiseFloor.pssMb, 0)
   assert.deepEqual(row.verdict, { memory: "within-noise", cpu: "within-noise", summary: "no measurable CPU" })
-  assert.equal(row.readme, "Adds no measurable CPU (floor 0.00%) and runs 1 child process using 4.0 MB, on Omarchy 4.0.0.test, measured with omakit cost on " + document.started.slice(0, 10))
+  assert.equal(row.readme, "Weighs no CPU above the floor (0.00%) and runs 1 child process using 4.0 MB and 0.0% CPU, on Omarchy 4.0.0.test, measured with omakit weigh on " + document.started.slice(0, 10))
   assert.match(row.origin, /smaps_rollup/)
   assert.equal(document.plugins[0].runs[0].shell.memoryAt, "window-end")
   assert.equal(document.plugins[0].runs[0].configRewritten, false, "nothing rewrote the measurement configuration during the window")
@@ -451,10 +453,11 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(timing.restarts, 4, "the timing counts the measured restarts, not the restore")
   assert.ok(timing.restartSeconds >= 0)
   // Rendered, within eighty columns, ending with the README sentence and the evidence.
-  const text = renderCost(document, { colour: false, env: m.env })
+  const text = renderWeigh(document, { colour: false, env: m.env })
   for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
   assert.match(text, /^noise floor {3}0% CPU, the spread of 2 baseline runs; a CPU delta inside it is\n {14}within noise$/m)
-  assert.match(text.replace(/\n {14}/g, " "), /^memory {8}within the shell's own startup variance \(0 MB over 2 baseline runs, 0 MB at the settle\): a fact about the shell's start, not a cost of a plugin/m)
+  assert.match(text.replace(/\n {14}/g, " "), /^memory {8}within the shell's own startup variance \(0 MB over 2 baseline runs, 0 MB at the settle\): a fact about the shell's start, not a plugin's weight/m)
+  assert.match(text, new RegExp(`^${DENSITY.floor} WEIGHED {2}1 plugin over 2 runs\\. shell\\.json restored and verified\\.$`, "m"))
   assert.match(text, new RegExp(`^shell\\.json {4}md5 ${md5Before} before,\\n {${LABEL}}${md5Before} after: restored and verified,\\n {${LABEL}}backup removed$`, "m"))
   assert.match(text, new RegExp(`^${DENSITY.floor} ok {4}fixture\\.poller +\\[service\\]$`, "m"))
   assert.match(text, /^ {8}Fixture: poller: no measurable CPU$/m)
@@ -464,18 +467,18 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   const readme = text.slice(text.indexOf("for the README"))
   // The sentence wraps at eighty columns; joined back, it is the row's readme, then the evidence path.
   const unwrapped = readme.replace(new RegExp(`(?<=[^\\n]{60,})\\n {${GUTTER}}(?!evidence)`, "g"), " ")
-  assert.match(unwrapped, new RegExp(`^for the README\\n${DENSITY.floor}+\\n {${STEP}}fixture\\.poller\\n {${GUTTER}}${row.readme.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n {${GUTTER}}evidence {2}~/xdg-state/omakit/cost/\\d{4}-\\d{2}-\\d{2}T\\d{6}Z\\.json$`))
+  assert.match(unwrapped, new RegExp(`^for the README\\n${DENSITY.floor}+\\n {${STEP}}fixture\\.poller\\n {${GUTTER}}${row.readme.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n {${GUTTER}}evidence {2}~/xdg-state/omakit/weigh/\\d{4}-\\d{2}-\\d{2}T\\d{6}Z\\.json$`))
   assert.ok(text.endsWith(".json"), "the evidence path is the last thing printed")
-  assert.equal(plain(renderCost(document, { colour: true, env: m.env })), text)
+  assert.equal(plain(renderWeigh(document, { colour: true, env: m.env })), text)
   assert.equal(rowState(row), "pass")
 })
 
 test("a restart that does not answer produces no sample, the row says how many completed, and the restore still happens", async () => {
   const m = machine({ restartFailsAt: 2 })
   const lines = []
-  const plan = planCost({ target: "fixture.clean", env: m.env, ...FAST })
-  const document = await measureCost(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
-  assert.deepEqual(validateCostDocument(document), [])
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
+  const document = await measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
+  assert.deepEqual(validateWeighDocument(document), [])
   assert.deepEqual(document.failedRuns, [{ label: "fixture.clean", run: 1, reason: "the shell did not answer after the restart" }])
   assert.ok(lines.some((line) => line.state === "advisory" && /run 1 of 2, fixture\.clean: the shell did not answer after the restart; no sample/.test(line.text)))
   const row = document.plugins[0]
@@ -484,21 +487,21 @@ test("a restart that does not answer produces no sample, the row says how many c
   assert.equal(row.deltas[0].run, 2)
   assert.equal(document.config.restored, true)
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
-  const text = renderCost(document, { colour: false, env: m.env })
+  const text = renderWeigh(document, { colour: false, env: m.env })
   assert.match(text, /\(1 of 2 runs completed\)/)
   assert.match(text, /^incomplete {4}run 1 of fixture\.clean: the shell did not answer after the restart$/m)
   // Every restart failing leaves a row with nothing claimed.
   const none = machine()
   writeFileSync(join(none.bin, "omarchy-restart-shell"), "#!/bin/bash\nexit 1\n")
-  const empty = await measureCost(planCost({ target: "fixture.clean", env: none.env, ...FAST }), { procRoot: none.proc, onLine: () => {} })
-  assert.deepEqual(validateCostDocument(empty), [])
+  const empty = await measureWeigh(planWeigh({ target: "fixture.clean", env: none.env, ...FAST }), { procRoot: none.proc, onLine: () => {} })
+  assert.deepEqual(validateWeighDocument(empty), [])
   assert.equal(empty.plugins[0].runsCompleted, 0)
   assert.deepEqual(empty.plugins[0].verdict, { memory: "unknown", cpu: "unknown", summary: "no completed run, so nothing is claimed" })
-  assert.match(renderCost(empty, { colour: false, env: none.env }), /^memory {8}unknown: no baseline run completed$/m)
+  assert.match(renderWeigh(empty, { colour: false, env: none.env }), /^memory {8}unknown: no baseline run completed$/m)
   assert.equal(empty.plugins[0].readme, null)
   assert.equal(empty.config.shellAnsweredAfterRestore, false)
   assert.equal(readFileSync(none.configFile, "utf8"), USER_SHELL_JSON, "restored even though the shell never answered")
-  const rendered = renderCost(empty, { colour: false, env: none.env })
+  const rendered = renderWeigh(empty, { colour: false, env: none.env })
   assert.match(rendered, new RegExp(`^${DENSITY.medium} \\? {5}fixture\\.clean`, "m"))
   assert.match(rendered, /noise floor {3}unknown: no baseline run completed/)
   assert.match(rendered, new RegExp(`${ARROW} The shell did not answer after the restore: run omarchy-restart-shell\\.`))
@@ -511,9 +514,9 @@ test("a thrown error mid-measurement restores shell.json, and the error keeps it
   // measurement, and the finally puts the file back first.
   const m = machine()
   writeFileSync(join(m.root, "a-file"), "")
-  const plan = planCost({ target: "fixture.clean", env: m.env, out: join(m.root, "a-file", "under-a-file.json"), ...FAST })
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, out: join(m.root, "a-file", "under-a-file.json"), ...FAST })
   const lines = []
-  await assert.rejects(measureCost(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), /ENOTDIR|EEXIST/)
+  await assert.rejects(measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), /ENOTDIR|EEXIST/)
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON, "restored on the way out")
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
   assert.equal(m.restarts().at(-1).md5, md5(Buffer.from(USER_SHELL_JSON)))
@@ -522,15 +525,15 @@ test("a thrown error mid-measurement restores shell.json, and the error keeps it
 
 test("an aborted signal stops the run at the next wait, restores, and surfaces as interrupted", async () => {
   const m = machine()
-  const plan = planCost({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
   const controller = new AbortController()
   const lines = []
-  const pending = measureCost(plan, { procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
+  const pending = measureWeigh(plan, { procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
   // Abort during the first window: one restart has happened.
   while (m.restarts().length < 1) await delay(20)
   await delay(100)
   controller.abort()
-  await assert.rejects(pending, (error) => error instanceof CostError && error.code === "interrupted")
+  await assert.rejects(pending, (error) => error instanceof WeighError && error.code === "interrupted")
   assert.equal(m.restarts().length, 2, "the one measured restart, and the restore's")
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
@@ -543,9 +546,9 @@ test("a restore whose md5 differs keeps the backup and says so", async () => {
   const m = machine()
   const original = readFileSync(join(m.bin, "omarchy-restart-shell"), "utf8")
   writeFileSync(join(m.bin, "omarchy-restart-shell"), `${original.replace(/exit 0\n$/, "")}n=$(wc -l < ${m.state}/restarts.log); (( n == 3 )) && echo '// rewritten by the shell' >> "$config"; exit 0\n`)
-  const plan = planCost({ target: "fixture.clean", env: m.env, runs: 1, windowSeconds: 0.2, settleSeconds: 0 })
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 1, windowSeconds: 0.2, settleSeconds: 0 })
   const lines = []
-  await assert.rejects(measureCost(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), (error) => error.code === "restore-unverified")
+  await assert.rejects(measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), (error) => error.code === "restore-unverified")
   const kept = readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup"))
   assert.equal(kept.length, 1, "the backup is kept")
   assert.equal(readFileSync(join(m.home, ".config/omarchy", kept[0]), "utf8"), USER_SHELL_JSON)
@@ -553,7 +556,7 @@ test("a restore whose md5 differs keeps the backup and says so", async () => {
   const document = JSON.parse(readFileSync(plan.out, "utf8"))
   assert.equal(document.config.restored, false)
   assert.notEqual(document.config.md5After, document.config.md5Before)
-  assert.deepEqual(validateCostDocument(document), [])
+  assert.deepEqual(validateWeighDocument(document), [])
 })
 
 // --- the arithmetic over real-shaped samples ------------------------------------------
@@ -582,7 +585,7 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
     { label: "quiet", run: 3, failed: "no shell pid" },
   ]
   const document = buildDocument(PLAN, samples, { started: "2026-09-14T00:00:00Z", ended: "2026-09-14T00:10:00Z", config: { path: "/h/shell.json", backup: "/h/shell.json.omakit-backup-1", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true, shellAnsweredAfterRestore: true }, host: "test", omakitVersion: "0.1.9" })
-  assert.deepEqual(validateCostDocument(document), [])
+  assert.deepEqual(validateWeighDocument(document), [])
   assert.equal(document.baseline.pssMb.median, 471_000 / 1024)
   assert.equal(document.noiseFloor.pssMb, 2048 / 1024, "the baseline Pss spread: 2 MB")
   assert.equal(document.noiseFloor.rssMb, 2)
@@ -609,15 +612,15 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
   assert.equal(busy.withinNoise.ownPss, false)
   assert.ok(Math.abs(busy.withinNoise.cpuTickPercent - tickPercent(100, 15)) < 1e-12)
   near(busy.totalCpuPercent, 3.8, "2.6% in the shell and 1.2% outside it")
-  assert.equal(busy.readme, "Adds 2.6% CPU (floor 0.07%) and runs 1 child process using 2.0 MB and 1.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(busy.readme, "Weighs 2.6% CPU and runs 1 child process using 2.0 MB and 1.2% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
   assert.equal(quiet.runsCompleted, 2)
   assert.equal(quiet.shellPssMb.median, ((512 / 1024) + (-1024 / 1024)) / 2, "run 1: +0.5 MB, run 2: -1 MB; the median of two is their mean")
   assert.deepEqual(quiet.verdict, { memory: "within-noise", cpu: "within-noise", summary: "no measurable CPU" })
   assert.equal(quiet.withinNoise.pss, true)
-  assert.equal(quiet.readme, "Adds no measurable CPU (floor 0.07%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14")
+  assert.equal(quiet.readme, "Weighs nothing measurable: no CPU above the floor (0.07%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14")
   assert.equal(rowState(busy), "advisory")
   assert.equal(rowState(quiet), "pass")
-  const text = renderCost(document, { colour: false, env: { HOME: "/h" } })
+  const text = renderWeigh(document, { colour: false, env: { HOME: "/h" } })
   assert.match(text, new RegExp(`^${DENSITY.dark} note {2}busy +\\[bar-widget\\]$`, "m"))
   assert.match(text, /^ {8}Busy: above noise on CPU$/m)
   assert.match(text, /^ {8}memory {2}10 MB \(spread 2\)$/m)
@@ -639,21 +642,21 @@ test("the document's arithmetic: median of per-run deltas, the baseline spread a
 
 test("the contract refuses what it should", () => {
   const document = buildDocument(PLAN, [sample("baseline", 1, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 }), sample("busy", 1, { pssKb: 2048, rssKb: 2048, cpuTicks: 1 }), sample("quiet", 1, { pssKb: 1024, rssKb: 1024, cpuTicks: 1 })], { started: "2026-09-14T00:00:00Z", ended: "2026-09-14T00:01:00Z", config: { path: "p", backup: "b", md5Before: "a".repeat(32), md5After: "a".repeat(32), restored: true }, host: "h", omakitVersion: "v" })
-  assert.deepEqual(validateCostDocument(document), [])
+  assert.deepEqual(validateWeighDocument(document), [])
   const broken = structuredClone(document)
   broken.plugins[0].runs[0].children.push({ pid: 1, comm: "x", arg0: "y", key: "secret token", firstSeen: 0, lastSeen: 0, cpuFirst: 0, cpuLast: 0, rssLast: 0, samples: 1 })
   broken.config.restored = false
   broken.noiseFloor.pssMb = 99
   broken.plugins[1].readme = "It is cheap"
-  const problems = validateCostDocument(broken)
+  const problems = validateWeighDocument(broken)
   assert.ok(problems.some((problem) => /plugins\[0\]\.verdict\.memory is above-noise; the median and the floor say within-noise/.test(problem)), problems.join("\n"))
   assert.ok(problems.some((problem) => /carries the full command line/.test(problem)))
   assert.ok(problems.some((problem) => /config\.restored disagrees with the two md5s/.test(problem)))
   assert.ok(problems.some((problem) => /noiseFloor\.pssMb is not the baseline Pss spread/.test(problem)))
   assert.ok(problems.some((problem) => /plugins\[1\]\.readme is not the README sentence/.test(problem)))
-  assert.deepEqual(validateCostDocument(null), ["the document is not an object"])
-  assert.ok(validateCostDocument({}).length > 10)
-  const check = spawnSync(process.execPath, [join(REPO_ROOT, "tools/cost/contract.mjs"), join(REPO_ROOT, "package.json")], { encoding: "utf8" })
+  assert.deepEqual(validateWeighDocument(null), ["the document is not an object"])
+  assert.ok(validateWeighDocument({}).length > 10)
+  const check = spawnSync(process.execPath, [join(REPO_ROOT, "tools/weigh/contract.mjs"), join(REPO_ROOT, "package.json")], { encoding: "utf8" })
   assert.equal(check.status, 1)
   assert.match(check.stdout, /problem\(s\)/)
 })
@@ -671,31 +674,32 @@ function omakit(args, env, { input } = {}) {
 
 test("in a pipe, without --yes, the plan is printed and the run is refused with exit 2, and nothing was touched", () => {
   const m = machine()
-  const result = omakit(["cost", "fixture.clean"], m.env)
+  const result = omakit(["weigh", "fixture.clean"], m.env)
   assert.equal(result.code, 2)
-  assert.match(result.out, /^measuring {5}fixture\.clean$/m)
+  assert.match(result.out, /^weighing {6}fixture\.clean$/m)
   assert.match(result.out, /^restarts {6}6: \(1 baseline \+ 1 plugin\) × 3 runs$/m)
-  assert.match(result.err, /not-confirmed/)
-  assert.match(result.err, /restarts the shell 6 times/)
+  assert.match(result.err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}this restarts the shell 6 times`, "m"))
+  assert.doesNotMatch(result.err, /FAIL/)
   assert.match(result.err, new RegExp(`${ARROW} Run it again and answer y, or pass --yes`))
   assert.deepEqual(m.restarts(), [])
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
   // --json without --yes: the same refusal, and nothing on stdout at all.
-  const json = omakit(["cost", "fixture.clean", "--json"], m.env)
+  const json = omakit(["weigh", "fixture.clean", "--json"], m.env)
   assert.equal(json.code, 2)
   assert.equal(json.out, "")
-  assert.match(json.err, /not-confirmed/)
+  assert.match(json.err, /NOT WEIGHED/)
   // A refusal from the plan is one failure state in the usual register.
   const locked = machine({ locked: true })
-  const refused = omakit(["cost", "fixture.clean", "--yes"], locked.env)
+  const refused = omakit(["weigh", "fixture.clean", "--yes"], locked.env)
   assert.equal(refused.code, 1)
-  assert.match(refused.err, /session-locked/)
-  assert.match(refused.err, /the same\s+check omarchy-restart-shell makes/)
+  assert.match(refused.err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}the session is locked`, "m"))
+  assert.match(refused.err, /same check omarchy-restart-shell makes\./)
+  assert.match(refused.err, new RegExp(`^${ARROW} Unlock the session, then run it again\\.`, "m"))
   assert.equal(refused.out, "")
-  const usage = omakit(["cost"], m.env)
+  const usage = omakit(["weigh"], m.env)
   assert.equal(usage.code, 2)
-  assert.match(usage.err, /cost needs a plugin/)
-  const bad = omakit(["cost", "fixture.clean", "--window", "0"], m.env)
+  assert.match(usage.err, /weigh needs a plugin/)
+  const bad = omakit(["weigh", "fixture.clean", "--window", "0"], m.env)
   assert.equal(bad.code, 2)
   assert.match(bad.err, /--window needs an integer of at least 1/)
 })
@@ -703,35 +707,36 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
 test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", () => {
   const m = machine()
   const out = join(m.root, "doc.json")
-  const result = omakit(["cost", "fixture.poller", "--yes", "--json", "--runs", "1", "--window", "1", "--settle", "0", "--out", out], m.env)
+  const result = omakit(["weigh", "fixture.poller", "--yes", "--json", "--runs", "1", "--window", "1", "--settle", "0", "--out", out], m.env)
   assert.equal(result.code, 0, result.err)
   const document = JSON.parse(result.out)
-  assert.deepEqual(validateCostDocument(document), [])
+  assert.deepEqual(validateWeighDocument(document), [])
   assert.deepEqual(JSON.parse(readFileSync(out, "utf8")), document)
   assert.equal(document.omakit, JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version)
   assert.equal(document.out, out)
-  assert.match(result.err, /^measuring {5}fixture\.poller$/m, "the plan is on stderr under --json")
+  assert.match(result.err, /^weighing {6}fixture\.poller$/m, "the plan is on stderr under --json")
   assert.match(result.err, /backed up to/)
   assert.match(result.err, /restored and verified/)
   assert.doesNotMatch(result.err, /\u001b/, "no escape on a piped stderr")
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
   assert.equal(m.restarts().length, 3)
   // For a person: the plan, the narration and the report on stdout, in order.
-  const human = omakit(["cost", "fixture.poller", "--yes", "--runs", "1", "--window", "1", "--settle", "0"], m.env)
+  const human = omakit(["weigh", "fixture.poller", "--yes", "--runs", "1", "--window", "1", "--settle", "0"], m.env)
   assert.equal(human.code, 0, human.err)
   assert.equal(human.err, "", "nothing on a piped stderr on success")
   const at = (pattern) => human.out.search(pattern)
   assert.ok(at(/^measuring/m) < at(/backed up to/) && at(/backed up to/) < at(/restored and verified/) && at(/restored and verified/) < at(/^noise floor/m) && at(/^noise floor/m) < at(/^for the README$/m), human.out)
   // The entry point reads the real /proc, where the fake shell pid has no
   // children; attribution is proven in-process above.
-  assert.match(human.out.replace(/\n {8}/g, " "), /Adds no measurable CPU \(floor 0\.00%\) and runs no child process, on Omarchy 4\.0\.0\.test, measured with omakit cost on \d{4}-\d{2}-\d{2}/)
+  assert.match(human.out.replace(/\n {8}/g, " "), /Weighs nothing measurable: no CPU above the floor \(0\.00%\) and no child process, on Omarchy 4\.0\.0\.test, measured with omakit weigh on \d{4}-\d{2}-\d{2}/)
+  assert.match(human.out, new RegExp(`^${DENSITY.floor} WEIGHED {2}1 plugin over 1 run\\.`, "m"))
   for (const line of human.out.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
   assert.doesNotMatch(human.out, /\u001b/)
 })
 
 test("SIGINT during a window restores shell.json, restarts the shell once more, removes the backup, and exits 130", async () => {
   const m = machine()
-  const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "cost", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
+  const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
     env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
     stdio: ["ignore", "pipe", "pipe"],
   })
@@ -753,23 +758,24 @@ test("SIGINT during a window restores shell.json, restarts the shell once more, 
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
   assert.match(out, /interrupted: restoring shell\.json before exiting/)
   assert.match(out, /restored and verified/)
-  assert.match(err, /interrupted/)
+  assert.match(err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}interrupted before the measurement completed\\.`, "m"))
   assert.match(err, /shell\.json was restored/)
 })
 
-test("help, the front door and completion know cost; the skills print the cost skill", () => {
+test("help, the front door and completion know weigh; the skills print the weigh skill", () => {
   const help = omakit(["help"], process.env)
-  assert.match(help.out, /omakit cost <plugin-id-or-dir> \[--runs <n>\] \[--window <s>\] \[--settle <s>\]/)
-  assert.match(help.out, /omakit cost --all/)
-  assert.match(omakit([], { ...process.env, TERM: "dumb" }).out, /omakit cost <plugin-id-or-dir>/)
+  assert.match(help.out, /omakit weigh <plugin-id-or-dir> \[--runs <n>\] \[--window <s>\] \[--settle <s>\]/)
+  assert.match(help.out, /omakit weigh --all/)
+  assert.match(omakit([], { ...process.env, TERM: "dumb" }).out, /omakit weigh <plugin-id-or-dir>/)
   const agent = omakit(["help", "--agent"], process.env)
-  assert.match(agent.out, /name: omarchy-plugin-cost/)
+  assert.match(agent.out, /name: omarchy-plugin-weigh/)
+  assert.doesNotMatch(help.out, /\bcost\b/, "the old name is gone from the help")
   assert.match(agent.out, /restarts the shell/)
 })
 
-test("the pin is untouched by cost: nothing under tools/cost names the marketplace, the cache or a network host", () => {
-  for (const name of readdirSync(join(REPO_ROOT, "tools/cost"))) {
-    const text = readFileSync(join(REPO_ROOT, "tools/cost", name), "utf8")
+test("the pin is untouched by weigh: nothing under tools/weigh names the marketplace, the cache or a network host", () => {
+  for (const name of readdirSync(join(REPO_ROOT, "tools/weigh"))) {
+    const text = readFileSync(join(REPO_ROOT, "tools/weigh", name), "utf8")
     assert.doesNotMatch(text, /marketplace(?!\/(?:style|report|paths)\.mjs)/i, `${name} names the marketplace`)
     assert.doesNotMatch(text, /https?:\/\//, `${name} names a host`)
     assert.doesNotMatch(text, /omakitCacheDir|\.cache/, `${name} reaches the cache`)

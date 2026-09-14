@@ -1,4 +1,4 @@
-// Text rendering of a cost document and of the confirmation that precedes
+// Text rendering of a weigh document and of the confirmation that precedes
 // it, for the person whose shell is about to be restarted and the agent
 // reading over their shoulder. Drawn with style.mjs and nothing of its own:
 // the same marks, columns and rule every other command uses.
@@ -7,10 +7,10 @@
 // every row says "within noise" in words where its median delta does not
 // clear that floor. A row is `ok` when both figures are within noise, `note`
 // when either is above it, and `?` when no run of it completed. None of that
-// is a judgement about whether a cost is acceptable; the number is the
+// is a judgement about whether a weight is acceptable; the number is the
 // author's to read.
 
-import { action, colourEnabled, field, GUTTER, labelled, section, STEP, styler, wrap } from "../marketplace/style.mjs"
+import { action, colourEnabled, field, GUTTER, labelled, section, STEP, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { head } from "../marketplace/report.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { figure } from "./stats.mjs"
@@ -42,7 +42,7 @@ export function renderPlan(plan, { colour = colourEnabled(), env = process.env }
   const c = styler(colour)
   const out = []
   const names = plan.audited.map((plugin) => plugin.id)
-  out.push(...field("measuring", names.join(", "), c))
+  out.push(...field("weighing", names.join(", "), c))
   out.push(...field("shell", `${plan.shellVersion} at ${withHomeAbbreviated(plan.omarchyPath, env)}`, c))
   out.push(...field("restarts", `${plan.restarts}: (1 baseline + ${plan.audited.length} plugin${plan.audited.length === 1 ? "" : "s"}) × ${plan.runs} run${plan.runs === 1 ? "" : "s"}`, c))
   out.push(...field("estimate", `about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}, ${figure(plan.perRestartSeconds, 0)} s per restart: ${figure(plan.timing.seconds, 1)} s for the shell to come back (${plan.timing.source}), then the ${plan.settleSeconds} s settle and the ${plan.windowSeconds} s window`, c))
@@ -52,10 +52,10 @@ export function renderPlan(plan, { colour = colourEnabled(), env = process.env }
 }
 
 /**
- * @param {object} document the cost document, docs/COST.md
+ * @param {object} document the weigh document, docs/WEIGH.md
  * @param {{ colour?: boolean, env?: object }} [options] `env` is where `$HOME` is read from for `~/` in paths; the document keeps them absolute.
  */
-export function renderCost(document, { colour = colourEnabled(), env = process.env } = {}) {
+export function renderWeigh(document, { colour = colourEnabled(), env = process.env } = {}) {
   const c = styler(colour)
   const out = []
   const { settings, baseline, noiseFloor, config } = document
@@ -67,7 +67,7 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
     : `${figure(noiseFloor.cpuPercent)}% CPU, the spread of ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}; a CPU delta inside it is within noise`, c))
   out.push(...field("memory", noiseFloor.pssMb === null
     ? "unknown: no baseline run completed"
-    : `within the shell's own startup variance (${figure(noiseFloor.pssMb)} MB over ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}, ${figure(noiseFloor.pssMbSettled)} MB at the settle): a fact about the shell's start, not a cost of a plugin, until its two resting levels are understood (docs/MEASUREMENTS.md C1, C2)`, c))
+    : `within the shell's own startup variance (${figure(noiseFloor.pssMb)} MB over ${baseRuns} baseline run${baseRuns === 1 ? "" : "s"}, ${figure(noiseFloor.pssMbSettled)} MB at the settle): a fact about the shell's start, not a plugin's weight, until its two resting levels are understood (docs/MEASUREMENTS.md C1, C2)`, c))
   if (baseline.pssMb.median !== null) {
     out.push(...field("baseline", `${figure(baseline.pssMb.median, 1)} MB Pss and ${figure(baseline.cpuPercent.median)}% CPU, the median of ${baseRuns} run${baseRuns === 1 ? "" : "s"} without ${document.audited.length === 1 ? "the plugin" : `the ${document.audited.length} plugins`}`, c))
   }
@@ -95,6 +95,15 @@ export function renderCost(document, { colour = colourEnabled(), env = process.e
   }
   out.push("")
   out.push(...wrap(`Every figure is the median over ${settings.runs} run${settings.runs === 1 ? "" : "s"} of (with the plugin minus without it) with its spread, and carries its origin in the document under \`origin\`.`, {}, c))
+  out.push("")
+  // The closing word: weighed when every row has a verdict, a question
+  // otherwise, and the file the person is left with either way.
+  const unknown = document.plugins.filter((plugin) => rowState(plugin) === "unknown").length
+  const count = `${document.plugins.length} plugin${document.plugins.length === 1 ? "" : "s"} over ${settings.runs} run${settings.runs === 1 ? "" : "s"}`
+  const kept = config.restored ? "shell.json restored and verified." : `shell.json differs from the backup, which is kept at ${withHomeAbbreviated(config.backup, env)}.`
+  out.push(...(unknown
+    ? verdict("unknown", "WEIGHED", `${count}, ${unknown === document.plugins.length ? "with no verdict" : `${unknown} without a verdict`}: ${document.plugins.find((plugin) => rowState(plugin) === "unknown").verdict.summary}. ${kept}`, c)
+    : verdict("pass", "WEIGHED", `${count}. ${kept}`, c)))
 
   // Last, because it is what an author came for: the sentence to paste, and
   // the document that is its evidence. CPU and child processes only; the

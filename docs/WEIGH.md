@@ -1,13 +1,14 @@
-# What a plugin costs the shell
+# What a plugin weighs on the shell
 
-`omakit cost` answers one question for a plugin author: what does my plugin
-cost the shell, in megabytes and CPU, measured. Not estimated from the
+`omakit weigh` answers the question a person asks of a plugin, how heavy
+is it, with a measurement: what it adds to the shell in CPU and in child
+processes, and what the shell's own memory did while it was there. Not estimated from the
 source, not read from a timer's declared interval, measured from outside the
 process by starting the shell without the plugin and with it.
 
 ```bash
-omakit cost <plugin-id-or-dir>       # one plugin
-omakit cost --all                    # every enabled third-party plugin
+omakit weigh <plugin-id-or-dir>       # one plugin
+omakit weigh --all                    # every enabled third-party plugin
 ```
 
 This is the one omakit command that is not read-only against your own
@@ -22,7 +23,7 @@ Every Omarchy Quattro plugin runs inside one long-running Quickshell process,
 `omarchy-shell`, next to every other plugin. `/proc/<shell pid>` is shared
 by all of them: its memory and CPU time are totals, and Qt allocates from
 shared heaps with no per-component accounting. So the only way to attribute
-a cost to one plugin is a difference between two shells, one without it and
+a weight to one plugin is a difference between two shells, one without it and
 one with it, both started clean.
 
 For the plugin under measurement, two shell configurations:
@@ -59,12 +60,12 @@ Over the window:
   `/proc/[0-9]*/stat` parent ids up to the shell: its command name, its
   first argument, its `VmRSS` and its cumulative CPU.
 
-The plugin's cost is the difference: run *i* of "baseline plus one" minus
+The plugin's weight is the difference: run *i* of "baseline plus one" minus
 run *i* of the baseline, one delta per run, reported as the median with the
 spread (highest minus lowest). Child processes are attributed to the plugin
 when their full command line appears in the "plus one" runs and in none of
 the baseline runs, and are reported separately from the shell's own figures,
-so a plugin that costs 2 MB inside the shell and 40 MB in a helper reads as
+so a plugin that adds 2 MB inside the shell and 40 MB in a helper reads as
 both. Every figure in the output carries its origin: the `/proc` path it was
 read from, the window, and the run count.
 
@@ -80,14 +81,14 @@ spread is reported as **no measurable CPU**, in those words. It is not
 rounded to zero and it is not hidden: the median and its spread are printed
 beside the words, and the raw deltas are in the JSON. It means the
 measurement cannot tell this plugin from nothing at this run count and
-window; it does not mean the cost is zero.
+window; it does not mean the weight is zero.
 
 A row is marked `ok` when its CPU is within noise, `note` when it is above
 the floor, and `?` when no run of that plugin completed. The verdict is a
-comparison, never a judgement about whether the cost is acceptable; that is
+comparison, never a judgement about whether the weight is acceptable; that is
 the author's to make with the number in front of them.
 
-**Memory is a fact about the shell's start, not a cost of the plugin, until
+**Memory is a fact about the shell's start, not the plugin's weight, until
 the shell's two resting levels are understood.** The memory delta stays in
 the table and in the JSON (`shellPssMb`, `verdict.memory`), but the header
 labels it "within the shell's own startup variance (N MB)", no row is marked
@@ -128,7 +129,7 @@ which is the smallest difference the measurement can express. Measured in
 the lab: a one-tick delta over a 15.003 s window (-0.066662%) read as above
 a one-tick floor over a 15.005 s window (0.066653%), and one tick against
 one tick is no difference at all. The tick is in every row as
-`withinNoise.cpuTickPercent`, and `tools/cost/contract.mjs` applies the same
+`withinNoise.cpuTickPercent`, and `tools/weigh/contract.mjs` applies the same
 rule when it checks a document. Memory has no such clause: a page is far
 below any floor.
 
@@ -149,7 +150,7 @@ from the file, with a set of plugin ids removed:
 The baseline is the effective configuration with every measured id removed;
 "baseline plus one" is the effective configuration with every measured id
 except that one removed. Nothing else in the file changes. A plugin of kind
-`bar` (a whole bar) is not measured: replacing the bar is not a cost. A
+`bar` (a whole bar) is not measured: replacing the bar is not a weight. A
 plugin that is not enabled is refused, because there is no place to put it
 back into.
 
@@ -182,7 +183,7 @@ the shell is back and reporting every plugin in about a second in the lab
 guest (39 restarts measured) and a few seconds on a desktop, and then the
 30 s settle and the 15 s window run; the estimate takes the shell's own
 time from the previous run on this machine
-(`$XDG_STATE_HOME/omakit/cost/timing.json`, 5 s before any run exists) and
+(`$XDG_STATE_HOME/omakit/weigh/timing.json`, 5 s before any run exists) and
 adds the settle and the window. So one plugin at three runs is six
 restarts, about five minutes. `--all` is sized for a lab machine rather
 than a working desktop: a desktop with 47 enabled plugins is 144 restarts
@@ -195,15 +196,15 @@ pass `--yes` without having asked the person whose shell it is.
 ## The JSON contract
 
 `--json` prints the document on stdout; it is always written to `--out`
-(default `$XDG_STATE_HOME/omakit/cost/<date>.json`, or
-`~/.local/state/omakit/cost/<date>.json`). The document is the API. New
+(default `$XDG_STATE_HOME/omakit/weigh/<date>.json`, or
+`~/.local/state/omakit/weigh/<date>.json`). The document is the API. New
 fields may be added; existing fields never change meaning.
-`tools/cost/contract.mjs` is the executable form of this section and
-`tests/unit/cost.test.mjs` holds every produced document to it.
+`tools/weigh/contract.mjs` is the executable form of this section and
+`tests/unit/weigh.test.mjs` holds every produced document to it.
 
 ```text
 omakit            string   the omakit version that produced the document
-command           "cost"
+command           "weigh"
 method            string   the method above, in one sentence
 started, ended    string   UTC timestamps
 host              string   hostname
@@ -285,19 +286,24 @@ run and never reaches the file, because a command line can carry a token.
 The last thing the command prints, per plugin, is the sentence to paste into
 the plugin's README, and the path of the JSON as its evidence. It speaks
 about CPU and about child processes, never about the shell's memory (see
-above):
+above). A plugin with nothing above the floor and no child process:
 
 ```text
-Adds no measurable CPU (floor 0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
-Adds 2.7% CPU (floor 0.13%) and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+Weighs nothing measurable: no CPU above the floor (0.13%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14
+```
+
+A plugin with something to report, CPU above noise or a child process:
+
+```text
+Weighs 2.7% CPU and runs no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14
+Weighs no CPU above the floor (0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14
 ```
 
 The CPU figure is the shell's own median delta when it is above noise, and
-the floor is stated either way; the child processes are the ones attributed
-to the plugin, with their memory and, when it rounds to a tenth of a
-percent, their CPU. `--json` carries the sentence as `readme`, and
-`tools/cost/contract.mjs` refuses a sentence that carries a memory figure
-about the plugin.
+the floor is stated when it is not; the child processes are the ones
+attributed to the plugin, with their memory and their CPU. `--json` carries
+the sentence as `readme`, and `tools/weigh/contract.mjs` refuses any other
+form and any sentence that carries a memory figure about the plugin.
 
 ## Limits
 
@@ -322,9 +328,10 @@ about the plugin.
   on a stock install, where a third-party plugin is handed a scoped facade
   instead of the shell root. A measurement that can hang the thing it
   measures does not ship.
-- What the measurement does not know: the cost of a plugin only while it is
-  open or in use (a panel with `keepLoaded` off costs nothing while closed,
-  and that is what is measured), and any cost that depends on another
+- What the measurement does not know: the weight of a plugin only while it
+  is open or in use (a panel with `keepLoaded` off weighs nothing while
+  closed, and that is what is measured), and any weight that depends on
+  another
   plugin being present.
 - GPU time per plugin and which plugin caused a specific frame drop are not
   measurable this way and are not reported.
@@ -335,11 +342,14 @@ about the plugin.
 ## Provenance
 
 The method, the `shell.json` transform, the descendant attribution and the
-four fixtures under `tests/fixtures/cost/` were ported from a standalone
+four fixtures under `tests/fixtures/weigh/` were ported from a standalone
 startup A/B audit written as a shell plugin and its bash CLI, whose lab
 evidence of 14 September 2026 (24 restarts, seven plugins, three runs,
 `shell.json` md5 identical before and after) is committed under
-`docs/evidence/cost/`. That plugin also had a viewer panel for the audit
+`docs/evidence/weigh/`. The command carried a different name while it was
+being built and was renamed before its first release, because the question
+a person asks is how heavy a plugin is. That plugin also had a viewer panel
+for the audit
 JSON, a layer-shell overlay with a centred card. The panel was not carried
 over: the JSON is the API and a terminal renders it. It lives on only in a
 git bundle of that repository, `rent-89987b4.bundle`, kept in the owner's
