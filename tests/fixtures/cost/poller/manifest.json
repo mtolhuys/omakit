@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.poller",
+  "name": "Fixture: poller",
+  "version": "0.0.1",
+  "description": "A service that runs a command every 5 s, one long-lived watcher process, and one dynamic command.",
+  "kinds": ["service"],
+  "entryPoints": { "service": "Service.qml" }
+}

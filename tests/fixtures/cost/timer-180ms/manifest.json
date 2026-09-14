@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.timer-180ms",
+  "name": "Fixture: 180 ms timer",
+  "version": "0.0.1",
+  "description": "A bar widget with one repeating 180 ms timer, always running.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

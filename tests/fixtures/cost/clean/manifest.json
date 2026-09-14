@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.clean",
+  "name": "Fixture: clean",
+  "version": "0.0.1",
+  "description": "A bar widget that declares no timers, processes or watchers.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.idle-panel",
+  "name": "Fixture: idle when closed",
+  "version": "0.0.1",
+  "description": "A panel whose 5 s timer runs only while open, plus a debounce, a code-started timer and a once-a-minute SystemClock.",
+  "kinds": ["panel"],
+  "entryPoints": { "panel": "Panel.qml" }
+}
