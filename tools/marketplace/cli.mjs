@@ -281,13 +281,47 @@ async function cmdParity(args) {
   process.exit(ok ? 0 : 1)
 }
 
-/** A positive integer flag, or its default; anything else is a usage error that names the flag. */
-function integerOption(args, name, fallback, { min = 1 } = {}) {
-  const raw = option(args, name)
-  if (raw === undefined) return fallback
-  if (!/^\d+$/.test(raw) || Number(raw) < min) fail("usage", `${name} needs an integer of at least ${min}, not ${JSON.stringify(raw)}`, 2, "omakit help")
-  return Number(raw)
+/**
+ * Strict argument checking for one command: every token is a known option
+ * (valued or not), the value of a valued option, or a positional up to
+ * the allowed count. Anything else is returned as the offending token, so
+ * the command refuses before any preflight instead of running with the
+ * defaults as if nothing had been passed (measured: `weigh <plugin> -n 1`
+ * ran three runs). `--name=value` is accepted for a valued option. Used by
+ * weigh; the other commands still read their flags one by one (see
+ * CONTRIBUTING.md, "Debts").
+ *
+ * @param {string[]} args
+ * @param {{ valued: string[], flags: string[], positionals: number }} spec
+ * @returns {{ offending: string|null, reason: string|null, options: Map<string, string|true>, positionals: string[] }}
+ */
+function checkArgs(args, spec) {
+  const options = new Map()
+  const positionals = []
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index]
+    const [name, inline] = token.startsWith("--") && token.includes("=") ? [token.slice(0, token.indexOf("=")), token.slice(token.indexOf("=") + 1)] : [token, undefined]
+    if (spec.valued.includes(name)) {
+      const value = inline !== undefined ? inline : args[index + 1]
+      if (value === undefined || (inline === undefined && value.startsWith("-"))) return { offending: token, reason: `${name} needs a value`, options, positionals }
+      options.set(name, value)
+      if (inline === undefined) index += 1
+    } else if (spec.flags.includes(token)) {
+      options.set(token, true)
+    } else if (token.startsWith("-")) {
+      return { offending: token, reason: `${token} is not an option this command knows`, options, positionals }
+    } else if (positionals.length < spec.positionals) {
+      positionals.push(token)
+    } else {
+      return { offending: token, reason: `${JSON.stringify(token)} is one argument more than the command takes`, options, positionals }
+    }
+  }
+  return { offending: null, reason: null, options, positionals }
 }
+
+/** What `weigh` accepts, in the words the refusal prints. */
+const WEIGH_ARGS = Object.freeze({ valued: ["--runs", "--window", "--settle", "--out"], flags: ["--all", "--json", "--yes"], positionals: 1 })
+const WEIGH_ACCEPTED = "--runs N, --window S, --settle S, --all, --json, --out FILE, --yes"
 
 /**
  * Every way `weigh` stops without weighing, in one register: the closing
@@ -304,16 +338,27 @@ function notWeighed(code, message, remedy, exit = 1) {
 }
 
 async function cmdWeigh(args) {
-  const json = args.includes("--json")
-  const all = args.includes("--all")
-  const target = positionals(args)[0]
+  // Every token is checked before anything else: an option weigh does not
+  // know, or a second positional, is refused with the accepted list.
+  const parsed = checkArgs(args, WEIGH_ARGS)
+  if (parsed.offending !== null) notWeighed("usage", `${parsed.reason}. Accepted: ${WEIGH_ACCEPTED}.`, "omakit weigh <plugin-id-or-dir> [--runs N] [--window S] [--settle S] [--yes] [--json] [--out FILE]", 2)
+  const json = parsed.options.has("--json")
+  const all = parsed.options.has("--all")
+  const target = parsed.positionals[0]
   if (!target && !all) notWeighed("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin.", "omakit weigh <plugin-id-or-dir>", 2)
-  const runs = integerOption(args, "--runs", WEIGH_DEFAULTS.runs)
-  const windowSeconds = integerOption(args, "--window", WEIGH_DEFAULTS.windowSeconds)
-  const settleSeconds = integerOption(args, "--settle", WEIGH_DEFAULTS.settleSeconds, { min: 0 })
+  if (target && all) notWeighed("usage", `--all weighs every enabled third-party plugin, so ${JSON.stringify(target)} is one argument more than it takes.`, "omakit weigh --all, or omakit weigh <plugin-id-or-dir>", 2)
+  const integer = (name, fallback, letter, min = 1) => {
+    if (!parsed.options.has(name)) return fallback
+    const raw = parsed.options.get(name)
+    if (!/^\d+$/.test(raw) || Number(raw) < min) notWeighed("usage", `${name} needs an integer of at least ${min}, not ${JSON.stringify(raw)}.`, `omakit weigh <plugin-id-or-dir> ${name} ${letter}`, 2)
+    return Number(raw)
+  }
+  const runs = integer("--runs", WEIGH_DEFAULTS.runs, "N")
+  const windowSeconds = integer("--window", WEIGH_DEFAULTS.windowSeconds, "S")
+  const settleSeconds = integer("--settle", WEIGH_DEFAULTS.settleSeconds, "S", 0)
   let plan
   try {
-    plan = planWeigh({ target, all, runs, windowSeconds, settleSeconds, out: option(args, "--out") })
+    plan = planWeigh({ target, all, runs, windowSeconds, settleSeconds, out: parsed.options.get("--out") })
   } catch (error) {
     if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code], error.code === "usage" ? 2 : 1)
     throw error
@@ -328,7 +373,7 @@ async function cmdWeigh(args) {
   // what was agreed to; the question is asked only at a terminal on both
   // ends, and --yes is the only other way past it.
   narrate.write(`${renderPlan(plan, { colour: colourEnabled(narrate) }).join("\n")}\n`)
-  if (!args.includes("--yes")) {
+  if (!parsed.options.has("--yes")) {
     const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
     if (!interactive) notWeighed("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is.`, REMEDY["not-confirmed"], 2)
     const agreed = await askYes({ question: confirmationQuestion(plan) })

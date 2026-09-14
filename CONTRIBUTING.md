@@ -89,6 +89,20 @@ part of the repository tree.
 Do not update the marketplace pin as a side effect. Its separate procedure is
 in `docs/UPSTREAM_CONTRACT.md` and ends with a 30-repository parity proof.
 
+## Debts
+
+Known and deliberate, each with the reason it is still open:
+
+- Strict argument checking exists for `weigh` only (`checkArgs` in
+  `tools/marketplace/cli.mjs`): an option it does not know, or one
+  positional too many, is refused with the accepted list before any
+  preflight. `setup`, `pin`, `submit`, `watch`, `verify`, `doctor`,
+  `upgrade` and `parity` still read their flags one by one and ignore what
+  they do not know, because `verify` filters a `--profile marketplace` pair
+  for compatibility and `submit` has nine options whose tests would all
+  move; applying the same table to them is one change per command, not a
+  side effect of another.
+
 ## Commit messages
 
 Use a short imperative subject that states the measured reason for the change,

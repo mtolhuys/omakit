@@ -862,6 +862,32 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
   const bad = omakit(["weigh", "fixture.clean", "--window", "0"], m.env)
   assert.equal(bad.code, 2)
   assert.match(bad.err, /--window needs an integer of at least 1/)
+  // An option weigh does not know, or one argument too many, is refused
+  // before the preflight with the offending token and the accepted list.
+  // Measured before this: `-n 1` and `-n=1` ran three runs as if nothing
+  // had been passed.
+  const accepted = /Accepted: --runs N,\s+--window S, --settle S, --all, --json, --out FILE, --yes\./
+  for (const [extra, token] of [[["-n", "1"], "-n"], [["-n=1"], "-n=1"], [["--run", "1"], "--run"], [["--Runs", "1"], "--Runs"]]) {
+    const refused = omakit(["weigh", "fixture.clean", ...extra, "--yes"], m.env)
+    assert.equal(refused.code, 2, extra.join(" "))
+    assert.match(refused.err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} is not an option this command knows`, "m"))
+    assert.match(refused.err, accepted)
+    assert.equal(refused.out, "", "nothing printed before the refusal")
+  }
+  const stray = omakit(["weigh", "fixture.clean", "fixture.poller", "--yes"], m.env)
+  assert.equal(stray.code, 2)
+  assert.match(stray.err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}"fixture\\.poller" is one argument more than the command takes`, "m"))
+  const both = omakit(["weigh", "fixture.clean", "--all", "--yes"], m.env)
+  assert.equal(both.code, 2)
+  assert.match(both.err.replace(/\n +/g, " "), /--all weighs every enabled third-party plugin, so "fixture\.clean" is one argument more than it takes/)
+  const valueless = omakit(["weigh", "fixture.clean", "--runs"], m.env)
+  assert.equal(valueless.code, 2)
+  assert.match(valueless.err, /--runs needs a value/)
+  const inline = omakit(["weigh", "fixture.clean", "--runs=2", "--out", join(m.root, "inline.json")], m.env)
+  assert.equal(inline.code, 2, "--name=value is read, and then the run is refused for want of --yes, not for the option")
+  assert.match(inline.err, /restarts the shell 4 times/)
+  assert.deepEqual(m.restarts(), [], "none of that restarted anything")
+  assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
 })
 
 test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", () => {

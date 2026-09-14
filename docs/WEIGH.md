@@ -181,6 +181,16 @@ The session-lock check is the one `omarchy-restart-shell` makes,
 `omarchy-hyprland-session-locked`: while the compositor holds a session
 lock, the command refuses before touching anything.
 
+## Options, checked first
+
+Every token on the command line is checked before anything else: an option
+`weigh` does not know (`-n 1`, `-n=1`, `--run 1`), an option without its
+value, or one positional beyond the plugin is refused as `█ NOT WEIGHED`
+with the offending token and the accepted list, `--runs N`, `--window S`,
+`--settle S`, `--all`, `--json`, `--out FILE`, `--yes`, exit 2, before the
+preflight. `--runs=3` is read as `--runs 3`. Measured before this: `-n 1`
+ran three runs as if nothing had been passed.
+
 ## Compatibility, before the confirmation
 
 Before anything is printed about restarts, the command checks that this is
