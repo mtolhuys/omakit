@@ -32,6 +32,10 @@ omakit pin     # once, and after any pin change: fetches the pinned marketplace 
 omakit submit <path-to-the-plugin-repo> --category <category> --tags <a,b>
 ```
 
+While a plugin is still being built or changed, run the check loop in
+`skills/omarchy-plugin-check/SKILL.md` instead; this skill is for the
+submission itself.
+
 The pin is a sparse read-only checkout of one marketplace commit under
 `$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace`). Every
 rule is read from it; nothing about the format is written in the tool.

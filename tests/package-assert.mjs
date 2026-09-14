@@ -16,6 +16,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "README.md",
   "bin/omakit",
   "package.json",
+  "skills/omarchy-plugin-check/SKILL.md",
   "skills/omarchy-plugin-submit/SKILL.md",
   "skills/omarchy-plugin-validation-watch/SKILL.md",
   "tests/parity/corpus.mjs",
