@@ -34,7 +34,7 @@ For the plugin under measurement, two shell configurations:
 For each configuration, `--runs` runs (default 3). A run is: write the
 configuration to `shell.json`, `omarchy-restart-shell`, wait until
 `listPlugins` reports every installed plugin, then a settle period
-(`--settle`, default 8 seconds), then a sample window (`--window`, default
+(`--settle`, default 30 seconds), then a sample window (`--window`, default
 15 seconds). The memory sample is taken at the end of the window:
 
 - `Pss` of the shell pid from `/proc/<pid>/smaps_rollup`, in MB. This is
@@ -88,23 +88,22 @@ the floor, and `?` when no run of that plugin completed. The verdict is a
 comparison, never a judgement about whether the cost is acceptable; that is
 the author's to make with the number in front of them.
 
-The floor was measured before this command shipped, and one idea did not
-survive it. The audit it was ported from read `VmRSS` at the end of the
-window and measured a baseline memory spread of 15.54 MB over three runs in
-the plugin lab guest, so only the two largest plugins in that run rose
-above it and every fixture read within noise. The first port took the
-memory sample at a fixed event instead, every plugin reported by
-`listPlugins` plus the settle, on the reasoning that two runs should be
-read at the same point of the shell's life rather than at the same
-wall-clock offset. Measured over five baseline runs in the lab, that event
-is not a point of the shell's life at all: `listPlugins` answers about
-0.3 s after the restart, long before loading is finished, and at the 8 s
-settle the baseline `Pss` was 526, 596, 586, 582 and 593 MB, a 70.3 MB
-spread, while `VmRSS` at the end of the same windows spread 8.7 MB. So the
-headline is read at the end of the window, where the shell has reached its
-plateau, and the settle-time sample and the trace stay in the document as
-the evidence for that choice. All three floors, from the same lab runs, are
-in `docs/MEASUREMENTS.md` under C1.
+The floor was measured before this command shipped, and two ideas did not
+survive it. The audit it was ported from read `VmRSS` at the end of a
+window that opened 8 s after `listPlugins` answered, and measured a
+baseline memory spread of 15.54 MB over three runs in the plugin lab guest.
+The first port took the memory sample at that 8 s settle instead, a fixed
+event rather than a wall-clock offset; over five baseline runs the `Pss`
+there was 526, 596, 586, 582 and 593 MB, a 70.3 MB spread. A trace of `Pss`
+twice a second through the window then showed why neither point is
+settled: `listPlugins` answers about 0.3 s after the restart, the shell
+holds a load-time high of 550 to 615 MB, and it releases 55 to 65 MB at a
+moment that varied from 10 to 26 s after ready, coming to rest at 516 to
+551 MB. A window opening at 8 s reads either side of that release. So the
+settle is 30 s, the window sits after the release, the headline is read at
+the end of the window, and the settle-time sample and the trace stay in
+every document so a machine whose release comes later shows it. Every
+floor, from every lab run, is in `docs/MEASUREMENTS.md` under C1.
 
 The comparison carries one part in a hundred of slack on the floor. A CPU
 figure is quantised to clock ticks over the window, and two windows differ

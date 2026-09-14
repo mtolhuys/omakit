@@ -8,7 +8,8 @@
 # Stages omakit (bin/, tools/, package.json), the four fixtures under
 # tests/fixtures/cost/ and three real third-party plugins from checkouts on
 # the host, installs and enables the seven plugins, runs
-# `omakit cost --all --runs 5 --yes` inside the guest session, and asserts:
+# `omakit cost --all --runs 5 --yes` (the default window and settle) inside
+# the guest session, and asserts:
 # the 180 ms timer fixture is above noise on CPU; the clean fixture is within
 # noise and the report says so in words; shell.json is byte-identical before
 # and after and no backup is left; the document follows docs/COST.md
@@ -70,9 +71,9 @@ omarchy_host_test() {
 
   # The measurement restarts the shell, so it runs detached from this ssh
   # call and reports through a done file.
-  log "Running omakit cost --all --runs 5 in the guest (about 40 restarts)"
+  log "Running omakit cost --all --runs 5 in the guest (40 restarts, the default 30 s settle and 15 s window)"
   ssh_session "rm -f /tmp/omakit-cost.done /tmp/omakit-cost.log /tmp/omakit-cost.json; \
-    setsid bash -c '$guest_path node /tmp/omakit/bin/omakit cost --all --runs 5 --window 15 --settle 8 --yes --out /tmp/omakit-cost.json \
+    setsid bash -c '$guest_path node /tmp/omakit/bin/omakit cost --all --runs 5 --yes --out /tmp/omakit-cost.json \
       > /tmp/omakit-cost.log 2>&1; echo \$? > /tmp/omakit-cost.done' >/dev/null 2>&1 < /dev/null &" || return 1
   wait_for_guest_state "omakit cost finished" 3600 ssh_guest "test -f /tmp/omakit-cost.done" || {
     ssh_guest "tail -n 60 /tmp/omakit-cost.log" || true

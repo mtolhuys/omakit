@@ -28,10 +28,20 @@ import { childTicks, cpuTicks, descendants, PROC, pssKb, rssKb } from "./proc.mj
 import { median, stats, verdict } from "./stats.mjs"
 import { omakitStateDir } from "../marketplace/paths.mjs"
 
+/**
+ * The settle is 30 s because the shell is not settled at 8. Measured in the
+ * plugin lab on 14 September 2026 with a Pss trace twice a second over 40
+ * restarts: after listPlugins answers (0.3 s after the restart) the shell
+ * holds a load-time high of 550 to 615 MB Pss and then releases 55 to 65 MB
+ * at a moment that varied from 10 to 26 s after ready, settling at 516 to
+ * 551 MB. A window that opens at 8 s reads either side of that release,
+ * and the baseline spread was 70.3 MB at the settle and 34.6 MB at the end
+ * of the window. Thirty seconds puts the whole window after the release.
+ */
 export const DEFAULTS = Object.freeze({
   runs: 3,
   windowSeconds: 15,
-  settleSeconds: 8,
+  settleSeconds: 30,
   readyTimeoutSeconds: 45,
   sampleIntervalMs: 500,
 })
@@ -261,13 +271,11 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   const pid = shellPid(omarchyPath, env)
   if (pid === null) return { label, run: runIndex, failed: "no shell pid" }
 
-  // Memory at the settle, kept as raw data. Measured in the lab on
-  // 14 September 2026 (docs/MEASUREMENTS.md C1): listPlugins answers about
-  // 0.3 s after the restart, long before loading is finished, so at the
-  // settle the baseline Pss was bimodal (525 to 596 MB, a 70 MB spread)
-  // while at the end of the window it spread 8.7 MB. The headline memory
-  // is therefore the end of the window, and the trace below records the
-  // climb between the two so the settle can be judged from the document.
+  // Memory at the settle, kept as raw data, and a trace through the window:
+  // the shell releases 55 to 65 MB at a variable moment after loading
+  // (docs/MEASUREMENTS.md C1), and the trace is how a reader sees whether
+  // this machine's settle was long enough. The headline is read at the end
+  // of the window, the latest point of the run.
   const settled = { pssKbSettled: pssKb(procRoot, pid), rssKbSettled: rssKb(procRoot, pid) }
   onPhase(`run ${runIndex} of ${plan.runs}: ${label}, sampling for ${windowSeconds}s`)
   const started = utc()

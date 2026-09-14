@@ -48,7 +48,7 @@ The plugin must be installed and enabled in the running shell: the
 measurement puts it back exactly where the person has it. A plugin of kind
 `bar` is refused (replacing the whole bar is not a cost), and so is a locked
 session. `--runs` (default 3), `--window` (default 15 s) and `--settle`
-(default 8 s) trade time for a lower noise floor; leave them at their
+(default 30 s) trade time for a lower noise floor; leave them at their
 defaults unless the floor is too high to answer the question.
 
 If `omakit` is not installed: `npm install --global omakit` (Omarchy ships
