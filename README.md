@@ -98,6 +98,37 @@ nothing. Commenting "fixed in `abc123`" does nothing. **73% of the 464
 submissions parked in their author's court have a default-branch HEAD the
 marketplace never saw.**
 
+## What your plugin costs
+
+```bash
+omakit cost <plugin-id-or-dir>
+```
+
+What a plugin costs the shell, in MB and CPU, measured rather than read
+from its source: the shell is restarted without the plugin and with it, three
+runs each, and the difference is the cost, with the baseline's own spread
+printed once as the noise floor and any delta inside it reported as within
+noise, in words. Child processes the plugin spawns are attributed by pid tree
+and reported separately. Every figure carries its origin: the `/proc` path,
+the window, the run count. It ends with the sentence for your README and the
+JSON that is its evidence:
+
+```text
+Costs 19.8 MB and 0.1% CPU on Omarchy 4.0.0.alpha, measured with omakit cost on 2026-09-14
+```
+
+This is the one omakit command that is not read-only against your own
+machine. It restarts your shell (1 + plugins) × runs times and edits
+`~/.config/omarchy/shell.json` for the duration, so it says the count and the
+estimated minutes and asks first (`--yes` answers for you), refuses while the
+session is locked and when the plugin is not enabled, backs `shell.json` up to
+a timestamped copy, restores it on every exit path including an interrupt and
+a shell that does not come back, and prints the md5 before and after. It never
+touches the marketplace and never writes into a plugin tree. The method, the
+noise floor, the exact `shell.json` mutation and the JSON contract are in
+[docs/COST.md](docs/COST.md); the lab measurement behind it is
+[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md), C1.
+
 ## Commands
 
 Agent-first: the expected user is a coding agent submitting a plugin on an
@@ -109,6 +140,7 @@ omakit submit <plugin-repo>  # every check, the issue title and body; asks for a
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
 omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
+omakit cost <plugin>         # what a plugin costs the shell, measured by restarting it without and with the plugin; asks first
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
@@ -259,6 +291,7 @@ npm test        # node --test, no dependencies; green from `git archive` too
 | The generated body is well formed | the marketplace's own parser, `tests/unit/issue.test.mjs` |
 | Nothing writes to the marketplace | `tests/unit/read-only.test.mjs`, over every source file |
 | No agent-control file can reach a plugin | `tests/unit/self-containment.test.mjs` |
+| `cost` restores `shell.json` on every exit path, and runs a frozen list of Omarchy commands | `tests/unit/cost.test.mjs` against a fake `/proc` and stub commands, `tests/unit/read-only.test.mjs` |
 | The GIFs above are real output | captures and renderer in [docs/media/](docs/media/) |
 
 Committed evidence records a digest of each side rather than the results
@@ -270,6 +303,7 @@ to publish.
 | Document | For |
 | --- | --- |
 | [docs/SUBMIT.md](docs/SUBMIT.md) | every check and what it decides |
+| [docs/COST.md](docs/COST.md) | what `cost` measures, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md) | the validation watch: what the marketplace validated, and what moves it |
 | [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md) | every number, its method and its limits |
 | [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) | the seam, the pin, the boundaries |

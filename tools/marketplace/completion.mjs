@@ -18,8 +18,8 @@ import { withHomeAbbreviated } from "./paths.mjs"
 /**
  * The completion model, read out of the help data. A subcommand is the word
  * after `omakit` in its signature; a flag is every `--word` in it, valued when
- * a `<placeholder>` follows it; `<target>` in the signature means the first
- * positional is a directory.
+ * a `<placeholder>` follows it; `<target>` or `<plugin-id-or-dir>` in the
+ * signature means the first positional can be a directory.
  *
  * @param {ReadonlyArray<{ signature: string|string[], lines: string[] }>} commands
  */
@@ -33,7 +33,7 @@ export function subcommandsOf(commands = COMMANDS) {
       value: placeholder ? placeholderKind(placeholder) : null,
     }))
     const sentence = command.lines.join(" ").replace(/`/g, "").split(/(?<=\.)\s/)[0]
-    return { name, description: sentence, flags, target: /<target>/.test(signature) }
+    return { name, description: sentence, flags, target: /<target>|<plugin-id-or-dir>/.test(signature) }
   })
 }
 

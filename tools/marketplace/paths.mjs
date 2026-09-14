@@ -10,6 +10,19 @@ export function omakitCacheDir(name = "", env = process.env) {
 }
 
 /**
+ * Omakit's user-writable state, following XDG with the usual ~/.local/state
+ * fallback: where `omakit cost` keeps its documents and its per-restart
+ * timing. State, not cache, because a measurement is not something to
+ * fetch again.
+ */
+export function omakitStateDir(name = "", env = process.env) {
+  const base = env.XDG_STATE_HOME
+    ? resolve(env.XDG_STATE_HOME)
+    : join(env.HOME || homedir(), ".local/state")
+  return join(base, "omakit", name)
+}
+
+/**
  * Text for a person, with every path under the home directory written the
  * way a shell would take it: `~/.cache/omakit/marketplace`. Only `$HOME`
  * counts, because `~` is what the shell expands to `$HOME` and nothing else;

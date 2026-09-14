@@ -99,6 +99,24 @@ export const COMMANDS = Object.freeze([
       "listed repositories; a packaged install requires --out for evidence.",
     ],
   },
+  {
+    signature: [
+      "omakit cost <plugin-id-or-dir> [--runs <n>] [--window <s>] [--settle <s>]",
+      "                    [--yes] [--json] [--out <file>]",
+      "omakit cost --all",
+    ],
+    lines: [
+      "What a plugin costs the shell, in MB and CPU, measured: the shell is",
+      "restarted without it and with it, several runs, and the difference is",
+      "the cost, with the baseline's own spread as the noise floor. The one",
+      "command that changes your machine: it edits shell.json for the",
+      "duration, backs it up first, restores it on every exit path, and asks",
+      "before the first restart (--yes answers for you). --all measures every",
+      "enabled third-party plugin. Writes the document to --out, by default",
+      "$XDG_STATE_HOME/omakit/cost/<date>.json, and ends with the sentence",
+      "for the plugin's README.",
+    ],
+  },
 ])
 
 // A command sits one STEP in from the heading; what it does sits one STEP in

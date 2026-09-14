@@ -35,9 +35,10 @@ function stateOf(check) {
 /**
  * A check's head line: the mark, the id in bold, and the source in brackets
  * pushed to the right edge, so the sources form a column of their own and the
- * ids form another.
+ * ids form another. Exported for the cost report, whose rows are plugins
+ * with their kinds where a check has its source.
  */
-function head(state, id, source, c) {
+export function head(state, id, source, c) {
   const left = `${mark(state, c)}${c("name", id)}`
   const tag = c("punctuation", `[${source}]`)
   const gap = Math.max(2, COLUMNS - width(left) - width(tag))

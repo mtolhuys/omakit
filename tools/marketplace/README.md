@@ -33,7 +33,21 @@ local commit through the transport seam the marketplace tests itself
 | `effect.mjs` | The one text effect: the wordmark through `ttfx` where it is drawn, with frozen arguments, a hard budget, no colour of its own, and nothing at all when `ttfx` is not there. |
 | `progress.mjs` | The progress line, on stderr, only when a person is looking. |
 | `paths.mjs` | Omakit's cache directory, following XDG, and `withHomeAbbreviated()`: a path under `$HOME` written as `~/...` for a person, applied where doctor, setup and pin render text and never where a result is built, so `--json` keeps every path absolute. |
-| `cli.mjs` | The one entry point behind `bin/omakit`, and the one register every failure is reported in. `submit` exits on the outcome: 1 for `refused`, 0 for `ready` and `listed`. |
+| `cli.mjs` | The one entry point behind `bin/omakit`, and the one register every failure is reported in. `submit` exits on the outcome: 1 for `refused`, 0 for `ready` and `listed`. `cost` confirms before its first restart and exits 130 when interrupted, after the restore. |
+
+`tools/cost/` is `omakit cost`, the one command that changes the user's own
+machine (docs/COST.md):
+
+| File | Purpose |
+| --- | --- |
+| `cost/commands.mjs` | The frozen table of Omarchy commands the measurement runs (`omarchy-shell`, `omarchy-restart-shell`, `omarchy plugin list`, `omarchy-plugin-catalog`, `qs list`, the session-lock check, `systemctl --user show-environment`, `getconf`), and the one spawn call site under `tools/cost/`. |
+| `cost/proc.mjs` | Reading `/proc`: `utime+stime` and `cutime+cstime` from `stat`, `VmRSS` from `status`, `Pss` from `smaps_rollup`, and a descendant walk by parent id, all against a root that tests point at a directory. |
+| `cost/config.mjs` | Where `shell.json` is, the pure transform that removes a set of plugin ids from the effective configuration, the byte-for-byte backup, the restore and its md5 verification. |
+| `cost/stats.mjs` | Median, spread, the stats object, and the within-noise comparison. |
+| `cost/audit.mjs` | `planCost()` reads and decides (what runs, how many restarts, the estimate) and writes nothing; `measureCost()` restarts, samples and restores in a `finally`; `buildDocument()` turns the samples into the document. |
+| `cost/contract.mjs` | The JSON contract of docs/COST.md as a validator, run by the unit tests and by the lab over a real document. |
+| `cost/report.mjs` | The confirmation and the report for a person, drawn with `style.mjs`; the README sentence and the evidence path come last. |
+| `cost/confirm.mjs` | The one question, at a terminal, on stderr. |
 
 ```text
 omakit pin

@@ -81,8 +81,15 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
         `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files cost may write`,
       )
     }
-    if (!path.startsWith("tools/cost/")) {
-      assert.doesNotMatch(text, /shell\.json/, `${path} names the shell configuration; only tools/cost/ may touch it`)
+    if (path.startsWith("tools/cost/")) {
+      // Five writes in all, each to one of the names above or to --out, and
+      // the count is asserted so a sixth cannot appear unnoticed.
+      const writes = (text.match(/writeFileSync\(/g) || []).length
+      if (path === "tools/cost/config.mjs") assert.equal(writes, 3, "config.mjs writes the backup and the configuration (once per run, once to restore)")
+      else if (path === "tools/cost/audit.mjs") assert.equal(writes, 2, "audit.mjs writes --out and the timing file")
+      else assert.equal(writes, 0, `${path} writes a file`)
+    } else {
+      assert.doesNotMatch(text, /\b(?:configFile|backupFile)\b|writeFileSync\([^)]*shell\.json/, `${path} reaches the shell configuration; only tools/cost/ may`)
     }
     if (path === "tools/marketplace/registry.mjs") {
       assert.match(text, /const liveCache = liveCacheDir\(commit, cacheRoot\)/, "the live registry cache is the path liveCacheDir names")
@@ -109,7 +116,7 @@ test("the command surface is exactly the submission scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "cost", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately

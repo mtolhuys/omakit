@@ -6,10 +6,13 @@
 //   omakit watch <issue-url>         is this submission's validated commit still current?
 //   omakit verify <target>           the official baseline over the local transport, verbatim
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
+//   omakit cost <plugin> | --all     what a plugin costs the shell, measured by restarting it
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
-// proves it.
+// proves it. `cost` is the one command that changes the user's own machine,
+// their shell and its configuration for the duration of a measurement, and
+// it confirms first; docs/COST.md says what it writes and how it restores.
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
@@ -30,6 +33,9 @@ import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, colourEnabled, GUTTER, labelled, mark, styler, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
+import { DEFAULTS as COST_DEFAULTS, measureCost, planCost } from "../cost/audit.mjs"
+import { renderCost, renderPlan } from "../cost/report.mjs"
+import { askYes } from "../cost/confirm.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -51,6 +57,8 @@ const REMEDY = Object.freeze({
   "github-unavailable": "Wait for GitHub, then run it again. `gh auth login` raises the rate limit if that is what ran out.",
   "not-found": "Check the issue URL: it has to be an existing issue on the marketplace repository.",
   "head-unreadable": "Check that the plugin repository is public and its URL is right.",
+  "not-confirmed": "Run it again and answer y, or pass --yes when the person whose shell it is has agreed.",
+  "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
 })
 
 /**
@@ -79,7 +87,7 @@ function option(args, name) {
 }
 
 function positionals(args) {
-  const valued = new Set(["--profile", "--plugin", "--out", "--category", "--tags", "--notes", "--suggest-tag", "--name", "--count", "--offset"])
+  const valued = new Set(["--profile", "--plugin", "--out", "--category", "--tags", "--notes", "--suggest-tag", "--name", "--count", "--offset", "--runs", "--window", "--settle"])
   return args.filter((value, index) => !value.startsWith("--") && !valued.has(args[index - 1]))
 }
 
@@ -273,6 +281,79 @@ async function cmdParity(args) {
   process.exit(ok ? 0 : 1)
 }
 
+/** A positive integer flag, or its default; anything else is a usage error that names the flag. */
+function integerOption(args, name, fallback, { min = 1 } = {}) {
+  const raw = option(args, name)
+  if (raw === undefined) return fallback
+  if (!/^\d+$/.test(raw) || Number(raw) < min) fail("usage", `${name} needs an integer of at least ${min}, not ${JSON.stringify(raw)}`, 2, "omakit help")
+  return Number(raw)
+}
+
+async function cmdCost(args) {
+  const json = args.includes("--json")
+  const all = args.includes("--all")
+  const target = positionals(args)[0]
+  if (!target && !all) fail("usage", "cost needs a plugin: `omakit cost <plugin-id-or-dir>`, or `omakit cost --all` for every enabled third-party plugin", 2, "omakit cost <plugin-id-or-dir>")
+  const runs = integerOption(args, "--runs", COST_DEFAULTS.runs)
+  const windowSeconds = integerOption(args, "--window", COST_DEFAULTS.windowSeconds)
+  const settleSeconds = integerOption(args, "--settle", COST_DEFAULTS.settleSeconds, { min: 0 })
+  let plan
+  try {
+    plan = planCost({ target, all, runs, windowSeconds, settleSeconds, out: option(args, "--out") })
+  } catch (error) {
+    failFrom(error)
+  }
+  // The narration: what was backed up and with which md5, and what was
+  // restored. For a person it is part of the report, on stdout; under
+  // --json stdout is the document alone, so it goes to stderr.
+  const narrate = json ? process.stderr : process.stdout
+  const c = styler(colourEnabled(narrate))
+  const say = (line) => narrate.write(`${mark(line.state, c)}${wrap(withHomeAbbreviated(line.text), { indent: GUTTER }, c).join("\n").trimStart()}\n`)
+  // The confirmation. The plan is printed either way, so the record says
+  // what was agreed to; the question is asked only at a terminal on both
+  // ends, and --yes is the only other way past it.
+  narrate.write(`${renderPlan(plan, { colour: colourEnabled(narrate) }).join("\n")}\n`)
+  if (!args.includes("--yes")) {
+    const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
+    if (!interactive) fail("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is`, 2)
+    const agreed = await askYes({ question: `Restart the shell ${plan.restarts} times now, about ${plan.estimatedMinutes} minute${plan.estimatedMinutes === 1 ? "" : "s"}?` })
+    if (!agreed) fail("not-confirmed", "not confirmed; nothing was changed", 2)
+  }
+  narrate.write("\n")
+  // An interrupt is a request to stop, not a reason to leave the user's
+  // shell on a measurement configuration: the signal aborts the run, the
+  // measurement's own finally restores shell.json and restarts the shell,
+  // and only then does the process exit, 130 as an interrupted program does.
+  const controller = new AbortController()
+  const interrupt = () => {
+    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted: restoring shell.json before exiting\n`)
+    controller.abort()
+  }
+  process.on("SIGINT", interrupt)
+  process.on("SIGTERM", interrupt)
+  const spinner = spinnerFor(args)
+  let document
+  try {
+    document = await measureCost(plan, { signal: controller.signal, omakitVersion: VERSION, onPhase: spinner.phase, onLine: (line) => { spinner.done(); say(line) } })
+  } catch (error) {
+    spinner.done()
+    if (error?.code === "interrupted") fail("interrupted", "interrupted before the measurement completed", 130)
+    failFrom(error)
+  } finally {
+    process.off("SIGINT", interrupt)
+    process.off("SIGTERM", interrupt)
+  }
+  spinner.done()
+  if (json) {
+    process.stdout.write(`${JSON.stringify(document, null, 2)}\n`)
+  } else {
+    process.stdout.write(`\n${renderCost(document)}\n`)
+  }
+  process.exit(0)
+}
+
+const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
+
 const [command, ...rest] = process.argv.slice(2)
 if (command === "setup") {
   await cmdSetup()
@@ -303,6 +384,8 @@ if (command === "setup") {
   await cmdVerify(rest.filter((value, index) => value !== "marketplace" || rest[index - 1] !== "--profile"))
 } else if (command === "parity") {
   await cmdParity(rest)
+} else if (command === "cost") {
+  await cmdCost(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install
