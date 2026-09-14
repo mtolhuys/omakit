@@ -22,10 +22,13 @@ export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])
 
 export const COMMANDS = Object.freeze([
   {
-    signature: "omakit setup",
+    signature: "omakit setup [--yes] [--completion]",
     lines: [
       "First run, in one command: check the environment, fetch the pinned",
-      "marketplace checkout, and say what to try first. Idempotent.",
+      "marketplace checkout, install tab completion and prove it in a new shell,",
+      "and say what to try first. Idempotent. When a new shell has no completion",
+      "loader it asks once before adding one guarded block to the rc file; --yes",
+      "answers for an agent. --completion is that step alone, never the question.",
     ],
   },
   {

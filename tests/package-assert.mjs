@@ -37,6 +37,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/ask.mjs",
   "tools/marketplace/banner.mjs",
   "tools/marketplace/cli.mjs",
+  "tools/marketplace/completion-check.mjs",
   "tools/marketplace/completion.mjs",
   "tools/marketplace/doctor.mjs",
   "tools/marketplace/effect.mjs",

@@ -5,10 +5,12 @@
 // and what to try first. It is idempotent, so running it again on a machine that
 // is already set up just confirms that.
 //
-// It writes exactly one thing: the pinned checkout, through the same `ensurePin`
-// that `omakit pin` uses. It does not create symlinks, edit a shell profile or
-// install anything. Where a step is the user's to take, it prints the command
-// and stops, which is the same contract every other command here keeps.
+// It writes the pinned checkout, through the same `ensurePin` that `omakit
+// pin` uses, and the completion script where the shell in $SHELL loads it
+// from. It does not create symlinks or install anything, and it edits a shell
+// profile in exactly one case, after an explicit yes: the guarded block that
+// makes completions load, when a new shell has no loader. Everywhere else a
+// step that is the user's to take is printed as the command, and stops.
 
 import { execFileSync } from "node:child_process"
 import { banner } from "./banner.mjs"
@@ -18,9 +20,86 @@ import { progress } from "./progress.mjs"
 import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
 import { TAGLINE } from "./usage.mjs"
 import { installCompletion } from "./completion.mjs"
+import { appendLoaderBlock, completionWorks, loaderBlock, loaderBlockPresent, verifyCompletion } from "./completion-check.mjs"
 import { submissionContract } from "./form.mjs"
 import { pathHint } from "./path-hint.mjs"
 import { withHomeAbbreviated } from "./paths.mjs"
+import { askYes } from "../weigh/confirm.mjs"
+import { tool } from "./doctor.mjs"
+
+/**
+ * Tab completion, end to end: the script written for the shell in $SHELL
+ * where that shell loads it from, then a new interactive shell asked
+ * whether it can complete `omakit`, the way TAB asks. Measured before this
+ * (docs/MEASUREMENTS.md M8): setup reported the script installed and never
+ * asked a shell. When the shell has no completion loader, the one guarded
+ * block that gives it one is offered, once, and appended only on yes; with
+ * `askRc: false` (the step `upgrade` re-runs) it is named and not offered.
+ * `▁ ok` is printed only when a new shell shows the spec.
+ *
+ * @param {{ repoRoot: string, pin: string, version: string, stream?: NodeJS.WriteStream, env?: object,
+ *           yes?: boolean, askRc?: boolean, input?: NodeJS.ReadStream, verify?: typeof verifyCompletion }} options
+ * @returns {Promise<{ state: "ok"|"note"|"unsupported"|"error", shell: string|null, rcAppended: boolean }>}
+ */
+export async function completionStep({ repoRoot, pin, version, stream = process.stdout, env = process.env, yes = false, askRc = true, input = process.stdin, verify = verifyCompletion }) {
+  const c = styler(colourEnabled(stream))
+  const out = (line = "") => stream.write(`${line}\n`)
+  const step = (state, text) => out(`${mark(state, c)}${wrap(withHomeAbbreviated(text, env), { indent: GUTTER }, c).join("\n").trimStart()}`)
+  const fix = (text) => { for (const line of action(withHomeAbbreviated(text, env), c)) out(line) }
+  let completion
+  try {
+    const contract = await submissionContract({ repoRoot })
+    completion = installCompletion({ contract, pin, version, env })
+  } catch (error) {
+    step("info", `tab completion was not installed: ${error.message}`)
+    return { state: "error", shell: null, rcAppended: false }
+  }
+  if (completion.state === "unsupported") {
+    step("info", completion.shell
+      ? `tab completion: no script for ${completion.shell}; there is one for bash, zsh and fish.`
+      : "tab completion: $SHELL is not set, so no script was installed.")
+    return { state: "unsupported", shell: completion.shell, rcAppended: false }
+  }
+  const what = { installed: "installed", updated: "updated for this omakit and pin", current: "already installed" }[completion.state]
+  const where = `${completion.display}${completion.note ? `, ${completion.note}` : ""}`
+  let probe = verify(completion.shell, { env })
+  let rcAppended = false
+  if (!probe.ran) {
+    step("advisory", `tab completion for ${completion.shell} ${what} at ${where}, but a new ${completion.shell} could not be asked whether it loads: ${probe.reason}.`)
+    return { state: "note", shell: completion.shell, rcAppended }
+  }
+  if (!probe.loader) {
+    const block = loaderBlock(completion.shell, env)
+    const missing = completion.shell === "bash"
+      ? "a new bash has no completion loader: /usr/share/bash-completion/bash_completion is not sourced, so a script under ~/.local/share/bash-completion/ is never read"
+      : "a new zsh has not run compinit, so no completion function is ever loaded"
+    step("advisory", `tab completion for ${completion.shell} ${what} at ${where}, but ${missing}.`)
+    if (block && !loaderBlockPresent(completion.shell, env)) {
+      const question = `Add one guarded line to ${block.display} so completions load?`
+      const agreed = askRc ? (yes || (Boolean(input.isTTY) && Boolean(stream.isTTY) && await askYes({ input, output: process.stderr, question }))) : false
+      if (agreed) {
+        const wrote = appendLoaderBlock(completion.shell, env)
+        rcAppended = wrote.appended
+        step("info", `appended to ${block.display}, marked \`${block.lines[0]}\`; omakit never edits or removes it.`)
+        probe = verify(completion.shell, { env })
+      } else {
+        step("info", `nothing was written. The lines that make completions load, for ${block.display}:`)
+        for (const line of block.lines) fix(line)
+        return { state: "note", shell: completion.shell, rcAppended }
+      }
+    } else if (block) {
+      step("info", `${block.display} already carries the \`${block.lines[0]}\` block; a new shell still reports no loader, so something later in that file undoes it.`)
+      return { state: "note", shell: completion.shell, rcAppended }
+    }
+  }
+  if (completionWorks(probe)) {
+    step("pass", `tab completion for ${completion.shell} ${what} at ${where}; a new ${completion.shell} completes \`omakit\`${probe.spec === "lazy" ? " on the first TAB" : ""}.${rcAppended ? ` Open terminals need a new shell: \`exec ${completion.shell}\`.` : ""}`)
+    return { state: "ok", shell: completion.shell, rcAppended }
+  }
+  step("advisory", `tab completion for ${completion.shell} ${what} at ${where}, but a new ${completion.shell} ${probe.loader ? "does not load it" : "still has no completion loader"}${rcAppended ? " even after the block was appended" : ""}.`)
+  fix(`Open a new shell (\`exec ${completion.shell}\`) and run \`omakit doctor\`; it reports the script, the loader and the spec as \`omakit.completion\`.`)
+  return { state: "note", shell: completion.shell, rcAppended }
+}
 
 function version(command) {
   try {
@@ -33,11 +112,13 @@ function version(command) {
 }
 
 /**
- * @param {{ repoRoot: string, entryPoint: string, stream?: NodeJS.WriteStream, env?: object }} options
+ * @param {{ repoRoot: string, entryPoint: string, stream?: NodeJS.WriteStream, env?: object, yes?: boolean,
+ *           input?: NodeJS.ReadStream, verify?: typeof verifyCompletion }} options
  *   `env` is where `$HOME` is read from: this is output for a person, so a
- *   path under it is printed as `~/...`.
+ *   path under it is printed as `~/...`. `yes` answers the one question
+ *   setup can ask (the rc block for completion), for an agent.
  */
-export async function setup({ repoRoot, entryPoint, stream = process.stdout, env = process.env }) {
+export async function setup({ repoRoot, entryPoint, stream = process.stdout, env = process.env, yes = false, input = process.stdin, verify = verifyCompletion }) {
   const c = styler(colourEnabled(stream))
   const out = (line = "") => stream.write(`${line}\n`)
   // A step is a status line: the mark, then the fact, wrapped under itself.
@@ -110,23 +191,8 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout, env
   }
 
   // Tab completion, installed for the shell in $SHELL where that shell loads
-  // it from, so nobody has to know the path. The script carries the pin's
-  // categories and tags, so it is rewritten when the pin has moved and left
-  // alone otherwise.
-  try {
-    const contract = await submissionContract({ repoRoot })
-    const completion = installCompletion({ contract, pin: identity.commit })
-    if (completion.state === "unsupported") {
-      step("info", completion.shell
-        ? `tab completion: no script for ${completion.shell}; there is one for bash, zsh and fish.`
-        : "tab completion: $SHELL is not set, so no script was installed.")
-    } else {
-      const what = { installed: "installed", updated: "updated for this pin", current: "already installed" }[completion.state]
-      step("pass", `tab completion for ${completion.shell} ${what} at ${completion.display}${completion.note ? `, ${completion.note}` : ""}.`)
-    }
-  } catch (error) {
-    step("info", `tab completion was not installed: ${error.message}`)
-  }
+  // it from, and then proven in a new shell (completionStep).
+  await completionStep({ repoRoot, pin: identity.commit, version: tool(repoRoot).version, stream, env, yes, askRc: true, input, verify })
   out()
 
   out("Try it on a plugin you have checked out:")

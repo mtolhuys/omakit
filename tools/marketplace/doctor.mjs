@@ -44,6 +44,7 @@ import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
 import { NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
+import { completionStatus } from "./completion-check.mjs"
 
 /** "git+https://github.com/owner/name.git" in package.json -> "https://github.com/owner/name", or null. */
 function repositoryPage(repository) {
@@ -52,7 +53,7 @@ function repositoryPage(repository) {
   return match ? `https://github.com/${match[1]}/${match[2]}` : null
 }
 
-function tool(repoRoot) {
+export function tool(repoRoot) {
   try {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
     return { name: pkg.name, version: pkg.version, engines: pkg.engines?.node || null, repository: repositoryPage(pkg.repository) }
@@ -223,6 +224,13 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
       ? `\`omakit\` is reachable as a command from PATH (${reach.kind} install)`
       : `${reach.reason}${reach.where ? ` Keep the line below in ${reach.where}.` : ""}`,
     reach.reachable ? null : reach.line)
+
+  // Tab completion, as it is and not as it was written: the script, its
+  // omakit version and pin against this one's, and a new shell asked
+  // whether it loads (completion-check.mjs). Measured before this (M8):
+  // setup reported success for a script no shell was ever asked about.
+  const completion = completionStatus({ version: self.version, pin: MARKETPLACE_PIN.commit, env })
+  add("omakit.completion", completion.state, completion.detail, completion.action, completion.evidence)
 
   const node = process.versions.node
   const major = Number(node.split(".")[0])

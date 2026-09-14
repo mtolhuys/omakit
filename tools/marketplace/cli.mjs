@@ -26,7 +26,7 @@ import { validationWatch } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderDoctor, renderVerify } from "./report.mjs"
 import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
-import { setup } from "./setup.mjs"
+import { completionStep, setup } from "./setup.mjs"
 import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
@@ -197,8 +197,16 @@ async function cmdFrontDoor() {
   process.stdout.write(renderSummary({ heading: !drew }))
 }
 
-async function cmdSetup() {
-  const result = await setup({ repoRoot: ROOT, entryPoint: resolve(ROOT, "bin/omakit") })
+async function cmdSetup(args) {
+  // `--completion` is the one step on its own: write the script and prove
+  // it in a new shell, never the rc question. `upgrade` runs it through the
+  // freshly installed omakit, so the script carries the new version.
+  if (args.includes("--completion")) {
+    const identity = requirePin(ROOT).identity
+    const result = await completionStep({ repoRoot: ROOT, pin: identity.commit, version: VERSION, askRc: false })
+    process.exit(result.state === "ok" ? 0 : 1)
+  }
+  const result = await setup({ repoRoot: ROOT, entryPoint: resolve(ROOT, "bin/omakit"), yes: args.includes("--yes") })
   process.exit(result.ok ? 0 : 1)
 }
 
@@ -416,8 +424,9 @@ async function cmdWeigh(args) {
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
 
 const [command, ...rest] = process.argv.slice(2)
+
 if (command === "setup") {
-  await cmdSetup()
+  await cmdSetup(rest)
 } else if (command === "pin" || command === "marketplace-pin") {
   const c = styler(colourEnabled())
   const spinner = progress()

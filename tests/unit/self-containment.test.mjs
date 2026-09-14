@@ -74,10 +74,15 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // under tools/weigh/, only to those names, and docs/WEIGH.md says what each
     // one is for.
     const weighWrites = path.startsWith("tools/weigh/") ? /^configFile,|^backupFile,|^timingFile,/ : /$^/
+    // completion-check.mjs writes two things: the once-a-day stamp behind the
+    // stale-completion notice (stampFile, under the state directory), and the
+    // one guarded block `setup` appends to an rc file after an explicit yes
+    // (rcFile, through appendFileSync, counted below).
+    const completionWrites = path === "tools/marketplace/completion-check.mjs" ? /^stampFile,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target),
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target),
         `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files weigh may write`,
       )
     }
@@ -100,6 +105,19 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     if (path === "tools/marketplace/completion.mjs") {
       assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "completion.mjs writes exactly one file")
       assert.match(text, /const completionFile = target\.path/, "and it is the path completionInstall names")
+    }
+    // The one rc-file write in the tree: the marked block, appended once,
+    // only from completion-check.mjs, only to the file loaderBlock names,
+    // and only after loaderBlockPresent said the marker is not there yet.
+    const appends = [...text.matchAll(/appendFileSync\(\s*(.+)$/gm)].map((match) => match[1].trim())
+    if (path === "tools/marketplace/completion-check.mjs") {
+      assert.equal(appends.length, 1, "completion-check.mjs appends to exactly one file")
+      assert.match(appends[0], /^rcFile,/, "and it is the rc file loaderBlock names")
+      assert.match(text, /const rcFile = block\.file/, "the rc file is the block's")
+      assert.match(text, /if \(loaderBlockPresent\(shell, env\)\) return \{ appended: false/, "the marker is looked for first")
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "and one write, the stamp")
+    } else {
+      assert.deepEqual(appends, [], `${path} appends to a file; only completion-check.mjs may, and only to an rc file after a yes`)
     }
     // And that allowance is only for the pin directory, not for any directory.
     for (const match of text.matchAll(/writeFileSync\(join\((\w+), "\.git\/info/g)) {
