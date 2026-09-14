@@ -28,6 +28,7 @@ import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
 import { completionStep, setup } from "./setup.mjs"
 import { staleCompletionNotice } from "./completion-check.mjs"
+import { ACCEPTED, acceptedWords, checkArgs } from "./options.mjs"
 import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
@@ -87,8 +88,9 @@ function option(args, name) {
   return index >= 0 ? args[index + 1] : undefined
 }
 
+/** The bare arguments, with every valued option's value (options.mjs, one table) left out. */
 function positionals(args) {
-  const valued = new Set(["--profile", "--plugin", "--out", "--category", "--tags", "--notes", "--suggest-tag", "--name", "--count", "--offset", "--runs", "--window", "--settle"])
+  const valued = new Set(Object.values(ACCEPTED).flatMap((spec) => spec.valued))
   return args.filter((value, index) => !value.startsWith("--") && !valued.has(args[index - 1]))
 }
 
@@ -291,48 +293,6 @@ async function cmdParity(args) {
 }
 
 /**
- * Strict argument checking for one command: every token is a known option
- * (valued or not), the value of a valued option, or a positional up to
- * the allowed count. Anything else is returned as the offending token, so
- * the command refuses before any preflight instead of running with the
- * defaults as if nothing had been passed (measured: `weigh <plugin> -n 1`
- * ran three runs). `--name=value` is accepted for a valued option. Used by
- * weigh; the other commands still read their flags one by one (see
- * CONTRIBUTING.md, "Debts").
- *
- * @param {string[]} args
- * @param {{ valued: string[], flags: string[], positionals: number }} spec
- * @returns {{ offending: string|null, reason: string|null, options: Map<string, string|true>, positionals: string[] }}
- */
-function checkArgs(args, spec) {
-  const options = new Map()
-  const positionals = []
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index]
-    const [name, inline] = token.startsWith("--") && token.includes("=") ? [token.slice(0, token.indexOf("=")), token.slice(token.indexOf("=") + 1)] : [token, undefined]
-    if (spec.valued.includes(name)) {
-      const value = inline !== undefined ? inline : args[index + 1]
-      if (value === undefined || (inline === undefined && value.startsWith("-"))) return { offending: token, reason: `${name} needs a value`, options, positionals }
-      options.set(name, value)
-      if (inline === undefined) index += 1
-    } else if (spec.flags.includes(token)) {
-      options.set(token, true)
-    } else if (token.startsWith("-")) {
-      return { offending: token, reason: `${token} is not an option this command knows`, options, positionals }
-    } else if (positionals.length < spec.positionals) {
-      positionals.push(token)
-    } else {
-      return { offending: token, reason: `${JSON.stringify(token)} is one argument more than the command takes`, options, positionals }
-    }
-  }
-  return { offending: null, reason: null, options, positionals }
-}
-
-/** What `weigh` accepts, in the words the refusal prints. */
-const WEIGH_ARGS = Object.freeze({ valued: ["--runs", "--window", "--settle", "--out"], flags: ["--all", "--json", "--yes"], positionals: 1 })
-const WEIGH_ACCEPTED = "--runs N, --window S, --settle S, --all, --json, --out FILE, --yes"
-
-/**
  * Every way `weigh` stops without weighing, in one register: the closing
  * word a report would have ended with, negated, then the sentence naming
  * what is missing, then the one thing to do. Exit 2 for a usage error and
@@ -349,8 +309,8 @@ function notWeighed(code, message, remedy, exit = 1) {
 async function cmdWeigh(args) {
   // Every token is checked before anything else: an option weigh does not
   // know, or a second positional, is refused with the accepted list.
-  const parsed = checkArgs(args, WEIGH_ARGS)
-  if (parsed.offending !== null) notWeighed("usage", `${parsed.reason}. Accepted: ${WEIGH_ACCEPTED}.`, "omakit weigh <plugin-id-or-dir> [--runs N] [--window S] [--settle S] [--yes] [--json] [--out FILE]", 2)
+  const parsed = checkArgs(args, ACCEPTED.weigh)
+  if (parsed.offending !== null) notWeighed("usage", `${parsed.reason}. Accepted: ${acceptedWords("weigh")}.`, "omakit weigh <plugin-id-or-dir> [--runs N] [--window S] [--settle S] [--yes] [--json] [--out FILE]", 2)
   const json = parsed.options.has("--json")
   const all = parsed.options.has("--all")
   const target = parsed.positionals[0]
@@ -426,6 +386,22 @@ const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).
 
 const [command, ...rest] = process.argv.slice(2)
 
+// Every token checked against the command's table before anything runs
+// (options.mjs): an option the command does not know, an option without its
+// value, or one positional too many is a usage error naming the token and
+// the accepted list. `weigh` reports it in its own register, below.
+{
+  const name = command === "marketplace-pin" ? "pin" : command
+  const table = name === "weigh" ? null : ACCEPTED[name] || ((command === "--help" || command === "-h") ? ACCEPTED.pin : null)
+  if (table) {
+    const parsed = checkArgs(rest, table)
+    if (parsed.offending !== null) {
+      const accepted = acceptedWords(name)
+      fail("usage", `${parsed.reason}.${accepted ? ` Accepted: ${accepted}.` : ` \`omakit ${name}\` takes no options.`}`, 2, "omakit help")
+    }
+  }
+}
+
 // Once a day, one dim line on stderr, only at a terminal: the installed
 // completion script names another omakit, so `omakit we<TAB>` may not know
 // `weigh`. One stat and one short read; never under a pipe, whose stderr
@@ -461,7 +437,7 @@ if (command === "setup") {
 } else if (command === "watch") {
   await cmdWatch(rest)
 } else if (command === "verify") {
-  await cmdVerify(rest.filter((value, index) => value !== "marketplace" || rest[index - 1] !== "--profile"))
+  await cmdVerify(rest)
 } else if (command === "parity") {
   await cmdParity(rest)
 } else if (command === "weigh") {

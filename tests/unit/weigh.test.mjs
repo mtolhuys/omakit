@@ -873,7 +873,7 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
   // before the preflight with the offending token and the accepted list.
   // Measured before this: `-n 1` and `-n=1` ran three runs as if nothing
   // had been passed.
-  const accepted = /Accepted: --runs N,\s+--window S, --settle S, --all, --json, --out FILE, --yes\./
+  const accepted = /Accepted: --runs N,\s+--window S, --settle S, --out FILE, --all, --json, --yes\./
   for (const [extra, token] of [[["-n", "1"], "-n"], [["-n=1"], "-n=1"], [["--run", "1"], "--run"], [["--Runs", "1"], "--Runs"]]) {
     const refused = omakit(["weigh", "fixture.clean", ...extra, "--yes"], m.env)
     assert.equal(refused.code, 2, extra.join(" "))

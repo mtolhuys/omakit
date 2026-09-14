@@ -64,7 +64,7 @@ not apply to it.
 - `tests/unit/pin.test.mjs` keeps every marketplace path behind the immutable
   pin and prevents a sparse checkout from quietly fetching another rule.
 - `tests/package-assert.mjs`, exercised by `tests/unit/package.test.mjs`,
-  compares all 51 publishable paths and enforces a 153,600-byte tarball
+  compares all 52 publishable paths and enforces a 153,600-byte tarball
   ceiling when CI feeds it `npm pack --dry-run --json`. The ceiling exists to
   refuse an accidental tree (a pin, a cache, a fixture) rather than to hold
   the package at a size: it was 102,400 bytes against the measured
@@ -91,17 +91,11 @@ in `docs/UPSTREAM_CONTRACT.md` and ends with a 30-repository parity proof.
 
 ## Debts
 
-Known and deliberate, each with the reason it is still open:
-
-- Strict argument checking exists for `weigh` only (`checkArgs` in
-  `tools/marketplace/cli.mjs`): an option it does not know, or one
-  positional too many, is refused with the accepted list before any
-  preflight. `setup`, `pin`, `submit`, `watch`, `verify`, `doctor`,
-  `upgrade` and `parity` still read their flags one by one and ignore what
-  they do not know, because `verify` filters a `--profile marketplace` pair
-  for compatibility and `submit` has nine options whose tests would all
-  move; applying the same table to them is one change per command, not a
-  side effect of another.
+None open. The last one, strict argument checking for every command, closed
+when `tools/marketplace/options.mjs` became the one table the help
+signatures, the completion scripts and the parser are held to
+(`tests/unit/options.test.mjs`); an undocumented `--profile marketplace`
+pair that `verify` used to filter out went with it.
 
 ## Commit messages
 

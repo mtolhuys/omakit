@@ -58,7 +58,7 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit watch <issue-url> [--json]",
+    signature: "omakit watch <issue-url> [--json] [--out <file>]",
     lines: [
       "Compare the commit the marketplace validated on a submission issue with",
       "the plugin repository's current default-branch HEAD, and say what makes",
@@ -89,7 +89,7 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit doctor [--offline] [--json]",
+    signature: "omakit doctor [--offline] [--json] [--out <file>]",
     lines: [
       "What is installed, what is pinned, and what has moved since. Reads and",
       "prints; it installs nothing and never moves the pin.",

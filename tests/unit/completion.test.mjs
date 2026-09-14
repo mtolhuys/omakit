@@ -93,7 +93,7 @@ test("the bash function completes commands, flags, controlled values and directo
   assert.deepEqual(complete("omakit", "submit", "--tags", "bar,qu"), ["bar,quickshell"], "the segment after the last comma")
   assert.deepEqual(complete("omakit", "submit", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").flags.map((f) => f.flag))
   assert.deepEqual(complete("omakit", "submit", "doc"), ["docs"], "a target is a directory")
-  assert.deepEqual(complete("omakit", "doctor", "--"), ["--offline", "--json"])
+  assert.deepEqual(complete("omakit", "doctor", "--"), ["--offline", "--json", "--out"])
 })
 
 
