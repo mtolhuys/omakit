@@ -8,7 +8,7 @@
 // fails this test.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
 import { ensurePin, PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
@@ -103,4 +103,20 @@ test("the pin's size on disk is the checkout's, reached through a symlink or not
   assert.match(direct, /^\d+(\.\d)? MB on disk$/)
   assert.notEqual(direct, "0.0 MB on disk", "the checkout has a size")
   assert.equal(pinDiskUsage(link), direct, "through the symlink it is the same size")
+})
+
+test("the pin's size survives a du that warned about a vanished file, and only a du without a total is unknown", () => {
+  // Measured: with `git status` running on the pin in parallel, 1 of 40 du
+  // runs warned "cannot access '.git/index.lock'" over git's momentary lock
+  // file and exited 1 while still printing the total, and doctor said "size
+  // unknown" for a checkout it had the size of; the responsive-output test
+  // compared two doctor runs and saw "15 MB on disk" against "size unknown".
+  const bin = mkdtempSync(join(tmpdir(), "omakit-du-"))
+  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` }
+  writeFileSync(join(bin, "du"), `#!/bin/sh\necho "du: cannot access '$2/.git/index.lock': No such file or directory" >&2\nprintf '15360\\t%s\\n' "$2"\nexit 1\n`, { mode: 0o755 })
+  assert.equal(pinDiskUsage("/any/dir", env), "15 MB on disk", "the printed total is the size, whatever du's exit status")
+  writeFileSync(join(bin, "du"), "#!/bin/sh\necho 'du: cannot read directory' >&2\nexit 1\n", { mode: 0o755 })
+  assert.equal(pinDiskUsage("/any/dir", env), "size unknown", "no total, no size")
+  writeFileSync(join(bin, "du"), "#!/bin/sh\nprintf '5120\\t%s\\n' \"$2\"\n", { mode: 0o755 })
+  assert.equal(pinDiskUsage("/any/dir", env), "5.0 MB on disk")
 })

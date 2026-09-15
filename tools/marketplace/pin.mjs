@@ -9,7 +9,7 @@
 // whole list, and tests/unit/pin.test.mjs fails if any module starts reading a
 // path outside it, because on a partial clone such a read would quietly reach
 // for the network instead of failing.
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { omakitCacheDir } from "./paths.mjs"
@@ -178,18 +178,26 @@ export function ensurePin(repoRoot, log = () => {}, env = process.env) {
   return { dir, identity, fetched: true }
 }
 
-/** Human-readable size of the pinned checkout, for `omakit pin` and `omakit doctor`. */
-export function pinDiskUsage(dir) {
+/**
+ * Human-readable size of the pinned checkout, for `omakit pin` and `omakit
+ * doctor`. `env` is the environment `du` is found in; injectable for tests.
+ */
+export function pinDiskUsage(dir, env = process.env) {
   // -H follows a symlink given on the command line (POSIX; GNU's -D). Measured
   // without it: a checkout reached through a symlink reported 0.0 MB, the size
   // of the link, while the directory behind it was 15 MB.
-  try {
-    const output = execFileSync("du", ["-skH", dir], { encoding: "utf8" }).split(/\s+/)[0]
-    const mib = Number(output) / 1024
-    return `${mib < 10 ? mib.toFixed(1) : Math.round(mib)} MB on disk`
-  } catch {
-    return "size unknown"
-  }
+  //
+  // The total is read whether or not du exited 0. du exits 1 when a file it
+  // listed is gone by the time it reaches it, and still prints the total.
+  // Measured: with `git status` running on the pin in parallel, 1 of 40 runs
+  // warned "cannot access '.git/index.lock'" over its momentary lock file
+  // and exited 1, so doctor said "size unknown" for a checkout it had the
+  // size of. Only a run that printed no total is unknown.
+  const result = spawnSync("du", ["-skH", dir], { encoding: "utf8", env, stdio: ["ignore", "pipe", "ignore"] })
+  const output = String(result.stdout || "").trim().split(/\s+/)[0]
+  if (result.error || !/^\d+$/.test(output)) return "size unknown"
+  const mib = Number(output) / 1024
+  return `${mib < 10 ? mib.toFixed(1) : Math.round(mib)} MB on disk`
 }
 
 /** True when the checkout was fetched with only PIN_PATHS, as a fresh one is. */
