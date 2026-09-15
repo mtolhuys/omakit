@@ -1,11 +1,13 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { join } from "node:path"
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join } from "node:path"
 import { auditInstalled } from "../../tools/audit/audit.mjs"
 import { renderAudit } from "../../tools/audit/report.mjs"
 import { plain } from "../../tools/marketplace/style.mjs"
-import { REPO_ROOT } from "./helpers.mjs"
+import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const A = "a".repeat(40)
 const B = "b".repeat(40)
@@ -127,4 +129,74 @@ test("the CLI refuses unknown options and reports an unanswered shell", () => {
   assert.equal(shell.status, 1)
   assert.match(shell.stderr, /NOT AUDITED/)
   assert.equal(shell.stdout, "")
+})
+
+test("the CLI JSON, output file, drift view and exit codes use stubbed shell and Git answers", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "omakit-audit-cli-"))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const bin = join(root, "bin")
+  const sourceDir = join(root, "plugin")
+  writeFileSync(join(root, "keep"), "")
+  const makeDir = spawnSync("mkdir", ["-p", bin, sourceDir])
+  assert.equal(makeDir.status, 0)
+
+  const pinDir = requirePinForTests()
+  const catalog = JSON.parse(readFileSync(join(pinDir, "site/catalog.json"), "utf8"))
+  const entry = catalog.plugins.find((plugin) => plugin.sourceType !== "builtin" && (plugin.upstreamValidatedCommit || plugin.listingValidatedCommit))
+  const validated = (entry.upstreamValidatedCommit || entry.listingValidatedCommit).toLowerCase()
+  const realGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim()
+
+  const script = (name, text) => {
+    const file = join(bin, name)
+    writeFileSync(file, `#!/bin/sh\n${text}\n`)
+    chmodSync(file, 0o755)
+  }
+  script("omarchy", "printf '%s\\n' \"$AUDIT_INSTALLED_JSON\"")
+  script("omarchy-plugin-catalog", "printf '%s\\n' \"$AUDIT_SHELL_CATALOG\"")
+  script("git", [
+    'if [ "$1" = "-C" ] && [ "$2" = "$AUDIT_SOURCE_DIR" ]; then',
+    '  case "$3 $4 $5" in',
+    '    "rev-parse HEAD ") printf "%s\\n" "$AUDIT_HEAD"; exit 0 ;;',
+    '    "status --porcelain ") exit 0 ;;',
+    '    "remote get-url origin") printf "%s\\n" "$AUDIT_REPOSITORY"; exit 0 ;;',
+    '    "merge-base --is-ancestor"*) exit 0 ;;',
+    '    "rev-list --count "*) printf "2\\n"; exit 0 ;;',
+    "  esac",
+    "fi",
+    'exec "$AUDIT_REAL_GIT" "$@"',
+  ].join("\n"))
+
+  const installed = JSON.stringify([{ id: entry.id, name: entry.name, kinds: entry.kinds || [], enabled: true, firstParty: false }])
+  const shellCatalog = JSON.stringify([{ id: entry.id, sourceDir }])
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    TERM: "dumb",
+    AUDIT_INSTALLED_JSON: installed,
+    AUDIT_SHELL_CATALOG: shellCatalog,
+    AUDIT_SOURCE_DIR: sourceDir,
+    AUDIT_REPOSITORY: entry.repo,
+    AUDIT_REAL_GIT: realGit,
+  }
+  const run = (args, head) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "audit", ...args], { encoding: "utf8", env: { ...env, AUDIT_HEAD: head } })
+
+  const clean = run(["--offline", "--json"], validated)
+  assert.equal(clean.status, 0)
+  assert.equal(clean.stderr, "")
+  const cleanDocument = JSON.parse(clean.stdout)
+  assert.equal(cleanDocument.rows[0].state, "validated")
+
+  const out = join(root, "audit.json")
+  const written = run(["--offline", "--out", out], validated)
+  assert.equal(written.status, 0)
+  assert.match(written.stdout, /AUDITED/)
+  assert.deepEqual(JSON.parse(readFileSync(out, "utf8")), cleanDocument)
+
+  const drift = run(["--offline", "--drift", "--json"], "f".repeat(40))
+  assert.equal(drift.status, 1)
+  assert.equal(drift.stderr, "")
+  const driftDocument = JSON.parse(drift.stdout)
+  assert.equal(driftDocument.rows.length, 1)
+  assert.equal(driftDocument.rows[0].state, "ahead")
+  assert.equal(driftDocument.rows[0].aheadBy.value, 2)
 })
