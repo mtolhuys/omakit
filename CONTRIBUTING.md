@@ -48,7 +48,8 @@ not apply to it.
   measured reason recorded in `docs/MEASUREMENTS.md`.
 - `tests/unit/style.test.mjs` and `tests/unit/cli.test.mjs` protect stdout as an
   API: a pipe has the same words, no escape sequence, and no hidden colour-only
-  meaning, and nothing omakit writes itself is wider than 80 columns. Two
+  meaning. Pipes compose at 80 columns; terminals use their available width,
+  up to 120 columns. Responsive tests preserve the text at each width. Two
   rules qualify that, each with its reason, and the tests say the same:
   - Text that will be posted verbatim is never wrapped and may exceed 80
     columns: the marketplace's own baseline report, and the issue body

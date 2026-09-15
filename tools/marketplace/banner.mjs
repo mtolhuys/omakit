@@ -49,7 +49,7 @@
 // letters come from the small font below, so renaming the tool is a change to
 // one string and not a redrawing job.
 
-import { code, colourEnabled, DENSITY, motionEnabled, MOTION, rule as floorRule } from "./style.mjs"
+import { code, colourEnabled, DENSITY, motionEnabled, MOTION, outputColumns, rule as floorRule, wrap } from "./style.mjs"
 import { effectAvailable, playEffect } from "./effect.mjs"
 
 const ESC = "\u001b["
@@ -226,6 +226,15 @@ export async function banner(options = {}) {
   // to print: `help` and `setup` already say the name and what it does in words,
   // and a piped run should differ from a watched one only in decoration.
   if (!enabled) return
+
+  // Never animate artwork across physical terminal rows: cursor-up would
+  // redraw the wrong row. A narrow terminal gets a compact wordmark instead.
+  if (stream.isTTY && Number.isFinite(stream.columns) && stream.columns > 0 && stream.columns < width) {
+    stream.write(`${c(code("name"), word.toUpperCase())}\n`)
+    if (options.tagline) stream.write(`${wrap(options.tagline, { width: outputColumns(stream) }, (name, text) => c(code(name), text)).join("\n")}\n`)
+    stream.write("\n")
+    return
+  }
 
   // A five-row animation redrawn with cursor-up needs five rows that stay put.
   // In a terminal with no room the screen scrolls under the animation, the

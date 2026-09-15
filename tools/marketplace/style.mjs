@@ -115,9 +115,8 @@ export function code(role) {
 // --- geometry ---------------------------------------------------------------
 
 /**
- * The width everything is composed for. Eighty columns is the contract: a
- * check's why-paragraph, a remedy, a refusal and the help all wrap inside it,
- * and tests/unit/style.test.mjs renders every report and measures. The one
+ * The stable width for pipes and files. Terminals use their current column
+ * count, up to MAX_COLUMNS so wide windows still have readable prose. The one
  * thing exempt is the marketplace's own baseline report, which is printed
  * verbatim because rewrapping somebody else's attestation would be editing it.
  *
@@ -125,6 +124,23 @@ export function code(role) {
  * `overflows` below is the measurement, and it is the one both test files use.
  */
 export const COLUMNS = 80
+export const MAX_COLUMNS = 120
+
+let compositionStream = null
+
+/** Resolve at rendering time, so a resized terminal's next output uses its new width. */
+export function outputColumns(stream = compositionStream || process.stdout) {
+  return stream?.isTTY && Number.isFinite(stream.columns) && stream.columns >= 1
+    ? Math.min(MAX_COLUMNS, Math.floor(stream.columns))
+    : COLUMNS
+}
+
+/** Scope synchronous composition to its destination, including files and stderr. */
+export function withOutputStream(stream, render) {
+  const previous = compositionStream
+  compositionStream = stream
+  try { return render() } finally { compositionStream = previous }
+}
 
 /**
  * The indent scale, in columns. Three stops, and every line in the tool starts
@@ -327,7 +343,7 @@ export function overflows(line, total = COLUMNS) {
 // --- composition ------------------------------------------------------------
 
 /**
- * Wrap prose to the contract width, and paint it.
+ * Wrap prose to the destination width, and paint it.
  *
  * `indent` is the column the text starts in and is part of the width, which is
  * the bug the earlier version had: it wrapped at 78 and then indented by 7, and
@@ -346,7 +362,7 @@ export function overflows(line, total = COLUMNS) {
  * @param {(name: string, text: string) => string} [c]
  * @returns {string[]} lines, indented and painted
  */
-export function wrap(text, { indent = 0, width: total = COLUMNS, first = indent } = {}, c = styler(false)) {
+export function wrap(text, { indent = 0, width: total = outputColumns(), first = indent } = {}, c = styler(false)) {
   // A word is a run of non-spaces, or a backticked span with whatever
   // punctuation clings to it: "(`omakit pin`)." is one word.
   const words = String(text).match(/[^\s`]*`[^`]*`[^\s`]*|\S+/g) || []
@@ -422,7 +438,7 @@ export function continuation(value, c) {
  * under itself. There is exactly one of these under any failure, and it is the
  * only line in the tool that starts with an arrow, so it can be found by shape.
  */
-export function action(text, c, { indent = GUTTER, width: total = COLUMNS } = {}) {
+export function action(text, c, { indent = GUTTER, width: total = outputColumns() } = {}) {
   // Painted after wrapping, and all of it cyan: the whole line is the thing
   // to do, so a backticked word inside it has nothing to stand out from.
   const lines = wrap(text, { indent: indent + 2, width: total })
@@ -449,11 +465,11 @@ export function labelled(label, text, c, { indent = GUTTER } = {}) {
  * grey. It is the same shape the wordmark uses (the name, then its rule), so a
  * section of a report and the front door of the tool are drawn by one idea.
  */
-export function section(title, c, { width: total = COLUMNS } = {}) {
+export function section(title, c, { width: total = outputColumns() } = {}) {
   return [c("heading", title), c("punctuation", DENSITY.floor.repeat(total))]
 }
 
 /** A rule with no heading, the same floor, for a wordmark or a block that names itself. */
-export function rule(c, { width: total = COLUMNS, tint = "punctuation" } = {}) {
+export function rule(c, { width: total = outputColumns(), tint = "punctuation" } = {}) {
   return c(tint, DENSITY.floor.repeat(total))
 }

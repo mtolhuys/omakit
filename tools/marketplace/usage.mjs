@@ -7,7 +7,7 @@
 
 import { UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { MARKETPLACE_PIN } from "./pin.mjs"
-import { colourEnabled, paintProse, STEP, styler } from "./style.mjs"
+import { colourEnabled, paintProse, STEP, styler, withOutputStream, wrap } from "./style.mjs"
 
 /**
  * "Safe" means one thing, everywhere it appears: this runs on your own
@@ -208,16 +208,40 @@ export function paintSignature(signature, c) {
  *
  * @param {{ colour?: boolean, heading?: boolean }} [options]
  */
-export function renderSummary({ colour = colourEnabled(), heading = true } = {}) {
-  const c = styler(colour)
-  const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
-  for (const command of COMMANDS) {
-    out.push(`${INDENT}${paintSignature([].concat(command.signature)[0], c)}`)
+function commandSignatures(command) {
+  const signatures = []
+  for (const line of [].concat(command.signature)) {
+    if (line.startsWith("omakit ")) signatures.push(line)
+    else signatures[signatures.length - 1] += ` ${line}`
   }
-  out.push("")
-  out.push(`${INDENT}${paintProse("`omakit help` is the same list with what each command does, and", c)}`)
-  out.push(`${INDENT}${paintProse("what it reads. `omakit setup` is the one to run first.", c)}`)
-  return `${out.join("\n")}\n`
+  return signatures
+}
+
+function signatureLines(signature, c) {
+  // A placeholder or bracketed optional argument stays whole, like the
+  // backticked typeable spans used by the shared wrapper.
+  const grouped = signature.replace(/\[[^\]]+\]|<[^>]+>(?:@<[^>]+>)?/g, (part) => `\`${part}\``)
+  return wrap(grouped, { indent: STEP * 3, first: STEP }).map((line) => paintSignature(line, c))
+}
+
+export function renderSummary({ stream = process.stdout, colour = colourEnabled(stream), heading = true } = {}) {
+  return withOutputStream(stream, () => {
+    const c = styler(colour)
+    const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
+    if (stream.isTTY && heading) out.splice(0, 1, ...wrap(out[0]))
+    for (const command of COMMANDS) {
+      if (stream.isTTY) out.push(...signatureLines([].concat(command.signature)[0], c))
+      else out.push(`${INDENT}${paintSignature([].concat(command.signature)[0], c)}`)
+    }
+    out.push("")
+    if (stream.isTTY) {
+      out.push(...wrap("`omakit help` is the same list with what each command does, and what it reads. `omakit setup` is the one to run first.", { indent: STEP }, c))
+    } else {
+      out.push(`${INDENT}${paintProse("`omakit help` is the same list with what each command does, and", c)}`)
+      out.push(`${INDENT}${paintProse("what it reads. `omakit setup` is the one to run first.", c)}`)
+    }
+    return `${out.join("\n")}\n`
+  })
 }
 
 /**
@@ -225,23 +249,29 @@ export function renderSummary({ colour = colourEnabled(), heading = true } = {})
  *   when the line above has already named the tool, as under an unknown
  *   command, so the same sentence is not printed twice.
  */
-export function renderUsage({ colour = colourEnabled(), heading = true } = {}) {
-  const c = styler(colour)
-  const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
+export function renderUsage({ stream = process.stdout, colour = colourEnabled(stream), heading = true } = {}) {
+  return withOutputStream(stream, () => {
+    const c = styler(colour)
+    const out = heading ? [`${c("typeable.bold", "omakit")}${c("punctuation", ":")} ${TAGLINE}`, ""] : []
+    if (stream.isTTY && heading) out.splice(0, 1, ...wrap(out[0]))
 
-  for (const command of COMMANDS) {
-    for (const line of [].concat(command.signature)) {
-      out.push(`${INDENT}${paintSignature(line, c)}`)
+    for (const command of COMMANDS) {
+      if (stream.isTTY) {
+        for (const signature of commandSignatures(command)) out.push(...signatureLines(signature, c))
+        out.push(...wrap(command.lines.join(" "), { indent: STEP * 3 }, c))
+      } else {
+        for (const line of [].concat(command.signature)) out.push(`${INDENT}${paintSignature(line, c)}`)
+        for (const line of command.lines) out.push(`${DESCRIPTION}${paintProse(line, c)}`)
+      }
+      out.push("")
     }
-    for (const line of command.lines) {
-      out.push(`${DESCRIPTION}${paintProse(line, c)}`)
-    }
+
+    if (stream.isTTY) out.push(...signatureLines(TARGET_NOTE, c))
+    else out.push(`${INDENT}${paintSignature(TARGET_NOTE, c)}`)
     out.push("")
-  }
-
-  out.push(`${INDENT}${paintSignature(TARGET_NOTE, c)}`)
-  out.push("")
-  out.push(c("heading", "GitHub access:"))
-  for (const line of AUTHENTICATION) out.push(`${INDENT}${paintProse(line, c)}`)
-  return `${out.join("\n")}\n`
+    out.push(c("heading", "GitHub access:"))
+    if (stream.isTTY) out.push(...wrap(AUTHENTICATION.join(" "), { indent: STEP }, c))
+    else for (const line of AUTHENTICATION) out.push(`${INDENT}${paintProse(line, c)}`)
+    return `${out.join("\n")}\n`
+  })
 }

@@ -81,7 +81,8 @@ side rather than the findings themselves. The GitHub side uses whatever
 credential `github.mjs` resolves (a `gh` login, and only that), read-only.
 
 Two rules about the output, stated as rules because each is an exception to
-a wider one. Everything omakit writes itself stays within 80 columns; text
+a wider one. Pipes use 80 columns; terminals use their available width up to
+120 columns. Text files compose at 80 columns without colour escapes. Text
 that will be posted verbatim, the marketplace's own baseline report and the
 issue body rendered from the pinned form, is never wrapped and may exceed 80,
 because a wrapped body would not be the body. And stdout is the whole result;

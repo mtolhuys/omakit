@@ -15,7 +15,7 @@
 // the report ends with the command line that repeats the run without asking.
 
 import { createInterface } from "node:readline"
-import { colourEnabled, STEP, action, styler, wrap } from "./style.mjs"
+import { colourEnabled, outputColumns, STEP, action, styler, wrap } from "./style.mjs"
 import { resolveCategory, resolveTags } from "./form.mjs"
 import { watchIssueTitle } from "./watch.mjs"
 
@@ -52,10 +52,10 @@ function reader(input) {
 /** Ask one question until an answer resolves; `parse` returns { ok, value } or { ok: false, reason }. */
 async function question(lines, output, c, { name, heading, options, defaultIndexes, parse, wrapOptions = false, eofRemedy }) {
   const step = " ".repeat(STEP)
-  output.write(`${wrap(heading, {}, c).join("\n")}\n`)
+  output.write(`${wrap(heading, { width: outputColumns(output) }, c).join("\n")}\n`)
   for (const [index, option] of options.entries()) {
     output.write(wrapOptions
-      ? `${wrap(`${String(index + 1).padStart(2)} ${option}`, { indent: STEP }, c).join("\n")}\n`
+      ? `${wrap(`${String(index + 1).padStart(2)} ${option}`, { indent: STEP, width: outputColumns(output) }, c).join("\n")}\n`
       : `${step}${c("typeable", String(index + 1).padStart(2))}  ${option}\n`)
   }
   const fallback = defaultIndexes.length ? defaultIndexes.map((index) => index + 1).join(",") : null
@@ -70,7 +70,7 @@ async function question(lines, output, c, { name, heading, options, defaultIndex
     const text = raw.trim() || (fallback ?? "")
     const parsed = parse(text)
     if (parsed.ok) return parsed.value
-    output.write(`${wrap(parsed.reason, {}, c).join("\n")}\n`)
+    output.write(`${wrap(parsed.reason, { width: outputColumns(output) }, c).join("\n")}\n`)
   }
 }
 

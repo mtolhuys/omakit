@@ -11,9 +11,10 @@ measurement, the measurement is here.
 stdout is an API. A coding agent parses it, and a person pastes it into an
 issue. So:
 
-- Colour and motion are for a terminal only. Piped stdout is byte-identical to
-  a terminal run with the escapes stripped; `plain(coloured) === uncoloured` is
-  asserted over every rendering and over the binary itself
+- Colour and motion are for a terminal only. Colour never changes the words
+  or wrapping at a given width; `plain(coloured) === uncoloured` is asserted
+  over every rendering and over the binary itself. Terminal and pipe widths
+  can differ, but the underlying text stays the same
   (`tests/unit/cli.test.mjs` runs `omakit` piped, with `FORCE_COLOR`, and with
   `NO_COLOR`, and compares).
 - Progress goes to stderr and is drawn only when stderr is a terminal.
@@ -150,9 +151,24 @@ label's text. No source file outside
 `style.mjs` may repeat a literal number of spaces or start a template with a
 hand-typed indent; the test reads for both.
 
-## Eighty columns
+## Responsive terminal width
 
-Everything omakit composes fits in 80 columns. Measured before this was
+Terminals use their current column count, capped at 120 columns for prose
+readability. Pipes and text files keep the stable 80-column layout; file output
+has no colour escapes. The cap is a reading-width decision, not a guessed
+terminal size. `outputColumns()` reads the destination at composition time,
+so a resized terminal's next render uses its new width. Help joins the source
+paragraph fragments and wraps signatures rather than emitting fixed breaks.
+Short windows wrap earlier, and a logo wider than the terminal becomes a
+compact wordmark. A check's source moves below its name when both cannot fit.
+
+Exact URLs, paths, commit identifiers, marketplace reports and issue bodies
+remain intact and can exceed a very narrow window. Ordinary prose and syntax
+are held to the selected width. `tests/unit/responsive.test.mjs` checks six
+widths, changed dimensions, stable pipes, narrow banners and actual terminal
+commands; visual captures are recorded in `docs/MEASUREMENTS.md`.
+
+The previous fixed layout used 80 columns. Measured before this was
 enforced, in the real output of five commands: 32 of the tool's own lines were
 wider. The wrapper wrapped at 78 and then indented by 7, so a check's
 why-paragraph reached column 85; the refusal line listed nine check ids on one

@@ -18,7 +18,7 @@
 // screen, and the last screen is the one a person is looking at.
 
 import {
-  action, colourEnabled, COLUMNS, continuation, field, GUTTER, labelled, mark, section, STEP, styler, verdict, width, wrap,
+  action, colourEnabled, outputColumns, continuation, field, GUTTER, labelled, mark, section, STEP, styler, verdict, width, wrap,
 } from "./style.mjs"
 import { withHomeAbbreviated } from "./paths.mjs"
 import { watchIssueTitle } from "./watch.mjs"
@@ -42,7 +42,11 @@ function stateOf(check) {
 export function head(state, id, source, c) {
   const left = `${mark(state, c)}${c("name", id)}`
   const tag = c("punctuation", `[${source}]`)
-  const gap = Math.max(2, COLUMNS - width(left) - width(tag))
+  const columns = outputColumns()
+  if (width(left) + width(tag) + 2 > columns) {
+    return `${left}\n${wrap(`[${source}]`, { indent: GUTTER }).map((line) => c("punctuation", line)).join("\n")}`
+  }
+  const gap = columns - width(left) - width(tag)
   return `${left}${" ".repeat(gap)}${tag}`
 }
 
@@ -78,7 +82,7 @@ function commandLines(command, c) {
       units.push(word)
     }
   }
-  const room = COLUMNS - STEP - " \\".length
+  const room = outputColumns() - STEP - " \\".length
   const lines = []
   let line = ""
   for (const unit of units) {

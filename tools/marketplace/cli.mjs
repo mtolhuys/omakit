@@ -34,7 +34,7 @@ import { updateCheckEnabled, updateNotice } from "./update-check.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
+import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, outputColumns, styler, verdict, withOutputStream, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
 import { confirmationQuestion, renderList, renderWeigh, renderPlan } from "../weigh/report.mjs"
@@ -76,8 +76,10 @@ const REMEDY = Object.freeze({
  */
 function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => []) {
   const c = styler(colourEnabled(process.stderr))
-  const lines = [`${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c), ...body(c)]
-  if (remedy) lines.push(...action(remedy, c))
+  const lines = withOutputStream(process.stderr, () => [
+    `${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c), ...body(c),
+    ...(remedy ? action(remedy, c) : []),
+  ])
   process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)
 }
@@ -121,6 +123,12 @@ function emit(args, text) {
   } else {
     process.stdout.write(text.endsWith("\n") ? text : `${text}\n`)
   }
+}
+
+function reportText(args, render, result, options = {}) {
+  const out = option(args, "--out")
+  return withOutputStream(out ? { isTTY: false } : process.stdout,
+    () => render(result, { ...options, ...(out ? { colour: false } : {}) }))
 }
 
 async function cmdSubmit(args) {
@@ -174,7 +182,7 @@ async function cmdSubmit(args) {
     failFrom(error)
   }
   spinner.done()
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderSubmit(result))
+  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSubmit, result))
   // Three outcomes, two exit codes: `ready` and `listed` are both healthy
   // states, and only a refusal is a 1.
   process.exit(result.outcome === "refused" ? 1 : 0)
@@ -215,7 +223,7 @@ async function cmdWatch(args) {
   }
   spinner.done()
   const render = result.mode === "list" ? renderWatchList : result.mode === "all" ? renderWatchAll : renderWatch
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : render(result))
+  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, render, result))
   process.exit(result.verdict?.state === "unknown" || result.summary?.unknown > 0 ? 2 : 0)
 }
 
@@ -250,7 +258,7 @@ async function cmdDoctor(args) {
   const spinner = spinnerFor(args)
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
   spinner.done()
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderDoctor(result))
+  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderDoctor, result))
   process.exit(result.problems ? 1 : 0)
 }
 
@@ -293,7 +301,7 @@ async function cmdVerify(args) {
   const blockingRules = section.invoked && section.official && !section.official.error
     ? (await consequence(requirePin(ROOT).dir, section.official)).selectivelyBlockingRules
     : []
-  emit(args, renderVerify(document, { blockingRules }))
+  emit(args, reportText(args, renderVerify, document, { blockingRules }))
 }
 
 async function cmdParity(args) {
@@ -420,7 +428,7 @@ async function cmdWeigh(args) {
   // The confirmation. The plan is printed either way, so the record says
   // what was agreed to; the question is asked only at a terminal on both
   // ends, and --yes is the only other way past it.
-  narrate.write(`${renderPlan(plan, { colour: colourEnabled(narrate) }).join("\n")}\n`)
+  narrate.write(`${withOutputStream(narrate, () => renderPlan(plan, { colour: colourEnabled(narrate) })).join("\n")}\n`)
   if (!parsed.options.has("--yes")) {
     const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
     if (!interactive) notWeighed("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is.`, REMEDY["not-confirmed"], 2)
@@ -487,12 +495,15 @@ const [command, ...rest] = process.argv.slice(2)
 // stays empty on success, and never for setup, which is the fix.
 if (updateCheckEnabled({ command, args: rest, stdinTTY: process.stdin.isTTY, stdoutTTY: process.stdout.isTTY, stderrTTY: process.stderr.isTTY })) {
   const notice = await updateNotice({ repoRoot: ROOT, version: VERSION })
-  if (notice) process.stderr.write(`${wrap(notice, {}, styler(colourEnabled(process.stderr))).join("\n")}\n`)
+  if (notice) process.stderr.write(`${wrap(notice, { width: outputColumns(process.stderr) }, styler(colourEnabled(process.stderr))).join("\n")}\n`)
 }
 
 if (command !== "setup" && process.stderr.isTTY) {
   const notice = staleCompletionNotice({ version: VERSION })
-  if (notice) process.stderr.write(`${styler(colourEnabled(process.stderr))("label", notice)}\n`)
+  if (notice) {
+    const c = styler(colourEnabled(process.stderr))
+    process.stderr.write(`${wrap(notice, { width: outputColumns(process.stderr) }).map((line) => c("label", line)).join("\n")}\n`)
+  }
 }
 
 if (command === "setup") {
@@ -556,12 +567,12 @@ if (command === "setup") {
   // The short list on a typo, not 53 lines of reference, in the same register
   // as every other failure: what happened, what it means, what to run.
   const c = styler(colourEnabled(process.stderr))
-  process.stderr.write([
+  process.stderr.write(withOutputStream(process.stderr, () => [
     `${mark("fail", c)}${c("name", "unknown command")}`,
     ...wrap(`\`${command}\` is not something omakit does. The commands it has are listed below.`, { indent: GUTTER }, c),
     ...action("omakit help", c),
     "",
-    renderSummary({ colour: colourEnabled(process.stderr), heading: false }),
-  ].join("\n"))
+    renderSummary({ stream: process.stderr, colour: colourEnabled(process.stderr), heading: false }),
+  ].join("\n")))
   process.exit(2)
 }

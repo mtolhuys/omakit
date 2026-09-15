@@ -5,7 +5,7 @@
 // typed here is written anywhere.
 
 import { createInterface } from "node:readline"
-import { action, colourEnabled, COLUMNS, styler } from "../marketplace/style.mjs"
+import { action, colourEnabled, outputColumns, styler } from "../marketplace/style.mjs"
 
 /**
  * The question as it is written to the terminal: the arrow line, wrapped
@@ -20,7 +20,7 @@ import { action, colourEnabled, COLUMNS, styler } from "../marketplace/style.mjs
  * @param {{ width?: number }} [options]
  * @returns {string} every line, joined, ending in `[y/N]: `
  */
-export function renderQuestion(question, c, { width = COLUMNS } = {}) {
+export function renderQuestion(question, c, { width = outputColumns() } = {}) {
   return `${action(`${question} [y/N]:`, c, { indent: 0, width }).join("\n")} `
 }
 
@@ -28,7 +28,7 @@ export function renderQuestion(question, c, { width = COLUMNS } = {}) {
  * @param {{ input?: NodeJS.ReadStream, output?: NodeJS.WriteStream, colour?: boolean, question: string, width?: number }} options
  * @returns {Promise<boolean>} true only for `y` or `yes`, in any case; an empty line and the end of stdin are no
  */
-export function askYes({ input = process.stdin, output = process.stderr, colour = colourEnabled(output), question, width = COLUMNS }) {
+export function askYes({ input = process.stdin, output = process.stderr, colour = colourEnabled(output), question, width = outputColumns(output) }) {
   const c = styler(colour)
   return new Promise((resolve) => {
     const rl = createInterface({ input, terminal: false })

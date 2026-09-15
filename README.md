@@ -40,6 +40,10 @@ and shows the upgrade command. It installs nothing automatically; scripts
 and JSON stay quiet. `DISABLE_UPDATE_NOTIFIER=1` disables the notice, and
 `omakit doctor` checks explicitly. [Update behaviour](docs/INSTALL.md#updating).
 
+Terminal help and reports adapt to the available width, up to 120 columns
+for readability. Narrow windows wrap sooner; pipes and text files keep the
+stable eighty-column layout. JSON and exact issue bodies remain intact.
+
 ### `submit`
 
 ```bash

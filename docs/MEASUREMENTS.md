@@ -571,3 +571,22 @@ uses a never-resolving registry with a 20 ms injected budget, verifies abort,
 and requires completion below 500 ms to allow test-runner scheduling.
 `tests/unit/update-check.test.mjs` also proves daily/hourly boundaries, changed
 install versions, unavailable state, prerelease precedence and skipped modes.
+
+## Responsive output (0.4.1, 15 September 2026)
+
+Real pseudo-terminal captures of the full help command measured 180 lines at
+40 columns, 122 at 60, 95 at 80, 85 at 100, and 75 at both 120 and 160.
+The 120-column cap is an explicit reading-width choice; wider terminals retain
+that width. Tests compare every word and syntax fragment across all six
+widths, compare colour/plain output, and execute the real command at 40 and
+120 columns. Exact URLs, paths and commit identifiers stay whole even if
+one atom exceeds the room in a very narrow window.
+
+Captured help at 60 and 120 columns was visually inspected using JetBrains
+Mono Nerd Font and the current terminal's palette (background #121212,
+foreground #bebebe, typeable #e68e0d and placeholder #b91c1c). Signature
+continuations align at six columns, paragraphs wrap at the selected width,
+and the wider capture shows the same content in fewer lines. A separate
+20-column test proves the compact logo uses no cursor animation. Pipes and
+file output use the stable 80-column geometry; JSON and verbatim issue and
+marketplace sections are not reflowed.
