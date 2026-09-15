@@ -448,3 +448,23 @@ test("an option written as --name=value is read the same as --name value, for ev
   assert.ok(result.checks.find((check) => check.id === "submission.category").detail.endsWith("Widgets"))
   assert.equal(result.checks.find((check) => check.id === "submission.tags").detail.toLowerCase(), "tags: bar")
 })
+
+test("stdout reaches a reader that starts late, whole: the result is never cut by the exit", () => {
+  // Measured on 0.4.1: `omakit submit <listed plugin> --json | (sleep 2; cat)`
+  // delivered 8,192 of 14,033 bytes, because the command called
+  // process.exit() straight after writing to a pipe nobody had read yet, and
+  // the parser downstream saw invalid JSON. stdout is an API; the process
+  // now leaves through process.exitCode and the write completes.
+  const dir = mkdtempSync(join(tmpdir(), "omakit-late-reader-"))
+  const whole = join(dir, "whole.json")
+  const written = run(["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline", "--json", "--out", whole])
+  assert.equal(written.code, 0, written.err)
+  const expected = readFileSync(whole, "utf8")
+  assert.ok(expected.length > 8192, `the fixture's document is ${expected.length} bytes; the test needs more than one pipe chunk`)
+  const late = spawnSync("sh", ["-c", `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} submit ${JSON.stringify(good.dir)} --category Widgets --tags bar --offline --json | (sleep 1; cat)`], {
+    encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" },
+  })
+  assert.equal(late.status, 0, late.stderr)
+  assert.equal(late.stdout, expected)
+  assert.equal(JSON.parse(late.stdout).outcome, "ready")
+})

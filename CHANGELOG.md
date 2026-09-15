@@ -16,6 +16,10 @@
   unverified restore with the backup kept, never as "shell.json was restored".
 - `watch` no longer renders a bot account's comment as the discussion, counts
   it as a reviewer, or dates the last human review by it.
+- A command that has written its result leaves through the exit code, never
+  `process.exit()`, so a pipe whose reader starts late receives the whole
+  output. Before, `submit <listed plugin> --json | (sleep 2; cat)` delivered
+  8,192 of 14,033 bytes and the parser downstream saw invalid JSON.
 - The lab gate `tests/lab/weigh.sh` has two modes: `smoke`, the default, a
   minute of measurement in the guest proving a real restart, real `/proc`
   reads, the restore and an interrupt's recovery; and `evidence`, the

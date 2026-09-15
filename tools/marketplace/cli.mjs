@@ -68,6 +68,16 @@ const REMEDY = Object.freeze({
   "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
 })
 
+/*
+ * A command that has written its result leaves through `process.exitCode`,
+ * never `process.exit()`: stdout is an API, and on a pipe whose reader has
+ * not started reading yet the exit cuts the output. Measured on 0.4.1:
+ * `omakit submit <listed plugin> --json | (sleep 2; cat)` delivered 8,192 of
+ * 14,033 bytes, and a parser downstream saw invalid JSON. The failure
+ * states below still exit at once: they write one short block to stderr,
+ * and their callers use them the way a throw is used.
+ */
+
 /**
  * Every failure, in one register, on stderr. `usage` errors carry the
  * signature that was expected, so the remedy is the reference and not a
@@ -181,7 +191,8 @@ async function cmdSubmit(args) {
       const usage = error.usage
       if (json) {
         process.stdout.write(`${JSON.stringify({ usage }, null, 2)}\n`)
-        process.exit(2)
+        process.exitCode = 2
+        return
       }
       const flags = usage.missing.join(" and ")
       fail("usage", `submit needs ${flags}: ${usage.missing.length === 1 ? "it is" : "they are"} an editorial choice nobody else can make, from the pinned form's own lists.`, 2,
@@ -197,7 +208,7 @@ async function cmdSubmit(args) {
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSubmit, result))
   // Three outcomes, two exit codes: `ready` and `listed` are both healthy
   // states, and only a refusal is a 1.
-  process.exit(result.outcome === "refused" ? 1 : 0)
+  process.exitCode = result.outcome === "refused" ? 1 : 0
 }
 
 async function cmdWatch(args) {
@@ -236,7 +247,7 @@ async function cmdWatch(args) {
   spinner.done()
   const render = result.mode === "list" ? renderWatchList : result.mode === "all" ? renderWatchAll : renderWatch
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, render, result))
-  process.exit(result.verdict?.state === "unknown" || result.summary?.unknown > 0 ? 2 : 0)
+  process.exitCode = result.verdict?.state === "unknown" || result.summary?.unknown > 0 ? 2 : 0
 }
 
 async function cmdFrontDoor() {
@@ -255,15 +266,16 @@ async function cmdSetup(args) {
   if (args.includes("--completion")) {
     const identity = requirePin(ROOT).identity
     const result = await completionStep({ repoRoot: ROOT, pin: identity.commit, version: VERSION, askRc: false })
-    process.exit(result.state === "ok" ? 0 : 1)
+    process.exitCode = result.state === "ok" ? 0 : 1
+    return
   }
   const result = await setup({ repoRoot: ROOT, entryPoint: resolve(ROOT, "bin/omakit"), yes: args.includes("--yes") })
-  process.exit(result.ok ? 0 : 1)
+  process.exitCode = result.ok ? 0 : 1
 }
 
 async function cmdUpgrade(args) {
   const result = await upgrade({ repoRoot: ROOT, dryRun: args.includes("--dry-run") })
-  process.exit(result.ok ? 0 : 1)
+  process.exitCode = result.ok ? 0 : 1
 }
 
 async function cmdDoctor(args) {
@@ -271,7 +283,7 @@ async function cmdDoctor(args) {
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
   spinner.done()
   emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderDoctor, result))
-  process.exit(result.problems ? 1 : 0)
+  process.exitCode = result.problems ? 1 : 0
 }
 
 async function cmdVerify(args) {
@@ -337,7 +349,7 @@ async function cmdParity(args) {
   } catch (error) {
     failFrom(error)
   }
-  process.exit(ok ? 0 : 1)
+  process.exitCode = ok ? 0 : 1
 }
 
 function notAudited(message, remedy = null, exit = 1) {
@@ -371,7 +383,7 @@ async function cmdAudit(args) {
   }
   if (parsed.options.has("--json")) process.stdout.write(json)
   else process.stdout.write(`${renderAudit(document)}\n`)
-  process.exit(document.ok ? 0 : 1)
+  process.exitCode = document.ok ? 0 : 1
 }
 
 /**
@@ -411,7 +423,7 @@ async function cmdWeigh(args) {
       throw error
     }
     process.stdout.write(json ? `${JSON.stringify(list.rows, null, 2)}\n` : `${renderList(list)}\n`)
-    process.exit(0)
+    return
   }
   if (!target && !all) notWeighed("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin.", "omakit weigh <plugin-id-or-dir>", 2)
   if (target && all) notWeighed("usage", `--all weighs every enabled third-party plugin, so ${JSON.stringify(target)} is one argument more than it takes.`, "omakit weigh --all, or omakit weigh <plugin-id-or-dir>", 2)
@@ -478,7 +490,6 @@ async function cmdWeigh(args) {
   } else {
     process.stdout.write(`\n${renderWeigh(document)}\n`)
   }
-  process.exit(0)
 }
 
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
