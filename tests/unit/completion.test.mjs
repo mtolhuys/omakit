@@ -109,6 +109,12 @@ test("the bash function completes commands, flags, controlled values and directo
   assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "weigh", "fixture.c"), ["fixture.clean"])
   assert.deepEqual(completeWith({ ...process.env, PATH: `${silent}:${process.env.PATH}` }, "omakit", "weigh", "doc"), ["docs"], "no answer: a directory")
   assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "weigh", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "weigh").flags.map((f) => f.flag))
+  for (const prefix of ["", "fixture.c"]) {
+    const env = { ...process.env, PATH: `${answering}:${process.env.PATH}` }
+    assert.deepEqual(completeWith(env, "omakit", "audit", prefix), completeWith(env, "omakit", "weigh", prefix), "audit uses the same live plugin target completion as weigh")
+  }
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${silent}:${process.env.PATH}` }, "omakit", "audit", "doc"), ["docs"], "audit also falls back to directories")
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "audit", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "audit").flags.map((f) => f.flag))
 })
 
 test("the jq expression behind weigh <TAB> puts enabled ids first and leaves whole bars out", (t) => {
@@ -132,6 +138,7 @@ test("the jq expression behind weigh <TAB> puts enabled ids first and leaves who
     assert.ok(scripts[shell].includes(`else ${PLUGIN_IDS_COMMAND}`) || scripts[shell].includes(`else; ${PLUGIN_IDS_COMMAND}`) || scripts[shell].includes(`else ids=(\${(f)"$(${PLUGIN_IDS_COMMAND})"})`), `${shell}: the unbounded one where timeout is missing`)
   }
   assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "weigh").target, "plugin")
+  assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "audit").target, "plugin")
   assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").target, "directory")
 })
 

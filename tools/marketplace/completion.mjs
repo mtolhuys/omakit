@@ -47,7 +47,8 @@ export function subcommandsOf(commands = COMMANDS) {
 }
 
 /**
- * The plugin ids a TAB offers for `omakit weigh <TAB>`: what the running
+ * The plugin ids a TAB offers for `omakit weigh <TAB>` and `omakit audit <TAB>`:
+ * what the running
  * shell reports through `omarchy-shell shell listPlugins`, filtered with
  * `jq` at TAB time, enabled ids first and whole bars left out, since a bar
  * cannot be weighed. No node process behind the TAB: a shell that does not

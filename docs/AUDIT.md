@@ -164,7 +164,9 @@ omakit audit --offline
 
 The shell's installed-plugin list is authoritative. A directory target must
 belong to that list. Tab completion offers installed plugin ids, then falls
-back to directories, the same way `weigh` does.
+back to directories, the same way `weigh` does. Tests drive both targets
+through the shared model. Run `omakit setup` with the local revision to refresh
+an older completion script.
 
 | Option | Result |
 | --- | --- |
