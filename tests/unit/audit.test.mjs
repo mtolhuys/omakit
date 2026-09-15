@@ -72,6 +72,7 @@ function fixture({ drift = false, target = null } = {}) {
     installed: () => plugins,
     registry: async () => ({ source: "pin", commit: "3".repeat(40), fetchedAt: null, reason: "--offline", catalog: { plugins: catalog }, registry: {} }),
     checkout,
+    hasCommit: () => true,
     ancestor: (dir, sha) => dir === "/p/ahead" && sha === A,
     count: () => 3,
     route: async () => route,
@@ -168,6 +169,7 @@ test("the CLI JSON, output file, drift view and exit codes use stubbed shell and
     '    "rev-parse HEAD ") printf "%s\\n" "$AUDIT_HEAD"; exit 0 ;;',
     '    "status --porcelain ") exit 0 ;;',
     '    "remote get-url origin") printf "%s\\n" "$AUDIT_REPOSITORY"; exit 0 ;;',
+    '    "cat-file -e "*) exit 0 ;;',
     '    "merge-base --is-ancestor"*) exit 0 ;;',
     '    "rev-list --count "*) printf "2\\n"; exit 0 ;;',
     "  esac",
@@ -208,4 +210,50 @@ test("the CLI JSON, output file, drift view and exit codes use stubbed shell and
   assert.equal(driftDocument.rows.length, 1)
   assert.equal(driftDocument.rows[0].state, "ahead")
   assert.equal(driftDocument.rows[0].aheadBy.value, 2)
+})
+
+test("a missing validated object is diverged in full and shallow local clones", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "omakit-audit-history-"))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const source = join(root, "source")
+  const git = (...args) => {
+    const result = spawnSync("git", args, { encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "test@example.test", GIT_COMMITTER_NAME: "Test", GIT_COMMITTER_EMAIL: "test@example.test" } })
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout.trim()
+  }
+  git("init", source)
+  writeFileSync(join(source, "file"), "first")
+  git("-C", source, "add", "file")
+  git("-C", source, "commit", "-m", "first")
+  const first = git("-C", source, "rev-parse", "HEAD")
+  writeFileSync(join(source, "file"), "second")
+  git("-C", source, "commit", "-am", "second")
+  const shallow = join(root, "shallow")
+  git("clone", "--depth", "1", `file://${source}`, shallow)
+  const repository = "https://github.com/example/history"
+  git("-C", source, "remote", "add", "origin", repository)
+  git("-C", shallow, "remote", "set-url", "origin", repository)
+  for (const [sourceDir, commit, expectedShallow] of [[source, A, false], [shallow, first, true]]) {
+    let ancestryCalled = false
+    const document = await auditInstalled({
+      installed: () => [{ id: "p.history", enabled: true, sourceDir }],
+      registry: async () => ({ source: "pin", commit: B, catalog: { plugins: [listing("p.history", repository, { listingValidatedCommit: commit })] } }),
+      ancestor: () => { ancestryCalled = true; throw new Error("missing object reached merge-base") },
+      route: async () => route,
+    })
+    assert.equal(ancestryCalled, false)
+    assert.equal(document.rows[0].state, "diverged")
+    assert.equal(document.rows[0].fact, `validated commit not in local history; shallow clone: ${expectedShallow}`)
+    assert.deepEqual(document.rows[0].shallow, { value: expectedShallow, origin: "git rev-parse --is-shallow-repository" })
+    assert.equal(document.ok, false)
+  }
+})
+
+test("a listing without a validated commit is unverified even when its status says verified", async () => {
+  const document = await auditInstalled({
+    installed: () => [{ id: "p.empty", enabled: true, sourceDir: "/p/empty" }],
+    registry: async () => ({ source: "pin", commit: B, catalog: { plugins: [listing("p.empty", "https://github.com/example/empty", { listingValidatedCommit: null })] } }),
+    checkout: () => ({ commit: C, status: "", repository: "https://github.com/example/empty" }),
+  })
+  assert.equal(document.rows[0].state, "unverified")
 })

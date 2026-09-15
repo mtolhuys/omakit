@@ -165,6 +165,9 @@ test("audit runs only read-only local Git questions", () => {
   assert.match(joined, /\["status", "--porcelain"\]/)
   assert.match(joined, /\["remote", "get-url", "origin"\]/)
   assert.match(joined, /"merge-base", "--is-ancestor"/)
+  assert.match(joined, /"cat-file", "-e", commit/)
+  assert.match(joined, /\["rev-parse", "--is-shallow-repository"\]/)
+  assert.match(joined, /GIT_NO_LAZY_FETCH: "1"/)
   assert.match(joined, /\["rev-list", "--count", `\$\{commit\}\.\.HEAD`\]/)
 })
 

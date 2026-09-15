@@ -6,7 +6,7 @@ import { resolve } from "node:path"
 import { newerCommitChoice } from "../marketplace/form.mjs"
 import { liveRegistry, sameRepository } from "../marketplace/registry.mjs"
 import { installedPlugins } from "../weigh/list.mjs"
-import { ancestorOf, commitsAfter, readCheckout } from "./git.mjs"
+import { ancestorOf, commitsAfter, hasCommit, isShallow, readCheckout } from "./git.mjs"
 
 export class AuditError extends Error {
   constructor(code, message, remedy = null) {
@@ -91,14 +91,22 @@ function rowFact(plugin, checkout, listing, conflict, git, env) {
     return { ...common, state: "validated", fact: `HEAD is the ${matched.kind} validated commit`, aheadBy: null, matchedValidated: matched }
   }
   if (!validated.length) {
-    if (listing.verificationStatus !== "verified") return { ...common, state: "unverified", fact: `listed with verificationStatus ${listing.verificationStatus || "unrecorded"}, and no validated commit`, aheadBy: null, matchedValidated: null }
-    return { ...common, state: "unknown", fact: "the verified listing records no validated commit", aheadBy: null, matchedValidated: null }
+    return { ...common, state: "unverified", fact: `listed with verificationStatus ${listing.verificationStatus || "unrecorded"}, and no validated commit`, aheadBy: null, matchedValidated: null }
   }
+  const missing = []
   for (const candidate of validated) {
+    if (!git.hasCommit(plugin.sourceDir, candidate.commit.value, { env })) {
+      missing.push(candidate)
+      continue
+    }
     if (git.ancestor(plugin.sourceDir, candidate.commit.value, { env })) {
       const count = git.count(plugin.sourceDir, candidate.commit.value, { env })
       return { ...common, state: "ahead", fact: `HEAD is ${count} commit${count === 1 ? "" : "s"} ahead of the ${candidate.kind} validated commit`, aheadBy: figure(count, `git rev-list --count ${candidate.commit.value}..HEAD`), matchedValidated: candidate }
     }
+  }
+  if (missing.length) {
+    const shallow = figure(git.shallow(plugin.sourceDir, { env }), "git rev-parse --is-shallow-repository")
+    return { ...common, state: "diverged", fact: `validated commit not in local history; shallow clone: ${shallow.value}`, shallow, aheadBy: null, matchedValidated: missing[0] }
   }
   const moved = sameRepository(checkout.repository, listing.repo)
   return { ...common, state: "diverged", fact: moved ? "HEAD does not descend from a validated commit" : `origin does not match ${listing.repo}`, aheadBy: null, matchedValidated: validated[0] }
@@ -115,6 +123,8 @@ export async function auditInstalled(options = {}) {
     installed: options.installed || ((args) => installedPlugins(args)),
     registry: options.registry || ((args) => liveRegistry(args)),
     checkout: options.checkout || ((dir, args) => readCheckout(dir, args)),
+    hasCommit: options.hasCommit || ((dir, sha, args) => hasCommit(dir, sha, args)),
+    shallow: options.shallow || ((dir, args) => isShallow(dir, args)),
     ancestor: options.ancestor || ((dir, sha, args) => ancestorOf(dir, sha, args)),
     count: options.count || ((dir, sha, args) => commitsAfter(dir, sha, args)),
     route: options.route || ((args) => newerCommitChoice(args)),

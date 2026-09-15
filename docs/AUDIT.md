@@ -185,8 +185,8 @@ Every audited plugin has one primary state.
 | --- | --- |
 | `validated` | Installed HEAD equals `listingValidatedCommit` or `upstreamValidatedCommit`. |
 | `ahead` | A validated commit is an ancestor of HEAD. The row gives the Git commit count and the catalog's validation date. |
-| `diverged` | No validated commit is an ancestor. The row distinguishes a different origin from divergent history at the listed origin. |
-| `unverified` | The plugin is listed, is not recorded as verified and has no validated commit. |
+| `diverged` | No validated commit is an ancestor. A missing validated object reads "validated commit not in local history" and records whether the clone is shallow. Otherwise the row distinguishes a different origin from divergent history. |
+| `unverified` | The plugin is listed but records no validated commit. Its verification status is stated. |
 | `unlisted` | Neither manifest id nor Git origin matches a listing. If they match different listings, neither is used and the conflict is stated. |
 | `unknown` | The source directory is missing, the directory is not a Git checkout, or a Git question failed. The error is kept. |
 
@@ -238,7 +238,8 @@ describe every selected third-party plugin. `--out` writes this same document.
 `audit` does not fetch, pull, checkout or reset a repository. It does not
 enable, disable, add, update or remove a plugin. It does not restart the shell,
 post to the marketplace or create a local trust baseline. Its Git calls are
-limited to HEAD, status, origin, ancestry and commit-count questions.
+limited to HEAD, status, origin, object existence, shallow status, ancestry and
+commit-count questions. Implicit fetching of missing objects is disabled.
 
 ## Competition, READMEs read 2026-09-15
 

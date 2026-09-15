@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process"
 function runGit(sourceDir, args, env = process.env) {
   const result = spawnSync("git", ["-C", sourceDir, ...args], {
     encoding: "utf8",
-    env,
+    env: { ...env, GIT_NO_LAZY_FETCH: "1" },
     stdio: ["ignore", "pipe", "pipe"],
   })
   if (result.status !== 0 || result.error) {
@@ -25,11 +25,28 @@ export function readCheckout(sourceDir, { env = process.env } = {}) {
   }
 }
 
+/** A missing object is a local-history fact, not a failed ancestry check. */
+export function hasCommit(sourceDir, commit, { env = process.env } = {}) {
+  const result = spawnSync("git", ["-C", sourceDir, "cat-file", "-e", commit], {
+    encoding: "utf8",
+    env: { ...env, GIT_NO_LAZY_FETCH: "1" },
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+  if (result.error || result.status === null) throw new Error(result.error?.message || "git could not run")
+  return result.status === 0
+}
+
+export function isShallow(sourceDir, { env = process.env } = {}) {
+  const value = runGit(sourceDir, ["rev-parse", "--is-shallow-repository"], env)
+  if (!["true", "false"].includes(value)) throw new Error(`rev-parse --is-shallow-repository returned ${JSON.stringify(value)}`)
+  return value === "true"
+}
+
 /** Is a recorded commit an ancestor of the running checkout? */
 export function ancestorOf(sourceDir, commit, { env = process.env } = {}) {
   const result = spawnSync("git", ["-C", sourceDir, "merge-base", "--is-ancestor", commit, "HEAD"], {
     encoding: "utf8",
-    env,
+    env: { ...env, GIT_NO_LAZY_FETCH: "1" },
     stdio: ["ignore", "pipe", "pipe"],
   })
   if (result.status === 0) return true
