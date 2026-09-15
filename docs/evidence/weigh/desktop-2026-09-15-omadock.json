@@ -1,0 +1,2185 @@
+{
+  "omakit": "0.4.1",
+  "command": "weigh",
+  "method": "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise",
+  "started": "2026-09-15T15:09:39Z",
+  "ended": "2026-09-15T15:14:24Z",
+  "host": "omarchy",
+  "shell": {
+    "version": "4.0.0.alpha",
+    "omarchyPath": "/home/mtolhuijs/Projects/omarchy/core"
+  },
+  "settings": {
+    "runs": 3,
+    "windowSeconds": 15,
+    "settleSeconds": 30,
+    "readyTimeoutSeconds": 45,
+    "sampleIntervalMs": 500,
+    "clockTicksPerSecond": 100
+  },
+  "config": {
+    "path": "/home/mtolhuijs/.config/omarchy/shell.json",
+    "backup": "/home/mtolhuijs/.config/omarchy/shell.json.omakit-backup-20260915150939",
+    "md5Before": "8b29f3ccc028037a2cbe84d0517b2ded",
+    "md5After": "8b29f3ccc028037a2cbe84d0517b2ded",
+    "restored": true,
+    "shellAnsweredAfterRestore": true
+  },
+  "audited": [
+    "omadock"
+  ],
+  "failedRuns": [],
+  "baseline": {
+    "config": {
+      "bar": {
+        "centerAnchor": "omarchy.clock",
+        "layout": {
+          "center": [
+            {
+              "id": "omarchy.keyboard-layout"
+            },
+            {
+              "id": "akshar.radio-atlas"
+            },
+            {
+              "id": "io.github.mtolhuys.onscreen-keyboard"
+            },
+            {
+              "format": "ddd d MMM HH:mm",
+              "id": "omarchy.clock"
+            },
+            {
+              "id": "io.github.calebhat.weather",
+              "forecastOrbit": true,
+              "radarSite": "RainViewer",
+              "showBarTemp": true,
+              "timeFormat": "24",
+              "unit": "metric"
+            },
+            {
+              "id": "omarchy.system-update"
+            },
+            {
+              "id": "io.github.mtolhuys.plugin-pulse"
+            },
+            {
+              "id": "omaplug",
+              "autoCheckUpdates": true
+            },
+            {
+              "id": "robzolkos.github",
+              "iconAlwaysUnlit": false,
+              "includeArchived": true,
+              "includeForks": true,
+              "linkBehavior": "Browser tab"
+            }
+          ],
+          "left": [
+            {
+              "id": "omarchy.menu"
+            },
+            {
+              "id": "omarchy.workspaces"
+            },
+            {
+              "id": "crmne.hyprmoncfg"
+            },
+            {
+              "id": "bjarneo.workspace-layout"
+            },
+            {
+              "id": "io.github.mtolhuys.sidecar"
+            },
+            {
+              "id": "omarchy.indicators"
+            }
+          ],
+          "right": [
+            {
+              "id": "omarchy.tray"
+            },
+            {
+              "id": "io.github.mtolhuys.news-radar"
+            },
+            {
+              "id": "io.github.mtolhuys.news-readers"
+            },
+            {
+              "id": "omarchy.tailscale"
+            },
+            {
+              "id": "omarchy.agents"
+            },
+            {
+              "id": "omarchy.bluetooth"
+            },
+            {
+              "id": "omarchy.network"
+            },
+            {
+              "id": "omarchy.audio"
+            },
+            {
+              "id": "omarchy.monitor"
+            },
+            {
+              "id": "io.github.mtolhuys.disk-lens"
+            },
+            {
+              "id": "omarchy.power"
+            }
+          ]
+        },
+        "position": "top",
+        "transparent": false
+      },
+      "cloneSourceRestores": [
+        "io.github.sirjul1337.lock-explorer",
+        "io.github.mtolhuys.theme-manager"
+      ],
+      "disabledPlugins": [
+        "omarchy.image-picker",
+        "omarchy.lock"
+      ],
+      "idle": {
+        "lock": 300,
+        "screensaver": 150
+      },
+      "plugins": [
+        {
+          "design": "zen",
+          "id": "io.github.sirjul1337.lock-explorer"
+        },
+        {
+          "id": "bobbynicholas.omaland"
+        },
+        {
+          "id": "expose.window-overview"
+        },
+        {
+          "id": "io.github.pablo-merino.altswitch"
+        },
+        {
+          "id": "io.github.mtolhuys.theme-manager"
+        }
+      ],
+      "version": 1
+    },
+    "pssMb": {
+      "median": 535.5478515625,
+      "spread": 8.8017578125,
+      "min": 530.1953125,
+      "max": 538.9970703125,
+      "runs": [
+        535.5478515625,
+        530.1953125,
+        538.9970703125
+      ]
+    },
+    "rssMb": {
+      "median": 574.0234375,
+      "spread": 9.11328125,
+      "min": 568.375,
+      "max": 577.48828125,
+      "runs": [
+        574.0234375,
+        568.375,
+        577.48828125
+      ]
+    },
+    "pssMbSettled": {
+      "median": 535.5439453125,
+      "spread": 4.5,
+      "min": 534.8330078125,
+      "max": 539.3330078125,
+      "runs": [
+        535.5439453125,
+        534.8330078125,
+        539.3330078125
+      ]
+    },
+    "rssMbSettled": {
+      "median": 574.01953125,
+      "spread": 4.8125,
+      "min": 573.01171875,
+      "max": 577.82421875,
+      "runs": [
+        574.01953125,
+        573.01171875,
+        577.82421875
+      ]
+    },
+    "cpuPercent": {
+      "median": 1.5311896677984156,
+      "spread": 0.333226384912235,
+      "min": 1.464616203981093,
+      "max": 1.797842588893328,
+      "runs": [
+        1.797842588893328,
+        1.464616203981093,
+        1.5311896677984156
+      ]
+    },
+    "childRssMb": {
+      "median": 66.8359375,
+      "spread": 16.8125,
+      "min": 50.546875,
+      "max": 67.359375,
+      "runs": [
+        66.8359375,
+        67.359375,
+        50.546875
+      ]
+    },
+    "runs": [
+      {
+        "label": "baseline",
+        "run": 1,
+        "shellPid": 2409633,
+        "started": "2026-09-15T15:10:12Z",
+        "ended": "2026-09-15T15:10:27Z",
+        "readyAfterSeconds": 1.463,
+        "windowSeconds": 15.018,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 548401,
+          "rssKb": 587800,
+          "memoryAt": "window-end",
+          "pssKbSettled": 548397,
+          "rssKbSettled": 587796,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 548397,
+              "rssKb": 587796
+            },
+            {
+              "t": 0.52,
+              "pssKb": 548335,
+              "rssKb": 587800
+            },
+            {
+              "t": 1.044,
+              "pssKb": 548437,
+              "rssKb": 587836
+            },
+            {
+              "t": 1.567,
+              "pssKb": 548441,
+              "rssKb": 587840
+            },
+            {
+              "t": 2.094,
+              "pssKb": 548477,
+              "rssKb": 587876
+            },
+            {
+              "t": 2.616,
+              "pssKb": 548509,
+              "rssKb": 587908
+            },
+            {
+              "t": 3.139,
+              "pssKb": 548517,
+              "rssKb": 587916
+            },
+            {
+              "t": 3.66,
+              "pssKb": 548549,
+              "rssKb": 587948
+            },
+            {
+              "t": 4.181,
+              "pssKb": 548553,
+              "rssKb": 587952
+            },
+            {
+              "t": 4.701,
+              "pssKb": 548585,
+              "rssKb": 587984
+            },
+            {
+              "t": 5.221,
+              "pssKb": 548589,
+              "rssKb": 587988
+            },
+            {
+              "t": 5.741,
+              "pssKb": 548621,
+              "rssKb": 588020
+            },
+            {
+              "t": 6.261,
+              "pssKb": 548689,
+              "rssKb": 588088
+            },
+            {
+              "t": 6.782,
+              "pssKb": 548693,
+              "rssKb": 588092
+            },
+            {
+              "t": 7.303,
+              "pssKb": 546561,
+              "rssKb": 588120
+            },
+            {
+              "t": 7.823,
+              "pssKb": 548729,
+              "rssKb": 588128
+            },
+            {
+              "t": 8.346,
+              "pssKb": 548757,
+              "rssKb": 588156
+            },
+            {
+              "t": 8.867,
+              "pssKb": 548797,
+              "rssKb": 588200
+            },
+            {
+              "t": 9.388,
+              "pssKb": 548813,
+              "rssKb": 588212
+            },
+            {
+              "t": 9.909,
+              "pssKb": 548205,
+              "rssKb": 587604
+            },
+            {
+              "t": 10.43,
+              "pssKb": 548209,
+              "rssKb": 587608
+            },
+            {
+              "t": 10.951,
+              "pssKb": 548277,
+              "rssKb": 587676
+            },
+            {
+              "t": 11.471,
+              "pssKb": 548281,
+              "rssKb": 587680
+            },
+            {
+              "t": 11.992,
+              "pssKb": 548337,
+              "rssKb": 587736
+            },
+            {
+              "t": 12.513,
+              "pssKb": 548377,
+              "rssKb": 587776
+            },
+            {
+              "t": 13.033,
+              "pssKb": 548373,
+              "rssKb": 587772
+            },
+            {
+              "t": 13.553,
+              "pssKb": 548417,
+              "rssKb": 587816
+            },
+            {
+              "t": 14.074,
+              "pssKb": 547270,
+              "rssKb": 587760
+            },
+            {
+              "t": 14.595,
+              "pssKb": 548397,
+              "rssKb": 587796
+            },
+            {
+              "t": 14.999,
+              "pssKb": 548401,
+              "rssKb": 587800
+            }
+          ],
+          "cpuTicksStart": 311,
+          "cpuTicksEnd": 338,
+          "cpuSeconds": 0.27,
+          "cpuPercent": 1.797842588893328,
+          "reapedChildTicksStart": 3199,
+          "reapedChildTicksEnd": 3299,
+          "reapedChildCpuSeconds": 1,
+          "reapedChildCpuPercent": 6.658676255160474
+        },
+        "children": [
+          {
+            "pid": 2409839,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 4,
+            "cpuLast": 4,
+            "rssLast": 4748,
+            "samples": 30
+          },
+          {
+            "pid": 2410235,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11384,
+            "samples": 30
+          },
+          {
+            "pid": 2410240,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11592,
+            "samples": 30
+          },
+          {
+            "pid": 2410659,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4252,
+            "samples": 30
+          },
+          {
+            "pid": 2410680,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4128,
+            "samples": 30
+          },
+          {
+            "pid": 2411484,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2148,
+            "samples": 30
+          },
+          {
+            "pid": 2411485,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 30
+          },
+          {
+            "pid": 2414382,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 5.221,
+            "lastSeen": 5.221,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 10780,
+            "samples": 1
+          },
+          {
+            "pid": 2414776,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 8.867,
+            "lastSeen": 8.867,
+            "cpuFirst": 4,
+            "cpuLast": 4,
+            "rssLast": 17240,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 2,
+        "shellPid": 2425647,
+        "started": "2026-09-15T15:11:47Z",
+        "ended": "2026-09-15T15:12:02Z",
+        "readyAfterSeconds": 1.341,
+        "windowSeconds": 15.021,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 542920,
+          "rssKb": 582016,
+          "memoryAt": "window-end",
+          "pssKbSettled": 547669,
+          "rssKbSettled": 586764,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 0.518,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 1.039,
+              "pssKb": 547668,
+              "rssKb": 586764
+            },
+            {
+              "t": 1.56,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 2.081,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 2.601,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 3.122,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 3.642,
+              "pssKb": 547669,
+              "rssKb": 586764
+            },
+            {
+              "t": 4.162,
+              "pssKb": 540650,
+              "rssKb": 582336
+            },
+            {
+              "t": 4.683,
+              "pssKb": 543249,
+              "rssKb": 582344
+            },
+            {
+              "t": 5.203,
+              "pssKb": 543246,
+              "rssKb": 582344
+            },
+            {
+              "t": 5.724,
+              "pssKb": 543272,
+              "rssKb": 582368
+            },
+            {
+              "t": 6.245,
+              "pssKb": 543273,
+              "rssKb": 582368
+            },
+            {
+              "t": 6.765,
+              "pssKb": 543297,
+              "rssKb": 582392
+            },
+            {
+              "t": 7.285,
+              "pssKb": 543313,
+              "rssKb": 582408
+            },
+            {
+              "t": 7.806,
+              "pssKb": 543325,
+              "rssKb": 582420
+            },
+            {
+              "t": 8.327,
+              "pssKb": 543341,
+              "rssKb": 582436
+            },
+            {
+              "t": 8.847,
+              "pssKb": 543349,
+              "rssKb": 582444
+            },
+            {
+              "t": 9.368,
+              "pssKb": 542913,
+              "rssKb": 582008
+            },
+            {
+              "t": 9.888,
+              "pssKb": 542913,
+              "rssKb": 582008
+            },
+            {
+              "t": 10.409,
+              "pssKb": 542851,
+              "rssKb": 582016
+            },
+            {
+              "t": 10.93,
+              "pssKb": 542921,
+              "rssKb": 582016
+            },
+            {
+              "t": 11.45,
+              "pssKb": 542920,
+              "rssKb": 582016
+            },
+            {
+              "t": 11.97,
+              "pssKb": 542921,
+              "rssKb": 582016
+            },
+            {
+              "t": 12.491,
+              "pssKb": 542920,
+              "rssKb": 582016
+            },
+            {
+              "t": 13.01,
+              "pssKb": 542921,
+              "rssKb": 582016
+            },
+            {
+              "t": 13.53,
+              "pssKb": 542921,
+              "rssKb": 582016
+            },
+            {
+              "t": 14.051,
+              "pssKb": 542920,
+              "rssKb": 582016
+            },
+            {
+              "t": 14.572,
+              "pssKb": 542921,
+              "rssKb": 582016
+            },
+            {
+              "t": 15.001,
+              "pssKb": 542921,
+              "rssKb": 582016
+            }
+          ],
+          "cpuTicksStart": 297,
+          "cpuTicksEnd": 319,
+          "cpuSeconds": 0.22,
+          "cpuPercent": 1.464616203981093,
+          "reapedChildTicksStart": 2831,
+          "reapedChildTicksEnd": 2936,
+          "reapedChildCpuSeconds": 1.05,
+          "reapedChildCpuPercent": 6.990213700818853
+        },
+        "children": [
+          {
+            "pid": 2425839,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 4804,
+            "samples": 30
+          },
+          {
+            "pid": 2426346,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11584,
+            "samples": 30
+          },
+          {
+            "pid": 2426352,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11800,
+            "samples": 30
+          },
+          {
+            "pid": 2426816,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4124,
+            "samples": 30
+          },
+          {
+            "pid": 2426832,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4136,
+            "samples": 30
+          },
+          {
+            "pid": 2427659,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 30
+          },
+          {
+            "pid": 2427660,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2164,
+            "samples": 30
+          },
+          {
+            "pid": 2433236,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 3.642,
+            "lastSeen": 3.642,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 15544,
+            "samples": 1
+          },
+          {
+            "pid": 2434979,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 13.53,
+            "lastSeen": 13.53,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 12652,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 3,
+        "shellPid": 2441875,
+        "started": "2026-09-15T15:13:21Z",
+        "ended": "2026-09-15T15:13:36Z",
+        "readyAfterSeconds": 1.311,
+        "windowSeconds": 15.021,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 551933,
+          "rssKb": 591348,
+          "memoryAt": "window-end",
+          "pssKbSettled": 552277,
+          "rssKbSettled": 591692,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 552277,
+              "rssKb": 591692
+            },
+            {
+              "t": 0.518,
+              "pssKb": 552277,
+              "rssKb": 591692
+            },
+            {
+              "t": 1.039,
+              "pssKb": 552285,
+              "rssKb": 591700
+            },
+            {
+              "t": 1.56,
+              "pssKb": 552285,
+              "rssKb": 591700
+            },
+            {
+              "t": 2.081,
+              "pssKb": 552285,
+              "rssKb": 591700
+            },
+            {
+              "t": 2.6,
+              "pssKb": 552285,
+              "rssKb": 591700
+            },
+            {
+              "t": 3.121,
+              "pssKb": 552285,
+              "rssKb": 591700
+            },
+            {
+              "t": 3.642,
+              "pssKb": 552289,
+              "rssKb": 591704
+            },
+            {
+              "t": 4.163,
+              "pssKb": 552289,
+              "rssKb": 591704
+            },
+            {
+              "t": 4.684,
+              "pssKb": 552301,
+              "rssKb": 591716
+            },
+            {
+              "t": 5.205,
+              "pssKb": 552301,
+              "rssKb": 591668
+            },
+            {
+              "t": 5.727,
+              "pssKb": 552269,
+              "rssKb": 591684
+            },
+            {
+              "t": 6.248,
+              "pssKb": 552289,
+              "rssKb": 591704
+            },
+            {
+              "t": 6.768,
+              "pssKb": 552301,
+              "rssKb": 591716
+            },
+            {
+              "t": 7.29,
+              "pssKb": 552301,
+              "rssKb": 591716
+            },
+            {
+              "t": 7.81,
+              "pssKb": 552313,
+              "rssKb": 591728
+            },
+            {
+              "t": 8.331,
+              "pssKb": 552337,
+              "rssKb": 591752
+            },
+            {
+              "t": 8.852,
+              "pssKb": 552322,
+              "rssKb": 591748
+            },
+            {
+              "t": 9.372,
+              "pssKb": 551889,
+              "rssKb": 591304
+            },
+            {
+              "t": 9.892,
+              "pssKb": 551901,
+              "rssKb": 591316
+            },
+            {
+              "t": 10.412,
+              "pssKb": 551901,
+              "rssKb": 591316
+            },
+            {
+              "t": 10.933,
+              "pssKb": 551913,
+              "rssKb": 591328
+            },
+            {
+              "t": 11.455,
+              "pssKb": 551913,
+              "rssKb": 591328
+            },
+            {
+              "t": 11.975,
+              "pssKb": 551913,
+              "rssKb": 591328
+            },
+            {
+              "t": 12.496,
+              "pssKb": 551913,
+              "rssKb": 591328
+            },
+            {
+              "t": 13.017,
+              "pssKb": 551913,
+              "rssKb": 591328
+            },
+            {
+              "t": 13.539,
+              "pssKb": 551921,
+              "rssKb": 591336
+            },
+            {
+              "t": 14.061,
+              "pssKb": 551921,
+              "rssKb": 591336
+            },
+            {
+              "t": 14.582,
+              "pssKb": 551933,
+              "rssKb": 591348
+            },
+            {
+              "t": 15.001,
+              "pssKb": 551933,
+              "rssKb": 591348
+            }
+          ],
+          "cpuTicksStart": 280,
+          "cpuTicksEnd": 303,
+          "cpuSeconds": 0.23,
+          "cpuPercent": 1.5311896677984156,
+          "reapedChildTicksStart": 2799,
+          "reapedChildTicksEnd": 2899,
+          "reapedChildCpuSeconds": 1,
+          "reapedChildCpuPercent": 6.657346381732242
+        },
+        "children": [
+          {
+            "pid": 2442052,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 4800,
+            "samples": 30
+          },
+          {
+            "pid": 2442339,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11860,
+            "samples": 30
+          },
+          {
+            "pid": 2442351,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11368,
+            "samples": 30
+          },
+          {
+            "pid": 2442857,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4128,
+            "samples": 30
+          },
+          {
+            "pid": 2442883,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 30
+          },
+          {
+            "pid": 2443540,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2144,
+            "samples": 30
+          },
+          {
+            "pid": 2443541,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 30
+          },
+          {
+            "pid": 2446368,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 5.205,
+            "lastSeen": 5.205,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11048,
+            "samples": 1
+          },
+          {
+            "pid": 2446552,
+            "comm": "sidecarctl",
+            "arg0": "",
+            "firstSeen": 8.852,
+            "lastSeen": 8.852,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          }
+        ]
+      }
+    ]
+  },
+  "noiseFloor": {
+    "pssMb": 8.8017578125,
+    "rssMb": 9.11328125,
+    "pssMbSettled": 4.5,
+    "rssMbSettled": 4.8125,
+    "cpuPercent": 0.333226384912235,
+    "origin": "the spread (max minus min) of the 3 baseline runs: Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window"
+  },
+  "plugins": [
+    {
+      "id": "omadock",
+      "name": "omadock",
+      "kinds": [
+        "overlay"
+      ],
+      "firstParty": false,
+      "sourceDir": "/home/mtolhuijs/.config/omarchy/plugins/omadock",
+      "runsCompleted": 3,
+      "shellPssMb": {
+        "median": 13.921875,
+        "spread": 18.7509765625,
+        "min": 4.1201171875,
+        "max": 22.87109375,
+        "runs": [
+          4.1201171875,
+          22.87109375,
+          13.921875
+        ]
+      },
+      "shellRssMb": {
+        "median": 14.66796875,
+        "spread": 18.8203125,
+        "min": 4.984375,
+        "max": 23.8046875,
+        "runs": [
+          4.984375,
+          23.8046875,
+          14.66796875
+        ]
+      },
+      "shellPssMbSettled": {
+        "median": 14.23046875,
+        "spread": 12.1728515625,
+        "min": 6.7060546875,
+        "max": 18.87890625,
+        "runs": [
+          6.7060546875,
+          18.87890625,
+          14.23046875
+        ]
+      },
+      "shellCpuPercent": {
+        "median": 0.00010194338667113279,
+        "spread": 0.9325826020571575,
+        "min": -0.06681728929279518,
+        "max": 0.8657653127643623,
+        "runs": [
+          -0.06681728929279518,
+          0.8657653127643623,
+          0.00010194338667113279
+        ]
+      },
+      "childRssMb": {
+        "median": 5.38671875,
+        "spread": 0.05078125,
+        "min": 5.33984375,
+        "max": 5.390625,
+        "runs": [
+          5.33984375,
+          5.38671875,
+          5.390625
+        ]
+      },
+      "childCpuPercent": {
+        "median": 0.06702112825444217,
+        "spread": 0.3976543190124948,
+        "min": -0.06565147963235596,
+        "max": 0.33200283938013886,
+        "runs": [
+          0.33200283938013886,
+          -0.06565147963235596,
+          0.06702112825444217
+        ]
+      },
+      "childSpawns": {
+        "median": 1,
+        "spread": 1,
+        "min": 1,
+        "max": 2,
+        "runs": [
+          2,
+          1,
+          1
+        ]
+      },
+      "unattributedChildren": {
+        "median": 1,
+        "spread": 2,
+        "min": 0,
+        "max": 2,
+        "runs": [
+          2,
+          1,
+          0
+        ]
+      },
+      "unattributedCommands": [
+        "sidecarctl",
+        "sidecarctl /home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+      ],
+      "totalMb": 19.30859375,
+      "totalCpuPercent": 0.06712307164111331,
+      "verdict": {
+        "memory": "above-noise",
+        "cpu": "within-noise",
+        "summary": "no measurable CPU"
+      },
+      "withinNoise": {
+        "pss": false,
+        "rss": false,
+        "cpu": true,
+        "ownPss": true,
+        "ownCpu": true,
+        "baselinePssSpreadMb": 8.8017578125,
+        "baselineCpuSpreadPercent": 0.333226384912235,
+        "cpuTickPercent": 0.06666666666666667,
+        "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas; a CPU delta is above noise only when it also exceeds one clock tick over the window (cpuTickPercent)"
+      },
+      "origin": "plus minus baseline per run over 3 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a 15s window that opens 30s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
+      "readme": "Weighs no CPU above the floor (0.33%) and runs 1 child process using 5.4 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-15",
+      "deltas": [
+        {
+          "run": 1,
+          "shellPssMb": 4.1201171875,
+          "shellRssMb": 4.984375,
+          "shellPssMbSettled": 6.7060546875,
+          "shellCpuPercent": -0.06681728929279518,
+          "childRssMb": 5.33984375,
+          "childCpuPercent": 0.33200283938013886,
+          "reapedChildCpuPercent": 0.33200283938013886,
+          "childSpawns": 2,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5468,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 15
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 9.896,
+              "lastSeen": 9.896
+            }
+          ],
+          "unattributedChildren": [
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            },
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "shellPssMb": 22.87109375,
+          "shellRssMb": 23.8046875,
+          "shellPssMbSettled": 18.87890625,
+          "shellCpuPercent": 0.8657653127643623,
+          "childRssMb": 5.38671875,
+          "childCpuPercent": -0.06565147963235596,
+          "reapedChildCpuPercent": -0.06565147963235596,
+          "childSpawns": 1,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5516,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 14.999
+            }
+          ],
+          "unattributedChildren": [
+            {
+              "comm": "sidecarctl",
+              "arg0": ""
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "shellPssMb": 13.921875,
+          "shellRssMb": 14.66796875,
+          "shellPssMbSettled": 14.23046875,
+          "shellCpuPercent": 0.00010194338667113279,
+          "childRssMb": 5.390625,
+          "childCpuPercent": 0.06702112825444217,
+          "reapedChildCpuPercent": 0.06702112825444217,
+          "childSpawns": 1,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5520,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 15
+            }
+          ],
+          "unattributedChildren": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "omadock",
+          "run": 1,
+          "shellPid": 2415773,
+          "started": "2026-09-15T15:10:59Z",
+          "ended": "2026-09-15T15:11:14Z",
+          "readyAfterSeconds": 1.382,
+          "windowSeconds": 15.02,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 552620,
+            "rssKb": 592904,
+            "memoryAt": "window-end",
+            "pssKbSettled": 555264,
+            "rssKbSettled": 595548,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 555263,
+                "rssKb": 595548
+              },
+              {
+                "t": 0.518,
+                "pssKb": 552916,
+                "rssKb": 593200
+              },
+              {
+                "t": 1.039,
+                "pssKb": 552931,
+                "rssKb": 593216
+              },
+              {
+                "t": 1.56,
+                "pssKb": 552932,
+                "rssKb": 593216
+              },
+              {
+                "t": 2.081,
+                "pssKb": 552932,
+                "rssKb": 593216
+              },
+              {
+                "t": 2.603,
+                "pssKb": 552932,
+                "rssKb": 593216
+              },
+              {
+                "t": 3.125,
+                "pssKb": 552900,
+                "rssKb": 593184
+              },
+              {
+                "t": 3.646,
+                "pssKb": 552903,
+                "rssKb": 593192
+              },
+              {
+                "t": 4.168,
+                "pssKb": 552920,
+                "rssKb": 593204
+              },
+              {
+                "t": 4.688,
+                "pssKb": 552931,
+                "rssKb": 593216
+              },
+              {
+                "t": 5.21,
+                "pssKb": 552931,
+                "rssKb": 593216
+              },
+              {
+                "t": 5.731,
+                "pssKb": 552947,
+                "rssKb": 593232
+              },
+              {
+                "t": 6.251,
+                "pssKb": 552912,
+                "rssKb": 593196
+              },
+              {
+                "t": 6.772,
+                "pssKb": 552956,
+                "rssKb": 593240
+              },
+              {
+                "t": 7.294,
+                "pssKb": 552968,
+                "rssKb": 593252
+              },
+              {
+                "t": 7.814,
+                "pssKb": 552988,
+                "rssKb": 593272
+              },
+              {
+                "t": 8.335,
+                "pssKb": 553012,
+                "rssKb": 593296
+              },
+              {
+                "t": 8.855,
+                "pssKb": 553019,
+                "rssKb": 593304
+              },
+              {
+                "t": 9.375,
+                "pssKb": 552584,
+                "rssKb": 592868
+              },
+              {
+                "t": 9.896,
+                "pssKb": 552542,
+                "rssKb": 592868
+              },
+              {
+                "t": 10.417,
+                "pssKb": 552596,
+                "rssKb": 592884
+              },
+              {
+                "t": 10.935,
+                "pssKb": 552558,
+                "rssKb": 592884
+              },
+              {
+                "t": 11.455,
+                "pssKb": 552598,
+                "rssKb": 592884
+              },
+              {
+                "t": 11.975,
+                "pssKb": 552566,
+                "rssKb": 592892
+              },
+              {
+                "t": 12.495,
+                "pssKb": 547869,
+                "rssKb": 592892
+              },
+              {
+                "t": 13.017,
+                "pssKb": 552570,
+                "rssKb": 592896
+              },
+              {
+                "t": 13.539,
+                "pssKb": 547873,
+                "rssKb": 592896
+              },
+              {
+                "t": 14.058,
+                "pssKb": 552612,
+                "rssKb": 592896
+              },
+              {
+                "t": 14.578,
+                "pssKb": 552620,
+                "rssKb": 592904
+              },
+              {
+                "t": 15,
+                "pssKb": 552620,
+                "rssKb": 592904
+              }
+            ],
+            "cpuTicksStart": 317,
+            "cpuTicksEnd": 343,
+            "cpuSeconds": 0.26,
+            "cpuPercent": 1.7310252996005329,
+            "reapedChildTicksStart": 2894,
+            "reapedChildTicksEnd": 2999,
+            "reapedChildCpuSeconds": 1.05,
+            "reapedChildCpuPercent": 6.990679094540613
+          },
+          "children": [
+            {
+              "pid": 2415982,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 4780,
+              "samples": 30
+            },
+            {
+              "pid": 2416450,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 1,
+              "rssLast": 11300,
+              "samples": 30
+            },
+            {
+              "pid": 2416459,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11340,
+              "samples": 30
+            },
+            {
+              "pid": 2416914,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4244,
+              "samples": 30
+            },
+            {
+              "pid": 2416943,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4128,
+              "samples": 30
+            },
+            {
+              "pid": 2417508,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5468,
+              "samples": 30
+            },
+            {
+              "pid": 2417877,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 30
+            },
+            {
+              "pid": 2417878,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2136,
+              "samples": 30
+            },
+            {
+              "pid": 2422318,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 10032,
+              "samples": 1
+            },
+            {
+              "pid": 2423038,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 3.646,
+              "lastSeen": 3.646,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 17304,
+              "samples": 1
+            },
+            {
+              "pid": 2424083,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 9.896,
+              "lastSeen": 9.896,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2424084,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 9.896,
+              "lastSeen": 9.896,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 9260,
+              "samples": 1
+            },
+            {
+              "pid": 2425366,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 13.539,
+              "lastSeen": 13.539,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 17188,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omadock",
+          "run": 2,
+          "shellPid": 2435304,
+          "started": "2026-09-15T15:12:34Z",
+          "ended": "2026-09-15T15:12:49Z",
+          "readyAfterSeconds": 1.325,
+          "windowSeconds": 15.019,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 566340,
+            "rssKb": 606392,
+            "memoryAt": "window-end",
+            "pssKbSettled": 567001,
+            "rssKbSettled": 607056,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 567004,
+                "rssKb": 607060
+              },
+              {
+                "t": 0.518,
+                "pssKb": 567007,
+                "rssKb": 607060
+              },
+              {
+                "t": 1.038,
+                "pssKb": 566948,
+                "rssKb": 607000
+              },
+              {
+                "t": 1.559,
+                "pssKb": 566948,
+                "rssKb": 607000
+              },
+              {
+                "t": 2.08,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 2.6,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 3.12,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 3.64,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 4.16,
+                "pssKb": 561770,
+                "rssKb": 606980
+              },
+              {
+                "t": 4.679,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 5.2,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 5.72,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 6.24,
+                "pssKb": 566928,
+                "rssKb": 606980
+              },
+              {
+                "t": 6.761,
+                "pssKb": 566940,
+                "rssKb": 606992
+              },
+              {
+                "t": 7.283,
+                "pssKb": 566943,
+                "rssKb": 606996
+              },
+              {
+                "t": 7.803,
+                "pssKb": 566944,
+                "rssKb": 606996
+              },
+              {
+                "t": 8.323,
+                "pssKb": 566952,
+                "rssKb": 607004
+              },
+              {
+                "t": 8.843,
+                "pssKb": 566952,
+                "rssKb": 607004
+              },
+              {
+                "t": 9.364,
+                "pssKb": 566176,
+                "rssKb": 606228
+              },
+              {
+                "t": 9.884,
+                "pssKb": 566205,
+                "rssKb": 606260
+              },
+              {
+                "t": 10.404,
+                "pssKb": 566212,
+                "rssKb": 606264
+              },
+              {
+                "t": 10.924,
+                "pssKb": 564919,
+                "rssKb": 606272
+              },
+              {
+                "t": 11.443,
+                "pssKb": 566236,
+                "rssKb": 606288
+              },
+              {
+                "t": 11.964,
+                "pssKb": 566260,
+                "rssKb": 606312
+              },
+              {
+                "t": 12.485,
+                "pssKb": 566238,
+                "rssKb": 606324
+              },
+              {
+                "t": 13.006,
+                "pssKb": 566304,
+                "rssKb": 606356
+              },
+              {
+                "t": 13.525,
+                "pssKb": 566316,
+                "rssKb": 606368
+              },
+              {
+                "t": 14.045,
+                "pssKb": 566316,
+                "rssKb": 606368
+              },
+              {
+                "t": 14.565,
+                "pssKb": 566340,
+                "rssKb": 606392
+              },
+              {
+                "t": 14.999,
+                "pssKb": 566340,
+                "rssKb": 606392
+              }
+            ],
+            "cpuTicksStart": 314,
+            "cpuTicksEnd": 349,
+            "cpuSeconds": 0.35,
+            "cpuPercent": 2.3303815167454554,
+            "reapedChildTicksStart": 2786,
+            "reapedChildTicksEnd": 2890,
+            "reapedChildCpuSeconds": 1.04,
+            "reapedChildCpuPercent": 6.9245622211864974
+          },
+          "children": [
+            {
+              "pid": 2435490,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4804,
+              "samples": 30
+            },
+            {
+              "pid": 2435961,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11960,
+              "samples": 30
+            },
+            {
+              "pid": 2435965,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11628,
+              "samples": 30
+            },
+            {
+              "pid": 2436424,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4212,
+              "samples": 30
+            },
+            {
+              "pid": 2436477,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4240,
+              "samples": 30
+            },
+            {
+              "pid": 2437008,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5516,
+              "samples": 30
+            },
+            {
+              "pid": 2437394,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2140,
+              "samples": 30
+            },
+            {
+              "pid": 2437395,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 30
+            },
+            {
+              "pid": 2441173,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 6.24,
+              "lastSeen": 6.24,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 10500,
+              "samples": 1
+            },
+            {
+              "pid": 2441492,
+              "comm": "sidecarctl",
+              "arg0": "",
+              "firstSeen": 9.884,
+              "lastSeen": 9.884,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omadock",
+          "run": 3,
+          "shellPid": 2446930,
+          "started": "2026-09-15T15:14:08Z",
+          "ended": "2026-09-15T15:14:23Z",
+          "readyAfterSeconds": 1.449,
+          "windowSeconds": 15.02,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 566189,
+            "rssKb": 606368,
+            "memoryAt": "window-end",
+            "pssKbSettled": 566849,
+            "rssKbSettled": 607028,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 566849,
+                "rssKb": 607028
+              },
+              {
+                "t": 0.52,
+                "pssKb": 566848,
+                "rssKb": 607028
+              },
+              {
+                "t": 1.043,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 1.563,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 2.084,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 2.606,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 3.127,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 3.648,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 4.169,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 4.69,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 5.212,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 5.732,
+                "pssKb": 566645,
+                "rssKb": 606824
+              },
+              {
+                "t": 6.253,
+                "pssKb": 566649,
+                "rssKb": 606828
+              },
+              {
+                "t": 6.775,
+                "pssKb": 566657,
+                "rssKb": 606836
+              },
+              {
+                "t": 7.295,
+                "pssKb": 566613,
+                "rssKb": 606792
+              },
+              {
+                "t": 7.816,
+                "pssKb": 566625,
+                "rssKb": 606804
+              },
+              {
+                "t": 8.338,
+                "pssKb": 566657,
+                "rssKb": 606836
+              },
+              {
+                "t": 8.859,
+                "pssKb": 566656,
+                "rssKb": 606836
+              },
+              {
+                "t": 9.378,
+                "pssKb": 566673,
+                "rssKb": 606852
+              },
+              {
+                "t": 9.898,
+                "pssKb": 566229,
+                "rssKb": 606408
+              },
+              {
+                "t": 10.421,
+                "pssKb": 566229,
+                "rssKb": 606408
+              },
+              {
+                "t": 10.941,
+                "pssKb": 566249,
+                "rssKb": 606428
+              },
+              {
+                "t": 11.461,
+                "pssKb": 566249,
+                "rssKb": 606428
+              },
+              {
+                "t": 11.981,
+                "pssKb": 566253,
+                "rssKb": 606432
+              },
+              {
+                "t": 12.505,
+                "pssKb": 566253,
+                "rssKb": 606432
+              },
+              {
+                "t": 13.026,
+                "pssKb": 566253,
+                "rssKb": 606432
+              },
+              {
+                "t": 13.547,
+                "pssKb": 566257,
+                "rssKb": 606436
+              },
+              {
+                "t": 14.068,
+                "pssKb": 566257,
+                "rssKb": 606436
+              },
+              {
+                "t": 14.589,
+                "pssKb": 566189,
+                "rssKb": 606368
+              },
+              {
+                "t": 15,
+                "pssKb": 566189,
+                "rssKb": 606368
+              }
+            ],
+            "cpuTicksStart": 321,
+            "cpuTicksEnd": 344,
+            "cpuSeconds": 0.23,
+            "cpuPercent": 1.5312916111850867,
+            "reapedChildTicksStart": 2870,
+            "reapedChildTicksEnd": 2971,
+            "reapedChildCpuSeconds": 1.01,
+            "reapedChildCpuPercent": 6.724367509986684
+          },
+          "children": [
+            {
+              "pid": 2447094,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4780,
+              "samples": 30
+            },
+            {
+              "pid": 2447519,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11952,
+              "samples": 30
+            },
+            {
+              "pid": 2447529,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 1,
+              "rssLast": 11728,
+              "samples": 30
+            },
+            {
+              "pid": 2447956,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4244,
+              "samples": 30
+            },
+            {
+              "pid": 2447972,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4240,
+              "samples": 30
+            },
+            {
+              "pid": 2448506,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5520,
+              "samples": 30
+            },
+            {
+              "pid": 2448812,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 30
+            },
+            {
+              "pid": 2448813,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 30
+            },
+            {
+              "pid": 2451990,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 8.859,
+              "lastSeen": 8.859,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 13204,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "out": "/home/mtolhuijs/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-15-omadock.json"
+}

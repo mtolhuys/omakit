@@ -133,8 +133,8 @@ strip files from their tree on your own.
 
 **`submission.validation-commit`.** The marketplace validates the commit it
 resolves when the issue is opened or edited, which is the pushed default-branch
-HEAD, not whatever is checked out locally. Push first, then submit. 73% of submissions
-parked in their author's court have a HEAD the marketplace never saw.
+HEAD, not whatever is checked out locally. Push first, then submit. On 2026-09-15, 326/519 readable author-fixes comparisons were stale
+(62.8%), with 64 of 583 issues unknown.
 
 ## What the baseline result means
 

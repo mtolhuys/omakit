@@ -1,6 +1,6 @@
 {
   "title": "omakit submit",
-  "width": 88,
+  "width": 110,
   "rows": 26,
   "steps": [
     {
@@ -10,8 +10,8 @@
       "pace": 14,
       "omit": [
         [
-          101,
-          134,
+          107,
+          140,
           "34 lines of the marketplace's own baseline report, left out for length"
         ]
       ],
@@ -25,15 +25,11 @@
           220
         ],
         [
-          106,
+          112,
           200
-        ],
-        [
-          117,
-          160
         ]
       ],
-      "hold": 420
+      "hold": 600
     }
   ]
 }

@@ -259,9 +259,17 @@ closing sentences, read out of the marketplace's own report builder at the pin.
 The marketplace validates one exact commit, and the review that follows is of
 that commit.
 
+The historical staleness aggregate is dated 2026-09-12. Recovered research
+notes show it was a sample estimate, not a full 464-issue measurement. The
+[recovered excerpt](evidence/staleness/recovered-notes-2026-09-12.md) records
+68 stale pairs among 93 readable sampled issues. Original per-issue records
+were not found, so historical HEADs cannot be reconstructed honestly. The
+full, current label-defined queue is re-measured below using bot markers
+and default-branch `commits.atom`, with per-issue sources and unknowns.
+
 | Measurement | Value |
 | --- | --- |
-| Parked submissions with a default-branch HEAD ahead of the validated commit | 73% of 464 |
+| Historical sampled submissions with a default-branch HEAD different from the validated commit, 2026-09-12 | 68/93 readable (73.1%) in a 100-issue sample drawn from a 464-issue queue; 7 unreadable |
 | Pushed after the maintainer's review without the marketplace ever seeing it | 47% |
 | Of those authors, who also commented | 82%, so they are engaged and stuck, not gone |
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
@@ -291,6 +299,54 @@ The mechanism, with `file:line`:
 Used by: `omakit watch`, and `submission.validation-commit` in `omakit submit`.
 The watch reads; it never edits, comments or labels. The action it names is the
 author's to take.
+
+
+### Full queue re-measured on 2026-09-15
+
+```bash
+node tools/marketplace/measure-staleness.mjs > docs/evidence/staleness/2026-09-15.json
+```
+
+The [per-issue record](evidence/staleness/2026-09-15.json) contains every
+issue number, bot-validated full commit or null, default-branch HEAD or null,
+verdict, read window and source URLs. The recovered queue definition is the
+union of open `needs-fixes` and `security-needs-fixes` issues, excluding pull
+requests and deduplicating issue numbers. Both label populations are read
+with complete pagination. This is a full queue attempt, not a sample.
+
+```json
+{
+  "measurement": "M6",
+  "date": "2026-09-15",
+  "openedAt": "2026-09-15T15:10:47.394Z",
+  "completedAt": "2026-09-15T15:12:19.539Z",
+  "sample": false,
+  "total": 583,
+  "compared": 519,
+  "stale": 326,
+  "current": 193,
+  "unknown": 64,
+  "staleShareOfCompared": 0.628131021194605,
+  "staleShareOfPopulation": null
+}
+```
+
+From 15:10:47.394 to 15:12:19.539 UTC, 326/519 readable comparisons were
+stale (62.8%), 193 current, with 64 unknown among 583 issues. The client
+read each issue's latest full security-baseline bot marker and compared it
+with that repository's default-branch `commits.atom` HEAD. It did not use
+the authenticated HEAD API. Missing markers, incomplete baseline records and
+unreadable feeds are explicit unknowns. Feed reads were shared per repository;
+issue comments were completely paginated up to the existing ten-page guard.
+
+Unequal commit identifiers establish stale validation, not which commit is
+an ancestor of the other. The exact stale share of all 583 is unknown; its
+observed lower bound is 326/583 (55.9%) and upper bound 390/583 (66.9%).
+The 62.8% denominator is 519 comparable issues. These are live reads across
+a dated window, not historical HEADs at a single immutable instant. The
+2026-09-12 sample and today's larger queue differ in both date and coverage,
+so their rates alone do not establish a trend. No issue, comment or label
+was changed. The measurement script uses the existing GET-only client.
 
 ## M7. The registry moves by the hour; the code and the rules move by the week
 
@@ -696,3 +752,35 @@ output. These captures and the repository's read-only source check record
 0 marketplace writes. The submit refusal is a reproducible fixture, not a
 new run of the author's plugin. Rendering fidelity and read-only checks are
 not a claim that the baseline proves a plugin safe.
+
+
+### M10 second-pass package facts, 2026-09-15
+
+`package.json` at 0.4.1 has 0 entries in `dependencies` and 0 in
+`devDependencies` (both absent). Count command:
+
+```bash
+node --input-type=module -e 'import fs from "node:fs"; const p=JSON.parse(fs.readFileSync("package.json")); console.log(Object.keys(p.dependencies || {}).length, Object.keys(p.devDependencies || {}).length)'
+```
+
+The same package declares `engines.node` as `>=22` and `license` as `MIT`.
+Omarchy Quattro is the target shell contract, not a benchmark result. The
+refusal capture ends with 3 blocking checks. Submit's issue title/body are
+assembled by `tools/marketplace/issue.mjs` and printed when readiness allows;
+0 marketplace writes is the source-check evidence recorded in M10.
+
+
+### M10 completed desktop weighing and final screens, 2026-09-15
+
+The [second-pass machine-readable record](evidence/readme/2026-09-15-second-pass.json)
+records current GIF hashes, sizes, durations, scene widths, maximum shown
+line lengths and identical-frame final holds. It also records package facts
+and the README word count. The earlier same-day record remains historical.
+The [completed desktop weighing](evidence/weigh/desktop-2026-09-15-omadock.json)
+ran 3 baseline and 3 plus-one samples on the author's desktop, at the default
+30 s settle and 15 s window. Baseline median: 535.55 MB Pss and 1.53% CPU.
+Baseline spread: 8.80 MB Pss and 0.33% CPU. Omadock completed all 3 pairs
+with no measurable shell CPU above that floor. Memory remains a shell fact,
+not an attributed plugin weight; C1 and C2's caveats still apply. The config
+was restored with equal before/after md5, and the shell answered afterwards.
+Full commands, cuts and renderer versions are in [media/README.md](media/README.md#second-pass-final-screens-2026-09-15).

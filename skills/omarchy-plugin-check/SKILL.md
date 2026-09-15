@@ -92,8 +92,8 @@ own words, and so should you.
 
 The marketplace validates the pushed default-branch HEAD, not whatever is
 checked out locally. Run the check on the commit that will be pushed, then
-commit and push before the real submission. Of the 464 submissions parked in
-their author's court, 73% have a HEAD the marketplace never saw; that is the
+commit and push before the real submission. On 2026-09-15, 326/519 readable author-fixes
+comparisons were stale, with 64 of 583 issues unknown; that is the
 round this loop is meant to prevent.
 
 ## When the plugin is ready

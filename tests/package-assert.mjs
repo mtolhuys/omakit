@@ -60,6 +60,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/issue.mjs",
   "tools/marketplace/local-transport.mjs",
   "tools/marketplace/measure-review-cost.mjs",
+  "tools/marketplace/measure-staleness.mjs",
   "tools/marketplace/path-hint.mjs",
   "tools/marketplace/parity-output.mjs",
   "tools/marketplace/options.mjs",

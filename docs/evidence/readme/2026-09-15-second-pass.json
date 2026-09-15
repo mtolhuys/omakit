@@ -1,0 +1,190 @@
+{
+  "measurement": "M10",
+  "date": "2026-09-15",
+  "baseRevision": "2e72536",
+  "packageVersion": "0.4.1",
+  "readmeProseWords": {
+    "before": 266,
+    "after": 276
+  },
+  "package": {
+    "runtimeDependencies": 0,
+    "developmentDependencies": 0,
+    "nodeEngine": ">=22",
+    "license": "MIT"
+  },
+  "gifs": [
+    {
+      "gif": "docs/media/banner.gif",
+      "bytes": 14026,
+      "durationSeconds": 5.2,
+      "width": 440,
+      "height": 268,
+      "frames": 23,
+      "finalScreen": "finished wordmark and tagline",
+      "finalHoldSeconds": 4.2,
+      "sha256": "34be284d4f3957dc11a38d383d0c263e2b9e3986702d1569fa3eaa0d9d9ef845"
+    },
+    {
+      "gif": "docs/media/setup.gif",
+      "bytes": 35562,
+      "durationSeconds": 8.8,
+      "width": 777,
+      "height": 552,
+      "frames": 51,
+      "finalScreen": "setup checks, completion and the suggested submit command",
+      "finalHoldSeconds": 3.8,
+      "sha256": "bfe82c850f429501a42ce98f2b74e081dd1ee0cc767575c14f6142dfa166e2fb"
+    },
+    {
+      "gif": "docs/media/submit.gif",
+      "bytes": 940632,
+      "durationSeconds": 16.32,
+      "width": 962,
+      "height": 516,
+      "frames": 41,
+      "finalScreen": "REFUSED, three blocking checks, fixes and the retry command",
+      "finalHoldSeconds": 6.2,
+      "sha256": "72e0b7071346b98b8c6788d73f4cef5db4acdc340f8336870bb3954b14fd5796",
+      "capture": "docs/media/captures/submit-refused.ansi",
+      "captureSha256": "2f9ab5f49210c3f8a360b5a3284d98e959338360e0907b627df523bf86917b7f",
+      "captureLines": 162,
+      "longestCaptureLine": 207,
+      "longestShownLine": 80,
+      "sceneColumns": 110,
+      "sceneRows": 26,
+      "omissions": [
+        [
+          107,
+          140,
+          "34 lines of the marketplace's own baseline report, left out for length"
+        ]
+      ]
+    },
+    {
+      "gif": "docs/media/watch.gif",
+      "bytes": 73985,
+      "durationSeconds": 10.44,
+      "width": 777,
+      "height": 516,
+      "frames": 27,
+      "finalScreen": "both commit identifiers, VALIDATION STALE and edit-the-issue action",
+      "finalHoldSeconds": 4.36,
+      "sha256": "c05b0f4d366bcdff0943779511843d83c6d616edf3e968408f08daad6b38c42f",
+      "capture": "docs/media/captures/watch-stale.ansi",
+      "captureSha256": "a9b9e07200f7f8d99286ec19e6ef51a27bd27a4f89cc0f97348d4f58b5967191",
+      "captureLines": 26,
+      "longestCaptureLine": 80,
+      "longestShownLine": 80,
+      "sceneColumns": 88,
+      "sceneRows": 26,
+      "omissions": []
+    },
+    {
+      "gif": "docs/media/watch-all.gif",
+      "bytes": 35891,
+      "durationSeconds": 8.96,
+      "width": 895,
+      "height": 480,
+      "frames": 14,
+      "finalScreen": "account, five CURRENT counts, review counts, first two issues, discussion and full source URL",
+      "finalHoldSeconds": 6.12,
+      "sha256": "f187dbc3b917a0f7c1d6ed68176baaa615125545a189a1fe56364b5eea0d3e88",
+      "capture": "docs/media/captures/watch-all.ansi",
+      "captureSha256": "5e962fb6e8c1841923ebe561aeba126062811b91f6118bd8ccdf792b75cd9845",
+      "captureLines": 43,
+      "longestCaptureLine": 102,
+      "longestShownLine": 102,
+      "sceneColumns": 102,
+      "sceneRows": 24,
+      "omissions": [
+        [
+          21,
+          43,
+          "23 further lines omitted; header and first two issues retained"
+        ]
+      ]
+    },
+    {
+      "gif": "docs/media/audit.gif",
+      "bytes": 75800,
+      "durationSeconds": 8.8,
+      "width": 757,
+      "height": 1504,
+      "frames": 14,
+      "finalScreen": "complete capture: header, drift rows, matching rows and DRIFT 9-of-18 summary",
+      "finalHoldSeconds": 7.16,
+      "sha256": "dea63d7ef9e8fb4c41852d9d795ea9bd47133ec42a3dacf1239afa6e29b9eb78",
+      "capture": "docs/media/captures/audit-drift.ansi",
+      "captureSha256": "149dba913123056ef0a95500bc7707dbae6d7525c0e99c7576cf3cf087921a4d",
+      "captureLines": 89,
+      "longestCaptureLine": 100,
+      "longestShownLine": 100,
+      "sceneColumns": 100,
+      "sceneRows": 91,
+      "omissions": []
+    },
+    {
+      "gif": "docs/media/weigh-list.gif",
+      "bytes": 117597,
+      "durationSeconds": 13.8,
+      "width": 777,
+      "height": 624,
+      "frames": 25,
+      "finalScreen": "enabled Omadock row and its historical single-run status",
+      "finalHoldSeconds": 6.16,
+      "sha256": "83756c05206cec586e9fb1e257769908c736081447ac1deff87410f9275d5eae",
+      "capture": "docs/media/captures/weigh-list.ansi",
+      "captureSha256": "21bbd38ed43e48bc3edb4a7964045887048d783fa35797906beb7e7bf5e493c5",
+      "captureLines": 278,
+      "longestCaptureLine": 80,
+      "longestShownLine": 80,
+      "sceneColumns": 88,
+      "sceneRows": 32,
+      "omissions": [
+        [
+          29,
+          233,
+          "205 unweighed record lines omitted"
+        ],
+        [
+          240,
+          278,
+          "39 disabled record lines omitted"
+        ]
+      ]
+    },
+    {
+      "gif": "docs/media/weigh.gif",
+      "bytes": 59075,
+      "durationSeconds": 10.92,
+      "width": 772,
+      "height": 944,
+      "frames": 25,
+      "finalScreen": "all six measured samples, restoration hashes, noise floor, baseline, plugin delta, verdict and evidence path",
+      "finalHoldSeconds": 7.2,
+      "sha256": "375c06518ddfa860f5bbd27e7ece41b7ebfcebd56a57683ef6b129d3f565c0e3",
+      "capture": "docs/media/captures/weigh-omadock.ansi",
+      "captureSha256": "183d11165e59af533c37c2791f0001d14867e103f99f85c877def9b777e41108",
+      "captureLines": 66,
+      "longestCaptureLine": 102,
+      "longestShownLine": 102,
+      "sceneColumns": 102,
+      "sceneRows": 56,
+      "omissions": [
+        [
+          1,
+          13,
+          "13 plan and backup-notice lines omitted; full capture retained"
+        ]
+      ]
+    }
+  ],
+  "renderer": {
+    "pillow": "12.3.0",
+    "freeType": "2.14.3",
+    "ffmpeg": "n9.0.1"
+  },
+  "weighDocument": "docs/evidence/weigh/desktop-2026-09-15-omadock.json",
+  "stalenessDocument": "docs/evidence/staleness/2026-09-15.json"
+}

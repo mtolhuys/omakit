@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif" alt="omakit" width="440">
 </p>
 
-omakit gives Omarchy plugin authors and agents [four command views](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) of submission readiness, validation, installed drift and recorded weight.
+The marketplace validates one exact commit of your plugin. Push a fix or comment "fixed", and nothing re-runs ([M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool)). omakit runs the marketplace's own checks locally, watches your submission and posts nothing.
 
 [![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
 
@@ -13,53 +13,48 @@ npm i -g omakit && omakit setup
 npx skills add mtolhuys/omakit
 ```
 
+Requirements: [Node >=22](package.json); Omarchy Quattro.
+
+Licence: [MIT](LICENSE).
+
 ## `omakit submit <plugin-repo>`
 
 ![submit refusing a fixture plugin before any issue is posted](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif)
 
-Runs the marketplace's own baseline on the exact commit and posts nothing ([M4: 2,916 baseline records](docs/MEASUREMENTS.md#m4-the-baseline-decides-whether-a-human-has-to-look-at-all), [M10: 0 marketplace writes](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). The GIF shows a refusal; fix the reported problems before preparing the issue.
+Checks the exact commit with the marketplace's own baseline and, when ready, prints the exact issue title and body for you to paste. The GIF shows a refusal with three blocking checks and their fixes.
 
 ## `omakit watch --all`
 
-![watch checking five current issues, with baseline results and human discussion](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif)
+![watch counts and two current issues, including human discussion](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif)
 
-Five issues are CURRENT, with human discussion visible; CURRENT means matching commits, not approval ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). For a stale example and the next step, see [validation watch](docs/VALIDATION_WATCH.md).
+Checks your submission commits and names the action that re-runs stale validation: edit the issue body. The GIF shows five CURRENT issues in the counts and the first two issues with a discussion; CURRENT means matching commits, not approval.
 
 ## `omakit audit`
 
-![audit listing installed plugin drift before matching commits](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
+![audit keeping drift rows and the DRIFT summary visible together](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
 
-Drift rows come first: 9 of 18 audited plugins run commits the marketplace never validated ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). The checkout commands are suggestions, not actions performed by this run.
+Compares your installed plugin commits with the marketplace's validated commits. The GIF shows drift rows first: on the author's desktop, 9 of 18 audited plugins ran commits the marketplace never validated.
 
-## `omakit weigh --list`
+## `omakit weigh <plugin>`
 
-![weigh listing installed plugins and their recorded weighing status](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif)
+![completed three-run desktop weighing with baseline samples and the noise floor](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif)
 
-The list shows 55 installed plugins, 47 enabled and 1 weighed; that single run has no spread or noise floor ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). This reads stored results; see [the weighing method](docs/WEIGH.md) before starting a measurement.
+Measures the shell with and without your plugin, reading Pss and CPU. The GIF shows three completed runs on the author's desktop, with baseline and plugin samples and a 0.33% CPU floor ([method](docs/WEIGH.md)).
 
 ## Evidence, not claims
 
 | Measurement | Evidence |
 | --- | --- |
-| Baseline parity | 30/30 local and marketplace results identical, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
-| Validated commit behind HEAD | 73% of 464 submissions parked with their author, snapshot 2026-09-12, [M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool) |
-| Registry churn | 4,201/4,293 commits touched only the registry in 30 days, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
-| GIFs are recorded output | 5 GIFs, committed captures and scenes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
+| Baseline parity | 30/30 identical results, [recorded corpus](docs/evidence/parity/2026-09-12-local-vs-github-2.json), 2026-09-12 |
+| Stale validated commit | 326/519 readable comparisons stale (62.8%); 64/583 unknown, [2026-09-15 data](docs/evidence/staleness/2026-09-15.json) |
+| Registry churn | 4,201/4,293 registry-only commits in 30 days, 2026-09-13, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
+| GIFs are recorded output | 5 GIFs with [captures and scenes](docs/media/README.md) |
+| Posts nothing | 0 marketplace writes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
+| Zero dependencies | 0 runtime and 0 development dependencies, counted in [package.json](package.json) |
 
 ## Documentation
 
-- [docs/INSTALL.md](docs/INSTALL.md): installation and upgrades.
-- [docs/HOW.md](docs/HOW.md): baseline and check labels.
-- [docs/COMMANDS.md](docs/COMMANDS.md): commands and authentication.
-- [docs/SUBMIT.md](docs/SUBMIT.md): checks and output contract.
-- [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md): commits, discussion and review queues.
-- [docs/AUDIT.md](docs/AUDIT.md): installed commit states.
-- [docs/WEIGH.md](docs/WEIGH.md): method, noise and restoration.
-- [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md): numbers and limits.
-- [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md): pin and boundaries.
-- [docs/MARKETPLACE.md](docs/MARKETPLACE.md): intended audience.
-- [docs/PALETTE.md](docs/PALETTE.md): palette indices.
-- [docs/TUI.md](docs/TUI.md): terminal presentation.
-- [docs/RELEASING.md](docs/RELEASING.md): release procedure.
-- [docs/media/README.md](docs/media/README.md): captures and rendering.
-- [AGENTS.md](AGENTS.md): repository contribution rules.
+- Using: [install](docs/INSTALL.md), [commands](docs/COMMANDS.md), [audience](docs/MARKETPLACE.md).
+- Checks and measurements: [submit](docs/SUBMIT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
+- Method docs: [how](docs/HOW.md), [weigh](docs/WEIGH.md), [upstream contract](docs/UPSTREAM_CONTRACT.md), [palette](docs/PALETTE.md), [terminal](docs/TUI.md).
+- Contributing: [repository rules](AGENTS.md), [releasing](docs/RELEASING.md), [media](docs/media/README.md).

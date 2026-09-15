@@ -18,10 +18,10 @@ the issue body**.
   submissions.
 
 So pushing a fix does nothing, and commenting "fixed in `abc123`" does nothing.
-Both feel like progress. Neither is. This is the single most common reason a
-submission sits still: of the 464 submissions parked in their author's court, 73%
-have a default-branch HEAD the marketplace never saw, and 82% of the authors whose
-push came after a review comment had also commented: engaged, and stuck.
+Both feel like progress. Neither is. The full author-fixes queue was measured on 2026-09-15: 326/519 readable
+comparisons were stale (62.8%), with 64 of 583 issues unknown. The older
+2026-09-12 sample found 68/93 readable issues stale (73.1%); that rate was
+not a measurement of all 464 issues in the queue.
 
 ## Check it
 

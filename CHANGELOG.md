@@ -2,6 +2,11 @@
 
 ## 0.4.2 (unreleased)
 
+- README second pass explains submission actions, groups the documentation,
+  counts dependencies, and holds command GIFs on informative final screens.
+- M6 corrects the historical sample denominator and adds complete dated
+  per-issue staleness reads with unknown comparisons kept explicit.
+
 - Shorter README with one recorded GIF per command, refreshed account-wide
   watch, desktop audit and weighing-list captures, and numbered evidence.
 

@@ -1,6 +1,6 @@
 # The GIFs in the README
 
-The five README GIFs and the two retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
+The five README GIFs and three retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
 reordered or rewritten, and they are reproducible from this repository: rendering
 them again from the committed scenes and captures, with the same Pillow,
 FreeType and ffmpeg, produces byte-identical files. Measured: a different
@@ -206,3 +206,85 @@ GIFs and four live badges loaded. The temporary preview substituted local
 GIF files for the new raw-main URLs; the README source itself was not
 rewritten for preview. Published-main verification awaits a push. The new
 assets are deliberately unreleased local work.
+
+
+## Second-pass final screens, 2026-09-15
+
+The README now uses the completed `weigh` report, replacing its list GIF.
+The historical list remains here. All `.ansi` files remain full, unedited
+output. Cuts are made only by scene omissions, with a visible notice at the
+cut, in original order. No output formatter or renderer was changed to make
+a capture prettier. Submit was re-captured from the same refusal fixture
+after its M6 reason was corrected to the new dated evidence; no check
+severity or verdict logic changed.
+
+The three-run desktop capture used:
+
+```bash
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh omadock --runs 3 --yes --out docs/evidence/weigh/desktop-2026-09-15-omadock.json > docs/media/captures/weigh-omadock.ansi 2>&1
+```
+
+All three baseline and all three plus-one runs completed, with the defaults:
+30 s settle and 15 s window. The baseline was 535.5 MB Pss and 1.53% CPU;
+its floors were 8.80 MB Pss and 0.33% CPU. Omadock's median shell CPU delta
+was within noise. The report retained its child and unattributed-process
+figures. `shell.json` was restored and verified, its before/after md5 was
+`8b29f3ccc028037a2cbe84d0517b2ded`, and the restored shell answered.
+The raw [desktop document](../evidence/weigh/desktop-2026-09-15-omadock.json)
+is the numerical source.
+
+Waiting between samples is not replayed: the line-oriented capture stores
+printed progress, not wall-time delays. The GIF reveals all six sample lines
+in order. Only its first 13 plan/backup-notice lines are elided; it keeps the
+restoration, method, noise floor, baseline, plugin row, verdict and evidence
+path. The wait was not replaced with invented progress or reordered output.
+
+`watch-all` elides lines 21–43, leaving the header and first two issues,
+including the first discussion and full comment URL. Audit raises its scene
+to 91 rows, with a 12px font, and removes nothing: its header, drift rows
+and DRIFT summary all remain in the final screen. Submit elides the current
+baseline report's lines 107–140 (34 lines). The retained list now elides
+29–233 and 240–278, ending on Omadock's row. The original `.ansi` files
+record every omitted line.
+
+Measured longest lines after stripping terminal controls: submit 207
+characters (80 among shown lines), watch-all 102, audit 100, weigh 102,
+list 80 and single-issue watch 80. Scene widths are 110, 102, 100, 102,
+88 and 88 respectively. Submit is capped at the requested 110 columns;
+its longer policy prose and URLs are inside the visibly omitted baseline
+block. No URL in a displayed line is cut at the right edge. Banner and
+setup retain their existing geometry and were not re-rendered.
+
+The affected submit, watch-all, audit, retained list and new weigh GIFs
+were rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1,
+using the bundled DejaVu Sans Mono fonts through `OMAKIT_RENDER_FONTS`.
+Render commands, from the repository root:
+
+```bash
+for scene in submit watch-all audit weigh-list weigh; do
+  python3 docs/media/render.py docs/media/$scene.scene.json docs/media/$scene.gif
+done
+```
+
+Final holds are measured as the sum of consecutive identical decoded frames
+at the end, rather than only the last 40ms duplicate written by ffmpeg.
+Every frame of every GIF was decoded, every final screen visually inspected,
+and every displayed line measured against its scene width. Current files:
+
+| GIF | Bytes | Duration | Final hold | Final screen |
+| --- | ---: | ---: | ---: | --- |
+| [banner.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 14,026 | 5.20 s | 4.20 s | finished wordmark and tagline |
+| [setup.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/setup.gif) | 35,562 | 8.80 s | 3.80 s | setup checks, completion and the suggested submit command |
+| [submit.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif) | 940,632 | 16.32 s | 6.20 s | REFUSED, three blocking checks, fixes and the retry command |
+| [watch.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch.gif) | 73,985 | 10.44 s | 4.36 s | both commit identifiers, VALIDATION STALE and edit-the-issue action |
+| [watch-all.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif) | 35,891 | 8.96 s | 6.12 s | account, five CURRENT counts, review counts, first two issues, discussion and full source URL |
+| [audit.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif) | 75,800 | 8.80 s | 7.16 s | complete capture: header, drift rows, matching rows and DRIFT 9-of-18 summary |
+| [weigh-list.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif) | 117,597 | 13.80 s | 6.16 s | enabled Omadock row and its historical single-run status |
+| [weigh.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif) | 59,075 | 10.92 s | 7.20 s | all six measured samples, restoration hashes, noise floor, baseline, plugin delta, verdict and evidence path |
+
+The same word-count method used above counted 266 words before this pass
+and 276 after it. [M10's second-pass record](../evidence/readme/2026-09-15-second-pass.json)
+records hashes, geometry, omissions and final-screen holds alongside the
+new package facts. The old first-pass table is historical, not current file
+metadata. The historical single-run list is not substituted for the new
+three-run desktop report.

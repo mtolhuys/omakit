@@ -1,7 +1,7 @@
 {
   "title": "omakit weigh --list",
   "width": 88,
-  "rows": 26,
+  "rows": 32,
   "steps": [
     {
       "command": "omakit weigh --list",
@@ -9,11 +9,28 @@
       "reveal": 2,
       "pace": 12,
       "omit": [
-        [29, 233, "205 lines of unweighed plugin records, left out for length"],
-        [244, 278, "35 lines of further disabled plugin records, left out for length"]
+        [
+          29,
+          233,
+          "205 unweighed record lines omitted"
+        ],
+        [
+          240,
+          278,
+          "39 disabled record lines omitted"
+        ]
       ],
-      "pauses": [[12, 200], [34, 300]],
-      "hold": 420
+      "pauses": [
+        [
+          12,
+          200
+        ],
+        [
+          34,
+          300
+        ]
+      ],
+      "hold": 600
     }
   ]
 }

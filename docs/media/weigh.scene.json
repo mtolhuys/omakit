@@ -1,0 +1,28 @@
+{
+  "title": "omakit weigh omadock",
+  "width": 102,
+  "rows": 56,
+  "fontSize": 12,
+  "steps": [
+    {
+      "command": "omakit weigh omadock --runs 3 --yes --out docs/evidence/weigh/desktop-2026-09-15-omadock.json",
+      "capture": "docs/media/captures/weigh-omadock.ansi",
+      "omit": [
+        [
+          1,
+          13,
+          "13 plan and backup-notice lines omitted; full capture retained"
+        ]
+      ],
+      "reveal": 6,
+      "pace": 15,
+      "pauses": [
+        [
+          24,
+          150
+        ]
+      ],
+      "hold": 700
+    }
+  ]
+}

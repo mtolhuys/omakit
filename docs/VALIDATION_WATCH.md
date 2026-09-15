@@ -86,14 +86,17 @@ Both feel like progress and neither is.
 
 ## Why this is the centre of the tool
 
-Of the 464 submissions parked in the author's own court, 73% have a
-default-branch HEAD ahead of their validated commit. 47% pushed after the
-maintainer's review without the marketplace ever seeing it, and 82% of those
-authors also commented, so they are engaged and stuck, not gone. Of 13 open
-submissions inspected with no labels left, 9 had passed validation and passed the
-automated security baseline with zero findings, and were blocked solely because
-their validated commit had fallen behind while they waited. 46% of the maintainer's own requests
-for a fresh validation never produced one; in the parked group, 77% never did.
+On 2026-09-15, all 583 open submissions labelled `needs-fixes` or
+`security-needs-fixes` were attempted. Of 519 readable bot-commit versus
+`commits.atom` HEAD comparisons, 326 were stale (62.8%), 193 current and
+64 issues unknown. [The dated per-issue data](evidence/staleness/2026-09-15.json)
+records both commits and the reason when a comparison was unavailable. The
+62.8% is a share of readable comparisons, not all 583 issues.
+
+The old 2026-09-12 figure came from 68/93 readable issues (73.1%) in a
+100-issue sample from a 464-issue queue. The original per-issue pairs were
+not found; recovered notes establish the sample denominator. The old sample
+and the new full-queue attempt cannot establish a trend by themselves.
 
 The instruction that would fix this exists. `scripts/submission-feedback.mjs`
 contains "edit the issue" 22 times, every one attached to a deterministic

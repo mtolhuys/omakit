@@ -14,7 +14,7 @@ limits and the rest of the figures: [MEASUREMENTS.md](MEASUREMENTS.md).
 | 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
 | 1,215 of the 2,916 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
 | 103 issues mention agent-control files, which no automated check reports | submit names every one with its remedy, before a reviewer has to |
-| 73% of parked submissions have a HEAD the marketplace never saw; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
+| The 2026-09-12 sample found stale validation in 68/93 readable issues; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
 
 It does not claim to unblock the maintainer. His review writing barely repeats,
 his median time from submission to publication is hours, and the queue waiting on
@@ -75,6 +75,6 @@ A submission can pass validation and pass the security baseline with zero
 findings and still be stuck, because the marketplace validated one exact
 commit and the only action that makes it validate a newer one is editing
 the issue body. Pushing the fix does nothing. Commenting "fixed in `abc123`"
-does nothing. **73% of the 464 submissions parked in their author's court
-have a default-branch HEAD the marketplace never saw.** The watch, and why
+does nothing. **On 2026-09-15, 326/519 readable comparisons were stale (62.8%);
+64 of 583 issues were unknown.** The watch, and why
 it is the centre of the tool: [VALIDATION_WATCH.md](VALIDATION_WATCH.md).

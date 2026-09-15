@@ -414,7 +414,7 @@ export async function submitPreflight(options) {
   const validationMatches = head ? head.commit === subject.commit.toLowerCase() : null
   checks.push(check("submission.validation-commit", {
     source: "omakit",
-    why: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited, not the commit checked here. 73% of the 464 submissions parked in the author's court have a HEAD ahead of their validated commit, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
+    why: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited, not the commit checked here. M6 on 2026-09-15 found 326/519 readable author-fixes comparisons stale (62.8%), with 64 of 583 issues unknown, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
     severity: options.offline ? "advisory" : "blocking",
     skipped: options.offline === true,
     verdict: validationMatches === true,
