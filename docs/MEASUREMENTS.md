@@ -33,15 +33,129 @@ the lower rate of the published group. W37 lead times are censored and too low.
 
 ## A1. Installed commits against marketplace validation
 
-On 2026-09-15 the first whole-machine measurement could not produce K of M:
+The first completed desktop audit ran on 2026-09-15 with the shell running,
+using the local revision: `node bin/omakit audit --out <capture.json>`.
+It exited 1 for drift. No checkout action was run.
+
+| Measurement | Value | Origin |
+| --- | --- | --- |
+| Installed | 55 | `omarchy plugin list --json` length |
+| First-party excluded | 37 | Installed `firstParty` or catalog `sourceType: builtin` |
+| Audited | 18 | Third-party row count |
+| Validated | 9 | Rows whose primary state is `validated` |
+| Drift | 9 | 5 `ahead`, 1 `diverged`, 3 `unlisted` |
+| Largest count ahead | 31, `io.github.calebhat.weather` | `git rev-list --count 986604e0a7275f7060ac18adec7493393c55906f..HEAD` |
+| Catalog read time | 2026-09-15T00:26:28.400Z | Immutable catalog cache `liveRegistry fetchedAt`; the run resolved live HEAD |
+
+The catalog was
+[3d240d4dde4d148017792bac08720b9ac158d6a6](https://github.com/omacom/omarchy-plugin-marketplace/blob/3d240d4dde4d148017792bac08720b9ac158d6a6/site/catalog.json).
+Weather's installed HEAD was `fda4aaa88e6f47af1925ae4eb7b18e9ba5bfc7fa`.
+The missing validated object for Disk Lens was reported as `diverged`, with
+`shallow clone: false`. Modified flags do not replace a validated primary state.
+
+Captured stdout:
+
+```text
+catalog       live HEAD 3d240d4d at 2026-09-15T00:26:28.400Z
+installed     55
+first-party   37 left out
+audited       18
+
+▓ note  io.github.mtolhuys.disk-lens
+        diverged: validated commit not in local history; shallow clone: false;
+        HEAD 5a4b1b27; validated 7f0ea22a on 2026-09-14T09:51:46.925Z
+        → git -C
+          "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.disk-lens"
+          checkout 7f0ea22aee80a4f7f23ade4dede500f61eedba75
+
+▓ note  io.github.calebhat.weather
+        31 commits ahead of validated 986604e0 (2026-08-29T10:43:31.905Z); HEAD
+        fda4aaa8
+        → git -C
+          "/home/mtolhuijs/.config/omarchy/plugins/io.github.calebhat.weather"
+          checkout 986604e0a7275f7060ac18adec7493393c55906f
+
+▓ note  robzolkos.github
+        1 commit ahead of validated c38e600b (2026-09-13T09:33:19.839Z); HEAD
+        64807fcd
+        → git -C "/home/mtolhuijs/.config/omarchy/plugins/robzolkos.github"
+          checkout c38e600ba76af0771c708cbc546154bd24aeb7e8
+
+▓ note  io.github.mtolhuys.news-radar
+        3 commits ahead of validated 8b07c89d (2026-09-14T09:51:46.925Z); HEAD
+        139fdd28
+        → git -C
+          "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.news-radar"
+          checkout 8b07c89dea0d317f2ff15f55a0e971083e26022a
+
+▓ note  omaplug
+        12 commits ahead of validated efa46690 (2026-09-13T11:23:42.682Z); HEAD
+        b8479d40
+        → git -C "/home/mtolhuijs/.config/omarchy/plugins/omaplug" checkout
+          efa46690991ea59c3c290456807545dd7350dc03
+
+▓ note  crmne.hyprmoncfg
+        2 commits ahead of validated 513e5ce6 (2026-09-14T11:14:57.429Z); HEAD
+        cf05a04a
+        → git -C "/home/mtolhuijs/.config/omarchy/plugins/crmne.hyprmoncfg"
+          checkout 513e5ce669224f3d3eabf72bd4342fb29f7622c7
+
+▓ note  io.github.pablo-merino.altswitch
+        validated 8f54d684 on 2026-08-30T09:56:21.339Z; modified
+
+▓ note  io.github.mtolhuys.plugin-pulse
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        2d099d42; modified
+
+░ info  io.github.mtolhuys.news-readers
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        7d91c50e
+
+░ info  bjarneo.workspace-layout
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        f5d06c11
+
+▁ ok    expose.window-overview
+        validated 4f49c093 on 2026-09-13T09:33:19.839Z
+
+▁ ok    io.github.sirjul1337.lock-explorer
+        validated ed8e8f82 on 2026-09-14T09:51:46.925Z
+
+▁ ok    bobbynicholas.omaland
+        validated ec232b6a on 2026-08-29T10:43:31.905Z
+
+▁ ok    io.github.mtolhuys.onscreen-keyboard
+        validated a41b45a7 on 2026-09-14T09:51:46.925Z
+
+▁ ok    io.github.mtolhuys.theme-manager
+        validated cc6486ac on 2026-09-14T09:51:46.925Z
+
+▁ ok    akshar.radio-atlas
+        validated b290c29c on 2026-09-12T08:40:57.042Z
+
+▁ ok    io.github.mtolhuys.sidecar
+        validated 93800d2c on 2026-09-14T09:51:46.925Z
+
+▁ ok    omadock
+        validated d2d355c5 on 2026-09-13T09:33:19.839Z
+
+        → To validate a newer commit:
+          https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=verify-plugin.yml
+        Verify or update a listed plugin; choose "Verify and publish a newer
+        upstream commit".
+
+█ DRIFT  9 of 18 run a commit the marketplace validated; 9 run one it never saw.
+```
+
+An earlier probe on 2026-09-15 could not produce K of M:
 `omarchy plugin list --json` answered `omarchy-shell is not running`, so M was
 not knowable and `omakit audit` correctly stopped as `NOT AUDITED`. The catalog
 and two checkout facts recorded in [AUDIT.md](AUDIT.md) were used to define and
 test the states, but were not substituted for the shell's installed list.
+That failed probe is retained because a failed list is not zero installed plugins.
 
-Used by: `omakit audit`. Replace this failed first measurement with K of M
-ahead after the shell can answer; keep this record as the reason a failed list
-is not reported as zero installed plugins.
+Used by: `omakit audit`. This is a dated desktop snapshot, not a source-safety
+verdict or a prediction about another installed set.
 
 ## M2. The submission format costs round trips that a generated body cannot
 

@@ -54,7 +54,7 @@ catalog field used by `audit`, for two installed listings:
 ]
 ```
 
-The installed-plugin command did not answer on this machine because the shell
+During the initial probe, the installed-plugin command did not answer because the shell
 was not running. That failure is authoritative, so `audit` must stop as
 `NOT AUDITED` rather than substitute another list:
 
@@ -232,7 +232,7 @@ that command fast-forwards to mutable HEAD.
 
 ## JSON contract
 
-The document has `command`, `catalog`, `counts`, `rows`, `updateRoute` and
+The document has `command`, `catalog`, `counts`, `rows`, `updateRoute`, `updateRouteError` and
 `ok`. `catalog.source` is `head` or `pin`; its commit and read time name their
 origin. Every count is `{ "value": ..., "origin": ... }`.
 
@@ -255,6 +255,16 @@ limited to HEAD, status, origin, object existence, shallow status, ancestry and
 commit-count questions. Implicit fetching of missing objects is disabled.
 
 ## Competition, READMEs read 2026-09-15
+
+These comparisons read READMEs, not plugin implementations. Read sources:
+
+| Plugin | What was actually read |
+| --- | --- |
+| Extension Guard | Raw `main/README.md` from `vltic/omarchy-guard`. |
+| OmaSafe | README rendered on the `tuthan/omasafe-plugin` repository page. The raw request failed. |
+| Omavet | README rendered on the `vonsensey/omavet` repository page and its marketplace catalog description. The raw request failed. |
+| Plugin Guard | Raw `master/README.md` from `kmpeeduwee/omarchy-plugin-guard`. |
+| Omaudit Status | README rendered on the `godhiraj-code/omarchy-omaudit-status` repository page. The raw request failed. |
 
 - [Extension Guard](https://github.com/vltic/omarchy-guard) installs and manages human-reviewed pinned copies; `audit` leaves existing checkouts alone and compares them with the marketplace's own validated commits.
 - [OmaSafe](https://github.com/tuthan/omasafe-plugin) presents local trust drift and marketplace context through a separately installed scanner; `audit` is the CLI that reads the current marketplace catalog itself and creates no trust baseline.
