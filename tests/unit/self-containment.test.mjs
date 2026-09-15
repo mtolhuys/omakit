@@ -129,12 +129,12 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
   }
 })
 
-test("the command surface is exactly the submission scope", () => {
+test("the command surface is exactly the documented scope", () => {
   const cli = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "weigh", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "audit", "weigh", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately
