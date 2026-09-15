@@ -260,7 +260,7 @@ test("a plugin listed by its own repository at HEAD is the listed outcome, at th
   assert.equal(identity.detail, `listed by this repository since 2026-08-31, verification commit ${fixture.commit} (verified, checked 2026-09-10T17:40:18.858Z); registry at ${HEAD}, read 2026-09-13T15:00:00.000Z`)
   assert.deepEqual(same.checks.map((check) => check.id), [
     "plugin.root-manifest", "plugin.root-readme", "plugin.root-license", "plugin.readme-install-removal", "tree.agent-control",
-    "identity.available", "submission.title", "submission.repository-url", "submission.validation-commit", "baseline.preflight",
+    "identity.available", "submission.title", "submission.repository-url", "submission.validation-commit", "baseline.preflight", "review.cost",
   ], "category, tags, headings, checklist and the official parser are not run")
 
   // Ahead of it: the same outcome, and the listing says which commit is listed.

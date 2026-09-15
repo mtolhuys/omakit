@@ -10,6 +10,10 @@ The safe place to find out: everything knowable about an Omarchy Quattro plugin 
 It is for a coding agent or a person submitting a plugin.
 It never posts to the marketplace or writes into a plugin tree.
 
+## Why it exists
+
+[M9](docs/MEASUREMENTS.md#m9-open-updates-and-documentation-only-review) measured 307 open plugin-update issues on 2026-09-15: 140 (45.6%) carried the manual-review label. Of 139 validated diffs compared in that queue, 4 (2.9%) changed only documentation; one comparison was unavailable. The baseline scans the plugin's whole snapshot, so unchanged capabilities can require another human review even for a docs-only update. `submit` now reports that cost before an issue exists and suggests batching when the same repository already has an open issue; `watch --all` measures the queue and docs-only diffs for the issues it lists.
+
 ## Install
 
 ```bash

@@ -378,6 +378,68 @@ Used by: `omakit setup`, `omakit doctor` (`omakit.completion`), `omakit
 upgrade` (the completion step re-run through the new omakit), and the
 startup notice in `cli.mjs`.
 
+## M9. Open updates and documentation-only review
+
+Measured on 2026-09-15, 13:54:05.710 to 13:54:50.758 UTC, against
+marketplace HEAD `3d240d4dde4d148017792bac08720b9ac158d6a6`.
+Command used, from the repository root:
+
+```bash
+node tools/marketplace/measure-review-cost.mjs > /tmp/omakit-review-cost-measurement.json
+```
+
+The [machine-readable capture](evidence/review-cost/2026-09-15.json) records
+every compared pair, file count, compare API source URL and skipped reason.
+Its population counts are:
+
+```json
+{
+  "measurement": "M9",
+  "date": "2026-09-15",
+  "marketplaceHead": "3d240d4dde4d148017792bac08720b9ac158d6a6",
+  "sample": false,
+  "pluginUpdates": 307,
+  "manualQueue": 140,
+  "manualQueueShare": 0.4560260586319218,
+  "docsOnly": 4,
+  "compared": 139,
+  "skipped": 1,
+  "docsOnlyShareOfCompared": 0.02877697841726619,
+  "docsOnlyShareOfManualQueue": null
+}
+```
+
+All open `plugin-update` issues were discovered through paginated repository
+issue reads, excluding pull requests. Of 307 updates, 140 (45.6%) carried
+`security-review-required`. The entire labelled subset was attempted, not
+sampled. Of 139 complete validated diffs, 4 (2.9%) were docs-only. One compare
+returned 404 (issue #4295), so the exact docs-only share of all 140 is unknown:
+the observed lower bound is 4/140 (2.86%), and the upper bound is 5/140 (3.57%).
+An unavailable comparison is not a runtime change or a zero-file diff.
+
+The latest issue baseline marker is parsed by the pinned marketplace code.
+The previous commit is the most recent different, dated validation record
+no later than that marker: an earlier issue marker, a registry listing or
+listing-history record, or the catalog's `upstreamValidatedCommit` and
+`upstreamValidatedAt`. The registry and catalog are read at the same HEAD.
+The compare API must report a forward, complete file list below its 300-file
+limit. Docs-only means a nonempty diff whose paths are all under `docs/`,
+Markdown, `LICENSE`, or image files; renames qualify at both ends. This
+classifies paths, not the content or effect of documentation. A missing
+previous record is skipped with a reason, never replaced with a Git parent
+or the author's description. Issue labels and comments are live reads during
+the dated window, not immutable data at the registry commit.
+
+M4 explains the mechanism: the baseline scans the whole snapshot's
+capabilities, not the update diff. M9 measures how often documentation-only
+changes are present in that queue; it does not measure minutes spent by a
+maintainer or establish a marketplace rule. The account's earlier badge-only
+description is not substituted for compare results against recorded validated
+commits.
+
+Used by: advisory `review.cost` in `omakit submit`, and the review-cost summary
+in `omakit watch --all`. No issue, comment or label was written.
+
 ## C1. Weigh noise floor
 
 The figures behind `omakit weigh` are the measurements themselves and their

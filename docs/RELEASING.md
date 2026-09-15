@@ -20,6 +20,12 @@ publishes the exact tarball, checks its integrity on npm, and creates the GitHub
 Release. A failure stops the release; it never reports missing authentication as
 a successful skip. An existing npm version is accepted only if its bytes match.
 
+Unreleased work goes under the next unused version in `CHANGELOG.md`, with
+the package version unchanged. The next section after 0.4.1 is 0.4.2
+(unreleased). Move the notes into `docs/releases/<version>.md` and bump the
+package only when deliberately preparing that release; an unreleased
+changelog entry does not publish anything.
+
 ## Authentication
 
 npm Trusted Publishing is configured for GitHub Actions, repository

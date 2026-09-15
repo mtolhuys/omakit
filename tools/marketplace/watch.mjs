@@ -30,6 +30,8 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
 import { authenticatedUser, repositoryIssues, defaultBranchHead, issue, issueComments, parseIssueUrl, token, GitHubError } from "./github.mjs"
+import { liveRegistry } from "./registry.mjs"
+import { reviewPolicy, validatedDocumentationDiff } from "./review-cost.mjs"
 
 export class WatchError extends Error {
   constructor(code, message) {
@@ -77,8 +79,11 @@ export async function discoverWatchIssues({ user, github = {}, onPhase = () => {
 }
 
 /** A batch keeps independent read failures visible and shares repository HEAD reads. */
-export async function validationWatchAll({ repoRoot, discovery, github = {}, onPhase = () => {} }) {
+export async function validationWatchAll({ repoRoot, discovery, github = {}, readRegistry = liveRegistry, onPhase = () => {} }) {
   if (discovery.issues.length) requirePin(repoRoot)
+  const policy = discovery.issues.length ? await reviewPolicy(repoRoot) : null
+  let registry = null
+  const reviewCostSummary = { pluginUpdates: 0, manualQueue: 0, docsOnly: 0, compared: 0, skipped: [] }
   const heads = new Map()
   const readHead = github.defaultBranchHead || defaultBranchHead
   const shared = { ...github, defaultBranchHead: (url) => {
@@ -102,7 +107,38 @@ export async function validationWatchAll({ repoRoot, discovery, github = {}, onP
   await Promise.all(Array.from({ length: Math.min(4, discovery.issues.length) }, worker))
   const summary = { total: results.length, current: 0, stale: 0, unknown: 0 }
   for (const result of results) summary[result.report?.verdict.state || "unknown"] += 1
-  return { mode: "all", account: discovery.account, marketplace: discovery.marketplace, summary, issues: results }
+  // M9: count labels on the listed issues, then compare only updates in the manual queue.
+  const manual = results.filter((row) => {
+    const labels = row.report?.read.labels || row.issue.labels
+    if (!labels.includes(policy?.updateLabel)) return false
+    reviewCostSummary.pluginUpdates += 1
+    return labels.includes(policy.reviewLabel)
+  })
+  reviewCostSummary.manualQueue = manual.length
+  if (manual.length) {
+    onPhase("reading the previous validated marketplace snapshots")
+    try { registry = await readRegistry({ repoRoot }) } catch (error) { registry = { reason: error.message } }
+  }
+  let compareNext = 0
+  async function compareWorker() {
+    while (compareNext < manual.length) {
+      const row = manual[compareNext++]
+      const diff = row.report
+        ? await validatedDocumentationDiff({ report: row.report, registry: registry?.source === "head" ? registry.registry : null,
+          catalog: registry?.source === "head" ? registry.catalog : null,
+          registryReason: registry?.source === "head" ? null : `previous validated commit unknown: live registry unavailable (${registry?.reason || "unknown"})`, compare: github.compareCommits })
+        : { docsOnly: null, reason: `issue unreadable: ${row.error?.message || "unknown"}` }
+      row.documentationDiff = diff
+      if (diff.docsOnly === null) reviewCostSummary.skipped.push({ issue: row.issue.number, reason: diff.reason })
+      else {
+        reviewCostSummary.compared += 1
+        if (diff.docsOnly) reviewCostSummary.docsOnly += 1
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, manual.length) }, compareWorker))
+  reviewCostSummary.skipped.sort((a, b) => a.issue - b.issue)
+  return { mode: "all", account: discovery.account, marketplace: discovery.marketplace, summary, reviewCostSummary, issues: results }
 }
 
 // The one action that re-runs validation, in the register the marketplace itself
@@ -133,7 +169,7 @@ async function loadVerification(pinDir) {
  * happens to recognise. So each form is read by the parser the marketplace
  * itself uses for it, and the issue says which one it is.
  */
-async function repositoryFor(pinDir, subject) {
+export async function repositoryFor(pinDir, subject) {
   const submission = await loadSubmission(pinDir)
   const verification = await loadVerification(pinDir)
   const title = String(subject.title || "")
@@ -221,6 +257,20 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
     baselineError = { code: error.code || "baseline-unreadable", message: error.message }
   }
   const fallback = validated ? null : validationCommentCommit(comments)
+  let previousValidated = null
+  if (validated) {
+    // Revalidation on an existing issue may precede the latest marker. Ignore
+    // repeated attestations of the same commit, not a different validated tree.
+    for (const comment of [...comments].reverse()) {
+      try {
+        const marker = record.findLatestSecurityBaseline([comment])
+        if (marker && marker.commitSha !== validated.commit && Date.parse(marker.checkedAt) <= Date.parse(validated.checkedAt)) {
+          previousValidated = { commit: marker.commitSha, checkedAt: marker.checkedAt, source: "security-baseline-marker" }
+          break
+        }
+      } catch { /* An incomplete run is not a previously validated commit. */ }
+    }
+  }
 
   const labels = (subject.labels || []).map((label) => (typeof label === "string" ? label : label?.name)).filter(Boolean)
   const authorComments = comments.filter((comment) => comment?.user?.login === subject.user?.login)
@@ -267,6 +317,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
     },
     plugin: { repository: repositoryUrl, repositoryError, form: issueKind },
     validated,
+    previousValidated,
     validationCommentFallback: fallback,
     baselineError,
     head,

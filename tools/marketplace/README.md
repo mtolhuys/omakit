@@ -18,6 +18,8 @@ local commit through the transport seam the marketplace tests itself
 | `tree.mjs` | The installable tree of a subject at one exact commit, from the Git object database. |
 | `plugin.mjs` | The root files the submission contract needs, and the declared plugin identity. |
 | `agent-control.mjs` | The recursive agent-control warning, and its remedy. |
+| `review-cost.mjs` | The advisory review-cost verdict, shared account discovery, and path classification between dated validated snapshots. M4 and M9 carry its evidence. |
+| `measure-review-cost.mjs` | Reproduces M9 across the open update population at live marketplace HEAD, with compare sources and explicit skipped reasons in JSON. |
 | `issue.mjs` | Renders the issue the way the form would, then has the marketplace's own parser judge it. |
 | `submit.mjs` | Assembles every check with its measured reason, and withholds the body when a blocking check fails. Three outcomes: `ready` (the body), `refused` (a blocking check failed) and `listed` (the plugin is already listed by its own repository: `identity.available` passes with the listing's record, the five body checks are omitted rather than drawn as waiting, no body exists on purpose, and `listing` carries the listed commit against the local one and the form to use for a newer commit). Decides the category and tags after the registry: a listed plugin, own or taken, is asked for neither; an unlisted one without them is asked through `ask.mjs` at a terminal, and is a usage error otherwise. Ends with `reproduce`, the command line that repeats the run without asking. Under `--offline` the validation-commit check is `skipped`, not passed: verdict `skipped`, listed under `skipped` and not `unknown`, never blocking, and the READY line says "1 check skipped (--offline)". |
 | `ask.mjs` | The two questions `submit` asks a person at a terminal, and only there: category and tags, numbered from the pinned form, with the marketplace's own presentation for the manifest's kinds (read from the pinned catalog builder) as the default where it is on the list. Prompts on stderr, nothing persisted. |
@@ -98,7 +100,9 @@ sequences and nothing else.
 built-in `fetch`, which does not read proxy environment variables by default.
 Behind a proxy, run them with `NODE_USE_ENV_PROXY=1`. `submit` reads two things
 online, the subject's default-branch HEAD and the marketplace's current
-registry, and `--offline` turns both off; `verify` needs no network at all
+registry. A manual-review baseline also reads the account's open issue
+discovery and issue bodies for batching advice; `--offline` turns these
+reads off. `verify` needs no network at all
 beyond fetching a reviewer-mode subject, and `tests/parity/offline.mjs` proves
 it.
 

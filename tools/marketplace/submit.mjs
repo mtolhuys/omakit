@@ -23,6 +23,7 @@ import { renderIssue, verifyAgainstOfficialParser } from "./issue.mjs"
 import { defaultBranchHead } from "./github.mjs"
 import { REFRESH_ACTION } from "./watch.mjs"
 import { omakitCacheDir } from "./paths.mjs"
+import { openIssuesForRepository, reviewCostVerdict, reviewPolicy } from "./review-cost.mjs"
 
 /**
  * One arrow per cause, in this order, so a person fixes the thing that is
@@ -135,6 +136,7 @@ export function reproduceCommand({ target, category, tags, pluginName, notes, su
  * @param {{ repoRoot: string, target: string, category?: string, tags?: string|string[],
  *           notes?: string, suggestedTag?: string, pluginName?: string,
  *           allowDirty?: boolean, offline?: boolean,
+ *           github?: object,
  *           readRegistry?: typeof liveRegistry,
  *           chooser?: (question: { contract: object, defaults: object, missing: string[] }) => Promise<{ category?: string, tags?: string[] }> }} options
  *   `readRegistry` is injectable for tests; the default reads the marketplace's
@@ -404,7 +406,7 @@ export async function submitPreflight(options) {
   if (!options.offline && subject.repository.url) {
     phase("reading the repository's default-branch HEAD")
     try {
-      head = await defaultBranchHead(subject.repository.url)
+      head = await (options.github?.defaultBranchHead || defaultBranchHead)(subject.repository.url)
     } catch (error) {
       headError = { code: error.code || "head-unreadable", message: error.message }
     }
@@ -461,6 +463,14 @@ export async function submitPreflight(options) {
         : null,
   }))
 
+  const policy = await reviewPolicy(repoRoot)
+  const review = reviewCostVerdict({ baseline: consequence, policy,
+    openIssues: consequence?.outcome === policy.manual ? await openIssuesForRepository({ repoRoot, repository: subject.repository.url,
+      offline: options.offline === true, github: options.github }) : { count: null, reason: consequence?.outcome === policy.automated ? "open issue count not checked: automated baseline" : preflight.skipReason || preflight.refusal?.message || "baseline outcome needs findings resolved" },
+    why: `MEASUREMENTS.md M4: ${figure(figures.outcomes[policy.manual] || 0)} of ${figure(figures.withBaseline)} recorded listing baselines required review at the pin. M9: on 2026-09-15, 140 of 307 open update issues carried the manual-review label; 4 of 139 compared validated diffs were docs-only, with 1 unavailable. The baseline scans the whole snapshot, not the update diff, so unchanged capabilities also require another review. Sources and exact marketplace HEAD are recorded in MEASUREMENTS.md.`,
+  })
+  checks.push(review.check)
+
   const blocking = checks.filter((entry) => entry.severity === "blocking" && entry.verdict === "fail")
   const advisory = checks.filter((entry) => entry.severity === "advisory" && entry.verdict === "fail")
   const unknown = checks.filter((entry) => entry.verdict === "unknown")
@@ -511,6 +521,7 @@ export async function submitPreflight(options) {
       offline: options.offline === true,
     }),
     checks,
+    reviewCost: review.reviewCost,
     outcome,
     ready,
     listing,

@@ -180,10 +180,10 @@ export async function authenticatedUser() {
 }
 
 /** Repository issues by their creator. PRs are excluded; pagination never silently truncates. */
-export async function repositoryIssues(owner, repository, creator, { readJson = getJson, maxPages = 100 } = {}) {
+export async function repositoryIssues(owner, repository, creator, { readJson = getJson, maxPages = 100, labels } = {}) {
   const all = []
   for (let page = 1; page <= maxPages; page += 1) {
-    const query = new URLSearchParams({ creator, state: "open", sort: "updated", direction: "desc", per_page: "100", page: String(page) })
+    const query = new URLSearchParams({ ...(creator ? { creator } : {}), ...(labels ? { labels } : {}), state: "open", sort: "updated", direction: "desc", per_page: "100", page: String(page) })
     const batch = await readJson(`https://api.github.com/repos/${owner}/${repository}/issues?${query}`)
     if (!Array.isArray(batch)) throw new GitHubError("github-unavailable", "GitHub did not return an issue list")
     all.push(...batch.filter((item) => !item.pull_request))
@@ -203,6 +203,17 @@ export async function issueComments(owner, repository, number, maxPages = 10, re
     if (batch.length < 100) return all
   }
   throw new GitHubError("comments-incomplete", `Issue #${number} exceeded ${maxPages} comment pages; its latest baseline cannot be determined`)
+}
+
+/** Compare exact validated snapshots. The API caps its file list at 300: never classify a truncated diff. */
+export async function compareCommits(repositoryUrl, previous, validated, { readJson = getJson } = {}) {
+  const match = String(repositoryUrl).match(/^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/)
+  if (!match || ![previous, validated].every((commit) => /^[a-f0-9]{40}$/i.test(commit))) throw new GitHubError("usage", "compare needs a repository and two full commit identifiers")
+  const url = `https://api.github.com/repos/${match[1]}/${match[2]}/compare/${previous}...${validated}?per_page=1`
+  const result = await readJson(url)
+  if (!["ahead", "identical"].includes(result?.status)) throw new GitHubError("compare-not-forward", "validated snapshots are not a forward comparison")
+  if (!Array.isArray(result.files) || result.files.length >= 300) throw new GitHubError("compare-incomplete", "compare file list unavailable or at the 300-file API limit")
+  return { url, files: result.files }
 }
 
 /**

@@ -28,6 +28,39 @@ List JSON has `mode: "list"`, `account`, `marketplace` and `issues` (number, URL
 
 Regression proof: [watch-all.test.mjs](../tests/unit/watch-all.test.mjs) covers account selection, filtering, pagination, incomplete lists, shared HEAD reads, independent failures, multi-selection, cancellation, EOF, output wrapping and noninteractive mode conflicts.
 
+## Review-cost snapshot in `--all`
+
+One summary field below the counts measures how many listed issues are
+`plugin-update` issues on `security-review-required`, and how many of those
+have docs-only validated diffs. It gives the numbers compared and skipped;
+each skipped issue row names the reason. M9 in
+[MEASUREMENTS.md](MEASUREMENTS.md) records the population evidence behind
+this measurement. The live summary counts this invocation's listed issues.
+
+The compare API reads the latest baseline-marker commit against the most
+recent different validated commit recorded before it: an earlier issue
+baseline marker, the current listing or listing history from the registry,
+or successful upstream validation from the catalog. The registry and catalog
+are read together at current marketplace HEAD. No parent commit or author
+description is substituted. Missing previous commits and incomplete or
+unavailable comparisons give `docsOnly: null` with a reason. A diff is
+docs-only when it is nonempty and all changed paths are under `docs/`, end
+in `.md`, are named `LICENSE`, or use an image extension (`png`, `jpg`,
+`jpeg`, `gif`, `webp`, `svg`, `ico`, `avif`, `bmp`, `tif`, `tiff`). Matching
+is case-insensitive; a rename must qualify at both ends. Empty diffs do not
+count as docs-only updates. Comparisons at the API's 300-file limit or
+between diverged snapshots are skipped rather than treated as complete.
+
+Batch JSON adds `reviewCostSummary: { pluginUpdates, manualQueue, docsOnly,
+compared, skipped: [{ issue, reason }] }`. A compared or skipped issue row
+adds `documentationDiff: { previousCommit, validatedCommit, docsOnly, files,
+source, reason }`; `files` is the file count and `source` is the compare API
+URL. Unavailable values are null. An unreadable issue has
+`documentationDiff: { docsOnly: null, reason }` and retains its existing
+`error`. Single-issue JSON adds `previousValidated` (commit, checkedAt and
+marker source, or null). Diff availability does not change the existing
+current/stale/unknown counts or exit status.
+
 ## The mechanism
 
 The marketplace validates one exact commit, and the review that follows is of

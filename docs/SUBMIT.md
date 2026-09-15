@@ -46,6 +46,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `submission.official-parser` | pin | The marketplace's own `parseCurrentSubmission` accepts the rendered title and body. |
 | `submission.validation-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually validate. |
 | `baseline.preflight` | pin | The official security baseline over a local snapshot, verbatim, plus what its outcome will cause. |
+| `review.cost` | omakit | Advisory, immediately after the baseline: whether the update needs manual baseline review and whether this account already has open issues for the same repository. M4 and M9 measure the reason. |
 
 Every one of them states its measured reason in the output when it fails, and in
 the source either way. The numbers are in [MEASUREMENTS.md](MEASUREMENTS.md).
@@ -168,6 +169,51 @@ performs no general data-flow analysis and is not a security review. `submit`
 prints the marketplace's own two closing sentences on this, read out of the
 marketplace's own report builder at the pin, and it never constructs the
 machine-readable attestation marker the marketplace's bot posts.
+
+## Review cost before opening another issue
+
+`review.cost` follows `baseline.preflight` and is always advisory. A
+`review-required` baseline reports **manual queue**, names the capabilities,
+and explains that every update of this plugin, including a docs-only one,
+lands in the manual queue. If the account's `watch --all` discovery finds N
+open issues for this repository, it reports **manual queue, again** and says
+"consider batching: close or fold the open one before opening another".
+Both use the existing advisory `fail` verdict, drawn as a note, and never
+block readiness or remove the generated body. A `passed` baseline reports
+**automated**, using `pass`: the update will not need a human for the security
+baseline. This does not promise approval or publication. M4 and M9 in
+[MEASUREMENTS.md](MEASUREMENTS.md) give the measured reasons.
+
+The extra discovery reads the signed-in account and the fresh bodies of the
+same open issues that `watch --all` finds, matching repository owner and name
+case-insensitively and ignoring `.git`. No comments, labels or issues are
+written. Under `--offline`, without a credential, or if the reads fail or are
+incomplete, the count is silently omitted from the text advice. JSON keeps
+`openIssuesForRepository: null` and the source-honest reason, never zero.
+An automated baseline does not need that discovery. A baseline that has
+findings or did not complete gives an `unknown` review-cost check, rather
+than predicting human review before those findings are resolved.
+
+Submit JSON adds this top-level object:
+
+```json
+{
+  "reviewCost": {
+    "outcome": "manual queue, again",
+    "capabilities": ["installer"],
+    "openIssuesForRepository": 2,
+    "reason": "manual queue, again: capabilities installer. Every update of this plugin, including a docs-only one, lands in the manual queue. You already have 2 open issue(s) for this repository. watch --all discovery: 2 open issue(s) for this repository"
+  }
+}
+```
+
+`outcome` is `"manual queue"`, `"manual queue, again"`, `"automated"`, or null
+when the baseline does not support a prediction. `capabilities` contains the
+baseline's capability ids, `openIssuesForRepository` is an integer or null,
+and `reason` explains the prediction and discovery source or skipped read.
+`checks` adds `review.cost` immediately after the baseline, with
+`severity: "advisory"`; it never appears in `blocking`. Existing submission
+outcomes, issue bodies and exit meanings stay the same.
 
 ## After submitting
 
