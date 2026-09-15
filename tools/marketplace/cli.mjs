@@ -90,9 +90,21 @@ function failFrom(error) {
   throw error
 }
 
+/**
+ * The value of a valued option, written either way the table accepts,
+ * `--name value` or `--name=value`, the last occurrence winning as it does
+ * in options.mjs. Measured on 0.4.1: the table accepted `--out=FILE` and the
+ * value was looked up as the token after `--out`, so `doctor --out=x` wrote
+ * nothing and exited 0, and `submit --category=Widgets` said the flag was
+ * missing.
+ */
 function option(args, name) {
-  const index = args.indexOf(name)
-  return index >= 0 ? args[index + 1] : undefined
+  let value
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === name) value = args[index + 1]
+    else if (args[index].startsWith(`${name}=`)) value = args[index].slice(name.length + 1)
+  }
+  return value
 }
 
 /** The bare arguments, with every valued option's value (options.mjs, one table) left out. */

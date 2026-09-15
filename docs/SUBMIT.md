@@ -97,7 +97,12 @@ A check has four verdicts. `pass` and `fail` are its own. `unknown`, drawn as
 `submission.headings`, `submission.checklist` and `submission.official-parser`
 read the rendered body, so when the title, the category, the tags or the
 repository URL failed, they say which check they waited on, and they count in
-neither `blocking` nor `advisory`. The closing refusal lists root causes only
+neither `blocking` nor `advisory`. `submission.validation-commit` reads the
+default-branch HEAD of the repository URL, so without an origin it waits on
+`submission.repository-url` rather than failing as a HEAD that could not be
+read (measured on 0.4.1: it was listed as a second root cause, with the
+detail "could not read the default-branch HEAD (unknown): ", for a read that
+was never attempted). The closing refusal lists root causes only
 and says how many checks waited on them. Measured before this: a run with no
 `--category` and no `--tags` on a listed plugin said "6 blocking checks failed"
 for two causes.

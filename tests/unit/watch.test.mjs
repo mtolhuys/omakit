@@ -175,3 +175,36 @@ test("the two marketplace issue forms are read by their own parser", () => {
   // And the form actually used is reported, so nobody has to guess which parser won.
   assert.match(source, /form: issueKind/)
 })
+
+test("a bot account's comment is neither the discussion nor a reviewer, and does not date the last human review", async () => {
+  // The report says "the latest human discussion other than the author's"
+  // and counts comments "from a reviewer". Measured on 0.4.1: any login other
+  // than the author's and github-actions[bot] counted, so a second automation
+  // (a dependabot-style app, `user.type` Bot) was rendered as the discussion
+  // and dated the "after the last human review comment" clause.
+  const pinDir = requirePinForTests()
+  const policy = await import(pathToFileURL(join(pinDir, "scripts/security-baseline-policy.mjs")).href)
+  const payload = { schemaVersion: 2, baselineVersion: policy.securityBaselineVersion, repository: "example/omarchy-plugin-fixture", pluginIds: ["io.example.fixture"], commitSha: A, checkedAt: "2026-09-01T00:00:00Z", outcome: "passed", enforcementMode: policy.securityBaselineEnforcementMode, findings: [], capabilities: [] }
+  const marker = `${policy.securityBaselineMarkerPrefix}${Buffer.from(JSON.stringify(payload)).toString("base64url")} -->`
+  const comments = [
+    { user: { login: "github-actions[bot]", type: "Bot" }, body: `validated\n${marker}`, created_at: "2026-09-01T00:00:00Z" },
+    { user: { login: "reviewer", type: "User" }, body: "Please rename the id.", html_url: "https://github.com/x/1#c1", created_at: "2026-09-02T00:00:00Z" },
+    { user: { login: "author", type: "User" }, body: "Done.", created_at: "2026-09-03T00:00:00Z" },
+    { user: { login: "some-app[bot]", type: "Bot" }, body: "Automated notice.", html_url: "https://github.com/x/1#c4", created_at: "2026-09-05T00:00:00Z" },
+    { user: { login: "another-app", type: "Bot" }, body: "Another automated notice.", html_url: "https://github.com/x/1#c5", created_at: "2026-09-06T00:00:00Z" },
+  ]
+  const result = await validationWatch({
+    repoRoot: REPO_ROOT,
+    issueUrl: `${MARKETPLACE_PIN.repository}/issues/1`,
+    github: {
+      issue: async () => ({ title: "[Plugin]: fixture", body: "### Repository URL\n\nhttps://github.com/example/omarchy-plugin-fixture\n\n### Category\n\n", state: "open", user: { login: "author" }, labels: [] }),
+      issueComments: async () => comments,
+      defaultBranchHead: async () => ({ commit: B, branch: "main", committedAt: "2026-09-04T00:00:00Z" }),
+    },
+  })
+  assert.equal(result.read.maintainerComments, 1)
+  assert.equal(result.read.lastMaintainerCommentAt, "2026-09-02T00:00:00Z")
+  assert.equal(result.discussion.body, "Please rename the id.")
+  assert.equal(result.verdict.state, "stale")
+  assert.match(result.verdict.summary, /after the last human review comment/)
+})

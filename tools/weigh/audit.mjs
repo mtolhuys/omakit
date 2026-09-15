@@ -331,7 +331,12 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   onPhase(`run ${runIndex} of ${plan.runs}: ${label}, sampling for ${windowSeconds}s`)
   const started = utc()
   const t0 = Date.now()
-  const cpu0 = cpuTicks(procRoot, pid) ?? 0
+  // A pid with no stat is a process that is gone, and a gone shell has no
+  // sample: nothing is read as zero in its place. Measured on 0.4.1: a pid
+  // absent from /proc "completed" the window with 0 ticks and a Pss of
+  // null read as 0 MB, a delta of minus the whole baseline.
+  const cpu0 = cpuTicks(procRoot, pid)
+  if (cpu0 === null) return { label, run: runIndex, failed: `the shell (pid ${pid}) is not in ${procRoot}` }
   const child0 = childTicks(procRoot, pid) ?? 0
   const rows = []
   const trace = []
@@ -355,7 +360,8 @@ async function sampleConfig({ label, runIndex, config, plan, env, procRoot, sign
   } catch {
     configRewritten = null
   }
-  const cpu1 = cpuTicks(procRoot, pid) ?? cpu0
+  const cpu1 = cpuTicks(procRoot, pid)
+  if (cpu1 === null) return { label, run: runIndex, failed: `the shell (pid ${pid}) disappeared from ${procRoot} during the window` }
   const child1 = childTicks(procRoot, pid) ?? child0
   const memory = { pssKb: pssKb(procRoot, pid), rssKb: rssKb(procRoot, pid), memoryAt: "window-end", ...settled, trace }
   const seconds = (t1 - t0) / 1000
@@ -605,6 +611,13 @@ export async function measureWeigh(plan, { env = plan.env || process.env, procRo
   let restore = null
   let restoreProblem = null
   let comeBack = null
+  // What stopped the measurement early, an interrupt or a thrown error, is
+  // kept so the restore's outcome can be judged first: a restore that failed
+  // or did not verify is the fact the person is left with, and it is what
+  // is reported, with the stop as its context. Measured on 0.4.1: an
+  // interrupt propagated past a restore whose md5 differed, and the entry
+  // point closed with "shell.json was restored".
+  let stopped = null
   try {
     for (let runIndex = 1; runIndex <= plan.runs; runIndex += 1) {
       for (const { label, config } of configs) {
@@ -619,6 +632,8 @@ export async function measureWeigh(plan, { env = plan.env || process.env, procRo
         samples.push(sample)
       }
     }
+  } catch (error) {
+    stopped = error
   } finally {
     onPhase("restoring shell.json and restarting the shell")
     try {
@@ -642,7 +657,10 @@ export async function measureWeigh(plan, { env = plan.env || process.env, procRo
       onLine({ state: "fail", text: `the restore failed: ${error.message}; the backup is ${backup.backupFile}` })
     }
   }
-  if (restoreProblem) throw new WeighError("restore-failed", `shell.json could not be restored from ${backup.backupFile}: ${restoreProblem.message}`, `Copy ${backup.backupFile} over ${plan.configFile} yourself, then run omarchy-restart-shell.`)
+  const because = stopped ? `. The measurement had stopped first: ${stopped.message}` : ""
+  if (restoreProblem) throw new WeighError("restore-failed", `shell.json could not be restored from ${backup.backupFile}: ${restoreProblem.message}${because}`, `Copy ${backup.backupFile} over ${plan.configFile} yourself, then run omarchy-restart-shell.`)
+  if (stopped && !restore.restored) throw new WeighError("restore-unverified", `shell.json differs from the backup after the restore; the backup ${backup.backupFile} is kept${because}`, `Compare ${backup.backupFile} with ${plan.configFile} and copy it over if the difference is not yours.`)
+  if (stopped) throw stopped
   const ended = utc()
   const config = {
     path: plan.configFile,

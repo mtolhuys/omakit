@@ -2,6 +2,21 @@
 
 ## 0.4.2 (unreleased)
 
+- An option written as `--name=value` is read by every command that reads
+  one, the way `options.mjs` already accepted it. Before, `doctor --out=FILE`
+  wrote nothing and exited 0, and `submit --category=X --tags=Y` said both
+  flags were missing.
+- `submit` on a subject without a github.com origin no longer lists
+  `submission.validation-commit` as a second blocking cause with "could not
+  read the default-branch HEAD (unknown): "; it waits on
+  `submission.repository-url`, which names the one cause.
+- `weigh` treats a shell pid that is not in `/proc` when the window opens, or
+  gone when it closes, as a run with no sample instead of a completed run of
+  zeros; and an interrupt whose restore did not verify is reported as the
+  unverified restore with the backup kept, never as "shell.json was restored".
+- `watch` no longer renders a bot account's comment as the discussion, counts
+  it as a reviewer, or dates the last human review by it.
+
 - README second pass explains submission actions, groups the documentation,
   counts dependencies, and holds command GIFs on informative final screens.
 - M6 corrects the historical sample denominator and adds complete dated

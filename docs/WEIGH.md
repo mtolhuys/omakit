@@ -170,13 +170,20 @@ over `shell.json`, the shell is restarted once more so it runs your own
 configuration, the md5 of the restored file is compared with the backup's,
 and the backup is removed only when they are equal. The md5 after the
 restore is printed beside the one before. A restore whose md5 differs keeps
-the backup and says so, and the command exits 1. The restore writes the
+the backup and says so, and the command exits 1, also when the measurement
+had already stopped for an interrupt or an error: the restore's outcome is
+what the person is left with, so it is what is reported, with the stop as
+its context, and "shell.json was restored" is said only of a restore that
+verified. The restore writes the
 bytes it read; it does not reformat, reorder or re-serialise the file.
 
-A configuration whose shell does not answer after the restart, or whose
-`listPlugins` does not reach the installed count within 45 seconds, produces
-no sample; the row says how many runs completed, and a plugin with no
-completed run is `?`. Nothing is estimated in its place.
+A configuration whose shell does not answer after the restart, whose
+`listPlugins` does not reach the installed count within 45 seconds, or whose
+shell process is not in `/proc` when the window opens or is gone by the time
+it closes, produces no sample; the row says how many runs completed, and a
+plugin with no completed run is `?`. Nothing is estimated in its place, and
+nothing is read as zero (measured on 0.4.1: a pid absent from `/proc`
+"completed" the window with 0 ticks and a Pss of null read as 0 MB).
 
 The session-lock check is the one `omarchy-restart-shell` makes,
 `omarchy-hyprland-session-locked`: while the compositor holds a session

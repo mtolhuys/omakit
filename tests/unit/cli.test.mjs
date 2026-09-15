@@ -426,3 +426,25 @@ test("every command that has --json gets its progress line through the one helpe
   assert.equal((cli.match(/\bprogress\(\)/g) || []).length, 2)
   assert.match(cli, /function spinnerFor\(args\) \{\n  return args\.includes\("--json"\) \? SILENT : progress\(\)/)
 })
+
+test("an option written as --name=value is read the same as --name value, for every command that reads one", () => {
+  // Measured on 0.4.1: options.mjs accepted `--out=FILE` (and `--runs=3` was
+  // documented as read), but the entry point looked its values up by the
+  // token after the name, so `doctor --out=report.json` exited 0, wrote no
+  // file and printed the report to stdout, and `submit --category=Widgets
+  // --tags=bar` said both flags were missing.
+  const dir = mkdtempSync(join(tmpdir(), "omakit-inline-"))
+  const out = join(dir, "doctor.json")
+  const doctor = run(["doctor", "--offline", `--out=${out}`])
+  assert.equal(doctor.code, 0, doctor.err)
+  assert.ok(existsSync(out), "--out=FILE writes the file")
+  assert.ok(doctor.out.includes(`wrote ${out}`), doctor.out)
+  assert.match(readFileSync(out, "utf8"), /^. info {2}omakit\.version$/m, "the report doctor writes to --out FILE")
+
+  const submit = run(["submit", good.dir, "--category=Widgets", "--tags=bar", "--offline", "--json"])
+  assert.equal(submit.code, 0, submit.err)
+  const result = JSON.parse(submit.out)
+  assert.equal(result.outcome, "ready")
+  assert.ok(result.checks.find((check) => check.id === "submission.category").detail.endsWith("Widgets"))
+  assert.equal(result.checks.find((check) => check.id === "submission.tags").detail.toLowerCase(), "tags: bar")
+})

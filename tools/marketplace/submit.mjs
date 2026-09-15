@@ -417,6 +417,11 @@ export async function submitPreflight(options) {
     why: "The marketplace validates the default-branch HEAD it resolves when the issue is opened or edited, not the commit checked here. M6 on 2026-09-15 found 326/519 readable author-fixes comparisons stale (62.8%), with 64 of 583 issues unknown, so a preflight against a commit that is not the pushed HEAD describes a tree nobody will review. Not a marketplace rule; an Omakit refusal to report on the wrong tree.",
     severity: options.offline ? "advisory" : "blocking",
     skipped: options.offline === true,
+    // No origin, no URL to read a HEAD from: the check waits on the one that
+    // says so. Measured on 0.4.1: it failed as a second root cause with
+    // "could not read the default-branch HEAD (unknown): " for a read that
+    // was never attempted.
+    waitedOn: [!options.offline && !subject.repository.url && "submission.repository-url"],
     verdict: validationMatches === true,
     detail: options.offline
       ? `not checked (--offline). Local commit ${subject.commit}.`

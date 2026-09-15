@@ -103,7 +103,13 @@ function writeProc(root, { shellRssKb = 500_000, shellPssKb = 470_000, child = f
  * exists only while fixture.poller is configured, which is what attribution
  * has to see.
  */
-function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE, shellJson = USER_SHELL_JSON, restartFailsAt = null } = {}) {
+/**
+ * `shellPid` is what the `qs list` stub names as the shell: the fake pid in
+ * the fake /proc for the in-process tests, or a real quiet process (see
+ * `sleeper()`) for the entry-point tests, which read the real /proc and
+ * where a pid that is not there is, rightly, no sample at all.
+ */
+function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE, shellJson = USER_SHELL_JSON, restartFailsAt = null, shellPid = SHELL_PID } = {}) {
   const root = mkdtempSync(join(tmpdir(), "omakit-weigh-"))
   const home = join(root, "home")
   const bin = join(root, "bin")
@@ -130,7 +136,7 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
   stub("omarchy", `[[ "$1 $2 $3" == "plugin list --json" ]] || exit 1; cat ${state}/plugins.json`)
   stub("omarchy-plugin-catalog", `cat ${state}/catalog.json`)
   writeFileSync(join(state, "ipc.txt"), IPC_LISTING)
-  stub("qs", `if [[ "$1" == ipc && "$2" == -p && "$4" == show ]]; then cat ${state}/ipc.txt; exit 0; fi; [[ "$1" == list && "$2" == -p && "$4" == --json ]] || exit 1; echo '[{"pid": ${SHELL_PID}, "path": "'"$3"'"}]'`)
+  stub("qs", `if [[ "$1" == ipc && "$2" == -p && "$4" == show ]]; then cat ${state}/ipc.txt; exit 0; fi; [[ "$1" == list && "$2" == -p && "$4" == --json ]] || exit 1; echo '[{"pid": ${shellPid}, "path": "'"$3"'"}]'`)
   stub("getconf", `echo 100`)
   stub("omarchy-restart-shell", [
     `config="${home}/.config/omarchy/shell.json"`,
@@ -165,6 +171,18 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
 }
 
 const FAST = { runs: 2, windowSeconds: 0.2, settleSeconds: 0 }
+
+/**
+ * A real, quiet process for the entry-point tests to weigh: a `sleep` whose
+ * /proc entry has a stat, a status and a smaps_rollup, spends no CPU and
+ * spawns nothing, so the figures that come out are the ones the arithmetic
+ * tests already hold. Killed when the test ends.
+ */
+function sleeper(t) {
+  const child = spawn("sleep", ["600"], { stdio: "ignore" })
+  t.after(() => child.kill("SIGKILL"))
+  return child.pid
+}
 
 // --- the pieces -----------------------------------------------------------------
 
@@ -937,7 +955,7 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
 
 test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", (t) => {
   if (needsMachine(t)) return
-  const m = machine()
+  const m = machine({ shellPid: sleeper(t) })
   const out = join(m.root, "doc.json")
   const result = omakit(["weigh", "fixture.poller", "--yes", "--json", "--runs", "2", "--window", "1", "--settle", "0", "--out", out], m.env)
   assert.equal(result.code, 0, result.err)
@@ -958,8 +976,8 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
   assert.equal(human.err, "", "nothing on a piped stderr on success")
   const at = (pattern) => human.out.search(pattern)
   assert.ok(at(/^measuring/m) < at(/backed up to/) && at(/backed up to/) < at(/restored and verified/) && at(/restored and verified/) < at(/^noise floor/m) && at(/^noise floor/m) < at(/^for the README$/m), human.out)
-  // The entry point reads the real /proc, where the fake shell pid has no
-  // children; attribution is proven in-process above.
+  // The entry point reads the real /proc, where the sleeping "shell" spends
+  // no CPU and has no children; attribution is proven in-process above.
   assert.match(human.out.replace(/\n {8}/g, " "), /Weighs nothing measurable: no CPU above the floor \(0\.00%\) and no child process, on Omarchy 4\.0\.0\.test, measured with omakit weigh on \d{4}-\d{2}-\d{2}/)
   assert.match(human.out, new RegExp(`^${DENSITY.floor} WEIGHED {2}1 plugin over 2 runs\\.`, "m"))
   for (const line of human.out.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
@@ -968,7 +986,7 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
 
 test("SIGINT during a window restores shell.json, restarts the shell once more, removes the backup, and exits 130", async (t) => {
   if (needsMachine(t)) return
-  const m = machine()
+  const m = machine({ shellPid: sleeper(t) })
   const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
     env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
     stdio: ["ignore", "pipe", "pipe"],
@@ -1137,4 +1155,55 @@ test("the pin is untouched by weigh: nothing under tools/weigh names the marketp
     assert.doesNotMatch(text, /omakitCacheDir|\.cache/, `${name} reaches the cache`)
   }
   assert.equal(configPaths({ HOME: "/h" }).file, "/h/.config/omarchy/shell.json")
+})
+
+test("a shell pid that is not in /proc produces no sample: nothing is read as zero", async (t) => {
+  if (needsMachine(t)) return
+  // Measured on 0.4.1: when the pid `qs list` named had no /proc entry, the
+  // window still "completed" with cpuTicks 0, Pss null read as 0 MB and a
+  // -470 MB memory delta, and the row counted it as a completed run.
+  const m = machine()
+  writeFileSync(join(m.bin, "qs"), `#!/bin/bash\nif [[ "$1" == ipc ]]; then cat ${m.state}/ipc.txt; exit 0; fi; echo '[{"pid": 4999, "path": "x"}]'\n`)
+  const lines = []
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
+  const document = await measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
+  assert.deepEqual(validateWeighDocument(document), [])
+  assert.equal(document.failedRuns.length, 4, "every configuration of every run")
+  for (const failed of document.failedRuns) assert.match(failed.reason, /shell \(pid 4999\) is not in /)
+  assert.equal(document.plugins[0].runsCompleted, 0)
+  assert.equal(document.baseline.pssMb.median, null)
+  assert.deepEqual(document.plugins[0].verdict, { memory: "unknown", cpu: "unknown", summary: "no completed run, so nothing is claimed" })
+  assert.ok(lines.some((line) => line.state === "advisory" && /pid 4999\) is not in .*; no sample/.test(line.text)))
+  assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
+})
+
+test("an interrupt whose restore does not verify is reported as the unverified restore, never as a completed restore", async (t) => {
+  if (needsMachine(t)) return
+  // Measured on 0.4.1: the abort propagated as `interrupted` past the
+  // finally that had just printed "differs from the backup", so the entry
+  // point closed with "shell.json was restored; run it again" while the
+  // backup was still the only good copy.
+  const m = machine()
+  const original = readFileSync(join(m.bin, "omarchy-restart-shell"), "utf8")
+  writeFileSync(join(m.bin, "omarchy-restart-shell"), `${original.replace(/exit 0\n$/, "")}n=$(wc -l < ${m.state}/restarts.log); (( n == 2 )) && echo '// rewritten by the shell' >> "$config"; exit 0\n`)
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
+  const controller = new AbortController()
+  const lines = []
+  const pending = measureWeigh(plan, { procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
+  while (m.restarts().length < 1) await delay(20)
+  await delay(100)
+  controller.abort()
+  await assert.rejects(pending, (error) => {
+    assert.ok(error instanceof WeighError, `${error}`)
+    assert.equal(error.code, "restore-unverified")
+    assert.match(error.message, /differs from the backup/)
+    assert.match(error.message, /interrupted/)
+    assert.match(error.remedy, /copy it over/)
+    return true
+  })
+  assert.equal(m.restarts().length, 2, "the one measured restart, and the restore's")
+  const kept = readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup"))
+  assert.equal(kept.length, 1, "the backup is kept")
+  assert.equal(readFileSync(join(m.home, ".config/omarchy", kept[0]), "utf8"), USER_SHELL_JSON)
+  assert.ok(lines.at(-1).state === "fail" && /differs from the backup after the restore/.test(lines.at(-1).text))
 })

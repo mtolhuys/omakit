@@ -7,6 +7,7 @@ import { renderSubmit } from "../../tools/marketplace/report.mjs"
 import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
+import { liveRegistry } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
@@ -393,4 +394,33 @@ test("the offline flag makes the validation-commit check skipped: advisory, neve
   assert.ok(text.includes(`${STATUS.skipped.glyph} ${STATUS.skipped.word}  submission.validation-commit`), "drawn with the skipped mark")
   assert.ok(!text.includes(`${STATUS.pass.glyph} ${STATUS.pass.word}    submission.validation-commit`), "not drawn as a pass")
   assert.ok(text.includes(`${STATUS.pass.glyph} READY  every blocking check passed. 1 check skipped (--offline).`), "the READY line says so")
+})
+
+test("without an origin, the validation-commit check waits on the repository URL instead of failing as an unreadable HEAD", async () => {
+  // Measured on 0.4.1: a subject with no github.com origin, checked online,
+  // listed submission.validation-commit as a second blocking root cause with
+  // the detail "could not read the default-branch HEAD (unknown): " and no
+  // remedy, for a read that was never attempted because there was no URL to
+  // read. The one cause is the missing origin, and that check already says so.
+  const fixture = materialise(GOOD)
+  const heads = []
+  const result = await submitPreflight({
+    repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: false,
+    readRegistry: (options) => liveRegistry({ ...options, offline: true }),
+    github: { defaultBranchHead: async (url) => { heads.push(url); throw new Error("not reached") } },
+  })
+  assert.deepEqual(heads, [], "no URL, so no HEAD is read")
+  const validation = result.checks.find((check) => check.id === "submission.validation-commit")
+  assert.equal(validation.verdict, "unknown")
+  assert.equal(validation.detail, "not checked: it needs submission.repository-url to pass first")
+  assert.equal(validation.remedy, null)
+  assert.deepEqual(result.blocking, ["submission.repository-url"])
+  assert.ok(result.unknown.includes("submission.validation-commit"))
+  assert.equal(result.validationCommit.matches, null)
+  const text = renderSubmit(result, { colour: false })
+  assert.match(text, /1 blocking check failed/)
+  assert.doesNotMatch(text, /could not read the default-branch HEAD/)
+  // With --offline the flag still wins: skipped, not unknown.
+  const offline = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: true })
+  assert.equal(offline.checks.find((check) => check.id === "submission.validation-commit").verdict, "skipped")
 })

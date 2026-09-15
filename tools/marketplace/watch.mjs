@@ -266,8 +266,12 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
 
   const labels = (subject.labels || []).map((label) => (typeof label === "string" ? label : label?.name)).filter(Boolean)
   const authorComments = comments.filter((comment) => comment?.user?.login === subject.user?.login)
+  // The discussion is a person's: the marketplace's own bot and any other
+  // automation (GitHub marks an app's account `type: "Bot"`, and names it
+  // `<app>[bot]`) is neither a reviewer nor the last human review.
+  const isBot = (user) => user?.type === "Bot" || /\[bot\]$/i.test(String(user?.login || ""))
   const maintainerComments = comments.filter(
-    (comment) => comment?.user?.login && comment.user.login !== subject.user?.login && comment.user.login !== "github-actions[bot]",
+    (comment) => comment?.user?.login && comment.user.login !== subject.user?.login && !isBot(comment.user),
   )
 
   let head = null
