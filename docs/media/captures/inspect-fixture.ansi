@@ -1,11 +1,10 @@
-[2msubject[0m       /tmp/omakit-fixture-0DCBgH at 53992d9f, 1 file read (1 qml)
-[2mmethod[0m        static extraction, regular expressions over qml and shell;
-              observed, not executed
+[2msubject[0m       /tmp/omakit-fixture-lEGT0u at 73606f27, 1 file (1 qml)
+[2mobserved[0m      1 process (in qml), 0 hosts, 0 writes, 0 timers
+[2m░ info[0m  marketplace baseline passed at pin 38060f89
 
 [2mprocesses[0m     observed 1, in qml
-[2m░ info[0m  [1mWidget.qml:10[0m  ["/usr/bin/df", "-h", "/"]
-        argv array; no deadline observed; output through StdioCollector, no cap
-        observed
+[2m░ info[0m  [1mWidget.qml:10[0m  /usr/bin/df -h /
+        no deadline observed; no cap observed on StdioCollector
 
 [2mhosts[0m         observed nothing of this kind
 
@@ -13,30 +12,21 @@
 
 [2mtimers[0m        observed nothing of this kind
 
-[2mcapabilities[0m  marketplace baseline at pin 38060f89, local transport
-[2m░ info[0m  observed: no capability recorded
-        official result: passed (verbatim in --json under marketplaceBaseline)
-
-[2mpatterns[0m      of what the marketplace's human review raised, in a 30-issue
-              sample (M11)
+[2mpatterns[0m      2 of the 10 classes the marketplace's human review raised, each
+              with its share of review findings in a 30-issue sample (M11)
 [33m▓ note[0m  [1mprocess lifecycle         [0m observed 1 process with no deadline
         (Widget.qml:10)
-        about 20 of every 100 review findings in the sample (M11)
+        about 20 of every 100 review findings in the sample
 [33m▓ note[0m  [1munbounded buffering       [0m observed 1 collector with no cap
         (Widget.qml:10)
-        about 19 of every 100 review findings in the sample (M11)
+        about 19 of every 100 review findings in the sample
 
-[2mnot observed[0m  no write outside a controlled directory, no tool resolved from
-              PATH, no curl without -q, no secret-shaped argv or log line, no
-              unpinned remote source in the baseline, no http scheme, no -L
-              without --proto, no private address, no Text bound to output
-              without Text.PlainText, no expression inside an argv element, no
-              sudo, pkexec, docker or /dev/input in argv
-[2mnot visible[0m   commands built at run time, hosts and paths from variables,
-              properties, config or the environment, scripts a command calls
-              that inspect does not follow, components loaded from outside the
-              tree, encoded or obfuscated content, and what a sh -c or eval
-              string runs
+[2mnot observed[0m  file and state boundary, environment trust, secrets, supply chain,
+              network egress, untrusted text to display, argument grammar,
+              privilege disclosure
+[2mnot visible[0m   commands built at run time, values from variables or config,
+              components outside the tree, obfuscated content; --full names
+              every site and --json is the document
 
 [2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers; static, see
              docs/INSPECT.md

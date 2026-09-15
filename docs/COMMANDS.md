@@ -111,9 +111,11 @@ command that is not one literal is a `▒ ?` row with no argv, a section with
 nothing in it says "observed nothing of this kind", and the report ends by
 naming what the method cannot see. No score, no verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
-one word it closes on is `INSPECTED`. `--json` prints the document of
-[INSPECT.md](INSPECT.md), `--out` writes it to a file as well, `--offline`
-skips the baseline section. Exit 0 with a report, whatever it observed; 2
+one word it closes on is `INSPECTED`. The report is one line per fact and a
+second only where something is absent, with a script's lines grouped under
+the script; `--full` is every site with every qualifier. `--json` prints
+the document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as
+well, `--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
 when the target could not be read.
 
 `omakit doctor` names the credential source it found, or that it found none.

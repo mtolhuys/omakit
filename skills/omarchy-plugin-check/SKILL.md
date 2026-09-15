@@ -49,7 +49,10 @@ review class the marketplace's human review has raised, only where the tree
 shows the class's precondition (a process with no deadline, a collector with
 no cap, a write under `/tmp`, `curl` without `-q`), with the class's measured
 share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
-`lookedFor` names the classes whose precondition was not observed.
+`lookedFor` names the classes whose precondition was not observed. Read
+the document, not the report: the report a person sees groups a script's
+lines and names three sites per pattern row, `--full` prints every site,
+and `--json` carries all of it either way.
 
 How to read "observed". Every row is what regular expressions found in the
 text at `file:line`, never a runtime fact and never a verdict: `deadline

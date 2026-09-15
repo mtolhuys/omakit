@@ -2,13 +2,26 @@
 // style.mjs: `░ info` for a fact, `▒ ?` for a fact the extraction could
 // not read, `▓ note` for a pattern row, `▔ skip` for the baseline under
 // --offline, and the one closing word INSPECTED. It never draws `▁ ok` or
-// `█ FAIL`, because it has no verdict to attach them to. Every fact row
-// starts with the word observed, and a section with nothing in it says
+// `█ FAIL`, because it has no verdict to attach them to. Every section
+// line says what was observed, and a section with nothing in it says
 // "observed nothing of this kind", never "clean".
+//
+// Two views of one document. The default is for a person: a summary block,
+// one line per fact with the command as a command line rather than a JSON
+// array, a second line only where something is absent (no deadline, no cap,
+// no timeout, a write outside a controlled directory), the shell lines of
+// a script grouped under the script with the tools they run, the pattern
+// rows with their first few sites, and short closing lines. Measured before
+// this: a listed tree with four shell scripts printed 372 process rows of
+// two lines each, and the two pattern rows a reviewer would act on sat
+// under 750 lines of argv. `--full` is the exhaustive view, every site with
+// every qualifier and the whole not observed and not visible lists; `--json`
+// is the document itself, which carries everything either view shows.
 
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { PATTERNS } from "./patterns.mjs"
+import { toolOf } from "./processes.mjs"
 
 const NOTHING = "observed nothing of this kind"
 
@@ -17,7 +30,7 @@ const site = (row) => `${row.file}:${row.line}`
 
 /** A row: a mark, the site in bold, then the text, wrapped under the gutter. */
 function row(state, head, text, c, extra = []) {
-  const lines = wrap(text, { indent: GUTTER, first: GUTTER + head.length + 2 }, c)
+  const lines = wrap(text || "(nothing)", { indent: GUTTER, first: GUTTER + head.length + 2 }, c)
   const out = [`${mark(state, c)}${c("name", head)}  ${lines[0].trimStart()}`, ...lines.slice(1)]
   for (const line of extra) out.push(...wrap(line, { indent: GUTTER }, c))
   return out
@@ -148,12 +161,140 @@ function patternLines(document, c) {
   return out
 }
 
+/** A shell word for the eye: quoted only when it holds a space or a quote, an expression element as its source text. */
+function commandLine(process) {
+  const computed = new Set(process.expressions.map((entry) => entry.index))
+  return process.argv.map((word, index) => (computed.has(index) || !/[\s"'`]/.test(word) ? word : JSON.stringify(word))).join(" ")
+}
+
+/** The first few sites, then how many more: a pattern row a person reads names three, `--full` names them all. */
+const SHOWN_SITES = 3
+function fewerSites(text) {
+  return text.replace(/((?:[\w./-]+:\d+, ){3,})[\w./-]+:\d+/g, (whole) => {
+    const sites = whole.split(", ")
+    return `${sites.slice(0, SHOWN_SITES).join(", ")} and ${sites.length - SHOWN_SITES} more`
+  })
+}
+
+function compactProcessRow(process, c) {
+  if (process.argvForm === "computed") return row("unknown", site(process), `command: ${process.commandText}, not resolvable`, c)
+  const absent = []
+  if (process.expressions.length) absent.push(`${plural(process.expressions.length, "element")} computed`)
+  if (process.shellWrapper) absent.push("shell wrapper, the script inside is not followed")
+  if (process.declaredIn === "qml" && !process.detached) {
+    if (!process.deadline.observed) absent.push("no deadline observed")
+    if (process.output.collector !== "none" && !process.output.capObserved) absent.push(`no cap observed on ${process.output.collector}`)
+  }
+  return row("info", site(process), `${commandLine(process) || "[] (an empty argv)"}${process.detached ? " (detached)" : ""}`, c, absent.length ? [absent.join("; ")] : [])
+}
+
+/** The shell lines of one script as one row: how many, and the tools they run. */
+function compactScriptRow(file, rows, c) {
+  const tools = [...new Set(rows.map((entry) => (toolOf(entry.argv).tool || entry.argv[0] || "?").split("/").pop()))]
+  const named = tools.slice(0, 8).join(", ") + (tools.length > 8 ? ` and ${tools.length - 8} more` : "")
+  const absent = []
+  const privileged = rows.filter((entry) => entry.argv.some((word) => ["sudo", "pkexec", "doas"].includes(word.split("/").pop()))).length
+  if (privileged) absent.push(`${plural(privileged, "line")} through sudo, pkexec or doas`)
+  const wrappers = rows.filter((entry) => entry.shellWrapper).length
+  if (wrappers) absent.push(`${plural(wrappers, "shell wrapper")}, the script inside is not followed`)
+  return row("info", file, `${plural(rows.length, "shell line")}: ${named}`, c, absent.length ? [absent.join("; ")] : [])
+}
+
+function compactHostRow(host, c) {
+  const absent = []
+  if (host.scheme === "http") absent.push("http, not https")
+  if (!host.timeout.observed) absent.push("no timeout observed")
+  if (!host.sizeCap.observed) absent.push("no size cap observed")
+  if (host.tool === "curl" && !host.flags.includes("-q")) absent.push("-q not observed")
+  if (host.privateAddress) absent.push("private or loopback address")
+  return row("info", host.host, `${host.scheme}${host.tool ? ` via ${host.tool}` : ""}, ${site(host)}`, c, absent.length ? [absent.join("; ")] : [])
+}
+
+function compactWriteRow(write, c) {
+  const shown = write.canonicalPath ?? write.path
+  const absent = []
+  if (write.controlledDirectory === "not-observed") absent.push(`not under a directory the plugin controls${write.temp ? ` (${write.canonicalPath.split("/").slice(0, 2).join("/")} is shared)` : ""}`)
+  if (write.controlledDirectory === "unknown") absent.push("directory unknown, the path is not one literal prefix")
+  if (write.via === "mkdir" && !write.mode) absent.push("no mode observed")
+  return row("info", site(write), `${write.via} ${shown}`, c, absent.length ? [absent.join("; ")] : [])
+}
+
+function compactBaseline(section) {
+  if (section.skipped) return { state: "skipped", text: `marketplace baseline skipped (${section.reason})` }
+  if (!section.invoked) return { state: "unknown", text: `marketplace baseline not run: ${section.skipReason}` }
+  const official = section.official
+  if (official?.error) return { state: "unknown", text: `marketplace baseline refused the snapshot: ${official.error.code}` }
+  const capabilities = (official.capabilities || []).map((entry) => entry.id)
+  const findings = (official.findings || []).map((entry) => entry.ruleId)
+  const files = [...new Set([...(official.capabilities || []), ...(official.findings || [])].flatMap((entry) => (entry.evidence || []).map((site_) => site_.path)))]
+  const parts = [`marketplace baseline ${official.outcome} at pin ${section.pin.commit.slice(0, 8)}`]
+  if (capabilities.length) parts.push(`capabilities ${capabilities.join(", ")}`)
+  if (findings.length) parts.push(`${plural(findings.length, "finding")} ${findings.join(", ")}`)
+  if (files.length) parts.push(`in ${files.join(", ")}`)
+  return { state: "info", text: parts.join("; ") }
+}
+
 /**
  * @param {object} document the document of docs/INSPECT.md
- * @param {{ colour?: boolean }} [options]
+ * @param {{ colour?: boolean, full?: boolean }} [options] `full` is the
+ *   exhaustive view behind `--full`; the default is the one a person reads.
  * @returns {string}
  */
-export function renderInspect(document, { colour = colourEnabled() } = {}) {
+export function renderInspect(document, { colour = colourEnabled(), full = false } = {}) {
+  if (full) return renderFull(document, { colour })
+  const c = styler(colour)
+  const out = []
+  const read = document.subject.filesRead
+  const kinds = Object.entries(read).filter(([, count]) => count > 0).map(([kind, count]) => `${count} ${kind}`)
+  const total = Object.values(read).reduce((sum, count) => sum + count, 0)
+  const counts = document.counts
+  const processes = `${plural(counts.processes.total, "process", "processes")}${counts.processes.total ? ` (${split(counts.processes)})` : ""}`
+  out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}, ${plural(total, "file")}${kinds.length ? ` (${kinds.join(", ")})` : ""}`, c))
+  out.push(...field("observed", `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}${counts.notResolvable ? `; ${plural(counts.notResolvable, "site")} not resolvable` : ""}`, c))
+  const baseline = compactBaseline(document.marketplaceBaseline)
+  out.push(`${mark(baseline.state, c)}${wrap(baseline.text, { indent: GUTTER }, c).join("\n").trimStart()}`)
+  out.push("")
+
+  const qml = document.observed.processes.filter((entry) => entry.declaredIn === "qml")
+  const scripts = new Map()
+  for (const entry of document.observed.processes.filter((row_) => row_.declaredIn === "shell")) scripts.set(entry.file, [...(scripts.get(entry.file) || []), entry])
+  const sections = [
+    ["processes", document.observed.processes.length, () => [...qml.flatMap((entry) => compactProcessRow(entry, c)), ...[...scripts.entries()].flatMap(([file, rows]) => compactScriptRow(file, rows, c))], `, ${split(counts.processes)}`],
+    ["hosts", document.observed.hosts.length, () => document.observed.hosts.flatMap((entry) => compactHostRow(entry, c)), ""],
+    ["writes", document.observed.writes.length, () => document.observed.writes.flatMap((entry) => compactWriteRow(entry, c)), ""],
+    ["timers", document.observed.timers.length, () => document.observed.timers.flatMap((entry) => timerRow(entry, c)), ""],
+  ]
+  for (const [name, count, render, suffix] of sections) {
+    out.push(...field(name, count ? `observed ${count}${suffix}` : NOTHING, c))
+    if (count) out.push(...render())
+    out.push("")
+  }
+
+  if (PATTERNS.length) {
+    const width = Math.max(...PATTERNS.map((pattern) => pattern.label.length)) + 1
+    out.push(...field("patterns", document.patterns.length
+      ? `${document.patterns.length} of the ${PATTERNS.length} classes the marketplace's human review raised, each with its share of review findings in a ${PATTERNS[0].sample} (${PATTERNS[0].measurement})`
+      : `none of the ${PATTERNS.length} classes the marketplace's human review raised shows its precondition here (${PATTERNS[0].measurement})`, c))
+    for (const entry of document.patterns) {
+      const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
+      const label = pattern.label.padEnd(width)
+      const lines = wrap(fewerSites(entry.observation), { indent: GUTTER, first: GUTTER + label.length + 1 }, c)
+      out.push(`${mark("advisory", c)}${c("name", label)} ${lines[0].trimStart()}`, ...lines.slice(1))
+      out.push(...wrap(`about ${Math.round(entry.share * 100)} of every 100 review findings in the sample`, { indent: GUTTER }, c))
+    }
+    out.push("")
+    const lookedFor = document.lookedFor.map((id) => PATTERNS.find((pattern) => pattern.id === id)?.label || id)
+    // Named only beside observed rows: with none, the patterns line already says so.
+    if (lookedFor.length && document.patterns.length) out.push(...field("not observed", lookedFor.join(", "), c))
+  }
+  out.push(...field("not visible", "commands built at run time, values from variables or config, components outside the tree, obfuscated content; --full names every site and --json is the document", c))
+  out.push("")
+  out.push(...verdict("info", INSPECT_VERDICT, `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}; static, see docs/INSPECT.md`, c))
+  return out.join("\n")
+}
+
+/** The exhaustive view: every site, every qualifier, the whole not observed and not visible lists. */
+function renderFull(document, { colour }) {
   const c = styler(colour)
   const out = []
   const read = document.subject.filesRead

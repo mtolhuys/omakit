@@ -28,7 +28,7 @@ export const ACCEPTED = Object.freeze({
   doctor: Object.freeze({ valued: ["--out"], flags: ["--offline", "--json"], positionals: 0 }),
   parity: Object.freeze({ valued: ["--count", "--offset", "--out"], flags: [], positionals: 0 }),
   audit: Object.freeze({ valued: ["--out"], flags: ["--drift", "--json", "--offline"], positionals: 1 }),
-  inspect: Object.freeze({ valued: ["--out"], flags: ["--json", "--offline", "--allow-dirty"], positionals: 1 }),
+  inspect: Object.freeze({ valued: ["--out"], flags: ["--full", "--json", "--offline", "--allow-dirty"], positionals: 1 }),
   weigh: Object.freeze({ valued: ["--runs", "--window", "--settle", "--out"], flags: ["--all", "--list", "--json", "--yes"], positionals: 1 }),
 })
 

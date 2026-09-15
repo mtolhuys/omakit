@@ -259,6 +259,7 @@ export function shellWords(text) {
   let current = ""
   let quote = null
   let started = false
+  let depth = 0
   for (let i = 0; i < text.length; i += 1) {
     const ch = text[i]
     if (quote) {
@@ -280,7 +281,12 @@ export function shellWords(text) {
       i += 1
       continue
     }
-    if (/\s/.test(ch)) {
+    // A `$(...)` or `(...)` is one word however many spaces it holds: the
+    // assignment `x=$(curl -fsS "$url")` is one assignment, and its command
+    // is read from the substitution on its own.
+    if (ch === "(") depth += 1
+    else if (ch === ")" && depth > 0) depth -= 1
+    if (depth === 0 && /\s/.test(ch)) {
       if (started) words.push(current)
       current = ""
       started = false
@@ -303,6 +309,7 @@ export function shellSegments(line) {
   let current = ""
   let quote = null
   let operator = null
+  let depth = 0
   const push = (next) => {
     if (current.trim()) segments.push({ text: current.trim(), operator })
     current = ""
@@ -329,6 +336,14 @@ export function shellSegments(line) {
       i += 1
       continue
     }
+    // Inside `$(...)` or a subshell the operators belong to the inner
+    // command line, which is read on its own through shellPieces.
+    if (ch === "(") depth += 1
+    else if (ch === ")" && depth > 0) depth -= 1
+    if (depth > 0) {
+      current += ch
+      continue
+    }
     if (ch === "&" && next === "&") {
       push("&&")
       i += 1
@@ -348,7 +363,12 @@ export function shellSegments(line) {
       i += 1
       continue
     }
-    if (ch === ";" && next !== ";") {
+    if (ch === ";" && next === ";") {
+      push(";")
+      i += 1
+      continue
+    }
+    if (ch === ";" || ch === "\n") {
       push(";")
       continue
     }
@@ -369,6 +389,103 @@ export function withoutRedirections(words) {
     }
     if (/^(?:\d*>>?|&>>?|<{1,3}|\d*<)\S/.test(word)) continue
     out.push(word)
+  }
+  return out
+}
+
+/**
+ * A shell script as logical lines, each keeping the number it started on:
+ * a backslash continuation joins the next line, a quote left open joins
+ * lines until it closes (a multi-line jq or awk program is one word), and
+ * a here-document's body is dropped, since it is data the command reads
+ * and not commands the shell runs.
+ */
+export function shellLogicalLines(text) {
+  const out = []
+  const lines = text.split("\n")
+  // Open when a quote, or a `$(` or `(` outside quotes, has not closed by
+  // the end of the line: the next line continues the same command.
+  const unbalanced = (line) => {
+    let quote = null
+    let depth = 0
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i]
+      if (quote) {
+        if (ch === "\\" && quote === '"') i += 1
+        else if (ch === quote) quote = null
+      } else if (ch === "\\") i += 1
+      else if (ch === "#" && (i === 0 || /\s/.test(line[i - 1]))) break
+      else if (ch === '"' || ch === "'") quote = ch
+      else if (ch === "(") depth += 1
+      else if (ch === ")") depth = Math.max(0, depth - 1)
+    }
+    return quote !== null || depth > 0
+  }
+  for (let index = 0; index < lines.length; index += 1) {
+    let line = lines[index]
+    const start = index + 1
+    while ((/\\$/.test(line) || unbalanced(line)) && index + 1 < lines.length) {
+      index += 1
+      line = /\\$/.test(line) ? `${line.slice(0, -1)} ${lines[index]}` : `${line}\n${lines[index]}`
+    }
+    out.push({ line: start, text: line })
+    const heredoc = line.match(/<<-?\s*(["']?)([A-Za-z_][\w-]*)\1/)
+    if (heredoc) {
+      const stop = heredoc[2]
+      while (index + 1 < lines.length && lines[index + 1].replace(/^\t+/, "") !== stop) index += 1
+      index += 1
+    }
+  }
+  return out
+}
+
+/**
+ * Arithmetic and test contexts blanked to spaces, length kept: what sits
+ * inside `$(( ))`, `(( ))` and `[[ ]]` is an expression, so a `>` there is
+ * a comparison and a word there is not a tool.
+ */
+export function blankShellExpressions(line) {
+  let out = line
+  let from = 0
+  for (;;) {
+    const at = out.indexOf("((", from)
+    if (at < 0) break
+    const end = closingBracket(out, at)
+    if (end < 0) break
+    out = `${out.slice(0, at + 2)}${" ".repeat(Math.max(0, end - at - 3))}${out.slice(end - 1)}`
+    from = end + 1
+  }
+  from = 0
+  for (;;) {
+    const at = out.indexOf("[[", from)
+    if (at < 0) break
+    const end = out.indexOf("]]", at + 2)
+    if (end < 0) break
+    out = `${out.slice(0, at + 2)}${" ".repeat(end - at - 2)}${out.slice(end)}`
+    from = end + 2
+  }
+  return out
+}
+
+/**
+ * Every command line inside a shell line, flattened: the line's own
+ * segments, then, for each, the command lines inside its `$(...)` and
+ * backtick substitutions and its `(...)` subshells, recursively, each
+ * split into segments in turn. A segment that is only a subshell is
+ * replaced by what runs inside it.
+ * @returns {Array<{ text: string, operator: string|null }>}
+ */
+export function shellPieces(text, depth = 0) {
+  if (depth > 8) return []
+  const out = []
+  for (const segment of shellSegments(text)) {
+    const subshell = segment.text.startsWith("(") && closingBracket(segment.text, 0) === segment.text.length - 1
+    if (subshell) {
+      out.push(...shellPieces(segment.text.slice(1, -1), depth + 1).map((piece, index) => (index === 0 ? { ...piece, operator: segment.operator } : piece)))
+      continue
+    }
+    out.push(segment)
+    for (const inner of shellSubstitutions(segment.text)) out.push(...shellPieces(inner, depth + 1))
   }
   return out
 }

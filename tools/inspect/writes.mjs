@@ -5,7 +5,7 @@
 // after the `$HOME`, `~` and `XDG_*` idioms are expanded, falls under a
 // directory the plugin controls, and which mode the file shows for it.
 
-import { basename, blankComments, blocks, closingBracket, lineOf, propertyValue, shellSegments, shellSubstitutions, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
+import { basename, blankComments, blocks, closingBracket, lineOf, propertyValue, blankShellExpressions, shellLogicalLines, shellPieces, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
 
 /** The directories a plugin controls, by the names the contract lists. */
 export const CONTROLLED = Object.freeze(["$XDG_STATE_HOME", "$XDG_CACHE_HOME", "$XDG_RUNTIME_DIR"])
@@ -128,14 +128,12 @@ function operands(all) {
 
 function shellWrites(file, pluginId) {
   const rows = []
-  const lines = file.text.split("\n")
   const chmods = []
   let umask = null
-  for (const [index, raw] of lines.entries()) {
-    const trimmed = raw.trim()
+  for (const { line, text } of shellLogicalLines(file.text)) {
+    const trimmed = blankShellExpressions(text).trim()
     if (!trimmed || trimmed.startsWith("#")) continue
-    const line = index + 1
-    for (const segment of [trimmed, ...shellSubstitutions(trimmed)].flatMap((piece) => shellSegments(piece))) {
+    for (const segment of shellPieces(trimmed)) {
       const words = shellWords(segment.text)
       if (!words.length) continue
       // Redirections anywhere in the segment: `> path`, `>> path`, `>path`, `&> path`.
@@ -151,7 +149,11 @@ function shellWrites(file, pluginId) {
           target = word.replace(/^(?:\d*>>?|&>>?)/, "")
           via = word.includes(">>") ? ">>" : ">"
         }
-        if (target && !DEVICES.has(target) && !/^&\d$/.test(target)) rows.push(row(file, line, target, via, pluginId))
+        // A subshell's closing paren clings to the last word; a bare number
+        // or operator where a path would be is a comparison the blanking
+        // did not reach, not a write.
+        if (target) target = target.replace(/[);]+$/, "")
+        if (target && !DEVICES.has(target) && !/^&\d$/.test(target) && !/^[\d=<>!]+$/.test(target)) rows.push(row(file, line, target, via, pluginId))
       }
       const command = basename(words[0])
       if (command === "umask" && words[1]) umask = words[1]

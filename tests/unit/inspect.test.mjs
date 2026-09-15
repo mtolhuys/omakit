@@ -85,11 +85,11 @@ for (const name of INSPECT_FIXTURES) {
   })
 }
 
-test("the rendered report says the same words with and without colour, and nothing is wider than the column", async () => {
-  for (const name of INSPECT_FIXTURES) {
+test("the rendered report, in both views, says the same words with and without colour, and nothing is wider than the column", async () => {
+  for (const name of INSPECT_FIXTURES) for (const full of [false, true]) {
     const { document } = await documentFor(name)
-    const uncoloured = renderInspect(document, { colour: false })
-    const coloured = renderInspect(document, { colour: true })
+    const uncoloured = renderInspect(document, { colour: false, full })
+    const coloured = renderInspect(document, { colour: true, full })
     assert.equal(plain(coloured), uncoloured, `${name}: colour changed the words`)
     assert.notEqual(coloured, uncoloured, `${name}: colour was applied`)
     for (const line of uncoloured.split("\n")) assert.ok(!overflows(line), `${name}: ${plain(line).length} columns: ${JSON.stringify(line)}`)
@@ -103,9 +103,57 @@ test("the rendered report says the same words with and without colour, and nothi
   }
 })
 
+test("the default view is the one a person reads: a summary block, one line per fact, a second only where something is absent, scripts grouped, and --full is every site", async () => {
+  const example = (await documentFor("example")).document
+  const report = renderInspect(example, { colour: false })
+  const full = renderInspect(example, { colour: false, full: true })
+  assert.match(report, /^subject {7}.* at [0-9a-f]{8}, 3 files \(1 qml, 2 shell\)$/m)
+  assert.match(report, /^observed {6}5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes, 2 timers;$/m)
+  assert.match(report, /^ {14}1 site not resolvable$/m)
+  assert.match(report, new RegExp(`^${DENSITY.light} info  marketplace baseline review-required at pin [0-9a-f]{8}; capabilities$`, "m"))
+  // A command reads as a command line, not a JSON array, and a fact with nothing absent is one line.
+  assert.match(report, /^░ info  Widget\.qml:12  curl -fsSL --max-time 5 --max-filesize 65536$/m)
+  assert.doesNotMatch(report, /\["curl"/)
+  assert.match(full, /\["curl", "-fsSL"/)
+  assert.match(report, /^░ info  Widget\.qml:20  bash scripts\/refresh\.sh\n {8}no deadline observed; no cap observed on SplitParser$/m)
+  assert.match(report, /^▒ \? {5}Widget\.qml:28  command: root\.cmd, not resolvable$/m)
+  // Shell lines are grouped under their script, with the tools they run; --full lists each line.
+  assert.match(report, /^░ info  scripts\/install\.sh  1 shell line: pacman\n {8}1 line through sudo, pkexec or doas$/m)
+  assert.match(report, /^░ info  scripts\/refresh\.sh  1 shell line: df$/m)
+  assert.doesNotMatch(report, /scripts\/install\.sh:3  /)
+  assert.match(full, /^░ info  scripts\/install\.sh:3  \["sudo", "pacman"/m)
+  // A write under a controlled directory is one line; one outside says so.
+  assert.match(report, /^░ info  Widget\.qml:33  FileView \$XDG_STATE_HOME\/fixture\.example\/state\.json\n░ info  scripts\/refresh\.sh:3  > \/tmp\/fixture\.example\.cache\n {8}not under a directory the plugin controls \(\/tmp is shared\)$/m)
+  // The host row says only what is absent.
+  assert.match(report, /^░ info  api\.example\.com  https via curl, Widget\.qml:12\n {8}-q not observed$/m)
+  // The pattern rows keep their shape; the not observed line names labels; not visible is one short line.
+  assert.match(report, /^patterns {6}6 of the 10 classes/m)
+  assert.match(report, /^not observed  secrets, supply chain, untrusted text to display, argument grammar$/m)
+  assert.match(report, /^not visible   commands built at run time, values from variables or config,$/m)
+  assert.match(report.replace(/\n {14}/g, " "), /--full names every site and --json is the document/)
+  assert.doesNotMatch(report, /^method/m)
+  assert.match(full, /^method/m)
+  assert.ok(report.split("\n").length < full.split("\n").length)
+  // The nothing fixture reads the same four lines, and the method's limit stays in the closing line.
+  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
+  assert.equal((nothing.match(/observed nothing of this kind/g) || []).length, 4)
+  assert.match(nothing, /^patterns {6}none of the 10 classes/m)
+  assert.doesNotMatch(nothing, /^not observed/m)
+  assert.match(nothing.replace(/\n {13}/g, " "), /static, see docs\/INSPECT\.md/)
+})
+
+test("a pattern row in the default view names three sites and counts the rest", async () => {
+  const many = { ...(await documentFor("nothing")).document }
+  many.patterns = [{ id: "process-lifecycle", observedCount: 5, sites: [1, 2, 3, 4, 5].map((line) => ({ file: "A.qml", line })), observation: "observed 5 processes with no deadline (A.qml:1, A.qml:2, A.qml:3, A.qml:4, A.qml:5)", measurement: "M11", share: 0.2 }]
+  many.lookedFor = PATTERNS.map((pattern) => pattern.id).filter((id) => id !== "process-lifecycle")
+  const report = renderInspect(many, { colour: false })
+  assert.match(report.replace(/\n {8}/g, " "), /observed 5 processes with no deadline \(A\.qml:1, A\.qml:2, A\.qml:3 and 2 more\)/)
+  assert.match(renderInspect(many, { colour: false, full: true }).replace(/\n {8}/g, " "), /A\.qml:4, A\.qml:5\)/)
+})
+
 test("the nothing fixture is reported as observed nothing of this kind, four times, and never as clean", async () => {
   const { document } = await documentFor("nothing")
-  const report = renderInspect(document, { colour: false })
+  const report = renderInspect(document, { colour: false, full: true })
   assert.equal((report.match(/observed nothing of this kind/g) || []).length, 4)
   for (const key of ["processes", "hosts", "writes", "timers"]) {
     assert.match(report, new RegExp(`^${key}\\s+observed nothing of this kind$`, "m"))
@@ -124,7 +172,7 @@ test("a command that is not a literal is a ▒ ? row with argv null, listed unde
   assert.equal(process.argvForm, "computed")
   assert.equal(process.commandText, "root.cmd")
   assert.deepEqual(document.notResolvable, [{ file: "Widget.qml", line: 10, kind: "command", text: "command: root.cmd" }])
-  const report = renderInspect(document, { colour: false })
+  const report = renderInspect(document, { colour: false, full: true })
   assert.match(report, new RegExp(`^${DENSITY.medium} \\?\\s+Widget.qml:10  command: root.cmd$`, "m"))
   assert.match(report, /argv not resolvable statically/)
   assert.doesNotMatch(report, /uptime/, "the property's value is never read as the command")
@@ -133,13 +181,13 @@ test("a command that is not a literal is a ▒ ? row with argv null, listed unde
 test("the processes headline says how many are QML Process sites and how many are shell lines", async () => {
   const example = (await documentFor("example")).document
   assert.deepEqual(example.counts.processes, { total: 5, qml: 3, shell: 2 })
-  const report = renderInspect(example, { colour: false })
+  const report = renderInspect(example, { colour: false, full: true })
   assert.match(report, /^processes {5}observed 5, 3 in qml, 2 shell lines$/m)
   assert.match(report, /INSPECTED  5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes,/)
-  const shell = renderInspect((await documentFor("write-tmp")).document, { colour: false })
+  const shell = renderInspect((await documentFor("write-tmp")).document, { colour: false, full: true })
   assert.match(shell, /^processes {5}observed 1, a shell line$/m)
   assert.match(shell, /1 process \(a shell line\)/)
-  const installer = renderInspect((await documentFor("installer-unpinned")).document, { colour: false })
+  const installer = renderInspect((await documentFor("installer-unpinned")).document, { colour: false, full: true })
   assert.match(installer, /^processes {5}observed 2, all shell lines$/m)
 })
 
@@ -185,7 +233,7 @@ test("--offline skips the baseline and says so with the skipped mark; the docume
   const { document } = await documentFor("nothing", { offline: true })
   assert.deepEqual(document.marketplaceBaseline, { skipped: true, reason: "--offline" })
   assert.deepEqual(validateInspectDocument(document, KNOWN), [])
-  const report = renderInspect(document, { colour: false })
+  const report = renderInspect(document, { colour: false, full: true })
   assert.match(report, new RegExp(`^${DENSITY.ceiling} ${STATUS.skipped.word}\\s+skipped \\(--offline\\)$`, "m"))
 })
 
@@ -296,7 +344,7 @@ test("the other patterns, one fixture each", async () => {
 
 test("a pattern row is two lines: the observation with its sites, then the share, and never a verdict word", async () => {
   const { document } = await documentFor("process-without-deadline")
-  const report = renderInspect(document, { colour: false })
+  const report = renderInspect(document, { colour: false, full: true })
   assert.match(report, new RegExp(`^${DENSITY.dark} ${STATUS.advisory.word}\\s+process lifecycle\\s+observed 1 process with no deadline$`, "m"))
   assert.match(report, /^ {8}\(Widget\.qml:10\)$/m)
   assert.match(report, /^ {8}about 20 of every 100 review findings in the sample \(M11\)$/m)
@@ -304,7 +352,7 @@ test("a pattern row is two lines: the observation with its sites, then the share
   assert.match(report, /^not observed  no write outside a controlled directory, /m)
   for (const row of document.patterns) assert.doesNotMatch(row.observation, /\b(?:missing|should|fix)\b/i)
   assert.doesNotMatch(report, /\b(?:missing|should|fix)\b/i)
-  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
+  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false, full: true })
   assert.match(nothing, /^patterns {6}none of the 10 classes/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} ${STATUS.advisory.word}`))
   const unwrapped = nothing.replace(/\n {14}/g, " ")
@@ -364,6 +412,9 @@ test("exit 2 when the target cannot be read: no directory, no Git checkout, no m
   const noTarget = run(["inspect"])
   assert.equal(noTarget.code, 2)
   assert.match(noTarget.err, /usage/)
+  const fullRun = run(["inspect", materialiseInspectFixture("example").dir, "--full"])
+  assert.equal(fullRun.code, 0)
+  assert.match(fullRun.out, /^method/m)
   const unknown = run(["inspect", ".", "--strict"])
   assert.equal(unknown.code, 2)
   assert.match(unknown.err, /--strict is not an option this command knows/)

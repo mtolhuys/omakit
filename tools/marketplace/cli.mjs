@@ -399,9 +399,9 @@ async function cmdAudit(args) {
  */
 async function cmdInspect(args) {
   const parsed = checkArgs(args, ACCEPTED.inspect)
-  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("inspect")}.`, 2, "omakit inspect <plugin-dir> [--json] [--out FILE] [--offline] [--allow-dirty]")
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("inspect")}.`, 2, "omakit inspect <plugin-dir> [--full] [--json] [--out FILE] [--offline] [--allow-dirty]")
   const target = parsed.positionals[0]
-  if (!target) fail("usage", "inspect needs a plugin directory: `omakit inspect <plugin-dir>`", 2, "omakit inspect <plugin-dir> [--json] [--out FILE] [--offline] [--allow-dirty]")
+  if (!target) fail("usage", "inspect needs a plugin directory: `omakit inspect <plugin-dir>`", 2, "omakit inspect <plugin-dir> [--full] [--json] [--out FILE] [--offline] [--allow-dirty]")
   const spinner = spinnerFor(args)
   let document
   try {
@@ -428,7 +428,7 @@ async function cmdInspect(args) {
     writeFileSync(resolve(out), json)
   }
   if (parsed.options.has("--json")) process.stdout.write(json)
-  else process.stdout.write(`${renderInspect(document)}\n`)
+  else process.stdout.write(`${renderInspect(document, { full: parsed.options.has("--full") })}\n`)
   process.exitCode = 0
 }
 

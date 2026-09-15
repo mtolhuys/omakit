@@ -6,7 +6,7 @@
 // cap is observed in the argv. A command that is not one literal array or
 // string is `argvForm: "computed"` with `argv: null`, never a guess.
 
-import { arrayLiteral, basename, blankComments, blocks, closingBracket, lineOf, propertyValue, shellSegments, shellSubstitutions, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
+import { arrayLiteral, basename, blankComments, blocks, closingBracket, lineOf, propertyValue, blankShellExpressions, shellLogicalLines, shellPieces, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
 
 /** Shells whose `-c` turns the next element into a script the extraction does not follow. */
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "fish", "ksh"])
@@ -207,37 +207,31 @@ export function qmlProcesses(file) {
   const rows = []
   for (const block of blocks(text, "Process")) {
     const inside = propertyValue(block.body, "command")
-    if (inside) {
+    // `command: []` is a placeholder for a value set later: the assignment to
+    // the block's id is the command, and without one the command is computed.
+    if (inside && !/^\[\s*\]$/.test(inside.text)) {
       rows.push(qmlRow(file, text, block, inside, block.open + 1 + inside.offset))
       continue
     }
     const assigned = assignedCommand(text, block.id)
+    if (!assigned && inside) {
+      rows.push({ ...qmlRow(file, text, block, null, block.open + 1 + inside.offset), commandText: "[] (set at run time, no assignment to the id observed)" })
+      continue
+    }
     rows.push(qmlRow(file, text, block, assigned, assigned ? assigned.offset : null))
   }
   rows.push(...detachedRows(file, text))
   return rows.sort((a, b) => a.line - b.line)
 }
 
-/** Continuation lines joined, each logical line keeping the number it started on. */
-function logicalLines(text) {
-  const out = []
-  const lines = text.split("\n")
-  for (let index = 0; index < lines.length; index += 1) {
-    let line = lines[index]
-    const start = index + 1
-    while (/\\$/.test(line) && index + 1 < lines.length) {
-      index += 1
-      line = `${line.slice(0, -1)} ${lines[index]}`
-    }
-    out.push({ line: start, text: line })
-  }
-  return out
-}
-
 /** The command words of a shell segment, leading assignments and keywords dropped; null when nothing runs. */
 function commandWords(segment) {
   let words = shellWords(segment)
-  while (words.length && (KEYWORDS.has(words[0]) || /^[A-Za-z_]\w*=/.test(words[0]))) {
+  // A case pattern (`*)`, `[0-9]*)`) and the blanked shells of `(( ))` and
+  // `[[ ]]` run nothing; what follows a pattern on the same line does.
+  if (words.length && /\)$/.test(words[0]) && !/^\$?\(/.test(words[0])) words = words.slice(1)
+  words = words.filter((word) => !/^(?:\(\(\s*\)\)|\(\(|\)\)|\[\[|\]\])$/.test(word))
+  while (words.length && (KEYWORDS.has(words[0]) || /^[A-Za-z_]\w*\+?=/.test(words[0]))) {
     if (words[0] === "for" || words[0] === "case" || words[0] === "select" || words[0] === "function") return null
     words = words.slice(1)
   }
@@ -250,11 +244,11 @@ function commandWords(segment) {
 /** Every command site of a shell script, per line, pipes as separate sites. */
 export function shellProcesses(file) {
   const rows = []
-  for (const { line, text } of logicalLines(file.text)) {
-    const trimmed = text.trim()
+  for (const { line, text } of shellLogicalLines(file.text)) {
+    const trimmed = blankShellExpressions(text).trim()
     if (!trimmed || trimmed.startsWith("#")) continue
     // A command substitution runs too: `t=$(mktemp)` is a `mktemp` site.
-    const segments = [trimmed, ...shellSubstitutions(trimmed)].flatMap((piece) => shellSegments(piece))
+    const segments = shellPieces(trimmed)
     const lineCap = capIn(shellWords(trimmed))
     let previous = null
     for (const segment of segments) {
@@ -264,6 +258,11 @@ export function shellProcesses(file) {
         continue
       }
       const stripped = withoutRedirections(argv)
+      // A line that is only a redirection (`exec > log`, `> file`) runs nothing.
+      if (!stripped.length) {
+        previous = null
+        continue
+      }
       const deadlineMs = timeoutMs(stripped)
       const row = {
         file: file.path,

@@ -158,7 +158,7 @@ tools/inspect/
   patterns.mjs     the table above as data: id, label, precondition function, measurement, share, the "not observed" phrase
   text.mjs         the text primitives the extractors share: line numbers, brace blocks, a property's value, string and array literals, the crude shell word split
   contract.mjs     the executable JSON contract
-  report.mjs       the terminal rendering, marks through style.mjs only
+  report.mjs       the terminal rendering, marks through style.mjs only: the compact view a person reads by default, the exhaustive one behind --full
 tests/fixtures/inspect/<name>/   one small plugin per fact kind and per pattern
 tests/fixtures/inspect/<name>.expected.json   the document each fixture produces, compared field by field
 tests/fixtures/inspect.mjs       materialises a fixture into a temporary Git repository with an origin, like every other check reads a plugin

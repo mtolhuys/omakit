@@ -92,7 +92,10 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit inspect <target> [--json] [--out <file>] [--offline] [--allow-dirty]",
+    signature: [
+      "omakit inspect <target> [--full] [--json] [--out <file>] [--offline]",
+      "                        [--allow-dirty]",
+    ],
     lines: [
       "What a plugin tree does, as observations: every process with its argv,",
       "every host with its timeout and size-cap flags, every write with whether",
@@ -102,7 +105,9 @@ export const COMMANDS = Object.freeze([
       "each with its measured share, only where the tree shows the class.",
       "Regular expressions over QML and shell, labelled observed; runs nothing",
       "from the tree, decides nothing, exits 0 with a report and 2 when the",
-      "target cannot be read. --json prints the document; --out writes it too.",
+      "target cannot be read. The report is one line per fact and a second",
+      "only where something is absent; --full is every site with every",
+      "qualifier; --json prints the document; --out writes it too.",
     ],
   },
   {

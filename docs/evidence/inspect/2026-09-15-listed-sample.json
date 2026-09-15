@@ -9,14 +9,14 @@
     "identification": "rows carry no repository or commit; the selection rule above reproduces the set from the pinned catalog, and per-tree observations about named third-party plugins are not published as a list"
   },
   "totals": {
-    "processes": 989,
+    "processes": 515,
     "processesQml": 57,
-    "processesShell": 932,
+    "processesShell": 458,
     "hosts": 17,
-    "writes": 104,
+    "writes": 63,
     "timers": 40,
     "notResolvable": 15,
-    "patternRows": 70
+    "patternRows": 73
   },
   "pluginsWithAtLeastOnePatternRow": 17,
   "pluginsWithNoFactObserved": 1,
@@ -62,11 +62,13 @@
       "writes": 0,
       "timers": 2,
       "notResolvableRows": 1,
-      "patternRows": 3,
+      "patternRows": 5,
       "patternIds": [
         "process-lifecycle",
         "unbounded-buffering",
-        "network-egress"
+        "environment-trust",
+        "network-egress",
+        "argument-grammar"
       ],
       "baselineOutcome": "review-required",
       "seconds": 1.2
@@ -87,10 +89,12 @@
       "writes": 0,
       "timers": 2,
       "notResolvableRows": 1,
-      "patternRows": 2,
+      "patternRows": 4,
       "patternIds": [
         "process-lifecycle",
-        "unbounded-buffering"
+        "unbounded-buffering",
+        "environment-trust",
+        "argument-grammar"
       ],
       "baselineOutcome": "review-required",
       "seconds": 1.2
@@ -182,9 +186,9 @@
         "python": 0,
         "other": 0
       },
-      "processes": 96,
+      "processes": 23,
       "processesQml": 1,
-      "processesShell": 95,
+      "processesShell": 22,
       "hosts": 0,
       "writes": 5,
       "timers": 1,
@@ -209,11 +213,11 @@
         "python": 0,
         "other": 0
       },
-      "processes": 240,
+      "processes": 109,
       "processesQml": 2,
-      "processesShell": 238,
+      "processesShell": 107,
       "hosts": 0,
-      "writes": 30,
+      "writes": 20,
       "timers": 1,
       "notResolvableRows": 0,
       "patternRows": 4,
@@ -235,11 +239,11 @@
         "python": 0,
         "other": 0
       },
-      "processes": 45,
+      "processes": 18,
       "processesQml": 3,
-      "processesShell": 42,
+      "processesShell": 15,
       "hosts": 3,
-      "writes": 11,
+      "writes": 3,
       "timers": 3,
       "notResolvableRows": 0,
       "patternRows": 5,
@@ -287,9 +291,9 @@
         "python": 0,
         "other": 0
       },
-      "processes": 22,
+      "processes": 20,
       "processesQml": 11,
-      "processesShell": 11,
+      "processesShell": 9,
       "hosts": 2,
       "writes": 2,
       "timers": 1,
@@ -361,11 +365,11 @@
         "python": 0,
         "other": 0
       },
-      "processes": 372,
+      "processes": 216,
       "processesQml": 1,
-      "processesShell": 371,
+      "processesShell": 215,
       "hosts": 0,
-      "writes": 21,
+      "writes": 20,
       "timers": 0,
       "notResolvableRows": 0,
       "patternRows": 5,
@@ -388,20 +392,19 @@
         "python": 0,
         "other": 0
       },
-      "processes": 182,
+      "processes": 97,
       "processesQml": 7,
-      "processesShell": 175,
+      "processesShell": 90,
       "hosts": 7,
-      "writes": 34,
+      "writes": 12,
       "timers": 4,
       "notResolvableRows": 1,
-      "patternRows": 6,
+      "patternRows": 5,
       "patternIds": [
         "process-lifecycle",
         "unbounded-buffering",
         "file-and-state-boundary",
         "environment-trust",
-        "secrets",
         "argument-grammar"
       ],
       "baselineOutcome": "passed",
@@ -487,5 +490,5 @@
       "seconds": 1.1
     }
   ],
-  "notes": "Counts per occurrence with file:line inside each tree. processes is processesQml (QML Process blocks and execDetached calls) plus processesShell (one row per command segment of a shell script), which is why two trees with several scripts carry hundreds. notResolvableRows are the \u2592 ? rows: computed commands, hosts behind an expression, interval expressions. patternIds name the review classes whose precondition the tree showed; the share printed beside each is the M11 sample's, not this plugin's. The split was added by re-reading the same 18 trees from the reviewer-mode cache, with no fetch, and every other count per row was held equal to the first run's."
+  "notes": "Counts per occurrence with file:line inside each tree. processes is processesQml (QML Process blocks and execDetached calls) plus processesShell (one row per command segment of a shell script), which is why two trees with several scripts carry hundreds. notResolvableRows are the \u2592 ? rows: computed commands, hosts behind an expression, interval expressions. patternIds name the review classes whose precondition the tree showed; the share printed beside each is the M11 sample's, not this plugin's. The split was added by re-reading the same 18 trees from the reviewer-mode cache, with no fetch, every other count per row held equal to the first run's; the rows were re-read the same way once more after the shell reader learned to keep a $(...) assignment and a multi-line quoted program whole and to read command: [] through the assignment to the block's id, which lowered the shell and write counts and moved five trees' pattern ids. Both earlier states are in this file's history."
 }

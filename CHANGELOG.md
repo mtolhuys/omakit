@@ -11,7 +11,10 @@
   raised, printed only where the tree shows the class's precondition, with
   its measured share (M11). Regular expressions over QML and shell, every
   row labelled observed, no score, no verdict, runs nothing from the tree.
-  `docs/INSPECT.md` is the contract; `--json` is the document.
+  The report is one line per fact and a second only where something is
+  absent, a script's lines grouped under the script; `--full` is every
+  site with every qualifier. `docs/INSPECT.md` is the contract; `--json`
+  is the document.
 - `doctor`, `pin` and `setup` read the pinned checkout's size from `du`'s total
   whatever its exit status, so a git lock file vanishing mid-walk no longer
   turns the size into "size unknown".
