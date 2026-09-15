@@ -39,7 +39,7 @@ Compares your installed plugin commits with the marketplace's validated commits.
 
 ![inspect listing one process with no deadline and the two review classes it shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
 
-Lists what a plugin's tree does, as observations, beside the review classes a human reviewer raises most, each with its measured share ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)). No score, no verdict, nothing run from the tree. Over 18 listed plugins read at their validated commits, the extraction counted 989 process sites, 17 hosts, 104 writes and 40 timers, left 15 rows it could not resolve, and printed 70 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
+Lists what a plugin's tree does, as observations, beside the review classes a human reviewer raises most, each with its measured share ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)). No score, no verdict, nothing run from the tree. Over 18 listed plugins read at their validated commits, the extraction counted 989 process sites (57 QML `Process` blocks, 932 shell lines), 17 hosts, 104 writes and 40 timers, left 15 rows it could not resolve, and printed 70 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
 
 ## `omakit weigh <plugin>`
 

@@ -36,6 +36,17 @@
       }
     ]
   },
+  "counts": {
+    "processes": {
+      "total": 0,
+      "qml": 0,
+      "shell": 0
+    },
+    "hosts": 0,
+    "writes": 0,
+    "timers": 1,
+    "notResolvable": 0
+  },
   "notResolvable": [],
   "patterns": [],
   "lookedFor": [

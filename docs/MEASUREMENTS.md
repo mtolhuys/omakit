@@ -842,10 +842,16 @@ was made on a machine with no Omarchy desktop, so its sample is the first 18
 distinct repositories in the pinned catalog's order whose listing is
 community, laid out as a root plugin and carrying a validated commit, each
 fetched read-only at that commit in reviewer mode (pin `38060f89`). Totals:
-989 process sites, 17 hosts, 104 writes, 40 timers, 15 `▒ ?` rows and 70
-pattern rows; 17 of the 18 trees printed at least one pattern row and one
-tree showed no fact of any kind. Two trees with several shell scripts carry
-hundreds of process sites because a script contributes one site per command
-segment; that is the count of what the extraction saw, not of what the
-plugins do, and no plugin is named for it in the README. The record replaces
-nothing and is replaced by a run over the desktop set when one is made.
+989 process sites, of which 57 are QML `Process` blocks and 932 are shell
+lines, 17 hosts, 104 writes, 40 timers, 15 `▒ ?` rows and 70 pattern rows;
+17 of the 18 trees printed at least one pattern row and one tree showed no
+fact of any kind. The shell lines dominate because a script contributes one
+site per command segment and two trees carry several scripts; that is the
+count of what the extraction saw, not of what the plugins do, and the report
+says the two apart on its processes line and its closing line. The record's
+rows carry no repository and no commit: the selection rule above reproduces
+the set from the pinned catalog, and per-tree observations about named
+third-party plugins are not published as a list, the same line the
+review-class sample holds. Any regeneration keeps it that way. No plugin is
+named for it in the README. The record replaces nothing and is replaced by a
+run over the desktop set when one is made.

@@ -235,6 +235,17 @@
       }
     ]
   },
+  "counts": {
+    "processes": {
+      "total": 5,
+      "qml": 3,
+      "shell": 2
+    },
+    "hosts": 1,
+    "writes": 2,
+    "timers": 2,
+    "notResolvable": 1
+  },
   "notResolvable": [
     {
       "file": "Widget.qml",

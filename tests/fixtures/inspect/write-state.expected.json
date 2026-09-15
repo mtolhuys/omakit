@@ -36,6 +36,17 @@
     ],
     "timers": []
   },
+  "counts": {
+    "processes": {
+      "total": 0,
+      "qml": 0,
+      "shell": 0
+    },
+    "hosts": 0,
+    "writes": 1,
+    "timers": 0,
+    "notResolvable": 0
+  },
   "notResolvable": [],
   "patterns": [],
   "lookedFor": [

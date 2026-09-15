@@ -1,8 +1,8 @@
-[2msubject[0m       /tmp/omakit-fixture-7HdknQ at 565bb52b, 1 file read (1 qml)
+[2msubject[0m       /tmp/omakit-fixture-0DCBgH at 53992d9f, 1 file read (1 qml)
 [2mmethod[0m        static extraction, regular expressions over qml and shell;
               observed, not executed
 
-[2mprocesses[0m     observed 1
+[2mprocesses[0m     observed 1, in qml
 [2m░ info[0m  [1mWidget.qml:10[0m  ["/usr/bin/df", "-h", "/"]
         argv array; no deadline observed; output through StdioCollector, no cap
         observed
@@ -38,4 +38,5 @@
               tree, encoded or obfuscated content, and what a sh -c or eval
               string runs
 
-[2;1m░ INSPECTED[0m  1 process, 0 hosts, 0 writes, 0 timers; static, see docs/INSPECT.md
+[2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers; static, see
+             docs/INSPECT.md

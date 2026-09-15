@@ -10,6 +10,8 @@
   },
   "totals": {
     "processes": 989,
+    "processesQml": 57,
+    "processesShell": 932,
     "hosts": 17,
     "writes": 104,
     "timers": 40,
@@ -29,6 +31,8 @@
         "other": 0
       },
       "processes": 7,
+      "processesQml": 7,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 4,
@@ -52,6 +56,8 @@
         "other": 1
       },
       "processes": 1,
+      "processesQml": 1,
+      "processesShell": 0,
       "hosts": 1,
       "writes": 0,
       "timers": 2,
@@ -75,6 +81,8 @@
         "other": 0
       },
       "processes": 1,
+      "processesQml": 1,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 2,
@@ -97,6 +105,8 @@
         "other": 0
       },
       "processes": 2,
+      "processesQml": 2,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 1,
@@ -121,6 +131,8 @@
         "other": 0
       },
       "processes": 2,
+      "processesQml": 2,
+      "processesShell": 0,
       "hosts": 4,
       "writes": 0,
       "timers": 4,
@@ -145,6 +157,8 @@
         "other": 0
       },
       "processes": 3,
+      "processesQml": 3,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 5,
@@ -169,6 +183,8 @@
         "other": 0
       },
       "processes": 96,
+      "processesQml": 1,
+      "processesShell": 95,
       "hosts": 0,
       "writes": 5,
       "timers": 1,
@@ -194,6 +210,8 @@
         "other": 0
       },
       "processes": 240,
+      "processesQml": 2,
+      "processesShell": 238,
       "hosts": 0,
       "writes": 30,
       "timers": 1,
@@ -218,6 +236,8 @@
         "other": 0
       },
       "processes": 45,
+      "processesQml": 3,
+      "processesShell": 42,
       "hosts": 3,
       "writes": 11,
       "timers": 3,
@@ -243,6 +263,8 @@
         "other": 0
       },
       "processes": 1,
+      "processesQml": 1,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 1,
@@ -266,6 +288,8 @@
         "other": 0
       },
       "processes": 22,
+      "processesQml": 11,
+      "processesShell": 11,
       "hosts": 2,
       "writes": 2,
       "timers": 1,
@@ -291,6 +315,8 @@
         "other": 0
       },
       "processes": 0,
+      "processesQml": 0,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 0,
@@ -310,6 +336,8 @@
         "other": 0
       },
       "processes": 6,
+      "processesQml": 6,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 2,
@@ -334,6 +362,8 @@
         "other": 0
       },
       "processes": 372,
+      "processesQml": 1,
+      "processesShell": 371,
       "hosts": 0,
       "writes": 21,
       "timers": 0,
@@ -359,6 +389,8 @@
         "other": 0
       },
       "processes": 182,
+      "processesQml": 7,
+      "processesShell": 175,
       "hosts": 7,
       "writes": 34,
       "timers": 4,
@@ -385,6 +417,8 @@
         "other": 0
       },
       "processes": 3,
+      "processesQml": 3,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 1,
       "timers": 4,
@@ -409,6 +443,8 @@
         "other": 0
       },
       "processes": 4,
+      "processesQml": 4,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 2,
@@ -434,6 +470,8 @@
         "other": 0
       },
       "processes": 2,
+      "processesQml": 2,
+      "processesShell": 0,
       "hosts": 0,
       "writes": 0,
       "timers": 3,
@@ -449,5 +487,5 @@
       "seconds": 1.1
     }
   ],
-  "notes": "Counts per occurrence with file:line inside each tree; a shell script contributes one process row per command segment, which is why two trees with several scripts carry hundreds. notResolvableRows are the ▒ ? rows: computed commands, hosts behind an expression, interval expressions. patternIds name the review classes whose precondition the tree showed; the share printed beside each is the M11 sample's, not this plugin's."
+  "notes": "Counts per occurrence with file:line inside each tree. processes is processesQml (QML Process blocks and execDetached calls) plus processesShell (one row per command segment of a shell script), which is why two trees with several scripts carry hundreds. notResolvableRows are the \u2592 ? rows: computed commands, hosts behind an expression, interval expressions. patternIds name the review classes whose precondition the tree showed; the share printed beside each is the M11 sample's, not this plugin's. The split was added by re-reading the same 18 trees from the reviewer-mode cache, with no fetch, and every other count per row was held equal to the first run's."
 }

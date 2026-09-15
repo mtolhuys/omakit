@@ -125,6 +125,21 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
       filesRead: tree.filesRead,
     },
     observed: { processes, hosts, writes, timers },
+    // The headline split: a shell script contributes one site per command
+    // segment, so a tree with a few scripts carries hundreds of process
+    // sites beside a handful of QML Process blocks, and the two are said
+    // apart wherever the count is printed.
+    counts: {
+      processes: {
+        total: processes.length,
+        qml: processes.filter((row) => row.declaredIn === "qml").length,
+        shell: processes.filter((row) => row.declaredIn === "shell").length,
+      },
+      hosts: hosts.length,
+      writes: writes.length,
+      timers: timers.length,
+      notResolvable: notResolvable.length,
+    },
     notResolvable,
     patterns,
     lookedFor,

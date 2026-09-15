@@ -125,6 +125,21 @@ export function validateInspectDocument(document, known = {}) {
     }
     for (const [index, row] of observed[key].entries()) check(row, `observed.${key}[${index}]`, problems)
   }
+  const counts = document.counts || {}
+  if (!counts.processes || typeof counts.processes !== "object") problems.push("counts.processes is not the qml and shell split")
+  else {
+    for (const key of ["total", "qml", "shell"]) if (!isInt(counts.processes[key]) || counts.processes[key] < 0) problems.push(`counts.processes.${key} is not a count`)
+    if (counts.processes.total !== counts.processes.qml + counts.processes.shell) problems.push("counts.processes.total is not qml plus shell")
+    if (Array.isArray(observed.processes)) {
+      if (counts.processes.total !== observed.processes.length) problems.push("counts.processes.total is not the number of process rows")
+      if (counts.processes.qml !== observed.processes.filter((row) => row.declaredIn === "qml").length) problems.push("counts.processes.qml is not the number of qml process rows")
+    }
+  }
+  for (const key of ["hosts", "writes", "timers"]) {
+    if (!isInt(counts[key]) || counts[key] < 0) problems.push(`counts.${key} is not a count`)
+    else if (Array.isArray(observed[key]) && counts[key] !== observed[key].length) problems.push(`counts.${key} is not the number of ${key} rows`)
+  }
+  if (!isInt(counts.notResolvable) || (Array.isArray(document.notResolvable) && counts.notResolvable !== document.notResolvable.length)) problems.push("counts.notResolvable is not the number of notResolvable rows")
   if (!Array.isArray(document.notResolvable)) problems.push("notResolvable is not a list")
   else for (const [index, row] of document.notResolvable.entries()) {
     site(row, `notResolvable[${index}]`, problems)

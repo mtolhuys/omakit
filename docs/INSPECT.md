@@ -114,7 +114,7 @@ subject       ~/plugins/fixture-example at a3bf9e2d, 3 files read (1 qml, 2
 method        static extraction, regular expressions over qml and shell;
               observed, not executed
 
-processes     observed 5
+processes     observed 5, 3 in qml, 2 shell lines
 ░ info  Widget.qml:12  ["curl", "-fsSL", "--max-time", "5", "--max-filesize",
         "65536", "https://api.example.com/v1/status"]
         argv array; deadline observed (timer-kill 8000 ms); output through
@@ -184,8 +184,8 @@ not visible   commands built at run time, hosts and paths from variables,
               tree, encoded or obfuscated content, and what a sh -c or eval
               string runs
 
-░ INSPECTED  5 processes, 1 host, 2 writes, 2 timers; static, see
-             docs/INSPECT.md
+░ INSPECTED  5 processes (3 in qml, 2 shell lines), 1 host, 2 writes, 2 timers;
+             static, see docs/INSPECT.md
 ```
 
 That is the real output over `tests/fixtures/inspect/example/`, at eighty
@@ -275,6 +275,9 @@ command           "inspect"
 method            string   one sentence: static extraction, regular expressions, observed
 subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
 observed          { processes[], hosts[], writes[], timers[] }
+counts            { processes: { total, qml, shell }, hosts, writes, timers, notResolvable }
+                  the headline: how many process sites are QML Process blocks and how many are
+                  shell lines, since a script contributes one site per command segment
 notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:
                   kind "command" (a computed command), "host" (an expression where the host would be),
                   "timer-interval" (an interval that is an expression)

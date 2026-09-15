@@ -299,7 +299,9 @@ without a plugin of their own and no third-party tree is named. The capture
 is the real stdout, unedited, at the eighty columns a pipe gets; the scene
 is 110 columns wide so a `file:line` or a host is never cut, 44 rows, and
 omits nothing. The last frame holds on the two pattern rows and the closing
-line for 8.16 s.
+line for 8.16 s. Re-captured and re-rendered once, with the same pipeline
+and versions, when the processes line and the closing line began to say how
+many sites are QML `Process` blocks and how many are shell lines.
 
 ```bash
 node --input-type=module -e '
@@ -318,8 +320,8 @@ another ffmpeg, which is the reason the version is recorded.
 
 | GIF | Bytes | Duration | Final hold | Final screen |
 | --- | ---: | ---: | ---: | --- |
-| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 42,565 | 14.00 s | 8.16 s | the process row, the two pattern rows with their shares, the not observed and not visible lines, and INSPECTED |
+| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 43,274 | 14.00 s | 8.16 s | the process row, the two pattern rows with their shares, the not observed and not visible lines, and INSPECTED |
 
-The capture has 41 lines, none wider than 80 columns, and its sha256 and the
+The capture has 42 lines, none wider than 80 columns, and its sha256 and the
 GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
 beside the other GIFs.

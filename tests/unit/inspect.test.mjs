@@ -114,6 +114,7 @@ test("the nothing fixture is reported as observed nothing of this kind, four tim
   assert.deepEqual(document.patterns, [])
   assert.doesNotMatch(report, /\bclean\b/)
   assert.match(report, new RegExp(`${DENSITY.light} ${INSPECT_VERDICT}  0 processes, 0 hosts, 0 writes, 0 timers`))
+  assert.deepEqual(document.counts, { processes: { total: 0, qml: 0, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
 })
 
 test("a command that is not a literal is a ▒ ? row with argv null, listed under notResolvable, never a guess", async () => {
@@ -127,6 +128,19 @@ test("a command that is not a literal is a ▒ ? row with argv null, listed unde
   assert.match(report, new RegExp(`^${DENSITY.medium} \\?\\s+Widget.qml:10  command: root.cmd$`, "m"))
   assert.match(report, /argv not resolvable statically/)
   assert.doesNotMatch(report, /uptime/, "the property's value is never read as the command")
+})
+
+test("the processes headline says how many are QML Process sites and how many are shell lines", async () => {
+  const example = (await documentFor("example")).document
+  assert.deepEqual(example.counts.processes, { total: 5, qml: 3, shell: 2 })
+  const report = renderInspect(example, { colour: false })
+  assert.match(report, /^processes {5}observed 5, 3 in qml, 2 shell lines$/m)
+  assert.match(report, /INSPECTED  5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes,/)
+  const shell = renderInspect((await documentFor("write-tmp")).document, { colour: false })
+  assert.match(shell, /^processes {5}observed 1, a shell line$/m)
+  assert.match(shell, /1 process \(a shell line\)/)
+  const installer = renderInspect((await documentFor("installer-unpinned")).document, { colour: false })
+  assert.match(installer, /^processes {5}observed 2, all shell lines$/m)
 })
 
 test("the facts the fixtures were written to show", async () => {
@@ -304,7 +318,9 @@ test("exit 0 with a report whatever was observed; --json is the document; --out 
   const report = run(["inspect", fixture.dir])
   assert.equal(report.code, 0, report.err)
   assert.equal(report.err, "")
-  assert.match(report.out, /^processes {5}observed 1$/m)
+  assert.match(report.out, /^processes {5}observed 1, in qml$/m)
+  assert.match(report.out, /INSPECTED  1 process \(in qml\), 0 hosts/)
+  assert.deepEqual(JSON.parse(run(["inspect", fixture.dir, "--json"]).out).counts, { processes: { total: 1, qml: 1, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
   const json = run(["inspect", fixture.dir, "--json"])
   assert.equal(json.code, 0)
   const document = JSON.parse(json.out)

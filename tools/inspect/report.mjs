@@ -170,7 +170,7 @@ export function renderInspect(document, { colour = colourEnabled() } = {}) {
     ["timers", document.observed.timers, timerRow],
   ]
   for (const [name, rows, render] of sections) {
-    out.push(...field(name, rows.length ? `observed ${rows.length}` : NOTHING, c))
+    out.push(...field(name, rows.length ? `observed ${rows.length}${name === "processes" ? `, ${split(document.counts.processes)}` : ""}` : NOTHING, c))
     for (const entry of rows) out.push(...render(entry, c))
     out.push("")
   }
@@ -180,7 +180,15 @@ export function renderInspect(document, { colour = colourEnabled() } = {}) {
   if (patterns.length) out.push(...patterns)
   out.push(...field("not visible", document.notVisible.join(", "), c))
   out.push("")
-  const counts = document.observed
-  out.push(...verdict("info", INSPECT_VERDICT, `${plural(counts.processes.length, "process", "processes")}, ${plural(counts.hosts.length, "host")}, ${plural(counts.writes.length, "write")}, ${plural(counts.timers.length, "timer")}; static, see docs/INSPECT.md`, c))
+  const counts = document.counts
+  const processes = `${plural(counts.processes.total, "process", "processes")}${counts.processes.total ? ` (${split(counts.processes)})` : ""}`
+  out.push(...verdict("info", INSPECT_VERDICT, `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}; static, see docs/INSPECT.md`, c))
   return out.join("\n")
+}
+
+/** The process split in words: how many are QML Process sites and how many are shell lines. */
+function split({ qml, shell }) {
+  if (!shell) return qml === 1 ? "in qml" : "all in qml"
+  if (!qml) return shell === 1 ? "a shell line" : "all shell lines"
+  return `${qml} in qml, ${plural(shell, "shell line")}`
 }
