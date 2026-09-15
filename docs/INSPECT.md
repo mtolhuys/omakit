@@ -102,91 +102,68 @@ Sites are counted per occurrence with `file:line`, never per file.
 
 ## The report
 
-Order follows how a reviewer reads a tree. Marks are the six of
-`docs/TUI.md`; `inspect` uses `░ info` for a fact, `▒ ?` for a fact it could
-not resolve (a `command` that is a variable, an interval that is an
-expression), `▓ note` for a fact row that one of the review classes below
-cites and for the rows of the review table, and `▔ skip` for the baseline
-under `--offline`. It never prints `▁ ok` or `█ FAIL`, because it has no
-verdict to attach them to.
+Marks are the six of `docs/TUI.md`; `inspect` uses `░ info` for a fact,
+`▒ ?` for a fact it could not resolve (a `command` that is a variable, an
+interval that is an expression), `▓ note` for a review class row, and
+`▔ skip` for the baseline under `--offline`. It never prints `▁ ok` or
+`█ FAIL`, because it has no verdict to attach them to.
 
-Two views of the one document. The default is a table a person reads in
-one screen: the subject and the baseline outcome, then one row per QML
-`Process` with the command as a command line and what is absent beside it
-(`no deadline`, `no cap`, `computed element`, `detached`), the shell
-scripts counted by directory, one row per host with what is absent
-(`no timeout`, `no size cap`, `no -q`, `http`), one row per write to a
-literal path with where it lands (`under $XDG_STATE_HOME`, `shared /tmp`,
-`outside a controlled directory`), the writes to paths from variables and
-under a tests directory counted, one row per timer, and a review table of
-class, what this tree shows and the class's share of review findings. A
-fact row cited by a review class wears `▓ note` and, when its own cells
-show nothing absent, names the classes that cite it; the review table
-names no site, because the marked rows are the sites. `--full` is the
-exhaustive view: every shell line as its own row, every argv as an array,
-every qualifier whether present or absent, every site under every pattern
-row, the whole `not observed` and `not visible` lists, and the `method`
-line. `--json` is the document, which carries everything either view
-shows. Measured before the split: a listed tree with four shell scripts
-printed 372 process rows of two lines each, and the pattern rows a
+Two views of the one document. The default is an overview that fits one
+screen and names no site: the subject, the files read and the baseline
+outcome; then one line per kind of fact with its count and the ratios a
+reviewer asks about (`deadline 1 of 3`, `output cap 1 of 2`, `timeout 1 of
+1`, `curl -q 0 of 1`, `under a controlled directory 1`), the shell lines
+counted by script and directory; then the review classes this tree shows,
+each with its share of review findings in the M11 sample and how many
+sites here show it, and the classes not shown. That is what a person reads
+to know the shape of a tree, and it is the same for a tree with one script
+and one with thirty. `--full` is the exhaustive view, in the order a
+reviewer reads a tree: every process with its argv and every qualifier,
+every host, every write, every timer, the capabilities, every pattern row
+with every site, the whole `not observed` and `not visible` lists, and the
+`method` line. `--json` is the document, which carries everything either
+view shows. Measured before the split: a listed tree with four shell
+scripts printed 372 process rows of two lines each, and the pattern rows a
 reviewer would act on sat under 750 lines of argv.
 
 ```text
-subject       ~/plugins/fixture-example at a3bf9e2d, 3 files (1 qml, 2 shell)
+subject       ~/plugins/fixture-example at a3bf9e2d
+files         3 read: 1 qml, 2 shell
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
 
-processes     3 processes in qml; 2 shell lines in 2 scripts (scripts/ 2)
-▓ note  Widget.qml:12  curl -fsSL --max-time 5 --max-filesize 65536
-        https://api.example.com/v1/status
-        environment trust, network egress
-▓ note  Widget.qml:20  bash scripts/refresh.sh  no deadline, no cap
-▒ ?     Widget.qml:28  command: root.cmd  not resolvable
+processes     3  deadline 1 of 3, output cap 1 of 2, not resolvable 1
+shell lines   2  in 2 scripts: scripts/ 2
+hosts         1  https 1 of 1, timeout 1 of 1, size cap 1 of 1, curl -q 0 of 1
+writes        2  under a controlled directory 1, outside one 1
+timers        2  repeating 1 of 2, intervals 8000 to 30000 ms
 
-hosts         1
-▓ note  api.example.com  https via curl, Widget.qml:12  no -q
+review        6 of 10 classes reviewers raise show here; their share of review
+              findings (M11, a 30-issue sample), and the sites here
+▓ note  process lifecycle          20%  2 sites
+▓ note  unbounded buffering        19%  1 site
+▓ note  file and state boundary    15%  1 site
+▓ note  environment trust           7%  4 sites
+▓ note  network egress              5%  1 site
+▓ note  privilege disclosure        3%  1 site
+not shown     secrets, supply chain, untrusted text to display, argument grammar
 
-writes        2: 1 under a controlled directory, 1 outside one
-░ info  Widget.qml:33         FileView
-        $XDG_STATE_HOME/fixture.example/state.json
-        under $XDG_STATE_HOME
-▓ note  scripts/refresh.sh:3  > /tmp/fixture.example.cache  shared /tmp
-
-timers        2
-░ info  Widget.qml:39  30000 ms, repeat, running, triggeredOnStart
-░ info  Widget.qml:52  8000 ms, once, started by onVisibleChanged
-
-review        6 of the 10 classes the marketplace's human review raised (M11, a
-              30-issue sample); the marked rows above are the sites
-▓ note  process lifecycle          2 processes with no deadline        20 of 100
-▓ note  unbounded buffering        1 collector with no cap             19 of 100
-▓ note  file and state boundary    1 write outside a controlled directory
-        15 of 100
-▓ note  environment trust          3 tools resolved from PATH (curl, bash,
-        pacman); curl without -q
-        7 of 100
-▓ note  network egress             curl -L without --proto              5 of 100
-▓ note  privilege disclosure       sudo in argv; no README to name it   3 of 100
-
-not visible   run-time commands, values from variables or config, components
-              outside the tree
-
-░ INSPECTED  5 processes (3 in qml, 2 shell lines), 1 host, 2 writes, 2 timers;
-             static; --full for every site, --json for the document
+░ INSPECTED  static reading, so run-time commands and values from variables are
+             not seen; --full for every site, --json for the document
 ```
 
 That is the real default output over `tests/fixtures/inspect/example/`, at
-eighty columns as a pipe gets it; a terminal lays the columns out at its
-own width, up to 120, and `--full` prints the same tree as five process
-rows with their argv arrays and every qualifier.
+eighty columns as a pipe gets it; `--full` prints the same tree as five
+process rows with their argv arrays and every qualifier, one row per host,
+write and timer, and every site under every pattern row.
 A pattern row prints only when the tree shows its precondition (a process
 without a deadline, a write outside a controlled directory). A pattern whose
 precondition is absent is not listed as "ok"; it is simply not there, and the
-`not observed` line names what was looked for. The share in the second line
-is the sample's, cited from `docs/MEASUREMENTS.md`, and the source names the
-entry next to the pattern the way every `submit` check names its `why`. The
-section line for a tree that shows none of the ten preconditions says so,
-and the `not observed` line then names all ten.
+`not observed` line of `--full` (`not shown` in the overview) names what
+was looked for. The share is the sample's, cited from `docs/MEASUREMENTS.md`,
+and the source names the entry next to the pattern the way every `submit`
+check names its `why`. The review line for a tree that shows none of the
+ten preconditions says so.
 
 ### The patterns and what "observed" means for each
 

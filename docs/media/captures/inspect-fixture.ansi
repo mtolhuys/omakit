@@ -1,22 +1,20 @@
-[2msubject[0m       /tmp/omakit-fixture-AWW74i at b4b1f031, 1 file (1 qml)
+[2msubject[0m       /tmp/omakit-fixture-o9m8gI at ded60eef
+[2mfiles[0m         1 read: 1 qml
 [2mbaseline[0m      passed at pin 38060f89
 
-[2mprocesses[0m     1 process in qml
-[33m▓ note[0m  [1mWidget.qml:10[0m  /usr/bin/df -h /  [2mno deadline, no cap[0m
+[2mprocesses     [0m1  deadline 0 of 1, output cap 0 of 1
+[2mshell lines   [0m0  none observed
+[2mhosts         [0m0  none observed
+[2mwrites        [0m0  none observed
+[2mtimers        [0m0  none observed
 
-[2mhosts[0m         observed nothing of this kind
+[2mreview[0m        2 of 10 classes reviewers raise show here; their share of review
+              findings (M11, a 30-issue sample), and the sites here
+[33m▓ note[0m  [1mprocess lifecycle        [0m  20%  1 site
+[33m▓ note[0m  [1munbounded buffering      [0m  19%  1 site
+[2mnot shown[0m     file and state boundary, environment trust, secrets, supply chain,
+              network egress, untrusted text to display, argument grammar,
+              privilege disclosure
 
-[2mwrites[0m        observed nothing of this kind
-
-[2mtimers[0m        observed nothing of this kind
-
-[2mreview[0m        2 of the 10 classes the marketplace's human review raised (M11, a
-              30-issue sample); the marked rows above are the sites
-[33m▓ note[0m  [1mprocess lifecycle        [0m  1 process with no deadline  [2m20 of 100[0m
-[33m▓ note[0m  [1munbounded buffering      [0m  1 collector with no cap     [2m19 of 100[0m
-
-[2mnot visible[0m   run-time commands, values from variables or config, components
-              outside the tree
-
-[2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers; static; --full for
-             every site, --json for the document
+[2;1m░ INSPECTED[0m  static reading, so run-time commands and values from variables are
+             not seen; --full for every site, --json for the document

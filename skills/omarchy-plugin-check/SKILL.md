@@ -50,10 +50,9 @@ shows the class's precondition (a process with no deadline, a collector with
 no cap, a write under `/tmp`, `curl` without `-q`), with the class's measured
 share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
 `lookedFor` names the classes whose precondition was not observed. Read
-the document, not the report: the report a person sees is a table that
-counts shell lines and variable paths rather than listing them, and its
-review table names no sites, `--full` prints every site, and `--json`
-carries all of it either way.
+the document, not the report: the report a person sees is an overview of
+counts and ratios that names no site, `--full` prints every site, and
+`--json` carries all of it either way.
 
 How to read "observed". Every row is what regular expressions found in the
 text at `file:line`, never a runtime fact and never a verdict: `deadline

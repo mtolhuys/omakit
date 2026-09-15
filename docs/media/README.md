@@ -297,15 +297,11 @@ fixture from `tests/fixtures/inspect/`, materialised into a temporary Git
 repository the way `submit.gif`'s subject is, so anyone can reproduce it
 without a plugin of their own and no third-party tree is named. The capture
 is the real stdout, unedited, at the eighty columns a pipe gets; the scene
-is 110 columns wide so a `file:line` or a host is never cut, 25 rows, and
-omits nothing. The last frame holds on the review table and the closing
-line for 8.16 s. Re-captured and re-rendered twice, with the same pipeline
-and versions: when the processes line and the closing line began to say how
-many sites are QML `Process` blocks and how many are shell lines, and when
-the default report became the one a person reads (one line per fact, a
-second only where something is absent) with the exhaustive listing behind
-`--full`, and once more when that default became a table with the cited
-rows marked.
+is 110 columns wide so nothing is cut, 23 rows, and
+omits nothing. The last frame holds on the review classes and the closing
+line for 8.16 s. Re-captured and re-rendered as the default report changed,
+with the same pipeline and versions, last when it became the one-screen
+overview.
 
 ```bash
 node --input-type=module -e '
@@ -324,8 +320,8 @@ another ffmpeg, which is the reason the version is recorded.
 
 | GIF | Bytes | Duration | Final hold | Final screen |
 | --- | ---: | ---: | ---: | --- |
-| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 23,054 | 11.32 s | 8.16 s | the process row marked with no deadline and no cap, the review table with both classes and their shares, and INSPECTED |
+| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 22,400 | 11.20 s | 8.16 s | the overview: counts and ratios per kind, the two review classes with their shares and site counts, and INSPECTED |
 
-The capture has 22 lines, none wider than 80 columns, and its sha256 and the
+The capture has 20 lines, none wider than 80 columns, and its sha256 and the
 GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
 beside the other GIFs.
