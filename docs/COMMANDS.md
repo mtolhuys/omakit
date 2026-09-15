@@ -30,7 +30,16 @@ idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
 seven files omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the
-pin's submission form actually has.
+pin's submission form actually has. For `omakit weigh <TAB>` it offers the
+plugin ids the running shell has installed, read at TAB time through
+`omarchy-shell shell listPlugins` and `jq` (enabled ids first, whole bars
+left out, since a bar cannot be weighed), and falls back to a directory
+when the shell does not answer within a second. The decision behind that:
+nothing starts a node process behind a TAB, because node's startup is not
+something to put between a keystroke and its answer, and the ids are the
+shell's to report, not a list to bake into a script that would go stale
+the next time a plugin is added. The same pipeline is in the bash, zsh and
+fish scripts, and `tests/unit/completion.test.mjs` runs its jq expression.
 
 `omakit verify` prints the official baseline result alone, with no Omakit
 check around it: the subject, the pin, the transport and what the local

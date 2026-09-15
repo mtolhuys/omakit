@@ -3,10 +3,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { completionInstall, installCompletion, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
+import { completionInstall, installCompletion, PLUGIN_IDS_COMMAND, PLUGIN_IDS_JQ, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { submissionContract, tagSlug } from "../../tools/marketplace/form.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "../../tools/marketplace/usage.mjs"
@@ -77,12 +77,13 @@ test("the bash function completes commands, flags, controlled values and directo
   writeFileSync(script, scripts.bash)
   // Drive the completion function the way readline does: COMP_WORDS and
   // COMP_CWORD set, the function called, COMPREPLY read back.
-  const complete = (...words) => {
+  const complete = (...words) => completeWith(process.env, ...words)
+  const completeWith = (env, ...words) => {
     const result = spawnSync("bash", ["-c", [
       `source "$1"; shift`,
       `COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); COMP_LINE="$*"; COMP_POINT=\${#COMP_LINE}`,
       `_omakit; printf '%s\\n' "\${COMPREPLY[@]}"`,
-    ].join("\n"), "bash", script, ...words], { encoding: "utf8", cwd: REPO_ROOT })
+    ].join("\n"), "bash", script, ...words], { encoding: "utf8", cwd: REPO_ROOT, env })
     assert.equal(result.status, 0, result.stderr)
     return result.stdout.split("\n").filter(Boolean)
   }
@@ -94,6 +95,40 @@ test("the bash function completes commands, flags, controlled values and directo
   assert.deepEqual(complete("omakit", "submit", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").flags.map((f) => f.flag))
   assert.deepEqual(complete("omakit", "submit", "doc"), ["docs"], "a target is a directory")
   assert.deepEqual(complete("omakit", "doctor", "--"), ["--offline", "--json", "--out"])
+  // `weigh <TAB>`: the ids the running shell reports, enabled first, whole
+  // bars left out, read at TAB time through a stub omarchy-shell; when the
+  // shell does not answer, a directory, so the TAB is never empty.
+  const stubs = mkdtempSync(join(tmpdir(), "omakit-shell-stub-"))
+  const answering = join(stubs, "answering")
+  const silent = join(stubs, "silent")
+  for (const dir of [answering, silent]) mkdirSync(dir)
+  writeFileSync(join(answering, "omarchy-shell"), `#!/bin/bash\n[[ "$1 $2" == "shell listPlugins" ]] || exit 1\necho '[{"id":"omarchy.bar","kinds":["bar"],"enabled":true},{"id":"fixture.off","kinds":["panel"],"enabled":false},{"id":"fixture.clean","kinds":["bar-widget"],"enabled":true},{"id":"io.github.someone.thing","kinds":["service"],"enabled":true}]'\n`)
+  writeFileSync(join(silent, "omarchy-shell"), "#!/bin/bash\nexit 1\n")
+  for (const dir of [answering, silent]) chmodSync(join(dir, "omarchy-shell"), 0o755)
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "weigh", ""), ["fixture.clean", "io.github.someone.thing", "fixture.off"], "enabled first, the bar left out")
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "weigh", "fixture.c"), ["fixture.clean"])
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${silent}:${process.env.PATH}` }, "omakit", "weigh", "doc"), ["docs"], "no answer: a directory")
+  assert.deepEqual(completeWith({ ...process.env, PATH: `${answering}:${process.env.PATH}` }, "omakit", "weigh", "--"), subcommandsOf(COMMANDS).find((sub) => sub.name === "weigh").flags.map((f) => f.flag))
+})
+
+test("the jq expression behind weigh <TAB> puts enabled ids first and leaves whole bars out", (t) => {
+  if (spawnSync("jq", ["--version"], { encoding: "utf8" }).error) {
+    t.skip("jq is not installed here")
+    return
+  }
+  const listed = JSON.stringify([
+    { id: "omarchy.bar", kinds: ["bar"], enabled: true },
+    { id: "b.off", kinds: ["panel"], enabled: false },
+    { id: "a.on", kinds: ["bar-widget"], enabled: true },
+    { id: "c.on", enabled: true },
+  ])
+  const result = spawnSync("jq", ["-r", PLUGIN_IDS_JQ], { encoding: "utf8", input: listed })
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(result.stdout.split("\n").filter(Boolean), ["a.on", "c.on", "b.off"], "enabled first in their order, the bar gone, no kinds tolerated")
+  assert.match(PLUGIN_IDS_COMMAND, /^timeout 1 omarchy-shell shell listPlugins 2>\/dev\/null \| jq -r '/, "a one-second timeout, and jq, not node, behind the TAB")
+  for (const shell of COMPLETION_SHELLS) assert.ok(scripts[shell].includes(PLUGIN_IDS_COMMAND), `${shell}: the same pipeline`)
+  assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "weigh").target, "plugin")
+  assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").target, "directory")
 })
 
 

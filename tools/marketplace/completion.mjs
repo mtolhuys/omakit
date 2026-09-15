@@ -38,9 +38,25 @@ export function subcommandsOf(commands = COMMANDS) {
         value: placeholder ? placeholderKind(placeholder) : null,
       }))
     const sentence = command.lines.join(" ").replace(/`/g, "").split(/(?<=\.)\s/)[0]
-    return { name, description: sentence, flags, target: /<target>|<plugin-id-or-dir>/.test(signature) }
+    // `<target>` completes as a directory; `<plugin-id-or-dir>` as the ids
+    // the running shell has installed, read at TAB time, with a directory
+    // as the fallback.
+    const target = /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
+    return { name, description: sentence, flags, target }
   })
 }
+
+/**
+ * The plugin ids a TAB offers for `omakit weigh <TAB>`: what the running
+ * shell reports through `omarchy-shell shell listPlugins`, filtered with
+ * `jq` at TAB time, enabled ids first and whole bars left out, since a bar
+ * cannot be weighed. No node process behind the TAB: a shell that does not
+ * answer within a second yields nothing, and the script falls back to a
+ * directory. The pipeline is the same in every shell's script and the jq
+ * expression is exported so a test can run it through jq.
+ */
+export const PLUGIN_IDS_JQ = "[.[] | select(((.kinds // []) | index(\"bar\")) | not)] | sort_by(.enabled | not) | .[].id"
+export const PLUGIN_IDS_COMMAND = `timeout 1 omarchy-shell shell listPlugins 2>/dev/null | jq -r '${PLUGIN_IDS_JQ}' 2>/dev/null`
 
 /** What a valued flag takes, by its placeholder: a controlled value, a file, or free text. */
 function placeholderKind(placeholder) {
@@ -141,13 +157,25 @@ function bash({ subcommands, categories, tags, pin, version }) {
       lines.push("      return")
       lines.push("    fi")
     }
-    if (sub.target) {
+    if (sub.target === "plugin") {
+      lines.push('    if ((COMP_CWORD == 2)); then')
+      lines.push('      COMPREPLY=($(compgen -W "$(_omakit_plugin_ids)" -- "$cur"))')
+      lines.push('      if ((${#COMPREPLY[@]} == 0)); then COMPREPLY=($(compgen -d -- "$cur")); compopt -o filenames 2>/dev/null; fi')
+      lines.push("    fi")
+    } else if (sub.target) {
       lines.push('    COMPREPLY=($(compgen -d -- "$cur"))')
       lines.push("    compopt -o filenames 2>/dev/null")
     }
     lines.push("    ;;")
   }
   lines.push("  esac")
+  lines.push("}")
+  lines.push("")
+  lines.push("# The plugin ids the running shell has installed, enabled first, whole bars")
+  lines.push("# left out, read at TAB time; nothing when the shell does not answer in a")
+  lines.push("# second, and the caller falls back to a directory.")
+  lines.push("_omakit_plugin_ids() {")
+  lines.push(`  ${PLUGIN_IDS_COMMAND}`)
   lines.push("}")
   lines.push("")
   lines.push("# A controlled value may contain a space, so each match is one line and is")
@@ -201,13 +229,22 @@ function zsh({ subcommands, categories, tags, pin, version }) {
       if (value === "text") return single(`${flag}:text:`)
       return single(flag)
     })
-    if (sub.target) specs.push(single("1:target:_directories"))
+    if (sub.target === "plugin") specs.push(single("1:plugin:_omakit_plugins"))
+    else if (sub.target) specs.push(single("1:target:_directories"))
     if (specs.length) lines.push(`      _arguments ${specs.join(" ")}`)
     lines.push("      ;;")
   }
   lines.push("    esac")
   lines.push("    ;;")
   lines.push("  esac")
+  lines.push("}")
+  lines.push("")
+  lines.push("# The plugin ids the running shell has installed, enabled first, whole bars")
+  lines.push("# left out, read at TAB time; a directory when the shell does not answer.")
+  lines.push("_omakit_plugins() {")
+  lines.push("  local -a ids")
+  lines.push(`  ids=(\${(f)"$(${PLUGIN_IDS_COMMAND})"})`)
+  lines.push("  if (( ${#ids} )); then compadd -a ids; else _directories; fi")
   lines.push("}")
   lines.push("")
   lines.push('_omakit "$@"')
@@ -221,11 +258,20 @@ const fishWord = (text) => String(text).replace(/([\\'" ])/g, "\\$1")
 function fish({ subcommands, categories, tags, pin, version }) {
   const lines = [...header("#", "fish", pin, version), ""]
   lines.push("complete -c omakit -f")
+  lines.push("")
+  lines.push("# The plugin ids the running shell has installed, enabled first, whole bars")
+  lines.push("# left out, read at TAB time; nothing when the shell does not answer, and")
+  lines.push("# the directories offered beside them stand.")
+  lines.push("function __omakit_plugin_ids")
+  lines.push(`  ${PLUGIN_IDS_COMMAND}`)
+  lines.push("end")
+  lines.push("")
   for (const sub of subcommands) {
     lines.push(`complete -c omakit -n __fish_use_subcommand -a ${sub.name} -d ${single(sub.description)}`)
   }
   for (const sub of subcommands) {
     const when = `-n ${single(`__fish_seen_subcommand_from ${sub.name}`)}`
+    if (sub.target === "plugin") lines.push(`complete -c omakit ${when} -a '(__omakit_plugin_ids)'`)
     if (sub.target) lines.push(`complete -c omakit ${when} -a '(__fish_complete_directories)'`)
     for (const { flag, value } of sub.flags) {
       const long = `-l ${flag.slice(2)}`
