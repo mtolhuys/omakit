@@ -1,0 +1,25 @@
+{
+  "measurement": "M11",
+  "date": "2026-09-12",
+  "source": "public issues of omacom/omarchy-plugin-marketplace, maintainer review comments",
+  "sample": true,
+  "issues": [4405, 4404, 4403, 4402, 4393, 4392, 4390, 4385, 4380, 4375, 4370, 4365, 4360, 4350, 4340, 4330, 4320, 4310, 4300, 4280, 4260, 4240, 4220, 4200, 4150, 4100, 4050, 4000, 3900, 3800],
+  "issueCount": 30,
+  "findingsApprox": 88,
+  "classification": "one reader, by the reviewer's own wording, one class per finding",
+  "classes": [
+    { "id": "process-lifecycle", "share": 0.20, "inWords": "absolute deadline, cancel on destruction, process-group cleanup, no reap of the leader before TERM then KILL, job limit released only after reap" },
+    { "id": "unbounded-buffering", "share": 0.19, "inWords": "byte and line bounds on the producer side; clipping after onExited does not count" },
+    { "id": "file-and-state-boundary", "share": 0.15, "inWords": "private 0700 directory, no-follow descriptor, size cap, 0600 exclusive temp, atomic replace, schema-validated parse, no check-then-use" },
+    { "id": "environment-trust", "share": 0.07, "inWords": "fixed absolute helper paths instead of PATH resolution, minimal environment, curl -q" },
+    { "id": "secrets", "share": 0.07, "inWords": "never in argv, never in logs or notifications, protected at rest" },
+    { "id": "supply-chain", "share": 0.07, "inWords": "pinned refs, checksums, no self-update from the network, provenance for bundled binaries" },
+    { "id": "network-egress", "share": 0.05, "inWords": "HTTPS only, refuse private addresses, pin the redirect origin" },
+    { "id": "untrusted-text-to-display", "share": 0.05, "inWords": "Text.PlainText, control characters, length bound" },
+    { "id": "argument-grammar", "share": 0.04, "inWords": "argv only, strict grammar and length on values that end up in a command" },
+    { "id": "privilege-disclosure", "share": 0.03, "inWords": "docker or input group membership is root-equivalent and must be named as such" }
+  ],
+  "roundsPerHumanReviewedSubmission": { "mean": 2, "min": 0, "max": 4 },
+  "baselinePassedOnTheCommitLaterBlocked": 2,
+  "notes": "Shares are rounded to whole percent and sum to 92 because a few findings fit no class. Individual findings are not reproduced; the issue numbers are the sample, the classes are the aggregate."
+}

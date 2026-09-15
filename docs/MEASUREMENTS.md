@@ -784,3 +784,51 @@ with no measurable shell CPU above that floor. Memory remains a shell fact,
 not an attributed plugin weight; C1 and C2's caveats still apply. The config
 was restored with equal before/after md5, and the shell answered afterwards.
 Full commands, cuts and renderer versions are in [media/README.md](media/README.md#second-pass-final-screens-2026-09-15).
+
+## M11. What the human review raises, by class
+
+The automated baseline decides whether a person has to look (M4). This entry
+is about what that person then says. Thirty issues with maintainer review
+comments were read on 2026-09-12, every review in the sample written by the
+same maintainer: issues 4405, 4404, 4403, 4402, 4393, 4392, 4390, 4385, 4380,
+4375, 4370, 4365, 4360, 4350, 4340, 4330, 4320, 4310, 4300, 4280, 4260, 4240,
+4220, 4200, 4150, 4100, 4050, 4000, 3900 and 3800, about 88 findings raised
+by the maintainer. Each finding was put in one class by one reader, going by
+the reviewer's own wording. The [record](evidence/inspect/2026-09-12-review-classes.json)
+carries the sample, the classes and the reviewer's requirement for each in
+paraphrase.
+
+| Class | Share of findings | The requirement, in the reviewer's terms |
+| --- | --- | --- |
+| process lifecycle | about 20% | absolute deadline, cancel on destruction, process-group cleanup, no reaping of the leader before TERM then KILL |
+| unbounded buffering | about 19% | byte and line bounds on the producer side; clipping after `onExited` does not count |
+| file and state boundary | about 15% | private 0700 directory, no-follow descriptor, size cap, 0600 exclusive temp, atomic replace, no check-then-use |
+| environment trust | about 7% | absolute helper paths instead of PATH resolution, minimal environment, `curl -q` |
+| secrets | about 7% | never in argv, never in logs or notifications, protected at rest |
+| supply chain | about 7% | pinned refs, checksums, no self-update from the network, provenance for bundled binaries |
+| network egress | about 5% | HTTPS only, private addresses refused, redirect origin pinned |
+| untrusted text to display | about 5% | `Text.PlainText`, control characters stripped, length bound |
+| argument grammar | about 4% | argv only, strict grammar and length on values that reach a command |
+| privilege disclosure | about 3% | `docker` or `input` group membership named as root-equivalent |
+
+Two more figures from the same sample. Submissions that reached a human
+review went through about two further push-and-re-review rounds on average,
+range 0 to 4, so roughly three readings per plugin. And in 2 of the 30 the
+automated baseline had passed the exact commit the reviewer then blocked,
+which is the baseline documenting its own limit ("not a security review"),
+not a defect; it means an author sees green today and still enters the
+rounds.
+
+Limits, stated. Thirty issues is a small sample and the shares are rounded;
+they sum to 92 because a few findings fit no class. The classes are one
+reader's, not the maintainer's taxonomy, and a maintainer who changes what he
+looks for changes them. None of the classes is about what a plugin does; all
+of them are about the plumbing between QML and the operating system:
+starting, buffering, cleaning up, reading, writing, fetching, showing. That
+is what makes them observable in the source at all.
+
+Used by: the pattern rows of `omakit inspect`, each of which cites its class
+here and prints the share beside it, and nothing else. `inspect` prints a
+pattern only where the tree shows the class's precondition and never turns
+the share into a verdict; a share says how often reviewers raised a class,
+not how likely this plugin is to be blocked.
