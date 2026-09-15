@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.write-tmp",
+  "name": "Fixture: write to tmp",
+  "version": "0.0.1",
+  "description": "One shell redirect into the shared temporary directory.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

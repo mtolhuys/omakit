@@ -54,40 +54,49 @@ reviewer who is handed the same list reads the tree faster.
 
 ## The "observed" rule
 
-Every fact row begins with the word `observed`, every count is a count of what
-the extraction found, and the report ends by naming what the method cannot
-see. A row never says "the plugin does X"; it says "observed X at
-`file:line`". The distinction is the product: a static reading that sounds
-like a runtime fact is the failure the 0.1 Passport made, and this command
-exists to not repeat it.
+Every section line states what was observed and how many (`processes
+observed 3`), every row under it is one site with its `file:line` and what
+the text shows there, every qualifier in a row is worded as an observation
+("deadline observed", "no cap observed", "under a directory the plugin
+controls: not observed"), every count is a count of what the extraction
+found, and the report ends by naming what the method cannot see. A row never
+says "the plugin does X"; it says what was observed at `file:line`. The
+distinction is the product: a static reading that sounds like a runtime fact
+is the failure the 0.1 Passport made, and this command exists to not repeat
+it.
 
-The known blind spots, printed at the end of every report:
+The known blind spots, printed at the end of every report as the
+`not visible` line and carried in the document as `notVisible`, one fixed
+phrase each:
 
-- `command` values built at run time (`command: [tool].concat(args)`, string
-  concatenation, template literals with expressions).
-- Hosts and paths that arrive through variables, properties, config files or
-  environment.
-- Commands inside scripts that `inspect` does not follow: a shell script that
-  calls a second script is read as one `Process` argv, and the second script
-  is read on its own only if it is in the tree.
-- QML components loaded from outside the tree, and anything `Loader` or
+- `commands built at run time`: `command: [tool].concat(args)`, string
+  concatenation, template literals with expressions. Such a command is a
+  `▒ ?` row with `argv: null`, never a guess.
+- `hosts and paths from variables, properties, config or the environment`.
+- `scripts a command calls that inspect does not follow`: a shell script that
+  calls a second script is read as one argv, and the second script is read on
+  its own only if it is in the tree.
+- `components loaded from outside the tree`, and anything `Loader` or
   `Qt.createComponent` resolves at run time.
-- Encoded or obfuscated content (base64, `eval`, `sh -c` with a computed
-  string). Where `sh -c`, `bash -c` or `eval` is observed, the row says so
-  and stops there.
+- `encoded or obfuscated content, and what a sh -c or eval string runs`:
+  base64, `eval`, `sh -c` with a computed string. Where `sh -c`, `bash -c` or
+  `eval` is observed, the row says so and stops there.
 
 A tree that shows none of the facts is reported as "observed nothing of this
 kind", never as "clean".
 
 ## What it reads
 
-The installable tree of the plugin directory (the same tree `submit` checks;
-`.git/` and hidden entries excluded), and within it every `.qml`, `.js`,
-`.mjs`, `.cjs`, `.sh`, `.bash`, `.zsh`, `.fish`, `.py` file and every file with
-a shebang, plus `manifest.json` for the id and the entry points. It does not
-read `README.md` for facts: prose that says `curl` is not a process. This is
-the second lesson of the 0.1 Passport, which counted a README mention of a
-command as an observation.
+The installable tree of the plugin directory at the subject commit, read
+from the Git object database the way `submit` reads it (`.git/` and hidden
+entries excluded, an uncommitted edit not seen), and within it every `.qml`,
+`.js`, `.mjs`, `.cjs`, `.sh`, `.bash`, `.zsh`, `.fish`, `.py` file and every
+file with a shebang or the executable bit, plus `manifest.json` for the id.
+It does not read `README.md` for facts: prose that says `curl` is not a
+process. This is the second lesson of the 0.1 Passport, which counted a
+README mention of a command as an observation. The one thing the README is
+asked is whether it names a privileged tool the argv already shows, for the
+`privilege disclosure` pattern, and that is a fact about the README.
 
 Sites are counted per occurrence with `file:line`, never per file.
 
@@ -177,23 +186,33 @@ words them that way.
 ## Options
 
 ```bash
-omakit inspect <plugin-dir>            # the report
-omakit inspect <plugin-dir> --json     # the document on stdout
-omakit inspect <plugin-dir> --out <f>  # write the document to a file as well
-omakit inspect <plugin-dir> --offline  # skip the baseline section (prints ▔ skip)
+omakit inspect <plugin-dir>                # the report
+omakit inspect <plugin-dir> --json         # the document on stdout
+omakit inspect <plugin-dir> --out <f>      # write the document to a file as well
+omakit inspect <plugin-dir> --offline      # skip the baseline section (prints ▔ skip)
+omakit inspect <plugin-dir> --allow-dirty  # read the committed tree of a checkout with uncommitted changes
 ```
 
 `<plugin-dir>` resolves the way `submit` resolves its target
-(`tools/subject/resolve.mjs`): a directory, or a Git checkout whose HEAD is
-recorded as the subject commit. There is no `--fix`, no `--strict`, no
+(`tools/subject/resolve.mjs`): a directory inside a Git checkout, whose HEAD
+is recorded as the subject commit and whose tree at that commit is what is
+read, or `<https url>@<40-char sha>` fetched read-only into the cache. A
+directory below the checkout's root is read as the plugin's root, so a
+plugin kept in a subdirectory of a larger repository is inspected on its
+own. A checkout with uncommitted changes is refused with the remedy `submit`
+gives, exit 1, and `--allow-dirty` reads the committed tree as it is, the
+way `submit --allow-dirty` does. There is no `--fix`, no `--strict`, no
 threshold flag, because there is nothing to pass or fail.
 
 ## Exit status
 
 `0` when a report was produced, whatever it observed. `2` when the target
-could not be read (no directory, no manifest, nothing to inspect). There is no
-exit status for "found something", because finding something is the normal
-outcome and not a failure.
+could not be read (no directory, no Git checkout, no commit, no manifest,
+nothing to inspect) and for a usage error. `1` for a refusal that is not
+about the target's readability: uncommitted changes without `--allow-dirty`,
+or no pinned marketplace checkout for the baseline (`omakit pin`). There is
+no exit status for "found something", because finding something is the
+normal outcome and not a failure.
 
 ## The JSON contract
 
@@ -206,13 +225,16 @@ every produced document to it.
 omakit            string   the omakit version that produced the document
 command           "inspect"
 method            string   one sentence: static extraction, regular expressions, observed
-subject           { dir, commit|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
+subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
 observed          { processes[], hosts[], writes[], timers[] }
-notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read
-patterns          [{ id, observedCount, sites: [{ file, line }], measurement: "M11", share: number }]
-                  only patterns whose precondition was observed
+notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:
+                  kind "command" (a computed command), "host" (an expression where the host would be),
+                  "timer-interval" (an interval that is an expression)
+patterns          [{ id, observedCount, sites: [{ file, line }], observation, measurement: "M11", share: number }]
+                  only patterns whose precondition was observed; `observation` is the row's first
+                  line, starting with the word observed
 lookedFor         string[]  pattern ids whose precondition was not observed
-notVisible        string[]  the fixed blind-spot list above, verbatim
+notVisible        string[]  the five blind spots above, one fixed phrase each, verbatim
 marketplaceBaseline
                   the `verify` section verbatim, or { skipped: true, reason } under --offline
 ```
@@ -220,17 +242,65 @@ marketplaceBaseline
 A process:
 
 ```text
-file, line        where the Process or command is declared
-argv              string[] | null   null when not resolvable statically
-argvForm          "array" | "string" | "computed"
+file, line        where the command is declared: the `command:` line of a Process block, the line
+                  that assigns `<id>.command`, an execDetached call, or the shell line
+declaredIn        "qml" | "shell"   a Process block or execDetached, or a command line of a script
+id                string | null     the Process block's id
+argv              string[] | null   null when not resolvable statically; for an array with a computed
+                  element, that element is its source text and `expressions` names it
+argvForm          "array" | "string" | "computed"   a string is split into words the way a shell would
+expressions       [{ index, text }]   the argv elements that are expressions, not literals
+commandText       string | null     the expression a computed command was read from
+running           boolean   `running: true`, `<id>.running = true` or `<id>.start()` observed
+detached          boolean   a Quickshell.execDetached call, which has no deadline by design
 deadline          { observed: boolean, via: "timer-kill" | "timeout-argv" | "destruction" | null, ms: number|null }
 output            { collector: "StdioCollector" | "SplitParser" | "none" | "unknown", capObserved: boolean, via: string|null }
-shellWrapper      boolean   true when argv[0..1] is sh -c, bash -c or eval
+shellWrapper      boolean   true when the tool is sh, bash, zsh, dash, fish or ksh with -c next, or eval
+pipedFrom         { line, argv0 } | null   for a shell site that reads the previous segment's output
 ```
 
-A host: `{ host, scheme, file, line, tool, timeout: { observed, via }, sizeCap: { observed, via }, flags: string[] }`.
-A write: `{ file, line, path, via, controlledDirectory: "observed" | "not-observed" | "unknown", mode: string|null }`.
-A timer: `{ file, line, intervalMs, repeat, running, triggeredOnStart, startedBy: string|null }`.
+A shell script contributes one site per command segment of every line that
+is not a comment, split at `|`, `;`, `&&` and `||`, with a command
+substitution `$(...)` read as its own site; builtins and keywords (`cd`,
+`set`, `echo`, `if`, ...) start no process and are not sites, `eval` is.
+
+A host:
+
+```text
+host, scheme      the literal's host and http or https
+file, line, tool  where the literal sits and the tool it reaches: the argv's first word after any
+                  wrapper (sudo, env, timeout, ...), the call on the line (fetch, XMLHttpRequest,
+                  Qt.openUrlExternally), or null when neither is on the line
+timeout           { observed, via }   --max-time, -m, --connect-timeout, --timeout, -T, or a timeout wrapper
+sizeCap           { observed, via }   --max-filesize, --quota, or head -c in the same pipeline
+flags             string[]   every option word beside the literal
+privateAddress    boolean    a loopback, link-local or private-range literal, or localhost
+```
+
+A write:
+
+```text
+file, line, path  where and what, `path` as written (a literal or the expression text)
+via               "FileView" | ">" | ">>" | "tee" | "cp" | "mv" | "mkdir" | "mktemp" | "install" | "touch" | "ln"
+                  | "writeFile" | "writeFileSync" | "appendFile" | "appendFileSync" | "open"
+canonicalPath     string | null   the path's literal prefix after `~`, `$HOME`, `${X}` and
+                  Quickshell.env("X") are read as the XDG names; null when it starts with an expression
+controlledDirectory  "observed" | "not-observed" | "unknown"
+controlledBy      the controlled prefix the path is under, when observed; otherwise null
+temp              boolean   under /tmp, /var/tmp or /dev/shm
+mode              string | null   -m on mkdir or install, mktemp's own mode, `chmod N` on the same path
+                  in the file, or `umask N` in the file
+```
+
+A timer:
+
+```text
+file, line, id    the Timer block and its id
+intervalMs        number | null   null when the interval is an expression, carried in intervalText
+intervalText      string | null
+repeat, running, triggeredOnStart   boolean, or null when bound to an expression
+startedBy         string | null   the handler outside the block that starts it, or "script"
+```
 
 ## What it never does
 

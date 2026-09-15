@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.process-without-deadline",
+  "name": "Fixture: process without a deadline",
+  "version": "0.0.1",
+  "description": "One process with an argv array, no Timer that kills it, and a collector with no cap.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

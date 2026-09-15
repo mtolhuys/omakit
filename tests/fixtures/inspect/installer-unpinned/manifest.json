@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.installer-unpinned",
+  "name": "Fixture: unpinned installer",
+  "version": "0.0.1",
+  "description": "An installer that clones a repository without a pinned commit.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.computed-argv-element",
+  "name": "Fixture: computed argv element",
+  "version": "0.0.1",
+  "description": "One argv array with an element built from a property.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

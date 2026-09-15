@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.richtext-sink",
+  "name": "Fixture: rich text sink",
+  "version": "0.0.1",
+  "description": "One Text bound to a collector's output without Text.PlainText.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

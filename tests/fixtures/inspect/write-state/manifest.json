@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.write-state",
+  "name": "Fixture: write under the state directory",
+  "version": "0.0.1",
+  "description": "One FileView written under XDG_STATE_HOME.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

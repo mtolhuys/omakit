@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.curl-without-caps",
+  "name": "Fixture: curl without caps",
+  "version": "0.0.1",
+  "description": "One host reached by curl with no timeout, no size cap, following redirects.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

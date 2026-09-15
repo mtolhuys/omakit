@@ -7,6 +7,7 @@
 //   omakit verify <target>           the official baseline over the local transport, verbatim
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
 //   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
+//   omakit inspect <plugin-dir>      what a plugin tree does, as observations; decides nothing
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
@@ -42,6 +43,8 @@ import { listWeighings } from "../weigh/list.mjs"
 import { askYes } from "../weigh/confirm.mjs"
 import { auditInstalled } from "../audit/audit.mjs"
 import { renderAudit } from "../audit/report.mjs"
+import { inspectPlugin, NOT_READABLE } from "../inspect/inspect.mjs"
+import { renderInspect } from "../inspect/report.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -387,6 +390,49 @@ async function cmdAudit(args) {
 }
 
 /**
+ * `omakit inspect`: a report, exit 0 whatever it observed; exit 2 when the
+ * target could not be read (no directory, no Git checkout, no commit, no
+ * manifest), in the one failure register. There is no exit status for
+ * "found something", because finding something is the normal outcome.
+ * `--out` writes the document to a file beside whatever stdout gets, the
+ * way `audit --out` does.
+ */
+async function cmdInspect(args) {
+  const parsed = checkArgs(args, ACCEPTED.inspect)
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("inspect")}.`, 2, "omakit inspect <plugin-dir> [--json] [--out FILE] [--offline] [--allow-dirty]")
+  const target = parsed.positionals[0]
+  if (!target) fail("usage", "inspect needs a plugin directory: `omakit inspect <plugin-dir>`", 2, "omakit inspect <plugin-dir> [--json] [--out FILE] [--offline] [--allow-dirty]")
+  const spinner = spinnerFor(args)
+  let document
+  try {
+    document = await inspectPlugin({
+      repoRoot: ROOT,
+      target,
+      offline: parsed.options.has("--offline"),
+      allowDirty: parsed.options.has("--allow-dirty"),
+      omakitVersion: VERSION,
+      onPhase: spinner.phase,
+    })
+  } catch (error) {
+    spinner.done()
+    if (error?.code && typeof error.code === "string") {
+      fail(error.code, error.message, NOT_READABLE.includes(error.code) ? 2 : 1, error.remedy || REMEDY[error.code])
+    }
+    throw error
+  }
+  spinner.done()
+  const json = `${JSON.stringify(document, null, 2)}\n`
+  const out = parsed.options.get("--out")
+  if (out) {
+    mkdirSync(dirname(resolve(out)), { recursive: true })
+    writeFileSync(resolve(out), json)
+  }
+  if (parsed.options.has("--json")) process.stdout.write(json)
+  else process.stdout.write(`${renderInspect(document)}\n`)
+  process.exitCode = 0
+}
+
+/**
  * Every way `weigh` stops without weighing, in one register: the closing
  * word a report would have ended with, negated, then the sentence naming
  * what is missing, then the one thing to do. Exit 2 for a usage error and
@@ -562,6 +608,8 @@ if (command === "setup") {
   await cmdAudit(rest)
 } else if (command === "weigh") {
   await cmdWeigh(rest)
+} else if (command === "inspect") {
+  await cmdInspect(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install

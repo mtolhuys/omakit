@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.nothing",
+  "name": "Fixture: nothing",
+  "version": "0.0.1",
+  "description": "A bar widget with no process, host, write or timer.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

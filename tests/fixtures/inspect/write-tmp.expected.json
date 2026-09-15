@@ -1,0 +1,110 @@
+{
+  "omakit": "<version>",
+  "command": "inspect",
+  "method": "static extraction, regular expressions over qml and shell; observed, not executed",
+  "subject": {
+    "dir": "<dir>",
+    "commit": "<commit>",
+    "repository": {
+      "url": "https://github.com/example/omarchy-plugin-fixture-write-tmp"
+    },
+    "mode": "author",
+    "pluginId": "fixture.write-tmp",
+    "filesRead": {
+      "qml": 1,
+      "js": 0,
+      "shell": 1,
+      "python": 0,
+      "other": 0
+    }
+  },
+  "observed": {
+    "processes": [
+      {
+        "file": "scripts/refresh.sh",
+        "line": 4,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "/usr/bin/df",
+          "-h",
+          "/"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      }
+    ],
+    "hosts": [],
+    "writes": [
+      {
+        "file": "scripts/refresh.sh",
+        "line": 4,
+        "path": "/tmp/fixture.write-tmp.cache",
+        "canonicalPath": "/tmp/fixture.write-tmp.cache",
+        "via": ">",
+        "controlledDirectory": "not-observed",
+        "controlledBy": null,
+        "temp": true,
+        "mode": null
+      }
+    ],
+    "timers": []
+  },
+  "notResolvable": [],
+  "patterns": [],
+  "lookedFor": [],
+  "notVisible": [
+    "commands built at run time",
+    "hosts and paths from variables, properties, config or the environment",
+    "scripts a command calls that inspect does not follow",
+    "components loaded from outside the tree",
+    "encoded or obfuscated content, and what a sh -c or eval string runs"
+  ],
+  "marketplaceBaseline": {
+    "pin": {
+      "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
+      "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+      "baselineVersion": "3",
+      "enforcementMode": "selective"
+    },
+    "transport": "local-git",
+    "assumedByAdapter": [
+      "repository.private=false",
+      "repository.disabled=false",
+      "repository.archived=false",
+      "tree.truncated=false (the local tree is always complete)"
+    ],
+    "invoked": true,
+    "skipReason": null,
+    "official": {
+      "schemaVersion": 1,
+      "baselineVersion": "3",
+      "repository": "example/omarchy-plugin-fixture-write-tmp",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-write-tmp",
+      "commitSha": "<commit>",
+      "checkedAt": "1970-01-01T00:00:00.000Z",
+      "outcome": "passed",
+      "enforcementMode": "selective",
+      "disposition": "clear",
+      "blocksApproval": false,
+      "findings": [],
+      "capabilities": []
+    },
+    "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
+  }
+}

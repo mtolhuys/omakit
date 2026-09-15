@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.http-host",
+  "name": "Fixture: http host",
+  "version": "0.0.1",
+  "description": "One host reached over plain http.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.secret-in-argv",
+  "name": "Fixture: secret in argv",
+  "version": "0.0.1",
+  "description": "One curl argv carrying an Authorization header.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

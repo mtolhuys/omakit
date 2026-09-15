@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.computed-command",
+  "name": "Fixture: computed command",
+  "version": "0.0.1",
+  "description": "One process whose command is a property, not a literal.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

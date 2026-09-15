@@ -21,6 +21,8 @@ import { pathToFileURL } from "node:url"
 // tree with the 15 MB marketplace pin or a cache in it.
 // At 0.4.0, account-wide watch and the update-notice module measured 157,417
 // bytes across 58 files, leaving 47,383 bytes under the unchanged ceiling.
+// With `omakit inspect`, ten modules under tools/inspect/, the package
+// measured 188,097 bytes across 71 files, 16,703 under the same ceiling.
 export const MAX_PACKED_BYTES = 204_800
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
@@ -38,6 +40,16 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/audit/audit.mjs",
   "tools/audit/git.mjs",
   "tools/audit/report.mjs",
+  "tools/inspect/contract.mjs",
+  "tools/inspect/hosts.mjs",
+  "tools/inspect/inspect.mjs",
+  "tools/inspect/patterns.mjs",
+  "tools/inspect/processes.mjs",
+  "tools/inspect/report.mjs",
+  "tools/inspect/text.mjs",
+  "tools/inspect/timers.mjs",
+  "tools/inspect/walk.mjs",
+  "tools/inspect/writes.mjs",
   "tools/weigh/audit.mjs",
   "tools/weigh/commands.mjs",
   "tools/weigh/config.mjs",

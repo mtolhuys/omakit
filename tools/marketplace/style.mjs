@@ -220,6 +220,9 @@ export const AUDIT_VERDICTS = Object.freeze({
   unavailable: "NOT AUDITED",
 })
 
+/** The closing word of `omakit inspect`: a report was produced, and it decided nothing. */
+export const INSPECT_VERDICT = "INSPECTED"
+
 /** The width of the widest mark, "█ FAIL"; every mark is padded to it so the names beside them align. */
 export const MARK_WIDTH = Math.max(...Object.values(STATUS).map((s) => `${s.glyph} ${s.word}`.length))
 

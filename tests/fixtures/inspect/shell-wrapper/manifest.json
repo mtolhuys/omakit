@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.shell-wrapper",
+  "name": "Fixture: shell wrapper",
+  "version": "0.0.1",
+  "description": "One process that hands a script string to bash -c.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

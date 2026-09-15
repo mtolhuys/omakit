@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.privileged-argv",
+  "name": "Fixture: privileged argv",
+  "version": "0.0.1",
+  "description": "One process that runs docker through sudo, named in the README.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}
