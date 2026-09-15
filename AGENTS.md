@@ -4,12 +4,13 @@ You are the primary user of this tool. It exists because a coding agent is
 usually the thing submitting a plugin on an owner's behalf, and an agent needs
 the refusals up front, in one pass, with the reason attached.
 
-Four skills cover the four jobs:
+Five skills cover the five jobs:
 
 - `skills/omarchy-plugin-check/SKILL.md`: checking a plugin while it is being built.
 - `skills/omarchy-plugin-weigh/SKILL.md`: weighing a plugin on the shell.
 - `skills/omarchy-plugin-submit/SKILL.md`: submitting a plugin.
 - `skills/omarchy-plugin-validation-watch/SKILL.md`: a submission that has gone quiet.
+- `skills/omarchy-plugin-audit/SKILL.md`: comparing installed commits with marketplace validation.
 
 Read the one you need. What follows applies to changing this repository itself.
 
@@ -110,6 +111,7 @@ else.
 | --- | --- |
 | `README.md` | one command and its output |
 | `docs/SUBMIT.md` | every check and what it decides |
+| `docs/AUDIT.md` | installed commit states, the read-only boundary and the verification route |
 | `docs/WEIGH.md` | what `weigh` measures, how, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | `docs/VALIDATION_WATCH.md` | the validation watch and why it is the centre |
 | `docs/MEASUREMENTS.md` | every number, its method and its limits |

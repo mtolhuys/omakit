@@ -17,8 +17,9 @@ Read the primary state first:
 - `ahead` means a validated commit is an ancestor, but HEAD contains later
   commits the marketplace did not validate.
 - `diverged` means installed history does not descend from a validated commit,
-  or its origin is not the listed repository.
-- `unverified` means the listing has no validated commit and is not verified.
+  or its origin is not the listed repository. A validated object missing from
+  local history is diverged, with the clone's shallow status stated.
+- `unverified` means the listing records no validated commit. Its status is stated.
 - `unlisted` means neither plugin id nor origin identifies a listing.
 - `unknown` means Git or the source directory could not answer. Keep the error.
 
@@ -36,7 +37,8 @@ Never run that checkout command without the person's explicit request. Never
 replace it with `omarchy plugin update`; update moves to mutable HEAD and does
 not establish marketplace validation.
 
-Exit 0 means every audited row is validated, or there was nothing third-party
-to audit. Exit 1 means drift or an unknown answer. Exit 2 means the invocation
-was refused. `NOT AUDITED` because the shell or catalog did not answer is a
+`AUDITED`, exit 0, means every audited row is validated, or there was nothing
+third-party to audit. `DRIFT`, exit 1, means drift or an unknown answer.
+Exit 2 means the invocation was refused. `NOT AUDITED` because the shell or
+catalog did not answer is a
 result to report, not a reason to substitute a directory scan.
