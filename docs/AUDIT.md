@@ -195,6 +195,10 @@ empty. `disabled` comes from `omarchy plugin list --json`. `upstream moved`
 means the catalog's `upstreamObservedCommit` differs from installed HEAD and
 from every validated commit. It does not fetch the repository.
 
+Validated facts read `validated <short> on <date>`. Ahead facts read
+`<N> commits ahead of validated <short> (<date>); HEAD <short>`. Flags follow
+a semicolon. The ahead fact names HEAD once.
+
 Plugins whose catalog `sourceType` is `builtin`, or whose installed row says
 `firstParty`, are counted in the header and left out of the rows and verdict.
 They ship with the shell.

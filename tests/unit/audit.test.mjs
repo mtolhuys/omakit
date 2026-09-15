@@ -122,6 +122,22 @@ test("JSON fields and human rendering carry the same audit result", async () => 
   assert.match(uncoloured, /AUDITED/)
 })
 
+test("validated and ahead fact lines state the commit and date without repeating HEAD", async () => {
+  const clean = await fixture({ target: "p.validated" })
+  assert.equal(clean.rows[0].fact, "validated aaaaaaaa on 2026-08-28T22:57:15.992Z")
+  const cleanText = renderAudit(clean, { colour: false }).replace(/\s+/g, " ")
+  assert.match(cleanText, /validated aaaaaaaa on 2026-08-28T22:57:15\.992Z; modified, upstream moved/)
+  assert.doesNotMatch(cleanText, /HEAD/)
+  const ahead = await fixture({ target: "p.ahead" })
+  assert.equal(ahead.rows[0].fact, "3 commits ahead of validated aaaaaaaa (2026-08-28T22:57:15.992Z); HEAD bbbbbbbb")
+  const aheadText = renderAudit(ahead, { colour: false }).replace(/\s+/g, " ")
+  assert.match(aheadText, /HEAD bbbbbbbb; upstream moved/)
+  assert.equal(aheadText.split("HEAD").length - 1, 1)
+  const divergedText = renderAudit(await fixture({ target: "p.diverged" }), { colour: false }).replace(/\s+/g, " ")
+  assert.match(divergedText, /installed commit does not descend from a validated commit; HEAD cccccccc/)
+  assert.equal(divergedText.split("HEAD").length - 1, 1)
+})
+
 test("completed audits distinguish validated from drift without claiming they were not audited", async () => {
   const clean = renderAudit(await fixture({ target: "p.validated" }), { colour: false })
   const drift = renderAudit(await fixture(), { colour: false })

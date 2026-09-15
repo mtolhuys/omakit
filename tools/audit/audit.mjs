@@ -21,6 +21,7 @@ const text = (value) => (typeof value === "string" && value ? value : null)
 const lower = (value) => text(value)?.toLowerCase() || null
 const figure = (value, origin) => (value === null || value === undefined ? null : { value, origin })
 const catalogFigure = (listing, name) => figure(text(listing?.[name]), `site/catalog.json ${name}`)
+const short = (value) => value.slice(0, 8)
 
 function targetId(target) {
   if (!target || !existsSync(target)) return target || null
@@ -88,7 +89,7 @@ function rowFact(plugin, checkout, listing, conflict, git, env) {
   if (!listing) return { ...common, state: "unlisted", fact: conflict || "manifest id and origin match no marketplace listing", aheadBy: null, matchedValidated: null }
   if (validated.some((entry) => entry.commit.value === checkout.commit)) {
     const matched = validated.find((entry) => entry.commit.value === checkout.commit)
-    return { ...common, state: "validated", fact: `HEAD is the ${matched.kind} validated commit`, aheadBy: null, matchedValidated: matched }
+    return { ...common, state: "validated", fact: `validated ${short(matched.commit.value)} on ${matched.date?.value || "an unrecorded date"}`, aheadBy: null, matchedValidated: matched }
   }
   if (!validated.length) {
     return { ...common, state: "unverified", fact: `listed with verificationStatus ${listing.verificationStatus || "unrecorded"}, and no validated commit`, aheadBy: null, matchedValidated: null }
@@ -101,7 +102,7 @@ function rowFact(plugin, checkout, listing, conflict, git, env) {
     }
     if (git.ancestor(plugin.sourceDir, candidate.commit.value, { env })) {
       const count = git.count(plugin.sourceDir, candidate.commit.value, { env })
-      return { ...common, state: "ahead", fact: `HEAD is ${count} commit${count === 1 ? "" : "s"} ahead of the ${candidate.kind} validated commit`, aheadBy: figure(count, `git rev-list --count ${candidate.commit.value}..HEAD`), matchedValidated: candidate }
+      return { ...common, state: "ahead", fact: `${count} commit${count === 1 ? "" : "s"} ahead of validated ${short(candidate.commit.value)} (${candidate.date?.value || "unrecorded date"}); HEAD ${short(checkout.commit)}`, aheadBy: figure(count, `git rev-list --count ${candidate.commit.value}..HEAD`), matchedValidated: candidate }
     }
   }
   if (missing.length) {
@@ -109,7 +110,7 @@ function rowFact(plugin, checkout, listing, conflict, git, env) {
     return { ...common, state: "diverged", fact: `validated commit not in local history; shallow clone: ${shallow.value}`, shallow, aheadBy: null, matchedValidated: missing[0] }
   }
   const moved = sameRepository(checkout.repository, listing.repo)
-  return { ...common, state: "diverged", fact: moved ? "HEAD does not descend from a validated commit" : `origin does not match ${listing.repo}`, aheadBy: null, matchedValidated: validated[0] }
+  return { ...common, state: "diverged", fact: moved ? "installed commit does not descend from a validated commit" : `origin does not match ${listing.repo}`, aheadBy: null, matchedValidated: validated[0] }
 }
 
 /**

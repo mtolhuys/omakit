@@ -28,7 +28,9 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
     const installed = row.installed?.commit?.value
     const validated = row.matchedValidated?.commit?.value
     const date = row.matchedValidated?.date?.value
-    const detail = `${row.state}: ${row.fact}${installed ? `; HEAD ${short(installed)}` : ""}${validated ? `; validated ${short(validated)}${date ? ` on ${date}` : ""}` : ""}${flagText(row.flags)}`
+    const detail = ["validated", "ahead"].includes(row.state)
+      ? `${row.fact}${flagText(row.flags)}`
+      : `${row.state}: ${row.fact}${installed ? `; HEAD ${short(installed)}` : ""}${validated ? `; validated ${short(validated)}${date ? ` on ${date}` : ""}` : ""}${flagText(row.flags)}`
     out.push(`${mark(markFor(row), c)}${c("name", row.id)}`)
     out.push(...wrap(detail, { indent: GUTTER }, c))
     if ((row.state === "ahead" || row.state === "diverged") && validated) {
