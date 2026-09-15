@@ -1,4 +1,4 @@
-import { action, colourEnabled, field, GUTTER, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
+import { action, AUDIT_VERDICTS, colourEnabled, field, GUTTER, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
 
 const short = (value) => value ? String(value).slice(0, 8) : "unrecorded"
 const flagText = (flags) => flags.length ? `; ${flags.join(", ")}` : ""
@@ -40,7 +40,6 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
   const total = document.counts.audited.value
   const good = document.counts.validated.value
   const drift = document.counts.drift.value
-  if (document.ok) out.push(...verdict("pass", "AUDITED", `${good} of ${total} run a commit the marketplace validated; ${drift} run one it never saw.`, c))
-  else out.push(...verdict("fail", "NOT AUDITED", `${good} of ${total} run a commit the marketplace validated; ${drift} run one it never saw.`, c))
+  out.push(...verdict(document.ok ? "pass" : "fail", document.ok ? AUDIT_VERDICTS.validated : AUDIT_VERDICTS.drift, `${good} of ${total} run a commit the marketplace validated; ${drift} run one it never saw.`, c))
   return out.join("\n")
 }

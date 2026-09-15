@@ -118,6 +118,15 @@ test("JSON fields and human rendering carry the same audit result", async () => 
   assert.match(uncoloured, /AUDITED/)
 })
 
+test("completed audits distinguish validated from drift without claiming they were not audited", async () => {
+  const clean = renderAudit(await fixture({ target: "p.validated" }), { colour: false })
+  const drift = renderAudit(await fixture(), { colour: false })
+  assert.match(clean, /AUDITED  /)
+  assert.match(drift, /DRIFT  /)
+  assert.doesNotMatch(drift, /NOT AUDITED/)
+  assert.match(drift.replace(/\s+/g, " "), /1 of 7 run a commit the marketplace validated; 6 run one it never saw\./)
+})
+
 test("the CLI refuses unknown options and reports an unanswered shell", () => {
   const entry = join(REPO_ROOT, "bin/omakit")
   const unknown = spawnSync(process.execPath, [entry, "audit", "--wat"], { encoding: "utf8", env: { ...process.env, TERM: "dumb" } })

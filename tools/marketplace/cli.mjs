@@ -33,7 +33,7 @@ import { upgrade } from "./upgrade.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { action, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
+import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
 import { confirmationQuestion, renderList, renderWeigh, renderPlan } from "../weigh/report.mjs"
@@ -297,7 +297,7 @@ async function cmdParity(args) {
 
 function notAudited(message, remedy = null, exit = 1) {
   const c = styler(colourEnabled(process.stderr))
-  const lines = verdict("fail", "NOT AUDITED", message, c)
+  const lines = verdict("fail", AUDIT_VERDICTS.unavailable, message, c)
   if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
   process.stderr.write(`${lines.join("\n")}\n`)
   process.exit(exit)

@@ -198,6 +198,12 @@ export const STATUS = Object.freeze({
   skipped: Object.freeze({ glyph: DENSITY.ceiling, word: "skip", tint: "unknown" }),
 })
 
+export const AUDIT_VERDICTS = Object.freeze({
+  validated: "AUDITED",
+  drift: "DRIFT",
+  unavailable: "NOT AUDITED",
+})
+
 /** The width of the widest mark, "█ FAIL"; every mark is padded to it so the names beside them align. */
 export const MARK_WIDTH = Math.max(...Object.values(STATUS).map((s) => `${s.glyph} ${s.word}`.length))
 

@@ -205,9 +205,11 @@ They ship with the shell.
 there was no third-party row to audit. A modified or disabled validated row
 keeps that primary state and flag.
 
-`NOT AUDITED`, exit 1, means at least one row is `ahead`, `diverged`,
-`unverified`, `unlisted` or `unknown`. It is also the failure register when the
-shell does not answer or neither a live catalog nor the pin can be read.
+`DRIFT`, exit 1, means at least one row is `ahead`, `diverged`,
+`unverified`, `unlisted` or `unknown`.
+
+`NOT AUDITED`, exit 1, means the shell does not answer or neither a live
+catalog nor the pin can be read. The reason is printed with the verdict.
 
 Usage errors exit 2. An ahead or diverged row prints, but never runs, the exact
 `git -C <dir> checkout <validated-sha>` that returns to a reviewed commit. It
