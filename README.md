@@ -42,7 +42,7 @@ The list shows 55 installed plugins, 47 enabled and 1 weighed; that single run h
 | Measurement | Evidence |
 | --- | --- |
 | Baseline parity | 30/30 local and marketplace results identical, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
-| Stale validation | 73% of 464 parked submissions, [M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool) |
+| Validated commit behind HEAD | 73% of 464 submissions parked with their author, snapshot 2026-09-12, [M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool) |
 | Registry churn | 4,201/4,293 commits touched only the registry in 30 days, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
 | GIFs are recorded output | 5 GIFs, committed captures and scenes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
 
