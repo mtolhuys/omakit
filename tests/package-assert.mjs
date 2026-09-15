@@ -30,6 +30,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/weigh/config.mjs",
   "tools/weigh/confirm.mjs",
   "tools/weigh/contract.mjs",
+  "tools/weigh/list.mjs",
   "tools/weigh/proc.mjs",
   "tools/weigh/report.mjs",
   "tools/weigh/stats.mjs",

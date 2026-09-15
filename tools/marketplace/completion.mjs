@@ -28,10 +28,15 @@ export function subcommandsOf(commands = COMMANDS) {
     const signature = [].concat(command.signature).join(" ")
     const name = signature.match(/^omakit +([a-z][a-z-]*)/)?.[1]
     if (!name) throw new Error(`completion: no subcommand in signature ${JSON.stringify(signature)}`)
-    const flags = [...signature.matchAll(/(--[a-z][a-z-]*)(?: <([^>]+)>)?/g)].map(([, flag, placeholder]) => ({
-      flag,
-      value: placeholder ? placeholderKind(placeholder) : null,
-    }))
+    // A flag named on two signature lines (`--json` on weigh's main line and
+    // on its `--list` line) is one flag.
+    const seen = new Set()
+    const flags = [...signature.matchAll(/(--[a-z][a-z-]*)(?: <([^>]+)>)?/g)]
+      .filter(([, flag]) => !seen.has(flag) && seen.add(flag))
+      .map(([, flag, placeholder]) => ({
+        flag,
+        value: placeholder ? placeholderKind(placeholder) : null,
+      }))
     const sentence = command.lines.join(" ").replace(/`/g, "").split(/(?<=\.)\s/)[0]
     return { name, description: sentence, flags, target: /<target>|<plugin-id-or-dir>/.test(signature) }
   })

@@ -48,6 +48,7 @@ machine (docs/WEIGH.md):
 | `weigh/stats.mjs` | Median, spread, the stats object, and the within-noise comparison. |
 | `weigh/audit.mjs` | `planWeigh()` reads and decides (what runs, how many restarts, the estimate) and writes nothing; `measureWeigh()` restarts, samples and restores in a `finally`; `buildDocument()` turns the samples into the document. |
 | `weigh/contract.mjs` | The JSON contract of docs/WEIGH.md as a validator, run by the unit tests and by the lab over a real document. |
+| `weigh/list.mjs` | `weigh --list`: every installed plugin with its last weighing from the documents under the state directory, read-only, unweighed enabled plugins first. |
 | `weigh/report.mjs` | The confirmation and the report for a person, drawn with `style.mjs`; the README sentence and the evidence path come last. |
 | `weigh/confirm.mjs` | The one question, at a terminal, on stderr. |
 

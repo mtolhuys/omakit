@@ -64,7 +64,7 @@ not apply to it.
 - `tests/unit/pin.test.mjs` keeps every marketplace path behind the immutable
   pin and prevents a sparse checkout from quietly fetching another rule.
 - `tests/package-assert.mjs`, exercised by `tests/unit/package.test.mjs`,
-  compares all 52 publishable paths and enforces a 153,600-byte tarball
+  compares all 53 publishable paths and enforces a 153,600-byte tarball
   ceiling when CI feeds it `npm pack --dry-run --json`. The ceiling exists to
   refuse an accidental tree (a pin, a cache, a fixture) rather than to hold
   the package at a size: it was 102,400 bytes against the measured

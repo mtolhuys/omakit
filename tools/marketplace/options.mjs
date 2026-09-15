@@ -27,7 +27,7 @@ export const ACCEPTED = Object.freeze({
   upgrade: Object.freeze({ valued: [], flags: ["--dry-run"], positionals: 0 }),
   doctor: Object.freeze({ valued: ["--out"], flags: ["--offline", "--json"], positionals: 0 }),
   parity: Object.freeze({ valued: ["--count", "--offset", "--out"], flags: [], positionals: 0 }),
-  weigh: Object.freeze({ valued: ["--runs", "--window", "--settle", "--out"], flags: ["--all", "--json", "--yes"], positionals: 1 }),
+  weigh: Object.freeze({ valued: ["--runs", "--window", "--settle", "--out"], flags: ["--all", "--list", "--json", "--yes"], positionals: 1 }),
 })
 
 /** The accepted options of a command in the words a refusal prints: `--runs N, --all, ...`. */

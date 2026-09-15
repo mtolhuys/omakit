@@ -9,6 +9,7 @@ process by starting the shell without the plugin and with it.
 ```bash
 omakit weigh <plugin-id-or-dir>       # one plugin
 omakit weigh --all                    # every enabled third-party plugin
+omakit weigh --list                   # every installed plugin, and when it was last weighed
 ```
 
 This is the one omakit command that is not read-only against your own
@@ -181,13 +182,30 @@ The session-lock check is the one `omarchy-restart-shell` makes,
 `omarchy-hyprland-session-locked`: while the compositor holds a session
 lock, the command refuses before touching anything.
 
+## The list
+
+`omakit weigh --list` is read-only: no confirmation, no restart, and the
+only preflight is `omarchy plugin list --json` answering. One `░ info` row
+per installed plugin, joined with `omarchy-plugin-catalog` on id: the id
+and kinds, the name, whether it is enabled (a disabled row says `omarchy
+plugin enable <id>` enables it), and its last weighing from the documents
+under `$XDG_STATE_HOME/omakit/weigh/`, as the date and the README sentence,
+or "not weighed" in words; a whole bar says it is not weighed by design.
+Enabled and not weighed plugins come first, by id, then enabled and weighed
+ones, oldest weighing first, then disabled ones. Every row is information:
+the list decides nothing. `--json` prints the rows, each with `id`, `name`,
+`kinds`, `enabled`, `firstParty`, `sourceDir`, `weighable`, `lastWeighed`
+(`date`, `readme`, `summary`, `document`, or null) and `enable`. Only
+documents written as `weigh` are read; a document from before the command
+had that name is not listed.
+
 ## Options, checked first
 
 Every token on the command line is checked before anything else: an option
 `weigh` does not know (`-n 1`, `-n=1`, `--run 1`), an option without its
 value, or one positional beyond the plugin is refused as `█ NOT WEIGHED`
 with the offending token and the accepted list, `--runs N`, `--window S`,
-`--settle S`, `--all`, `--json`, `--out FILE`, `--yes`, exit 2, before the
+`--settle S`, `--out FILE`, `--all`, `--list`, `--json`, `--yes`, exit 2, before the
 preflight. `--runs=3` is read as `--runs 3`. Measured before this: `-n 1`
 ran three runs as if nothing had been passed.
 

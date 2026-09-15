@@ -19,7 +19,8 @@ import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without }
 import { validateWeighDocument } from "../../tools/weigh/contract.mjs"
 import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/weigh/proc.mjs"
 import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/weigh/stats.mjs"
-import { confirmationQuestion, redactedCommand, renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
+import { confirmationQuestion, redactedCommand, renderList, renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
+import { listWeighings } from "../../tools/weigh/list.mjs"
 import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
@@ -873,7 +874,7 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
   // before the preflight with the offending token and the accepted list.
   // Measured before this: `-n 1` and `-n=1` ran three runs as if nothing
   // had been passed.
-  const accepted = /Accepted: --runs N,\s+--window S, --settle S, --out FILE, --all, --json, --yes\./
+  const accepted = /Accepted: --runs N,\s+--window S, --settle S, --out FILE, --all, --list, --json, --yes\./
   for (const [extra, token] of [[["-n", "1"], "-n"], [["-n=1"], "-n=1"], [["--run", "1"], "--run"], [["--Runs", "1"], "--Runs"]]) {
     const refused = omakit(["weigh", "fixture.clean", ...extra, "--yes"], m.env)
     assert.equal(refused.code, 2, extra.join(" "))
@@ -964,6 +965,58 @@ test("help, the front door and completion know weigh; the skills print the weigh
   assert.match(agent.out, /name: omarchy-plugin-weigh/)
   assert.doesNotMatch(help.out, /\bcost\b/, "the old name is gone from the help")
   assert.match(agent.out, /restarts the shell/)
+})
+
+test("weigh --list: every installed plugin with its last weighing, unweighed enabled plugins first, disabled last with what enables them", () => {
+  const m = machine()
+  // Two documents in the state directory: an older one weighing clean and
+  // poller, a newer one weighing clean again; the newest sentence wins.
+  const stateDir = join(m.env.XDG_STATE_HOME, "omakit/weigh")
+  mkdirSync(stateDir, { recursive: true })
+  const doc = (started, rows) => JSON.stringify({ command: "weigh", started, plugins: rows.map(([id, readme]) => ({ id, readme, verdict: { summary: "no measurable CPU" } })) })
+  writeFileSync(join(stateDir, "2026-09-10T100000Z.json"), doc("2026-09-10T10:00:00Z", [["fixture.clean", "old sentence"], ["fixture.poller", "Weighs nothing measurable: no CPU above the floor (0.13%) and no child process, on Omarchy 4.0.0.test, measured with omakit weigh on 2026-09-10"]]))
+  writeFileSync(join(stateDir, "2026-09-14T100000Z.json"), doc("2026-09-14T10:00:00Z", [["fixture.clean", "Weighs nothing measurable: no CPU above the floor (0.13%) and no child process, on Omarchy 4.0.0.test, measured with omakit weigh on 2026-09-14"]]))
+  writeFileSync(join(stateDir, "timing.json"), "{}")
+  writeFileSync(join(stateDir, "broken.json"), "{")
+  const list = listWeighings({ env: m.env })
+  assert.equal(list.stateDir, stateDir)
+  assert.deepEqual(list.rows.map((row) => row.id), ["omarchy.bar", "omarchy.clock", "fixture.poller", "fixture.clean", "fixture.off", "fixture.whole-bar"], "unweighed enabled by id, then weighed oldest first, then disabled")
+  const clean = list.rows.find((row) => row.id === "fixture.clean")
+  assert.equal(clean.lastWeighed.date, "2026-09-14")
+  assert.match(clean.lastWeighed.readme, /measured with omakit weigh on 2026-09-14$/)
+  assert.equal(clean.enable, null)
+  assert.equal(clean.sourceDir, "/plugins/fixture.clean")
+  const off = list.rows.find((row) => row.id === "fixture.off")
+  assert.equal(off.enabled, false)
+  assert.equal(off.enable, "omarchy plugin enable fixture.off")
+  assert.equal(off.lastWeighed, null)
+  assert.equal(list.rows.find((row) => row.id === "omarchy.bar").weighable, false)
+  const text = renderList(list, { colour: false, env: m.env })
+  assert.match(text.replace(/\n {14}/g, " "), /^installed {5}6 plugins, 4 enabled, 2 weighed; weighings read from ~\/xdg-state\/omakit\/weigh$/m)
+  assert.match(text, new RegExp(`^${DENSITY.light} info {2}fixture\\.clean +\\[bar-widget\\]$`, "m"))
+  assert.match(text, /^weighed {7}2026-09-14: Weighs nothing measurable/m)
+  assert.match(text, /^weighed {7}not weighed$/m)
+  assert.match(text, /^state {9}disabled; omarchy plugin enable fixture\.off enables it$/m)
+  assert.match(text, /^weighed {7}not weighed: a whole bar, and replacing the bar is not a weight$/m)
+  assert.ok(!text.includes(DENSITY.medium) && !text.includes(DENSITY.floor + " ok"), "every row is information")
+  for (const line of text.split("\n")) assert.ok(!overflows(line), `${line.length} columns: ${JSON.stringify(line)}`)
+  assert.equal(plain(renderList(list, { colour: true, env: m.env })), text)
+  // Through the entry point: --json is the rows, no confirmation, no restart, and --list takes nothing else.
+  const json = omakit(["weigh", "--list", "--json"], m.env)
+  assert.equal(json.code, 0, json.err)
+  assert.equal(JSON.parse(json.out).length, 6)
+  assert.equal(json.err, "")
+  assert.deepEqual(m.restarts(), [])
+  const human = omakit(["weigh", "--list"], m.env)
+  assert.equal(human.code, 0)
+  assert.match(human.out, /^installed {5}6 plugins/m)
+  assert.equal(omakit(["weigh", "--list", "--yes"], m.env).code, 2)
+  assert.match(omakit(["weigh", "--list", "fixture.clean"], m.env).err, /--list lists every installed plugin/)
+  const silent = machine()
+  writeFileSync(join(silent.bin, "omarchy"), "#!/bin/bash\nexit 1\n")
+  const refused = omakit(["weigh", "--list"], silent.env)
+  assert.equal(refused.code, 1)
+  assert.match(refused.err, /NOT WEIGHED {2}omarchy plugin list did not answer/)
 })
 
 test("the pin is untouched by weigh: nothing under tools/weigh names the marketplace, the cache or a network host", () => {

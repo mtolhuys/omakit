@@ -164,3 +164,33 @@ export function renderWeigh(document, { colour = colourEnabled(), env = process.
   }
   return out.join("\n")
 }
+
+/**
+ * `omakit weigh --list` for a person: one `░ info` row per installed
+ * plugin, in the list's order (enabled and not weighed first), each with
+ * its name, its state and its last weighing in words. Every row is
+ * information: the list decides nothing, so no row is a pass, a note or a
+ * question.
+ */
+export function renderList(list, { colour = colourEnabled(), env = process.env } = {}) {
+  const c = styler(colour)
+  const out = []
+  const { rows } = list
+  const weighed = rows.filter((row) => row.lastWeighed).length
+  const enabled = rows.filter((row) => row.enabled).length
+  out.push(...field("installed", `${rows.length} plugin${rows.length === 1 ? "" : "s"}, ${enabled} enabled, ${weighed} weighed; weighings read from ${withHomeAbbreviated(list.stateDir, env)}`, c))
+  out.push("")
+  for (const [index, row] of rows.entries()) {
+    if (index > 0) out.push("")
+    out.push(head("info", row.id, row.kinds.join(", ") || "no kinds", c))
+    out.push(...field("name", row.name, c))
+    out.push(...field("state", row.enabled ? "enabled" : `disabled; \`${row.enable}\` enables it`, c))
+    const last = row.lastWeighed
+    out.push(...field("weighed", !row.weighable
+      ? "not weighed: a whole bar, and replacing the bar is not a weight"
+      : last
+        ? `${last.date}: ${last.readme || last.summary}`
+        : "not weighed", c))
+  }
+  return out.join("\n")
+}

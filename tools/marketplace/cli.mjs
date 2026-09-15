@@ -36,7 +36,8 @@ import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, colourEnabled, GUTTER, labelled, mark, styler, verdict, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
-import { confirmationQuestion, renderWeigh, renderPlan } from "../weigh/report.mjs"
+import { confirmationQuestion, renderList, renderWeigh, renderPlan } from "../weigh/report.mjs"
+import { listWeighings } from "../weigh/list.mjs"
 import { askYes } from "../weigh/confirm.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
@@ -310,10 +311,27 @@ async function cmdWeigh(args) {
   // Every token is checked before anything else: an option weigh does not
   // know, or a second positional, is refused with the accepted list.
   const parsed = checkArgs(args, ACCEPTED.weigh)
-  if (parsed.offending !== null) notWeighed("usage", `${parsed.reason}. Accepted: ${acceptedWords("weigh")}.`, "omakit weigh <plugin-id-or-dir> [--runs N] [--window S] [--settle S] [--yes] [--json] [--out FILE]", 2)
+  if (parsed.offending !== null) notWeighed("usage", `${parsed.reason}. Accepted: ${acceptedWords("weigh")}.`, "omakit weigh <plugin-id-or-dir> [--runs N] [--window S] [--settle S] [--yes] [--json] [--out FILE], or omakit weigh --list", 2)
   const json = parsed.options.has("--json")
   const all = parsed.options.has("--all")
   const target = parsed.positionals[0]
+  // --list reads and prints: every installed plugin and its last weighing.
+  // No preflight beyond listPlugins answering, no confirmation, no restart.
+  if (parsed.options.has("--list")) {
+    for (const other of ["--all", "--yes", "--runs", "--window", "--settle", "--out"]) {
+      if (parsed.options.has(other)) notWeighed("usage", `--list only lists, so ${other} has nothing to apply to.`, "omakit weigh --list [--json]", 2)
+    }
+    if (target) notWeighed("usage", `--list lists every installed plugin, so ${JSON.stringify(target)} is one argument more than it takes.`, "omakit weigh --list [--json]", 2)
+    let list
+    try {
+      list = listWeighings()
+    } catch (error) {
+      if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code])
+      throw error
+    }
+    process.stdout.write(json ? `${JSON.stringify(list.rows, null, 2)}\n` : `${renderList(list)}\n`)
+    process.exit(0)
+  }
   if (!target && !all) notWeighed("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin.", "omakit weigh <plugin-id-or-dir>", 2)
   if (target && all) notWeighed("usage", `--all weighs every enabled third-party plugin, so ${JSON.stringify(target)} is one argument more than it takes.`, "omakit weigh --all, or omakit weigh <plugin-id-or-dir>", 2)
   const integer = (name, fallback, letter, min = 1) => {

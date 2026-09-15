@@ -107,6 +107,7 @@ export const COMMANDS = Object.freeze([
       "omakit weigh <plugin-id-or-dir> [--runs <n>] [--window <s>] [--settle <s>]",
       "                    [--yes] [--json] [--out <file>]",
       "omakit weigh --all",
+      "omakit weigh --list [--json]",
     ],
     lines: [
       "What a plugin weighs on the shell, measured: the shell is restarted",
@@ -120,7 +121,8 @@ export const COMMANDS = Object.freeze([
       "enabled third-party plugin and is sized for a lab machine, not a working",
       "desktop. Writes the document to --out, by default",
       "$XDG_STATE_HOME/omakit/weigh/<date>.json, and ends with the sentence",
-      "for the plugin's README.",
+      "for the plugin's README. --list is read-only: every installed plugin",
+      "and when it was last weighed, unweighed enabled plugins first.",
     ],
   },
 ])

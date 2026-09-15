@@ -46,7 +46,7 @@ test("the parser refuses what the table does not name, and reads what it does", 
   assert.equal(checkArgs(["x"], ACCEPTED.doctor).reason, '"x" is one argument more than the command takes')
   assert.equal(checkArgs(["--agent"], ACCEPTED.help).offending, null)
   assert.equal(checkArgs([], ACCEPTED.pin).offending, null)
-  assert.equal(acceptedWords("weigh"), "--runs N, --window S, --settle S, --out FILE, --all, --json, --yes")
+  assert.equal(acceptedWords("weigh"), "--runs N, --window S, --settle S, --out FILE, --all, --list, --json, --yes")
   assert.equal(acceptedWords("pin"), "")
 })
 
