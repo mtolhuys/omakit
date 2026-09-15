@@ -16,6 +16,13 @@
   unverified restore with the backup kept, never as "shell.json was restored".
 - `watch` no longer renders a bot account's comment as the discussion, counts
   it as a reviewer, or dates the last human review by it.
+- The lab gate `tests/lab/weigh.sh` has two modes: `smoke`, the default, a
+  minute of measurement in the guest proving a real restart, real `/proc`
+  reads, the restore and an interrupt's recovery; and `evidence`, the
+  five-run gate. Both preflight on the host in seconds before any guest
+  boots, and the evidence gate weighs three listed plugins fetched read-only
+  at the commits the pinned catalog records as validated, instead of
+  whatever the desktop happened to have installed.
 
 - README second pass explains submission actions, groups the documentation,
   counts dependencies, and holds command GIFs on informative final screens.

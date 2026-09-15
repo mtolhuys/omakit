@@ -421,6 +421,47 @@ form and any sentence that carries a memory figure about the plugin.
   screen has a different floor from a desktop with three; the floor is
   printed with every run so a figure is never read without it.
 
+## The lab gate
+
+The measurement is proven against a real shell in the Omarchy plugin lab's
+disposable guest, never on a working desktop, by `tests/lab/weigh.sh`. From
+the omakit checkout on the host:
+
+```bash
+bash tests/lab/weigh.sh              # smoke: the maintainer's check, a minute of measurement
+bash tests/lab/weigh.sh evidence     # the five-run gate that docs/evidence/weigh/ carries
+bash tests/lab/weigh.sh preflight    # the host-side checks alone, in seconds
+```
+
+Two modes, because a maintainer's question and an evidence run are not the
+same job. `smoke`, the default, proves what no unit test can: a real shell
+restarts on a written configuration, the real `/proc` is read (a Pss, ticks
+that do not go backwards, a trace), the document follows the contract,
+`shell.json` comes back byte for byte with no backup left, and a second
+measurement interrupted inside its settle restores it, restarts the shell
+and exits 130. It weighs two fixtures at one run with a 2 s settle and a
+3 s window, four restarts in all, about a minute after the guest is up; the
+guest's boot is the whole cost. `evidence` is the five-run gate over the
+four fixtures and three listed plugins, forty restarts at the default
+settle and window, about forty minutes, and the only mode whose document
+belongs under `docs/evidence/weigh/`. Measured before this: the one mode
+was the forty-minute gate, run to answer a question the smoke answers in a
+minute.
+
+The preflight runs before any guest boots, because a boot takes minutes: it
+checks the tools, the marketplace pin, the four fixtures and the lab
+checkout (a sibling named `plugin-lab`, or `$OMAKIT_LAB_ROOT`), and for the
+evidence gate it fetches the three listed plugins at the exact commit the
+pinned catalog records as validated, read-only, into
+`$XDG_CACHE_HOME/omakit/lab/<id>/`, once. The plugins are chosen by id in
+the script; their repositories and commits are the pin's to say, so the set
+is the same on every machine and in every run, and a desktop that has
+installed or removed a plugin changes nothing. Measured before this: the
+gate staged those plugins from the desktop's own `~/.config/omarchy/plugins/`,
+and a run booted the guest and then stopped on a checkout the desktop no
+longer had. `OMAKIT_LAB_RUNS` sets the evidence gate's run count for a
+shorter iteration.
+
 ## Provenance
 
 The method, the `shell.json` transform, the descendant attribution and the
