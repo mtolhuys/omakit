@@ -12,6 +12,7 @@ omakit submit <plugin-repo>  # every check, the issue title and body; asks for a
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
 omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
+omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
 omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
@@ -92,4 +93,3 @@ decides what it looks like, and nothing is said by colour alone. What the
 terminal shows and why is [TUI.md](TUI.md); which index each role
 gets, measured over all 32 installed themes, is
 [PALETTE.md](PALETTE.md).
-

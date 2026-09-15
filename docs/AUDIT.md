@@ -150,3 +150,98 @@ https://github.com/Pablo-Merino/omarchy-altswitch.git
 $ git -C /home/mtolhuijs/.config/omarchy/plugins/io.github.pablo-merino.altswitch merge-base --is-ancestor 8f54d684c89d66ecf51e6e5a9c5c574758de79be HEAD; echo $?
 0
 ```
+
+## Run it
+
+```bash
+omakit audit
+omakit audit <plugin-id-or-dir>
+omakit audit --drift
+omakit audit --json
+omakit audit --out audit.json
+omakit audit --offline
+```
+
+The shell's installed-plugin list is authoritative. A directory target must
+belong to that list. Tab completion offers installed plugin ids, then falls
+back to directories, the same way `weigh` does.
+
+| Option | Result |
+| --- | --- |
+| `<plugin-id-or-dir>` | Audit one installed plugin instead of every installed plugin. |
+| `--drift` | Print only rows whose primary state is not `validated`. Counts and exit status still cover the selected set. |
+| `--json` | Print the JSON document on stdout and nothing else. |
+| `--out <file>` | Write the JSON document to the file and print the human rendering. With `--json`, stdout remains the JSON document. |
+| `--offline` | Read the catalog from the exact marketplace pin and say so in the header. |
+
+Unknown options, a missing `--out` value and a second positional are usage
+errors before the shell or catalog is read.
+
+## States and flags
+
+Every audited plugin has one primary state.
+
+| State | Meaning |
+| --- | --- |
+| `validated` | Installed HEAD equals `listingValidatedCommit` or `upstreamValidatedCommit`. |
+| `ahead` | A validated commit is an ancestor of HEAD. The row gives the Git commit count and the catalog's validation date. |
+| `diverged` | No validated commit is an ancestor. The row distinguishes a different origin from divergent history at the listed origin. |
+| `unverified` | The plugin is listed, is not recorded as verified and has no validated commit. |
+| `unlisted` | Neither manifest id nor Git origin matches a listing. If they match different listings, neither is used and the conflict is stated. |
+| `unknown` | The source directory is missing, the directory is not a Git checkout, or a Git question failed. The error is kept. |
+
+Flags stack on that state. `modified` means `git status --porcelain` was not
+empty. `disabled` comes from `omarchy plugin list --json`. `upstream moved`
+means the catalog's `upstreamObservedCommit` differs from installed HEAD and
+from every validated commit. It does not fetch the repository.
+
+Plugins whose catalog `sourceType` is `builtin`, or whose installed row says
+`firstParty`, are counted in the header and left out of the rows and verdict.
+They ship with the shell.
+
+## Verdict and exit status
+
+`AUDITED`, exit 0, means every selected third-party row is `validated`, or
+there was no third-party row to audit. A modified or disabled validated row
+keeps that primary state and flag.
+
+`NOT AUDITED`, exit 1, means at least one row is `ahead`, `diverged`,
+`unverified`, `unlisted` or `unknown`. It is also the failure register when the
+shell does not answer or neither a live catalog nor the pin can be read.
+
+Usage errors exit 2. An ahead or diverged row prints, but never runs, the exact
+`git -C <dir> checkout <validated-sha>` that returns to a reviewed commit. It
+also names the marketplace verification form and its current newer-commit
+choice, read from the pin. It never recommends `omarchy plugin update`, because
+that command fast-forwards to mutable HEAD.
+
+## JSON contract
+
+The document has `command`, `catalog`, `counts`, `rows`, `updateRoute` and
+`ok`. `catalog.source` is `head` or `pin`; its commit and read time name their
+origin. Every count is `{ "value": ..., "origin": ... }`.
+
+Each row has stable `state`, `flags`, `installed`, `validated`, `upstream`,
+`sourceDir`, `listing`, `fact`, `aheadBy`, `matchedValidated` and, when Git
+failed, `error`. A commit, date, Boolean or count inside those objects is a
+figure with `value` and `origin`. Catalog figures name their exact
+`site/catalog.json` field. Installed figures name the exact Git or Omarchy
+command. Missing catalog facts are `null`, never inferred.
+
+Under `--drift`, `rows` contains the filtered rows. `counts` and `ok` still
+describe every selected third-party plugin. `--out` writes this same document.
+
+## What it never does
+
+`audit` does not fetch, pull, checkout or reset a repository. It does not
+enable, disable, add, update or remove a plugin. It does not restart the shell,
+post to the marketplace or create a local trust baseline. Its Git calls are
+limited to HEAD, status, origin, ancestry and commit-count questions.
+
+## Competition, READMEs read 2026-09-15
+
+- [Extension Guard](https://github.com/vltic/omarchy-guard) installs and manages human-reviewed pinned copies; `audit` leaves existing checkouts alone and compares them with the marketplace's own validated commits.
+- [OmaSafe](https://github.com/tuthan/omasafe-plugin) presents local trust drift and marketplace context through a separately installed scanner; `audit` is the CLI that reads the current marketplace catalog itself and creates no trust baseline.
+- [Omavet](https://github.com/vonsensey/omavet) scans capabilities and compares changes with an operator-accepted baseline; `audit` compares installed HEAD with the exact commits the marketplace validated.
+- [Plugin Guard](https://github.com/kmpeeduwee/omarchy-plugin-guard) statically scans plugin source and offers an optional model review; `audit` makes no source-safety verdict and measures marketplace commit drift instead.
+- [Omaudit Status](https://github.com/godhiraj-code/omarchy-omaudit-status) renders a separate scanner's capability and baseline results in the bar; `audit` performs the marketplace commit comparison directly and prints its own document.

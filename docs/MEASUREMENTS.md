@@ -31,6 +31,18 @@ label-event evidence rests on five requested timelines plus label combinations.
 One stratum, "closed but not listed" (667 issues), was not sampled and inherited
 the lower rate of the published group. W37 lead times are censored and too low.
 
+## A1. Installed commits against marketplace validation
+
+On 2026-09-15 the first whole-machine measurement could not produce K of M:
+`omarchy plugin list --json` answered `omarchy-shell is not running`, so M was
+not knowable and `omakit audit` correctly stopped as `NOT AUDITED`. The catalog
+and two checkout facts recorded in [AUDIT.md](AUDIT.md) were used to define and
+test the states, but were not substituted for the shell's installed list.
+
+Used by: `omakit audit`. Replace this failed first measurement with K of M
+ahead after the shell can answer; keep this record as the reason a failed list
+is not reported as zero installed plugins.
+
 ## M2. The submission format costs round trips that a generated body cannot
 
 | Measurement | Value |

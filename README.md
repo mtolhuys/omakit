@@ -28,6 +28,7 @@ See [docs/INSTALL.md](docs/INSTALL.md) for the clone route, PATH, requirements a
 | [`omakit watch <issue-url>`](docs/VALIDATION_WATCH.md) | The commit the marketplace validated, against the plugin's current HEAD. |
 | [`omakit verify <plugin-repo>`](docs/COMMANDS.md) | The official security baseline over the local transport; `--json` for the document. |
 | [`omakit parity`](docs/COMMANDS.md) | The baseline over GitHub versus the local transport, on real listings; writes the evidence. |
+| [`omakit audit [<plugin>]`](docs/AUDIT.md) | Installed third-party commits against the exact commits the marketplace validated. |
 | [`omakit weigh <plugin>`](docs/WEIGH.md) | What a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first. |
 | [`omakit doctor`](docs/COMMANDS.md) | What is installed, what is pinned, and what has moved. |
 | [`omakit pin`](docs/COMMANDS.md) | What setup does for the pin, on its own. |
@@ -95,6 +96,7 @@ Committed evidence records a digest of each side rather than the results themsel
 | [docs/INSTALL.md](docs/INSTALL.md) | install details, PATH, requirements, upgrading, and what Socket reports and why |
 | [docs/HOW.md](docs/HOW.md) | what omakit is doing, why it uses Node, the baseline and check labels |
 | [docs/COMMANDS.md](docs/COMMANDS.md) | command details, authentication and network behaviour |
+| [docs/AUDIT.md](docs/AUDIT.md) | installed plugin drift against marketplace-validated commits, with JSON origins |
 | [docs/SUBMIT.md](docs/SUBMIT.md) | every check and what it decides |
 | [docs/WEIGH.md](docs/WEIGH.md) | what `weigh` measures, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md) | the validation watch: what the marketplace validated, and what moves it |
