@@ -288,3 +288,38 @@ records hashes, geometry, omissions and final-screen holds alongside the
 new package facts. The old first-pass table is historical, not current file
 metadata. The historical single-run list is not substituted for the new
 three-run desktop report.
+
+
+## The inspect capture, 2026-09-15
+
+`inspect.gif` is `omakit inspect` over the `process-without-deadline`
+fixture from `tests/fixtures/inspect/`, materialised into a temporary Git
+repository the way `submit.gif`'s subject is, so anyone can reproduce it
+without a plugin of their own and no third-party tree is named. The capture
+is the real stdout, unedited, at the eighty columns a pipe gets; the scene
+is 110 columns wide so a `file:line` or a host is never cut, 44 rows, and
+omits nothing. The last frame holds on the two pattern rows and the closing
+line for 8.16 s.
+
+```bash
+node --input-type=module -e '
+  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
+  console.log(materialiseInspectFixture("process-without-deadline").dir)
+' > /tmp/subject
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
+  > docs/media/captures/inspect-fixture.ansi 2>&1
+python3 docs/media/render.py docs/media/inspect.scene.json docs/media/inspect.gif
+```
+
+Rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg 6.1.1, on a machine
+whose ffmpeg is not the n9.0.1 the other GIFs were rendered with; the
+committed capture and scene re-render to a different byte count under
+another ffmpeg, which is the reason the version is recorded.
+
+| GIF | Bytes | Duration | Final hold | Final screen |
+| --- | ---: | ---: | ---: | --- |
+| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 42,565 | 14.00 s | 8.16 s | the process row, the two pattern rows with their shares, the not observed and not visible lines, and INSPECTED |
+
+The capture has 41 lines, none wider than 80 columns, and its sha256 and the
+GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
+beside the other GIFs.

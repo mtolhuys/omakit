@@ -832,3 +832,20 @@ here and prints the share beside it, and nothing else. `inspect` prints a
 pattern only where the tree shows the class's precondition and never turns
 the share into a verdict; a share says how often reviewers raised a class,
 not how likely this plugin is to be blocked.
+
+### What the extraction saw over 18 listed trees, 2026-09-15
+
+The design note asks for `inspect` over the third-party trees `omakit
+audit` lists on the author's desktop before the release. The run recorded
+in [evidence/inspect/2026-09-15-listed-sample.json](evidence/inspect/2026-09-15-listed-sample.json)
+was made on a machine with no Omarchy desktop, so its sample is the first 18
+distinct repositories in the pinned catalog's order whose listing is
+community, laid out as a root plugin and carrying a validated commit, each
+fetched read-only at that commit in reviewer mode (pin `38060f89`). Totals:
+989 process sites, 17 hosts, 104 writes, 40 timers, 15 `▒ ?` rows and 70
+pattern rows; 17 of the 18 trees printed at least one pattern row and one
+tree showed no fact of any kind. Two trees with several shell scripts carry
+hundreds of process sites because a script contributes one site per command
+segment; that is the count of what the extraction saw, not of what the
+plugins do, and no plugin is named for it in the README. The record replaces
+nothing and is replaced by a run over the desktop set when one is made.

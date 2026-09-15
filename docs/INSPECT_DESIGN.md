@@ -151,6 +151,8 @@ tools/inspect/
   contract.mjs     the executable JSON contract
   report.mjs       the terminal rendering, marks through style.mjs only
 tests/fixtures/inspect/<name>/   one small plugin per fact kind and per pattern
+tests/fixtures/inspect/<name>.expected.json   the document each fixture produces, compared field by field
+tests/fixtures/inspect.mjs       materialises a fixture into a temporary Git repository with an origin, like every other check reads a plugin
 tests/unit/inspect.test.mjs      extractors on fixtures, document against the contract, plain(coloured) === uncoloured, exit codes
 ```
 
@@ -184,6 +186,13 @@ or two files, small enough to read in a minute:
 - `installer-unpinned`: a `scripts/install.sh` with an unpinned `git clone`,
   so the baseline's `remote-git-execution-unpinned` evidence appears and the
   `supply-chain` row cites it rather than re-detecting it.
+- `privileged-argv` and `computed-argv-element`, added because no fixture
+  above shows the `privilege-disclosure` and `argument-grammar`
+  preconditions: `sudo docker` in an argv the README names, and an argv
+  element built from a property.
+- `example`: the tree behind the example block in `docs/INSPECT.md`, so the
+  document's example is real output and the test that compares it stays a
+  diff.
 
 Each fixture's expected document is committed as JSON next to it, and the
 test compares the produced document field by field, so a change in

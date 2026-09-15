@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.example",
+  "name": "Fixture: example",
+  "version": "0.0.1",
+  "description": "The tree behind the example report in docs/INSPECT.md: two processes, a computed command, a host, two writes, two timers and an installer.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

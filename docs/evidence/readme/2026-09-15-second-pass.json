@@ -178,6 +178,31 @@
           "13 plan and backup-notice lines omitted; full capture retained"
         ]
       ]
+    },
+    {
+      "gif": "docs/media/inspect.gif",
+      "bytes": 42565,
+      "durationSeconds": 14.0,
+      "width": 830,
+      "height": 752,
+      "frames": 24,
+      "finalScreen": "the process row, both pattern rows with their M11 shares, the not observed and not visible lines, and INSPECTED",
+      "finalHoldSeconds": 8.16,
+      "sha256": "07542127d217afec55c155d8cf21edf59076dae94faa6a47cd051af1f401fcea",
+      "capture": "docs/media/captures/inspect-fixture.ansi",
+      "captureSha256": "5d99813b3c1fcef5d94220315d211f3688909aae339fa8758401983d9e27b905",
+      "captureLines": 41,
+      "longestCaptureLine": 80,
+      "longestShownLine": 80,
+      "sceneColumns": 110,
+      "sceneRows": 44,
+      "omissions": [],
+      "recorded": "2026-09-15, after the second pass; the subject is the process-without-deadline fixture materialised into a temporary Git repository",
+      "renderer": {
+        "pillow": "12.3.0",
+        "freeType": "2.14.3",
+        "ffmpeg": "6.1.1"
+      }
     }
   ],
   "renderer": {
@@ -186,5 +211,6 @@
     "ffmpeg": "n9.0.1"
   },
   "weighDocument": "docs/evidence/weigh/desktop-2026-09-15-omadock.json",
-  "stalenessDocument": "docs/evidence/staleness/2026-09-15.json"
+  "stalenessDocument": "docs/evidence/staleness/2026-09-15.json",
+  "inspectDocument": "docs/evidence/inspect/2026-09-15-listed-sample.json"
 }

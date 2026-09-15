@@ -17,6 +17,7 @@ omakit verify <plugin-repo>  # the official security baseline over the local tra
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
 omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
+omakit inspect <plugin-dir>  # what a plugin tree does, as observations: processes, hosts, writes, timers, the baseline's capabilities, and the review classes the tree shows
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
@@ -91,6 +92,30 @@ online, the subject's default-branch HEAD and the marketplace's current
 registry, and `--offline` turns both off; `verify` on a local repository does
 not touch the network at all (a `<url>@<sha>` target is fetched once, over
 git, into the cache). omakit reads no environment variable of its own, and
+
+![omakit inspect over a fixture with one process and no deadline](media/inspect.gif)
+
+`omakit inspect <plugin-dir>` reads the plugin's tree at its commit and
+prints what the text shows, in the order a reviewer reads it: every
+`Process` with its argv, whether a deadline is observed for it and what
+collects its output; every `http` or `https` literal with its host, the tool
+it reaches and the timeout and size-cap flags beside it; every write with
+whether its path falls under a directory the plugin controls; every `Timer`
+with its interval; and the capabilities and findings the marketplace's own
+baseline records for the same tree, through `verify`. Below the facts, one
+row for each class the marketplace's human review has raised, printed only
+where the tree shows the class's precondition and citing the class's measured
+share of review findings ([M11](MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)).
+It is regular expressions over QML and shell, and every row says so: a
+command that is not one literal is a `▒ ?` row with no argv, a section with
+nothing in it says "observed nothing of this kind", and the report ends by
+naming what the method cannot see. No score, no verdict, no `--fix`: it runs
+nothing from the tree, resolves no host and writes nothing into it, and the
+one word it closes on is `INSPECTED`. `--json` prints the document of
+[INSPECT.md](INSPECT.md), `--out` writes it to a file as well, `--offline`
+skips the baseline section. Exit 0 with a report, whatever it observed; 2
+when the target could not be read.
+
 `omakit doctor` names the credential source it found, or that it found none.
 
 Every colour omakit prints is an ANSI palette index, so your Omarchy theme

@@ -1,0 +1,41 @@
+[2msubject[0m       /tmp/omakit-fixture-7HdknQ at 565bb52b, 1 file read (1 qml)
+[2mmethod[0m        static extraction, regular expressions over qml and shell;
+              observed, not executed
+
+[2mprocesses[0m     observed 1
+[2m░ info[0m  [1mWidget.qml:10[0m  ["/usr/bin/df", "-h", "/"]
+        argv array; no deadline observed; output through StdioCollector, no cap
+        observed
+
+[2mhosts[0m         observed nothing of this kind
+
+[2mwrites[0m        observed nothing of this kind
+
+[2mtimers[0m        observed nothing of this kind
+
+[2mcapabilities[0m  marketplace baseline at pin 38060f89, local transport
+[2m░ info[0m  observed: no capability recorded
+        official result: passed (verbatim in --json under marketplaceBaseline)
+
+[2mpatterns[0m      of what the marketplace's human review raised, in a 30-issue
+              sample (M11)
+[33m▓ note[0m  [1mprocess lifecycle         [0m observed 1 process with no deadline
+        (Widget.qml:10)
+        about 20 of every 100 review findings in the sample (M11)
+[33m▓ note[0m  [1munbounded buffering       [0m observed 1 collector with no cap
+        (Widget.qml:10)
+        about 19 of every 100 review findings in the sample (M11)
+
+[2mnot observed[0m  no write outside a controlled directory, no tool resolved from
+              PATH, no curl without -q, no secret-shaped argv or log line, no
+              unpinned remote source in the baseline, no http scheme, no -L
+              without --proto, no private address, no Text bound to output
+              without Text.PlainText, no expression inside an argv element, no
+              sudo, pkexec, docker or /dev/input in argv
+[2mnot visible[0m   commands built at run time, hosts and paths from variables,
+              properties, config or the environment, scripts a command calls
+              that inspect does not follow, components loaded from outside the
+              tree, encoded or obfuscated content, and what a sh -c or eval
+              string runs
+
+[2;1m░ INSPECTED[0m  1 process, 0 hosts, 0 writes, 0 timers; static, see docs/INSPECT.md

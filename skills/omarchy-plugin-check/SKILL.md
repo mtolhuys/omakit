@@ -1,6 +1,6 @@
 ---
 name: omarchy-plugin-check
-description: Check an Omarchy Quattro plugin while building or changing it, before committing or pushing. Use whenever you create, edit, refactor or test an Omarchy plugin, when asked whether a plugin is marketplace-ready, or before any push to its default branch. Runs the marketplace's own security baseline and submission checks locally, read-only, and reports what the marketplace would refuse.
+description: Check an Omarchy Quattro plugin while building or changing it, before committing or pushing. Use whenever you create, edit, refactor or test an Omarchy plugin, when asked whether a plugin is marketplace-ready, or before any push to its default branch. Runs the marketplace's own security baseline and submission checks locally, read-only, reports what the marketplace would refuse, and lists what the tree does (processes, hosts, writes, timers) as observations beside the review classes a human reviewer raises most.
 ---
 
 # Checking a plugin while you build it
@@ -30,6 +30,51 @@ editorial choice about where the plugin belongs.
 `--offline` belongs in this loop and nowhere else: it skips the one check that
 needs the network and reads the listed ids from the pin. For the real
 submission, drop it, and use `skills/omarchy-plugin-submit/SKILL.md`.
+
+## Read what the tree does before a human does
+
+After the two commands above pass, and again whenever you add or change a
+`Process`, a `curl`, a `FileView`, a shell script or a `Timer`, run:
+
+```bash
+omakit inspect <path-to-the-plugin-repo> --json
+```
+
+`inspect` lists what the tree shows, in the order a reviewer reads it: every
+process with its argv and whether a deadline is observed for it, every host
+with its timeout and size-cap flags, every write with whether its path falls
+under a directory the plugin controls, every timer with its interval, and the
+baseline's capabilities. Below the facts, `patterns` holds one entry per
+review class the marketplace's human review has raised, only where the tree
+shows the class's precondition (a process with no deadline, a collector with
+no cap, a write under `/tmp`, `curl` without `-q`), with the class's measured
+share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
+`lookedFor` names the classes whose precondition was not observed.
+
+How to read "observed". Every row is what regular expressions found in the
+text at `file:line`, never a runtime fact and never a verdict: `deadline
+observed` means a killing `Timer`, a `timeout` in argv or a destruction
+handler is in the file; `no cap observed` means the argv shows none of
+`head -c`, `--max-filesize` or `timeout`; `observed nothing of this kind`
+means the extraction found nothing, not that the tree is clean. A `▒ ?` row
+(`argvForm: "computed"`, `argv: null`) is a command the text does not show
+as a literal; do not guess it for the owner, read the file. `notVisible`
+names what the method cannot see (commands built at run time, values from
+variables or config, components outside the tree), and a tree that uses
+those has facts `inspect` did not list.
+
+What to do with a pattern row. It is not a marketplace rule and not a
+finding: the marketplace's automated baseline blocks, a maintainer reviews,
+and `inspect` only reports that the tree shows something reviewers have
+raised in about N of every 100 findings. Show the owner the row and the
+requirement in the reviewer's own terms from the M11 table (an absolute
+deadline, producer-side bounds, a private 0700 directory, `curl -q`, no
+secret in argv), and let the owner decide; never describe the row as a
+requirement the marketplace enforces, and never say "safe" or "clean" about
+a tree with no rows. The `supply-chain` row is the baseline's own finding
+restated with its evidence sites; the baseline result is what decides there.
+Exit status is 0 whenever a report was produced, so do not read the exit
+code as pass or fail; 2 means the target could not be read.
 
 ## If omakit is not installed
 

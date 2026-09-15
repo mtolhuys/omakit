@@ -74,7 +74,8 @@ function isShellWrapper(argv) {
   const { tool, index } = toolOf(argv)
   if (!tool) return false
   if (basename(tool) === "eval") return true
-  return SHELLS.has(basename(tool)) && argv[index + 1] === "-c"
+  // `-c` alone or inside a cluster: `sh -lc`, `bash -ec`.
+  return SHELLS.has(basename(tool)) && /^-[a-z]*c[a-z]*$/.test(argv[index + 1] || "")
 }
 
 /** The argv an expression resolves to, or the computed form. */

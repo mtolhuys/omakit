@@ -35,6 +35,12 @@ Checks your submission commits and names the action that re-runs stale validatio
 
 Compares your installed plugin commits with the marketplace's validated commits. The GIF shows drift rows first: on the author's desktop, 9 of 18 audited plugins ran commits the marketplace never validated.
 
+## `omakit inspect <plugin-dir>`
+
+![inspect listing one process with no deadline and the two review classes it shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
+
+Lists what a plugin's tree does, as observations, beside the review classes a human reviewer raises most, each with its measured share ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)). No score, no verdict, nothing run from the tree. Over 18 listed plugins read at their validated commits, the extraction counted 989 process sites, 17 hosts, 104 writes and 40 timers, left 15 rows it could not resolve, and printed 70 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
+
 ## `omakit weigh <plugin>`
 
 ![completed three-run desktop weighing with baseline samples and the noise floor](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif)
@@ -48,13 +54,13 @@ Measures the shell with and without your plugin, reading Pss and CPU. The GIF sh
 | Baseline parity | 30/30 identical results, [recorded corpus](docs/evidence/parity/2026-09-12-local-vs-github-2.json), 2026-09-12 |
 | Stale validated commit | 326/519 readable comparisons stale (62.8%); 64/583 unknown, [2026-09-15 data](docs/evidence/staleness/2026-09-15.json) |
 | Registry churn | 4,201/4,293 registry-only commits in 30 days, 2026-09-13, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
-| GIFs are recorded output | 5 GIFs with [captures and scenes](docs/media/README.md) |
+| GIFs are recorded output | 6 GIFs with [captures and scenes](docs/media/README.md) |
 | Posts nothing | 0 marketplace writes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
 | Zero dependencies | 0 runtime and 0 development dependencies, counted in [package.json](package.json) |
 
 ## Documentation
 
 - Using: [install](docs/INSTALL.md), [commands](docs/COMMANDS.md), [audience](docs/MARKETPLACE.md).
-- Checks and measurements: [submit](docs/SUBMIT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
+- Checks and measurements: [submit](docs/SUBMIT.md), [inspect](docs/INSPECT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
 - Method docs: [how](docs/HOW.md), [weigh](docs/WEIGH.md), [upstream contract](docs/UPSTREAM_CONTRACT.md), [palette](docs/PALETTE.md), [terminal](docs/TUI.md).
 - Contributing: [repository rules](AGENTS.md), [releasing](docs/RELEASING.md), [media](docs/media/README.md).

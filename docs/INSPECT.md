@@ -109,59 +109,95 @@ row. It never prints `▁ ok` or `█ FAIL`, because it has no verdict to attach
 them to.
 
 ```text
-subject       ~/plugins/example-plugin at 3f9c2a1e, 7 files read (5 qml, 2 sh)
-method        static extraction, regular expressions over qml and shell; observed, not executed
+subject       ~/plugins/fixture-example at a3bf9e2d, 3 files read (1 qml, 2
+              shell)
+method        static extraction, regular expressions over qml and shell;
+              observed, not executed
 
-processes     observed 3
-░ info  Widget.qml:41  ["curl","-fsSL","--max-time","5","https://api.example.com/v1/status"]
-        argv array; deadline observed (Timer 8000 ms bound to running, calls kill);
-        output through StdioCollector, cap observed (--max-filesize 65536)
-░ info  Service.qml:88  ["bash","scripts/refresh.sh"]
-        argv array; no deadline observed; output through SplitParser, no cap observed
-▒ ?     Panel.qml:12  command: root.cmd
+processes     observed 5
+░ info  Widget.qml:12  ["curl", "-fsSL", "--max-time", "5", "--max-filesize",
+        "65536", "https://api.example.com/v1/status"]
+        argv array; deadline observed (timer-kill 8000 ms); output through
+        StdioCollector, cap observed (--max-filesize)
+░ info  Widget.qml:20  ["bash", "scripts/refresh.sh"]
+        argv array; no deadline observed; output through SplitParser, no cap
+        observed
+▒ ?     Widget.qml:28  command: root.cmd
         argv not resolvable statically
+░ info  scripts/install.sh:3  ["sudo", "pacman", "-S", "--needed",
+        "--noconfirm", "jq"]
+        argv string (shell line)
+░ info  scripts/refresh.sh:3  ["/usr/bin/df", "-h", "/"]
+        argv string (shell line)
 
 hosts         observed 1
-░ info  api.example.com  https  Widget.qml:41 via curl
-        timeout observed (--max-time 5); size cap observed (--max-filesize 65536);
-        -q not observed; -L not observed
+░ info  api.example.com  https Widget.qml:12 via curl
+        timeout observed (--max-time 5); size cap observed (--max-filesize
+        65536); -q not observed; -L not observed
 
 writes        observed 2
-░ info  Service.qml:30  FileView path: Quickshell.env("XDG_STATE_HOME") + "/example-plugin/state.json"
+░ info  Widget.qml:33  FileView path: Quickshell.env("XDG_STATE_HOME") +
+        "/fixture.example/state.json"
         under a directory the plugin controls: observed ($XDG_STATE_HOME)
-░ info  scripts/refresh.sh:14  > /tmp/example-plugin.cache
+░ info  scripts/refresh.sh:3  > /tmp/fixture.example.cache
         under a directory the plugin controls: not observed (/tmp is shared)
 
 timers        observed 2
-░ info  Widget.qml:20  interval 30000 ms, repeat, running, triggeredOnStart
-░ info  Widget.qml:55  interval 8000 ms, single shot, started by onRunningChanged
+░ info  Widget.qml:39  interval 30000 ms, repeat, running, triggeredOnStart
+░ info  Widget.qml:52  interval 8000 ms, single shot, started by
+        onVisibleChanged
 
 capabilities  marketplace baseline at pin 38060f89, local transport
-░ info  observed: installer, package-manager (2 evidence sites, scripts/install.sh)
-        official result: review-required (verbatim in --json under marketplaceBaseline)
+░ info  observed: installer, privilege, package-manager (3 evidence sites,
+        scripts/install.sh)
+        official result: review-required (verbatim in --json under
+        marketplaceBaseline)
 
-patterns      of what the marketplace's human review raised, in a 30-issue sample (M11)
-▓ note  process lifecycle       observed 1 process with no deadline (Service.qml:88)
-        the largest class of review findings, about 20 of every 100 in the sample
-▓ note  unbounded buffering     observed 1 collector with no cap (Service.qml:88)
-        about 19 of every 100 findings in the sample
-▓ note  file and state boundary observed 1 write outside a controlled directory (scripts/refresh.sh:14)
-        about 15 of every 100 findings in the sample
-▓ note  environment trust       observed 2 tools resolved from PATH (curl, bash); curl without -q
-        about 7 of every 100 findings in the sample
+patterns      of what the marketplace's human review raised, in a 30-issue
+              sample (M11)
+▓ note  process lifecycle          observed 2 processes with no deadline
+        (Widget.qml:20, Widget.qml:28)
+        about 20 of every 100 review findings in the sample (M11)
+▓ note  unbounded buffering        observed 1 collector with no cap
+        (Widget.qml:20)
+        about 19 of every 100 review findings in the sample (M11)
+▓ note  file and state boundary    observed 1 write outside a controlled
+        directory (scripts/refresh.sh:3)
+        about 15 of every 100 review findings in the sample (M11)
+▓ note  environment trust          observed 3 tools resolved from PATH (curl,
+        bash, pacman; Widget.qml:12, Widget.qml:20, scripts/install.sh:3); curl
+        without -q (Widget.qml:12)
+        about 7 of every 100 review findings in the sample (M11)
+▓ note  network egress             observed curl -L without --proto
+        (Widget.qml:12)
+        about 5 of every 100 review findings in the sample (M11)
+▓ note  privilege disclosure       observed sudo in argv (scripts/install.sh:3);
+        no README to name it
+        about 3 of every 100 review findings in the sample (M11)
 
-not observed  no secret-shaped argv, no http scheme, no sh -c, no Text with rich text bound to output
-not visible   commands built at run time, values from variables or config, components outside the tree
+not observed  no secret-shaped argv or log line, no unpinned remote source in
+              the baseline, no Text bound to output without Text.PlainText, no
+              expression inside an argv element
+not visible   commands built at run time, hosts and paths from variables,
+              properties, config or the environment, scripts a command calls
+              that inspect does not follow, components loaded from outside the
+              tree, encoded or obfuscated content, and what a sh -c or eval
+              string runs
 
-░ INSPECTED   3 processes, 1 host, 2 writes, 2 timers; static, see docs/INSPECT.md
+░ INSPECTED  5 processes, 1 host, 2 writes, 2 timers; static, see
+             docs/INSPECT.md
 ```
 
+That is the real output over `tests/fixtures/inspect/example/`, at eighty
+columns as a pipe gets it; a terminal wraps at its own width, up to 120.
 A pattern row prints only when the tree shows its precondition (a process
 without a deadline, a write outside a controlled directory). A pattern whose
 precondition is absent is not listed as "ok"; it is simply not there, and the
 `not observed` line names what was looked for. The share in the second line
 is the sample's, cited from `docs/MEASUREMENTS.md`, and the source names the
-entry next to the pattern the way every `submit` check names its `why`.
+entry next to the pattern the way every `submit` check names its `why`. The
+section line for a tree that shows none of the ten preconditions says so,
+and the `not observed` line then names all ten.
 
 ### The patterns and what "observed" means for each
 

@@ -55,8 +55,26 @@ machine (docs/WEIGH.md):
 | `weigh/report.mjs` | The confirmation and the report for a person, drawn with `style.mjs`; the README sentence and the evidence path come last. |
 | `weigh/confirm.mjs` | The one question, at a terminal, on stderr. |
 
+`tools/inspect/` is `omakit inspect`, what a plugin tree does as observations
+(docs/INSPECT.md), regular expressions over QML and shell, read-only against
+the tree, no verdict:
+
+| File | Purpose |
+| --- | --- |
+| `inspect/inspect.mjs` | The command: resolve the subject the way `submit` does, walk the tree, run the four extractors, run `verify` for the baseline, evaluate the patterns, build the document. The fixed blind-spot list lives here. |
+| `inspect/walk.mjs` | The installable tree at the commit (through `tree.mjs`) filtered to the kinds inspect reads: `.qml`, `.js`, `.mjs`, `.cjs`, the shell extensions, `.py`, and any blob with a shebang or the executable bit; the manifest for the id; prose never read for facts. |
+| `inspect/text.mjs` | The text primitives every extractor shares: line numbers, brace blocks, a property's value inside a block, string and array literals, the crude shell word and segment split, command substitutions, redirections. |
+| `inspect/processes.mjs` | Process sites: `Process {` blocks with their `command:` or `<id>.command =`, `execDetached` calls, and every command segment of a shell script; argv, deadline, collector, cap, shell wrapper. |
+| `inspect/hosts.mjs` | Every `http` or `https` literal with its host, the tool it reaches, and the timeout and size-cap flags in the same argv; a host behind an expression is not resolvable, never guessed. |
+| `inspect/writes.mjs` | Write sites in QML (`FileView` with a write), shell (redirects, `tee`, `cp`, `mv`, `mkdir`, `mktemp`, `install`, `touch`), JavaScript and Python, with the controlled-directory test over the canonical path prefix and the mode the file shows. |
+| `inspect/timers.mjs` | `Timer {` blocks: interval, repeat, running, triggeredOnStart, and the handler outside the block that starts it. |
+| `inspect/patterns.mjs` | The ten review classes of M11 as data: id, label, precondition over the facts, measurement, share, and the phrase for the `not observed` line. `supply-chain` cites the baseline's own findings and detects nothing. |
+| `inspect/contract.mjs` | The JSON contract of docs/INSPECT.md as a validator, run by the unit tests over every fixture document. |
+| `inspect/report.mjs` | The report for a person, drawn with `style.mjs` only: `░ info` for a fact, `▒ ?` for one that could not be read, `▓ note` for a pattern row, `▔ skip` under `--offline`, and the closing word `INSPECTED`. |
+
 ```text
 omakit pin
+omakit inspect /path/to/plugin-repo                      # what the tree does, as observations; --json for the document
 omakit submit /path/to/plugin-repo                       # asks for the category and tags at a terminal
 omakit submit /path/to/plugin-repo --category Widgets --tags bar,quickshell
 omakit submit https://github.com/owner/repo@<40-char sha> --category System --tags system
