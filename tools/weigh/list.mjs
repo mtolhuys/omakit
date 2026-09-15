@@ -43,12 +43,13 @@ export function lastWeighings(stateDir) {
 }
 
 /**
- * One row per installed plugin, sorted: enabled and not weighed first (by
- * id), then enabled and weighed, oldest weighing first, then disabled.
+ * The installed-plugin list joined to the manifest catalog by id. This is the
+ * one join used by both `weigh --list` and `audit`, so a source directory has
+ * one authority throughout the tool.
  *
  * @param {{ env?: NodeJS.ProcessEnv }} [options]
  */
-export function listWeighings({ env = process.env } = {}) {
+export function installedPlugins({ env = process.env } = {}) {
   const listed = run("listPlugins", { env })
   if (!listed.ok) throw new WeighError("shell-not-running", "omarchy plugin list did not answer, and the list is what the shell has installed", "omarchy-restart-shell")
   let installed
@@ -57,6 +58,7 @@ export function listWeighings({ env = process.env } = {}) {
   } catch {
     throw new WeighError("shell-unreadable", "omarchy plugin list did not answer with JSON", "omarchy-restart-shell, then run it again.")
   }
+  if (!Array.isArray(installed)) throw new WeighError("shell-unreadable", "omarchy plugin list did not answer with a JSON array", "omarchy-restart-shell, then run it again.")
   const catalogRun = run("catalog", { env })
   let catalog = []
   try {
@@ -65,6 +67,17 @@ export function listWeighings({ env = process.env } = {}) {
     catalog = []
   }
   const sourceDirOf = (id) => catalog.find((entry) => entry.id === id)?.sourceDir || null
+  return installed.map((plugin) => ({ ...plugin, sourceDir: sourceDirOf(plugin.id) }))
+}
+
+/**
+ * One row per installed plugin, sorted: enabled and not weighed first (by
+ * id), then enabled and weighed, oldest weighing first, then disabled.
+ *
+ * @param {{ env?: NodeJS.ProcessEnv }} [options]
+ */
+export function listWeighings({ env = process.env } = {}) {
+  const installed = installedPlugins({ env })
   const stateDir = omakitStateDir("weigh", env)
   const latest = lastWeighings(stateDir)
   const rows = installed.map((plugin) => {
@@ -76,7 +89,7 @@ export function listWeighings({ env = process.env } = {}) {
       kinds,
       enabled: plugin.enabled === true,
       firstParty: plugin.firstParty === true,
-      sourceDir: sourceDirOf(plugin.id),
+      sourceDir: plugin.sourceDir,
       weighable: !kinds.includes("bar"),
       lastWeighed: last ? { date: last.date, readme: last.readme, summary: last.summary, document: last.document } : null,
       enable: plugin.enabled === true ? null : `omarchy plugin enable ${plugin.id}`,

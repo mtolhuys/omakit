@@ -43,11 +43,13 @@ test("the parser refuses what the table does not name, and reads what it does", 
   assert.equal(checkArgs(["--runs"], ACCEPTED.weigh).reason, "--runs needs a value")
   assert.equal(checkArgs(["a", "b"], ACCEPTED.weigh).reason, '"b" is one argument more than the command takes')
   assert.equal(checkArgs(["--offline", "--json", "--out", "f"], ACCEPTED.doctor).offending, null)
+  assert.equal(checkArgs(["plugin.id", "--drift", "--offline", "--json", "--out", "f"], ACCEPTED.audit).offending, null)
   assert.equal(checkArgs(["x"], ACCEPTED.doctor).reason, '"x" is one argument more than the command takes')
   assert.equal(checkArgs(["--agent"], ACCEPTED.help).offending, null)
   assert.equal(checkArgs([], ACCEPTED.pin).offending, null)
   assert.equal(acceptedWords("weigh"), "--runs N, --window S, --settle S, --out FILE, --all, --list, --json, --yes")
   assert.equal(acceptedWords("pin"), "")
+  assert.equal(acceptedWords("audit"), "--out FILE, --drift, --json, --offline")
 })
 
 test("the entry point refuses an unknown option for every command, before anything runs", () => {

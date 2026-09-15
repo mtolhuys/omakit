@@ -39,6 +39,8 @@ import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/au
 import { confirmationQuestion, renderList, renderWeigh, renderPlan } from "../weigh/report.mjs"
 import { listWeighings } from "../weigh/list.mjs"
 import { askYes } from "../weigh/confirm.mjs"
+import { auditInstalled } from "../audit/audit.mjs"
+import { renderAudit } from "../audit/report.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -293,6 +295,40 @@ async function cmdParity(args) {
   process.exit(ok ? 0 : 1)
 }
 
+function notAudited(message, remedy = null, exit = 1) {
+  const c = styler(colourEnabled(process.stderr))
+  const lines = verdict("fail", "NOT AUDITED", message, c)
+  if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
+  process.stderr.write(`${lines.join("\n")}\n`)
+  process.exit(exit)
+}
+
+async function cmdAudit(args) {
+  const parsed = checkArgs(args, ACCEPTED.audit)
+  if (parsed.offending !== null) notAudited(`${parsed.reason}. Accepted: ${acceptedWords("audit")}.`, "omakit audit [<plugin-id-or-dir>] [--drift] [--json] [--out FILE] [--offline]", 2)
+  let document
+  try {
+    document = await auditInstalled({
+      repoRoot: ROOT,
+      target: parsed.positionals[0],
+      drift: parsed.options.has("--drift"),
+      offline: parsed.options.has("--offline"),
+    })
+  } catch (error) {
+    if (error?.code && typeof error.code === "string") notAudited(`${error.message}.`, error.remedy || REMEDY[error.code])
+    throw error
+  }
+  const json = `${JSON.stringify(document, null, 2)}\n`
+  const out = parsed.options.get("--out")
+  if (out) {
+    mkdirSync(dirname(resolve(out)), { recursive: true })
+    writeFileSync(resolve(out), json)
+  }
+  if (parsed.options.has("--json")) process.stdout.write(json)
+  else process.stdout.write(`${renderAudit(document)}\n`)
+  process.exit(document.ok ? 0 : 1)
+}
+
 /**
  * Every way `weigh` stops without weighing, in one register: the closing
  * word a report would have ended with, negated, then the sentence naming
@@ -458,6 +494,8 @@ if (command === "setup") {
   await cmdVerify(rest)
 } else if (command === "parity") {
   await cmdParity(rest)
+} else if (command === "audit") {
+  await cmdAudit(rest)
 } else if (command === "weigh") {
   await cmdWeigh(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {

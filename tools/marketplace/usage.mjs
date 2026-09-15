@@ -41,6 +41,17 @@ export const COMMANDS = Object.freeze([
   },
   {
     signature: [
+      "omakit audit <plugin-id-or-dir> [--drift] [--json] [--out <file>] [--offline]",
+      "omakit audit [--drift] [--json] [--out <file>] [--offline]",
+    ],
+    lines: [
+      "Compare every installed third-party plugin's running commit with the",
+      "exact commits the marketplace records as validated. Read-only. --drift",
+      "shows only rows that are not validated; --offline reads the pin.",
+    ],
+  },
+  {
+    signature: [
       "omakit submit <target> --category <c> --tags <a,b> [--notes <text>]",
       "                      [--suggest-tag <t>] [--name <n>] [--offline]",
       "                      [--allow-dirty] [--json] [--out <file>]",

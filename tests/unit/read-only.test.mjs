@@ -153,6 +153,21 @@ test("only the weigh command spawns an Omarchy command, only from its command ta
   }
 })
 
+test("audit runs only read-only local Git questions", () => {
+  const audit = sources.filter(({ path }) => path.startsWith("tools/audit/"))
+  assert.ok(audit.length >= 3)
+  const joined = audit.map(({ text }) => text).join("\n")
+  for (const verb of ["fetch", "pull", "checkout", "reset"]) {
+    const code = joined.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.doesNotMatch(code, new RegExp(`["']${verb}["']`), `audit names the mutating git verb ${verb}`)
+  }
+  assert.match(joined, /\["rev-parse", "HEAD"\]/)
+  assert.match(joined, /\["status", "--porcelain"\]/)
+  assert.match(joined, /\["remote", "get-url", "origin"\]/)
+  assert.match(joined, /"merge-base", "--is-ancestor"/)
+  assert.match(joined, /\["rev-list", "--count", `\$\{commit\}\.\.HEAD`\]/)
+})
+
 test("a shell is asked about completion only with the frozen probes, and the completion refresh after an upgrade is the new omakit's own setup step", () => {
   // `setup` and `doctor` run an interactive shell to ask whether `omakit`
   // completes; the probe is a frozen argument list per shell and prints two
