@@ -33,13 +33,21 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
     out.push(...wrap(detail, { indent: GUTTER }, c))
     if ((row.state === "ahead" || row.state === "diverged") && validated) {
       out.push(...action(`git -C ${JSON.stringify(row.sourceDir)} checkout ${validated}`, c))
-      if (document.updateRoute) out.push(...action(`To validate a newer commit, open ${document.updateRoute.formPath}, ${document.updateRoute.name}, and choose ${JSON.stringify(document.updateRoute.choice)}.`, c))
     }
     out.push("")
   }
   const total = document.counts.audited.value
   const good = document.counts.validated.value
   const drift = document.counts.drift.value
+  if (document.updateRoute) {
+    out.push(...action(`To validate a newer commit: ${document.updateRoute.url}`, c))
+    out.push(...wrap(`${document.updateRoute.name}; choose ${JSON.stringify(document.updateRoute.choice)}.`, { indent: GUTTER }, c))
+    out.push("")
+  }
+  if (document.updateRouteError) {
+    out.push(...wrap(`Verification route unavailable: ${document.updateRouteError}; run omakit pin.`, { indent: GUTTER }, c))
+    out.push("")
+  }
   out.push(...verdict(document.ok ? "pass" : "fail", document.ok ? AUDIT_VERDICTS.validated : AUDIT_VERDICTS.drift, `${good} of ${total} run a commit the marketplace validated; ${drift} run one it never saw.`, c))
   return out.join("\n")
 }

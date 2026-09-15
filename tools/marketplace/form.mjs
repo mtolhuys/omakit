@@ -23,7 +23,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { parseYaml } from "./yaml.mjs"
-import { requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
 
 export const SUBMIT_FORM_PATH = ".github/ISSUE_TEMPLATE/submit-plugin.yml"
 export const OFFICIAL_SUBMISSION_MODULE = "scripts/submission.mjs"
@@ -147,7 +147,7 @@ export async function submissionContract(options = {}) {
  * pick something the form no longer offers.
  *
  * @param {{ repoRoot?: string, pinDir?: string }} [options]
- * @returns {Promise<{ formPath: string, name: string, choice: string }>}
+ * @returns {Promise<{ formPath: string, name: string, choice: string, url: string }>}
  */
 export async function newerCommitChoice(options = {}) {
   const pinDir = options.pinDir || requirePin(options.repoRoot).dir
@@ -164,7 +164,9 @@ export async function newerCommitChoice(options = {}) {
   }
   const name = typeof form.name === "string" ? form.name.trim() : ""
   if (!name) throw new ContractError("form-shape-changed", `${VERIFY_FORM_PATH} has no name`)
-  return { formPath: VERIFY_FORM_PATH, name, choice }
+  const url = new URL(`${MARKETPLACE_PIN.repository.replace(/\/$/, "")}/issues/new`)
+  url.searchParams.set("template", VERIFY_FORM_PATH.split("/").at(-1))
+  return { formPath: VERIFY_FORM_PATH, name, choice, url: url.href }
 }
 
 /**

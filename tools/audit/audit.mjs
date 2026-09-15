@@ -185,11 +185,12 @@ export async function auditInstalled(options = {}) {
 
   const needsAction = rows.some((row) => row.state === "ahead" || row.state === "diverged")
   let updateRoute = null
+  let updateRouteError = null
   if (needsAction) {
     try {
       updateRoute = await readers.route({ repoRoot: options.repoRoot })
     } catch (error) {
-      throw new AuditError(error?.code || "form-unreadable", error?.message || String(error), "omakit pin")
+      updateRouteError = error?.message || String(error)
     }
   }
   const drift = rows.filter((row) => row.state !== "validated")
@@ -212,6 +213,7 @@ export async function auditInstalled(options = {}) {
     },
     rows: options.drift ? drift : rows,
     updateRoute,
+    updateRouteError,
     ok: drift.length === 0,
   }
 }

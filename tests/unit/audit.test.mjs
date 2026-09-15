@@ -7,6 +7,8 @@ import { dirname, join } from "node:path"
 import { auditInstalled } from "../../tools/audit/audit.mjs"
 import { renderAudit } from "../../tools/audit/report.mjs"
 import { plain } from "../../tools/marketplace/style.mjs"
+import { newerCommitChoice } from "../../tools/marketplace/form.mjs"
+import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const A = "a".repeat(40)
@@ -17,6 +19,7 @@ const route = {
   formPath: ".github/ISSUE_TEMPLATE/verify-plugin.yml",
   name: "Verify or update a listed plugin",
   choice: "Verify and publish a newer upstream commit",
+  url: "https://github.com/example/marketplace/issues/new?template=verify-plugin.yml",
 }
 
 const listing = (id, repo, extra = {}) => ({
@@ -126,6 +129,35 @@ test("completed audits distinguish validated from drift without claiming they we
   assert.match(drift, /DRIFT  /)
   assert.doesNotMatch(drift, /NOT AUDITED/)
   assert.match(drift.replace(/\s+/g, " "), /1 of 7 run a commit the marketplace validated; 6 run one it never saw\./)
+})
+
+test("the verification form URL and pin choice appear once in the footer, after checkout actions", async () => {
+  const document = await fixture()
+  const output = renderAudit(document, { colour: false }).replace(/\s+/g, " ")
+  assert.equal(output.split(route.url).length - 1, 1)
+  assert.equal(output.split(route.choice).length - 1, 1)
+  assert.equal(output.split("git -C").length - 1, 2)
+  assert.ok(output.lastIndexOf("git -C") < output.indexOf(route.url))
+  const pinned = await newerCommitChoice({ repoRoot: REPO_ROOT })
+  assert.equal(pinned.url, `${MARKETPLACE_PIN.repository}/issues/new?template=verify-plugin.yml`)
+  assert.ok(pinned.choice)
+})
+
+test("an unreadable verification form does not erase a completed audit", async () => {
+  const document = await auditInstalled({
+    installed: () => [{ id: "p.ahead", enabled: true, sourceDir: "/p/ahead" }],
+    registry: async () => ({ source: "pin", commit: B, catalog: { plugins: [listing("p.ahead", "https://github.com/example/ahead")] } }),
+    checkout: () => ({ commit: C, status: "", repository: "https://github.com/example/ahead" }),
+    hasCommit: () => true,
+    ancestor: () => true,
+    count: () => 1,
+    route: async () => { throw new Error("form could not be read") },
+  })
+  assert.equal(document.rows[0].state, "ahead")
+  assert.equal(document.updateRouteError, "form could not be read")
+  const output = renderAudit(document, { colour: false })
+  assert.match(output, /DRIFT/)
+  assert.doesNotMatch(output, /NOT AUDITED/)
 })
 
 test("the CLI refuses unknown options and reports an unanswered shell", () => {

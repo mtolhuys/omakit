@@ -213,8 +213,10 @@ catalog nor the pin can be read. The reason is printed with the verdict.
 
 Usage errors exit 2. An ahead or diverged row prints, but never runs, the exact
 `git -C <dir> checkout <validated-sha>` that returns to a reviewed commit. It
-also names the marketplace verification form and its current newer-commit
-choice, read from the pin. It never recommends `omarchy plugin update`, because
+prints the verification form URL once in the footer, built from the pin's
+repository, with the form name and newer-commit choice read from the pin. A
+form-read failure keeps the audited rows and states the missing route. It
+never recommends `omarchy plugin update`, because
 that command fast-forwards to mutable HEAD.
 
 ## JSON contract
