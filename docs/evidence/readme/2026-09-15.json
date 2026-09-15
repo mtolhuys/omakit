@@ -1,0 +1,110 @@
+{
+  "measurement": "M10",
+  "date": "2026-09-15",
+  "localRevision": "4a29230",
+  "packageVersion": "0.4.1",
+  "parity": {
+    "date": "2026-09-12",
+    "source": "docs/evidence/parity/2026-09-12-local-vs-github-2.json",
+    "corpus": 30,
+    "identical": 30,
+    "mismatches": 0,
+    "rerun": false
+  },
+  "watch": {
+    "source": "docs/media/captures/watch-all.ansi",
+    "total": 5,
+    "current": 5,
+    "stale": 0,
+    "unknown": 0,
+    "manualQueue": 4,
+    "docsOnly": 2,
+    "compared": 4,
+    "discussionRecords": 2
+  },
+  "audit": {
+    "source": "docs/media/captures/audit-drift.ansi",
+    "installed": 55,
+    "excluded": 37,
+    "audited": 18,
+    "validated": 9,
+    "drift": 9,
+    "exitCode": 1
+  },
+  "weighList": {
+    "source": "docs/media/captures/weigh-list.ansi",
+    "installed": 55,
+    "enabled": 47,
+    "weighed": 1,
+    "captureLines": 278,
+    "measurementRunPerformed": false
+  },
+  "marketplaceWrites": 0,
+  "marketplaceWriteSource": "tests/unit/read-only.test.mjs and capture commands in docs/media/README.md",
+  "readmeProseWords": {
+    "before": 825,
+    "after": 259
+  },
+  "gifs": [
+    {
+      "gif": "docs/media/banner.gif",
+      "bytes": 14026,
+      "durationSeconds": 5.2,
+      "width": 440,
+      "height": 268,
+      "frames": 23
+    },
+    {
+      "gif": "docs/media/submit.gif",
+      "bytes": 858362,
+      "durationSeconds": 15.68,
+      "width": 777,
+      "height": 516,
+      "frames": 39
+    },
+    {
+      "gif": "docs/media/watch-all.gif",
+      "bytes": 566215,
+      "durationSeconds": 13.96,
+      "width": 777,
+      "height": 516,
+      "frames": 29
+    },
+    {
+      "gif": "docs/media/audit.gif",
+      "bytes": 710223,
+      "durationSeconds": 15.28,
+      "width": 777,
+      "height": 516,
+      "frames": 36
+    },
+    {
+      "gif": "docs/media/weigh-list.gif",
+      "bytes": 226308,
+      "durationSeconds": 12.24,
+      "width": 777,
+      "height": 516,
+      "frames": 27
+    }
+  ],
+  "renderer": {
+    "pillow": "12.3.0",
+    "freeType": "2.14.3",
+    "ffmpeg": "n9.0.1",
+    "appliesTo": [
+      "watch-all",
+      "audit",
+      "weigh-list"
+    ]
+  },
+  "preview": {
+    "date": "2026-09-15",
+    "method": "Local GFM rendering with public styles read from the actual repository page; local GIF files substituted only in temporary preview HTML",
+    "viewportWidth": 880,
+    "pageScrollWidth": 865,
+    "overflowingArticleElements": 0,
+    "featuredGifsLoaded": 5,
+    "liveBadgesLoaded": 4,
+    "publishedMainVerified": false
+  }
+}

@@ -2,6 +2,9 @@
 
 ## 0.4.2 (unreleased)
 
+- Shorter README with one recorded GIF per command, refreshed account-wide
+  watch, desktop audit and weighing-list captures, and numbered evidence.
+
 - `submit` reports `review.cost` immediately after the baseline: automated,
   manual queue, or manual queue again with an open-issue count and batching
   advice. It is always advisory and adds `reviewCost` to JSON.

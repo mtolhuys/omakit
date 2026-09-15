@@ -1,0 +1,89 @@
+[2mcatalog[0m       live HEAD 3d240d4d at 2026-09-15T00:26:28.400Z
+[2minstalled[0m     55
+[2mfirst-party[0m   37 left out
+[2maudited[0m       18
+
+[33m▓ note[0m  [1mio.github.mtolhuys.disk-lens[0m
+        diverged: validated commit not in local history; shallow clone: false;
+        HEAD 5a4b1b27; validated 7f0ea22a on 2026-09-14T09:51:46.925Z
+        [34;1m→[0m [34mgit -C[0m
+          [34m"/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.disk-lens"[0m
+          [34mcheckout 7f0ea22aee80a4f7f23ade4dede500f61eedba75[0m
+
+[33m▓ note[0m  [1mio.github.calebhat.weather[0m
+        31 commits ahead of validated 986604e0 (2026-08-29T10:43:31.905Z); HEAD
+        fda4aaa8
+        [34;1m→[0m [34mgit -C[0m
+          [34m"/home/mtolhuijs/.config/omarchy/plugins/io.github.calebhat.weather"[0m
+          [34mcheckout 986604e0a7275f7060ac18adec7493393c55906f[0m
+
+[33m▓ note[0m  [1mrobzolkos.github[0m
+        1 commit ahead of validated c38e600b (2026-09-13T09:33:19.839Z); HEAD
+        64807fcd
+        [34;1m→[0m [34mgit -C "/home/mtolhuijs/.config/omarchy/plugins/robzolkos.github"[0m
+          [34mcheckout c38e600ba76af0771c708cbc546154bd24aeb7e8[0m
+
+[33m▓ note[0m  [1mio.github.mtolhuys.news-radar[0m
+        3 commits ahead of validated 8b07c89d (2026-09-14T09:51:46.925Z); HEAD
+        139fdd28
+        [34;1m→[0m [34mgit -C[0m
+          [34m"/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.news-radar"[0m
+          [34mcheckout 8b07c89dea0d317f2ff15f55a0e971083e26022a[0m
+
+[33m▓ note[0m  [1momaplug[0m
+        13 commits ahead of validated efa46690 (2026-09-13T11:23:42.682Z); HEAD
+        bfdaedbb
+        [34;1m→[0m [34mgit -C "/home/mtolhuijs/.config/omarchy/plugins/omaplug" checkout[0m
+          [34mefa46690991ea59c3c290456807545dd7350dc03[0m
+
+[33m▓ note[0m  [1mcrmne.hyprmoncfg[0m
+        2 commits ahead of validated 513e5ce6 (2026-09-14T11:14:57.429Z); HEAD
+        cf05a04a
+        [34;1m→[0m [34mgit -C "/home/mtolhuijs/.config/omarchy/plugins/crmne.hyprmoncfg"[0m
+          [34mcheckout 513e5ce669224f3d3eabf72bd4342fb29f7622c7[0m
+
+[33m▓ note[0m  [1mio.github.pablo-merino.altswitch[0m
+        validated 8f54d684 on 2026-08-30T09:56:21.339Z; modified
+
+[33m▓ note[0m  [1mio.github.mtolhuys.plugin-pulse[0m
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        2d099d42; modified
+
+[2m░ info[0m  [1mio.github.mtolhuys.news-readers[0m
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        7d91c50e
+
+[2m░ info[0m  [1mbjarneo.workspace-layout[0m
+        unlisted: manifest id and origin match no marketplace listing; HEAD
+        f5d06c11
+
+[32m▁ ok[0m    [1mexpose.window-overview[0m
+        validated 4f49c093 on 2026-09-13T09:33:19.839Z
+
+[32m▁ ok[0m    [1mio.github.sirjul1337.lock-explorer[0m
+        validated ed8e8f82 on 2026-09-14T09:51:46.925Z
+
+[32m▁ ok[0m    [1mbobbynicholas.omaland[0m
+        validated ec232b6a on 2026-08-29T10:43:31.905Z
+
+[32m▁ ok[0m    [1mio.github.mtolhuys.onscreen-keyboard[0m
+        validated a41b45a7 on 2026-09-14T09:51:46.925Z
+
+[32m▁ ok[0m    [1mio.github.mtolhuys.theme-manager[0m
+        validated cc6486ac on 2026-09-14T09:51:46.925Z
+
+[32m▁ ok[0m    [1makshar.radio-atlas[0m
+        validated b290c29c on 2026-09-12T08:40:57.042Z
+
+[32m▁ ok[0m    [1mio.github.mtolhuys.sidecar[0m
+        validated 93800d2c on 2026-09-14T09:51:46.925Z
+
+[32m▁ ok[0m    [1momadock[0m
+        validated d2d355c5 on 2026-09-13T09:33:19.839Z
+
+        [34;1m→[0m [34mTo validate a newer commit:[0m
+          [34mhttps://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=verify-plugin.yml[0m
+        Verify or update a listed plugin; choose "Verify and publish a newer
+        upstream commit".
+
+[31;1m█ DRIFT[0m  9 of 18 run a commit the marketplace validated; 9 run one it never saw.

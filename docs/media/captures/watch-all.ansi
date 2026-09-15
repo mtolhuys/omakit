@@ -1,0 +1,43 @@
+[2maccount[0m       mtolhuys
+[2missues[0m        5 checked; 5 current, 0 stale, 0 unknown
+[2mreview cost[0m   4 of 5 plugin-update issue(s) on security-review-required; 2
+              docs-only validated diff(s) of 4 compared
+
+[32;1m▁ CURRENT[0m  #7039 [Verify]: Omarchy On-Screen Keyboard 0.9.2 — README badge only
+[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/7039
+[2mbaseline[0m      review-required; 0 finding(s); capabilities privilege, installer
+[2mstate[0m         open; labels validated, security-review-required, plugin-update
+
+[32;1m▁ CURRENT[0m  #5344 [Verify]: Omarchy Theme Manager 0.5.16
+[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/5344
+[2mbaseline[0m      review-required; 0 finding(s); capabilities installer
+[2mstate[0m         open; labels validated, security-review-required, plugin-update
+[2mdiscussion[0m    [39mBlocked at [0m[34m07fcb00032872f5fd8b6cc8906bce43f6d23a189[0m[39m: [0m[34mcatalog.sh[0m[39m[0m
+              still automatically replaces its cache through unchecked,
+              symlinkable directory paths. Use owner-checked no-follow directory
+              descriptors and descriptor-relative atomic publ…
+[2msource[0m        https://github.com/omacom/omarchy-plugin-marketplace/issues/5344#issuecomment-5641964048
+
+[32;1m▁ CURRENT[0m  #7038 [Verify]: Sidecar 0.2.1 — README badge only
+[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/7038
+[2mbaseline[0m      review-required; 0 finding(s); capabilities privilege
+[2mstate[0m         open; labels validated, security-review-required, plugin-update
+
+[32;1m▁ CURRENT[0m  #7037 [Verify]: Omarchy Disk Lens 0.6.12 — README badge only
+[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/7037
+[2mbaseline[0m      passed; 0 finding(s); capabilities none
+[2mstate[0m         open; labels validated, plugin-update
+
+[32;1m▁ CURRENT[0m  #6193 [Verify]: Omarchy News Radar 0.5.7
+[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/6193
+[2mbaseline[0m      review-required; 0 finding(s); capabilities installer
+[2mstate[0m         open; labels validated, security-review-required, plugin-update
+[2mdiscussion[0m    Manual security review accepted for
+              [39m[0m[34m38dbd4a9c7d5f857016aba555f1eb2ea9ef1cffe[0m[39m. Accepted capability:[0m
+              [39m[0m[34minstaller[0m[39m; reviewed explicit launcher/shortcut installation is[0m
+              unchanged, while this update only resolves bundled helpers from
+              validated …
+[2msource[0m        https://github.com/omacom/omarchy-plugin-marketplace/issues/6193#issuecomment-5635313621
+
+Current means the validated commit matches HEAD. It does not mean review,
+approval or publication is complete. Read-only; this run posts nothing.

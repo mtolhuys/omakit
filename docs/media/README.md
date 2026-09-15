@@ -1,6 +1,6 @@
 # The GIFs in the README
 
-All four are real, unedited program output. Nothing in them was typed by hand,
+The five README GIFs and the two retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
 reordered or rewritten, and they are reproducible from this repository: rendering
 them again from the committed scenes and captures, with the same Pillow,
 FreeType and ffmpeg, produces byte-identical files. Measured: a different
@@ -129,11 +129,11 @@ GIF is written: for every lit cell with a lit cell under it, the pixel rows on
 both sides of the boundary must carry ink, and the render refuses otherwise.
 `banner.gif` reports the count (`wordmark joins at 30 cell boundaries`).
 
-## The one thing that is left out
+## What is left out
 
 `submit.gif` omits 34 lines in the middle: the marketplace's own baseline report
 for that commit, which is long. The GIF says so on screen, in place, with a dim
-line naming what was cut. Nothing else is removed, and the full output is what
+line naming what was cut. The full output is what
 `omakit submit` prints.
 
 ## Why the subject differs between the two
@@ -143,3 +143,66 @@ plugin would publish a list of that plugin's problems on this project's front
 page. The watch GIF uses a real submission, because a stale validation is a fact
 about the submission rather than a judgement of the code, and because a staged
 one would not be evidence of anything. Its author's login is not printed.
+
+
+## Refreshed command captures, 2026-09-15
+
+`watch --all`, `audit` and `weigh --list` were captured on the author's account
+and desktop at local revision `4a29230`, package 0.4.1. No tool output was
+changed for presentation. The current `weigh --list` prints plugin records,
+not a compact table; the GIF preserves those records. Full captures include
+stderr and are not hand-edited. These runs suppress only the update notice
+and remove `NO_COLOR` so the forced-colour capture does not gain a runtime
+warning about contradictory colour settings.
+
+```bash
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit watch --all > docs/media/captures/watch-all.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit audit > docs/media/captures/audit-drift.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh --list > docs/media/captures/weigh-list.ansi 2>&1
+
+python3 docs/media/render.py docs/media/watch-all.scene.json docs/media/watch-all.gif
+python3 docs/media/render.py docs/media/audit.scene.json docs/media/audit.gif
+python3 docs/media/render.py docs/media/weigh-list.scene.json docs/media/weigh-list.gif
+```
+
+All three new scenes use 88 columns and 26 rows, matching `submit` and the
+retained single-issue `watch` capture. They were rendered with Pillow 12.3.0,
+FreeType 2.14.3 and ffmpeg n9.0.1; `OMAKIT_RENDER_FONTS` selected the bundled
+DejaVu Sans Mono font directory. The renderer itself is unchanged.
+
+| README GIF | Bytes | Duration | Dimensions | Recording |
+| --- | ---: | ---: | --- | --- |
+| [`banner.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 14,026 | 5.20 s | 440 × 268 | 2026-09-12 |
+| [`submit.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif) | 858,362 | 15.68 s | 777 × 516 | 2026-09-13 |
+| [`watch-all.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif) | 566,215 | 13.96 s | 777 × 516 | 2026-09-15 |
+| [`audit.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif) | 710,223 | 15.28 s | 777 × 516 | 2026-09-15 |
+| [`weigh-list.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif) | 226,308 | 12.24 s | 777 × 516 | 2026-09-15 |
+
+`watch-all.gif` includes the five CURRENT verdicts, two human discussion
+records and the live review-cost summary. `audit.gif` reveals drift before
+matching rows and ends with the measured 9-of-18 drift count. `weigh-list.gif`
+visibly omits capture lines 29–233 (205 unweighed-record lines) and 244–278
+(35 further disabled-record lines). The complete 278-line capture is retained;
+the scene's omission notices are presentation annotations, not command output.
+The other two refreshed scenes omit no lines.
+
+The historical [single-issue stale GIF](watch.gif) is linked from
+[VALIDATION_WATCH.md](../VALIDATION_WATCH.md), keeping the README to one GIF
+per command. [setup.gif](setup.gif) remains in the installation documentation.
+The README uses absolute raw-main URLs for all five GIFs. The existing live
+badge row is unchanged, including the version and CI badges, to keep it current.
+
+Word-count method: exclude fenced code, images, badge markup and URLs; include
+headings, table cells and documentation link labels. Count word tokens including
+internal apostrophes, periods, slashes and hyphens. The same method counted
+825 words before this rewrite and 259 after it. The provenance and limits of
+the README evidence are recorded as M10 in [MEASUREMENTS.md](../MEASUREMENTS.md).
+
+
+The local GFM preview used the styles read from the actual repository page.
+At an 880px browser viewport, page scroll width was 865px (the remainder was
+the vertical scrollbar), with zero overflowing article elements. All five
+GIFs and four live badges loaded. The temporary preview substituted local
+GIF files for the new raw-main URLs; the README source itself was not
+rewritten for preview. Published-main verification awaits a push. The new
+assets are deliberately unreleased local work.

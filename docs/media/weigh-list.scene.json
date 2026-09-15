@@ -1,0 +1,19 @@
+{
+  "title": "omakit weigh --list",
+  "width": 88,
+  "rows": 26,
+  "steps": [
+    {
+      "command": "omakit weigh --list",
+      "capture": "docs/media/captures/weigh-list.ansi",
+      "reveal": 2,
+      "pace": 12,
+      "omit": [
+        [29, 233, "205 lines of unweighed plugin records, left out for length"],
+        [244, 278, "35 lines of further disabled plugin records, left out for length"]
+      ],
+      "pauses": [[12, 200], [34, 300]],
+      "hold": 420
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "title": "omakit watch --all",
+  "width": 88,
+  "rows": 26,
+  "steps": [
+    {
+      "command": "omakit watch --all",
+      "capture": "docs/media/captures/watch-all.ansi",
+      "reveal": 2,
+      "pace": 12,
+      "pauses": [[4, 160], [19, 300], [29, 200]],
+      "hold": 420
+    }
+  ]
+}

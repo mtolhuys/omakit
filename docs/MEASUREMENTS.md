@@ -652,3 +652,47 @@ and the wider capture shows the same content in fewer lines. A separate
 20-column test proves the compact logo uses no cursor animation. Pipes and
 file output use the stable 80-column geometry; JSON and verbatim issue and
 marketplace sections are not reflowed.
+
+
+## M10. README evidence and command captures
+
+Recorded on 2026-09-15, package 0.4.1, local revision `4a29230`.
+The [machine-readable record](evidence/readme/2026-09-15.json) ties each
+README capture count to its unedited ANSI file, and records GIF sizes,
+durations, dimensions and the before/after word count. Commands and renderer
+versions are in [media/README.md](media/README.md#refreshed-command-captures-2026-09-15).
+
+```bash
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit watch --all > docs/media/captures/watch-all.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit audit > docs/media/captures/audit-drift.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh --list > docs/media/captures/weigh-list.ansi 2>&1
+```
+
+The author's account had 5 checked issues, all CURRENT, with 2 human discussion
+records. Four were update issues in the manual queue; 2 of their 4 complete
+validated comparisons were documentation-only. This is the account snapshot,
+not M9's marketplace population. CURRENT compares HEAD with the validated
+commit and does not imply approval. The desktop had 55 installed plugins,
+37 excluded first-party entries and 18 audited entries: 9 validated and 9
+drift, matching A1's counts. Audit exited 1 and printed checkout suggestions;
+none were executed. The list read 55 installed plugins, 47 enabled and 1
+previously weighed; its single recorded run explicitly lacked spread and a
+noise floor. No weighing or shell restart was performed for this capture.
+
+The 30-of-30 baseline parity figure is the existing 2026-09-12 run in
+[evidence/parity/2026-09-12-local-vs-github-2.json](evidence/parity/2026-09-12-local-vs-github-2.json):
+0 mismatches and 0 failures across 18 passed, 8 review-required and 4
+needs-fixes subjects at marketplace pin
+`38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6`. It was not rerun for this
+README rewrite and does not assert parity for every future marketplace pin.
+M6 and M7 retain their original dated population and churn measurements.
+
+The README features 5 GIFs from committed real-output captures: the existing
+banner and refusal fixture, plus the 3 refreshed account/desktop runs.
+Pillow decoded every frame; durations are the sum of frame delays and sizes
+are file byte counts. The new GIFs use the unchanged scene renderer, which
+reveals lines and visibly annotates omissions; it does not alter captured
+output. These captures and the repository's read-only source check record
+0 marketplace writes. The submit refusal is a reproducible fixture, not a
+new run of the author's plugin. Rendering fidelity and read-only checks are
+not a claim that the baseline proves a plugin safe.

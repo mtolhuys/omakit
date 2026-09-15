@@ -1,130 +1,65 @@
 <p align="center">
-  <img src="docs/media/banner.gif" alt="omakit" width="440">
+  <img src="https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif" alt="omakit" width="440">
 </p>
 
-The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only against the marketplace, posts nothing, zero dependencies.
+omakit gives Omarchy plugin authors and agents [four command views](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) of submission readiness, validation, installed drift and recorded weight.
 
 [![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
-
-`omakit` is a zero-dependency Node CLI that checks an Omarchy Quattro plugin submission on your machine.
-It is for a coding agent or a person submitting a plugin.
-It never posts to the marketplace or writes into a plugin tree.
-
-## Why it exists
-
-[M9](docs/MEASUREMENTS.md#m9-open-updates-and-documentation-only-review) measured 307 open plugin-update issues on 2026-09-15: 140 (45.6%) carried the manual-review label. Of 139 validated diffs compared in that queue, 4 (2.9%) changed only documentation; one comparison was unavailable. The baseline scans the plugin's whole snapshot, so unchanged capabilities can require another human review even for a docs-only update. `submit` now reports that cost before an issue exists and suggests batching when the same repository already has an open issue; `watch --all` measures the queue and docs-only diffs for the issues it lists.
 
 ## Install
 
 ```bash
-npm install --global omakit
-omakit setup
+npm i -g omakit && omakit setup
+npx skills add mtolhuys/omakit
 ```
 
-See [docs/INSTALL.md](docs/INSTALL.md) for the clone route, PATH, requirements and upgrading.
+## `omakit submit <plugin-repo>`
 
-## Commands
+![submit refusing a fixture plugin before any issue is posted](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif)
 
-| Command | What it does |
-| --- | --- |
-| [`omakit setup`](docs/COMMANDS.md) | The environment, the pin, tab completion, and what to try first. |
-| [`omakit submit <plugin-repo>`](docs/SUBMIT.md) | Every check, the issue title and body; asks for a category and tags at a terminal. |
-| [`omakit watch [<issue-url>]`](docs/VALIDATION_WATCH.md) | Pick your marketplace issues, list them, or check all with `--all`. |
-| [`omakit verify <plugin-repo>`](docs/COMMANDS.md) | The official security baseline over the local transport; `--json` for the document. |
-| [`omakit parity`](docs/COMMANDS.md) | The baseline over GitHub versus the local transport, on real listings; writes the evidence. |
-| [`omakit audit [<plugin>]`](docs/AUDIT.md) | Installed third-party commits against the exact commits the marketplace validated. |
-| [`omakit weigh <plugin>`](docs/WEIGH.md) | What a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first. |
-| [`omakit doctor`](docs/COMMANDS.md) | What is installed, what is pinned, and what has moved. |
-| [`omakit pin`](docs/COMMANDS.md) | What setup does for the pin, on its own. |
-| [`omakit upgrade`](docs/COMMANDS.md) | Updates omakit through its own installer: npm, or a fast-forward. |
-| [`omakit help --agent`](docs/COMMANDS.md) | The operating instructions, for the agent running this. |
+Runs the marketplace's own baseline on the exact commit and posts nothing ([M4: 2,916 baseline records](docs/MEASUREMENTS.md#m4-the-baseline-decides-whether-a-human-has-to-look-at-all), [M10: 0 marketplace writes](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). The GIF shows a refusal; fix the reported problems before preparing the issue.
 
-Normal terminal use also checks for a newer npm release at most once daily
-and shows the upgrade command. It installs nothing automatically; scripts
-and JSON stay quiet. `DISABLE_UPDATE_NOTIFIER=1` disables the notice, and
-`omakit doctor` checks explicitly. [Update behaviour](docs/INSTALL.md#updating).
+## `omakit watch --all`
 
-Terminal help and reports adapt to the available width, up to 120 columns
-for readability. Narrow windows wrap sooner; pipes and text files keep the
-stable eighty-column layout. JSON and exact issue bodies remain intact.
+![watch checking five current issues, with baseline results and human discussion](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif)
 
-### `submit`
+Five issues are CURRENT, with human discussion visible; CURRENT means matching commits, not approval ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). For a stale example and the next step, see [validation watch](docs/VALIDATION_WATCH.md).
 
-```bash
-omakit submit <plugin-repo> --category Widgets --tags bar,quickshell
-```
+## `omakit audit`
 
-It decides whether the plugin is ready, refused, or already listed; [103 issues mention agent-control files that no automated check reports](docs/MEASUREMENTS.md).
+![audit listing installed plugin drift before matching commits](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
 
-![omakit submit refusing a plugin with no license, a README that never says how to uninstall, and a reserved plugin id](docs/media/submit.gif)
+Drift rows come first: 9 of 18 audited plugins run commits the marketplace never validated ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). The checkout commands are suggestions, not actions performed by this run.
 
-Read more: [docs/SUBMIT.md](docs/SUBMIT.md).
+## `omakit weigh --list`
 
-### `watch`
+![weigh listing installed plugins and their recorded weighing status](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif)
 
-```bash
-omakit watch <submission-issue-url>
-omakit watch --all
-omakit watch --list
-omakit watch                 # choose one or several issues at a terminal
-```
-
-It decides whether the marketplace validated the plugin's current commit; [73% of parked submissions have a HEAD the marketplace never saw](docs/MEASUREMENTS.md).
-
-Account-wide discovery uses your signed-in `gh` account and reads your open marketplace issues. `--user <login>` reads another public account. Batch output includes baseline results, labels and the latest human discussion; `current` compares commits and does not imply approval or publication. Each command takes one snapshot and posts nothing.
-
-![omakit watch reporting that a validated commit has fallen behind](docs/media/watch.gif)
-
-Read more: [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md).
-
-### `weigh`
-
-```bash
-omakit weigh <plugin-id-or-dir>
-```
-
-It measures what a plugin weighs on the shell, CPU and child processes, against a baseline taken the same minute; [in the lab, a 180 ms timer fixture measured 2.73% CPU above a 0.13% floor](docs/MEASUREMENTS.md).
-
-```text
-Weighs no CPU above the floor (0.13%) and runs 2 child processes using 8.2 MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-14
-```
-
-It restarts your shell and asks first. Memory is a shell fact; CPU and child processes are the weight.
-
-Read more: [docs/WEIGH.md](docs/WEIGH.md).
+The list shows 55 installed plugins, 47 enabled and 1 weighed; that single run has no spread or noise floor ([M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures)). This reads stored results; see [the weighing method](docs/WEIGH.md) before starting a measurement.
 
 ## Evidence, not claims
 
-| Claim | Proof |
+| Measurement | Evidence |
 | --- | --- |
-| The local transport produces the marketplace's own result | 30 of 30 identical, [docs/evidence/parity/](docs/evidence/parity/) |
-| A local run touches no network | run inside `unshare -rn`, [docs/evidence/offline/](docs/evidence/offline/) |
-| The generated body is well formed | the marketplace's own parser, `tests/unit/issue.test.mjs` |
-| Nothing writes to the marketplace | `tests/unit/read-only.test.mjs`, over every source file |
-| No agent-control file can reach a plugin | `tests/unit/self-containment.test.mjs` |
-| `weigh` restores `shell.json` on every exit path, and runs a frozen list of Omarchy commands | `tests/unit/weigh.test.mjs` against a fake `/proc` and stub commands, `tests/unit/read-only.test.mjs` |
-| The GIFs above are real output | captures and renderer in [docs/media/](docs/media/) |
-
-Committed evidence records a digest of each side rather than the results themselves, because findings about a specific third-party plugin are not this project's to publish.
+| Baseline parity | 30/30 local and marketplace results identical, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
+| Stale validation | 73% of 464 parked submissions, [M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool) |
+| Registry churn | 4,201/4,293 commits touched only the registry in 30 days, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
+| GIFs are recorded output | 5 GIFs, committed captures and scenes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
 
 ## Documentation
 
-| Document | For |
-| --- | --- |
-| [docs/INSTALL.md](docs/INSTALL.md) | install details, PATH, requirements, upgrading, and what Socket reports and why |
-| [docs/HOW.md](docs/HOW.md) | what omakit is doing, why it uses Node, the baseline and check labels |
-| [docs/COMMANDS.md](docs/COMMANDS.md) | command details, authentication and network behaviour |
-| [docs/AUDIT.md](docs/AUDIT.md) | installed plugin drift against marketplace-validated commits, with JSON origins |
-| [docs/SUBMIT.md](docs/SUBMIT.md) | every check and what it decides |
-| [docs/WEIGH.md](docs/WEIGH.md) | what `weigh` measures, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
-| [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md) | the validation watch: what the marketplace validated, and what moves it |
-| [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md) | every number, its method and its limits |
-| [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md) | the seam, the pin, the boundaries |
-| [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | who this actually helps |
-| [docs/PALETTE.md](docs/PALETTE.md) | every installed Omarchy theme measured, and which palette index each role gets |
-| [docs/TUI.md](docs/TUI.md) | what the terminal shows, and why it looks that way |
-| [AGENTS.md](AGENTS.md) | changing this repository |
-
-MIT. Derived work built on public data from
-`omacom/omarchy-plugin-marketplace`; not affiliated with or endorsed by that
-project.
+- [docs/INSTALL.md](docs/INSTALL.md): installation and upgrades.
+- [docs/HOW.md](docs/HOW.md): baseline and check labels.
+- [docs/COMMANDS.md](docs/COMMANDS.md): commands and authentication.
+- [docs/SUBMIT.md](docs/SUBMIT.md): checks and output contract.
+- [docs/VALIDATION_WATCH.md](docs/VALIDATION_WATCH.md): commits, discussion and review queues.
+- [docs/AUDIT.md](docs/AUDIT.md): installed commit states.
+- [docs/WEIGH.md](docs/WEIGH.md): method, noise and restoration.
+- [docs/MEASUREMENTS.md](docs/MEASUREMENTS.md): numbers and limits.
+- [docs/UPSTREAM_CONTRACT.md](docs/UPSTREAM_CONTRACT.md): pin and boundaries.
+- [docs/MARKETPLACE.md](docs/MARKETPLACE.md): intended audience.
+- [docs/PALETTE.md](docs/PALETTE.md): palette indices.
+- [docs/TUI.md](docs/TUI.md): terminal presentation.
+- [docs/RELEASING.md](docs/RELEASING.md): release procedure.
+- [docs/media/README.md](docs/media/README.md): captures and rendering.
+- [AGENTS.md](AGENTS.md): repository contribution rules.
