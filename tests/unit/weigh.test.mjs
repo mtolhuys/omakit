@@ -184,6 +184,19 @@ function sleeper(t) {
   return child.pid
 }
 
+/**
+ * The entry point reads the real /proc, and a system without one (the macOS
+ * runner) has nothing to weigh a real process on: those two tests skip
+ * there, and say so. Measured on 0.4.2: they passed on macOS only while a
+ * pid absent from /proc was read as zeros, and failed the moment that
+ * became, rightly, no sample.
+ */
+function needsProc(t) {
+  if (existsSync("/proc/self/stat")) return false
+  t.skip("no /proc on this system, so the entry point has no real process to weigh")
+  return true
+}
+
 // --- the pieces -----------------------------------------------------------------
 
 test("the command table is frozen, and every entry is an Omarchy command or a read of the session", (t) => {
@@ -954,7 +967,7 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
 })
 
 test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", (t) => {
-  if (needsMachine(t)) return
+  if (needsMachine(t) || needsProc(t)) return
   const m = machine({ shellPid: sleeper(t) })
   const out = join(m.root, "doc.json")
   const result = omakit(["weigh", "fixture.poller", "--yes", "--json", "--runs", "2", "--window", "1", "--settle", "0", "--out", out], m.env)
@@ -985,7 +998,7 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
 })
 
 test("SIGINT during a window restores shell.json, restarts the shell once more, removes the backup, and exits 130", async (t) => {
-  if (needsMachine(t)) return
+  if (needsMachine(t) || needsProc(t)) return
   const m = machine({ shellPid: sleeper(t) })
   const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
     env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
