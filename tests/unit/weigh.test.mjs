@@ -21,7 +21,8 @@ import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../
 import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/weigh/stats.mjs"
 import { confirmationQuestion, redactedCommand, renderList, renderWeigh, renderPlan, rowState } from "../../tools/weigh/report.mjs"
 import { listWeighings } from "../../tools/weigh/list.mjs"
-import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP } from "../../tools/marketplace/style.mjs"
+import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP, styler } from "../../tools/marketplace/style.mjs"
+import { renderQuestion } from "../../tools/weigh/confirm.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const SHELL_PID = 4100
@@ -954,6 +955,67 @@ test("SIGINT during a window restores shell.json, restarts the shell once more, 
   assert.match(out, /restored and verified/)
   assert.match(err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}interrupted before the measurement completed\\.`, "m"))
   assert.match(err, /shell\.json was restored/)
+})
+
+test("the question is written whole, wrapped like every action, and ends with the prompt at 80 and at 60 columns", () => {
+  // Measured on 0.2.1: only the first wrapped line was written, so a
+  // person saw "(--runs 3; --runs 1 for a" and no [y/N]:, pressed Enter to
+  // see the rest, and the empty line answered No.
+  const question = "Restart the shell 6 times now, about 5 minutes? (--runs 3; --runs 1 for a quick look without a spread)"
+  for (const width of [80, 60]) {
+    const text = renderQuestion(question, styler(false), { width })
+    assert.ok(text.endsWith("[y/N]: "), `${width}: ends with the prompt, then a space for the answer: ${JSON.stringify(text)}`)
+    const lines = text.trimEnd().split("\n")
+    assert.ok(lines.length >= 2, `${width}: the question wraps`)
+    assert.equal(lines[0].startsWith(`${ARROW} Restart the shell 6 times now`), true)
+    for (const line of lines) assert.ok(line.length <= width, `${width}: ${line.length} columns: ${JSON.stringify(line)}`)
+    assert.equal(lines.join(" ").replace(/\s+/g, " "), `${ARROW} ${question} [y/N]:`, "every word of the question reaches the terminal")
+  }
+  assert.equal(plain(renderQuestion(question, styler(true))), renderQuestion(question, styler(false)))
+})
+
+test("under a pseudo-terminal the question blocks until a line is entered; y proceeds and n refuses", async (t) => {
+  // The harness of cli.test.mjs: util-linux script(1) gives the command a
+  // terminal on both ends and passes what is written to its stdin through
+  // to the terminal, so the prompt can be seen and answered.
+  const scriptBin = spawnSync("sh", ["-c", "command -v script"], { encoding: "utf8" }).stdout.trim()
+  const probe = scriptBin ? spawnSync(scriptBin, ["--version"], { encoding: "utf8" }) : null
+  if (!probe || probe.status !== 0 || !/util-linux/.test(probe.stdout)) {
+    t.skip("util-linux script(1) is not installed here")
+    return
+  }
+  const ask = (m, answer, extra = []) => new Promise((resolve) => {
+    const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} weigh fixture.poller --runs 1 --window 1 --settle 0 ${extra.join(" ")}`
+    const child = spawn(scriptBin, ["-qec", command, "/dev/null"], { env: { ...m.env, TERM: "xterm", NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe"] })
+    let out = ""
+    child.stdout.on("data", (chunk) => { out += chunk })
+    const timer = setTimeout(async () => {
+      // Two seconds with nothing entered: the prompt is on screen, the
+      // process is alive, and nothing has been decided.
+      const before = plain(out).replace(/\r/g, "")
+      const stillWaiting = child.exitCode === null && !before.includes("NOT WEIGHED") && before.includes("[y/N]:")
+      child.stdin.write(`${answer}\n`)
+      child.on("exit", (code) => resolve({ code, out: plain(out).replace(/\r/g, ""), stillWaiting, before }))
+    }, 2000)
+    child.on("exit", () => clearTimeout(timer))
+  })
+  const no = machine()
+  const refused = await ask(no, "n")
+  assert.equal(refused.stillWaiting, true, `the question waited: ${refused.before.slice(-200)}`)
+  assert.match(refused.before, /\(--runs 1: a quick look, no\s+spread and no verdict\) \[y\/N\]: $/, "the whole question, wrapped, ending in the prompt")
+  assert.equal(refused.code, 2)
+  assert.match(refused.out, /NOT WEIGHED {2}not confirmed; nothing was changed\./)
+  assert.deepEqual(no.restarts(), [], "n restarts nothing")
+  const yes = machine()
+  const agreed = await ask(yes, "y")
+  assert.equal(agreed.stillWaiting, true)
+  assert.equal(agreed.code, 0, agreed.out.slice(-300))
+  assert.match(agreed.out, /WEIGHED {2}1 plugin over 1 run/)
+  assert.equal(yes.restarts().length, 3, "y ran the two restarts and the restore")
+  const empty = machine()
+  const enter = await ask(empty, "")
+  assert.equal(enter.code, 2, "an empty line is No, as [y/N] says")
+  assert.deepEqual(empty.restarts(), [])
 })
 
 test("help, the front door and completion know weigh; the skills print the weigh skill", () => {

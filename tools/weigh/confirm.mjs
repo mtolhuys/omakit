@@ -5,13 +5,30 @@
 // typed here is written anywhere.
 
 import { createInterface } from "node:readline"
-import { action, colourEnabled, styler } from "../marketplace/style.mjs"
+import { action, colourEnabled, COLUMNS, styler } from "../marketplace/style.mjs"
 
 /**
- * @param {{ input?: NodeJS.ReadStream, output?: NodeJS.WriteStream, colour?: boolean, question: string }} options
- * @returns {Promise<boolean>} true only for `y` or `yes`, in any case; the end of stdin is no
+ * The question as it is written to the terminal: the arrow line, wrapped
+ * at the contract width like every other action, with `[y/N]:` at the end
+ * of the last line, and no newline after it, so the cursor waits there.
+ * Measured on 0.2.1: the question grew a clause about --runs, wrapped to
+ * two lines, and only the first was written, so a person saw "for a" and
+ * no prompt, pressed Enter to see the rest, and the empty line was No.
+ *
+ * @param {string} question
+ * @param {(name: string, text: string) => string} c
+ * @param {{ width?: number }} [options]
+ * @returns {string} every line, joined, ending in `[y/N]: `
  */
-export function askYes({ input = process.stdin, output = process.stderr, colour = colourEnabled(output), question }) {
+export function renderQuestion(question, c, { width = COLUMNS } = {}) {
+  return `${action(`${question} [y/N]:`, c, { indent: 0, width }).join("\n")} `
+}
+
+/**
+ * @param {{ input?: NodeJS.ReadStream, output?: NodeJS.WriteStream, colour?: boolean, question: string, width?: number }} options
+ * @returns {Promise<boolean>} true only for `y` or `yes`, in any case; an empty line and the end of stdin are no
+ */
+export function askYes({ input = process.stdin, output = process.stderr, colour = colourEnabled(output), question, width = COLUMNS }) {
   const c = styler(colour)
   return new Promise((resolve) => {
     const rl = createInterface({ input, terminal: false })
@@ -27,6 +44,6 @@ export function askYes({ input = process.stdin, output = process.stderr, colour 
       if (!answered) output.write("\n")
       settle(false)
     })
-    output.write(`${action(`${question} [y/N]:`, c, { indent: 0 })[0]} `)
+    output.write(renderQuestion(question, c, { width }))
   })
 }

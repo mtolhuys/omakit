@@ -416,10 +416,10 @@ export function continuation(value, c) {
  * under itself. There is exactly one of these under any failure, and it is the
  * only line in the tool that starts with an arrow, so it can be found by shape.
  */
-export function action(text, c, { indent = GUTTER } = {}) {
+export function action(text, c, { indent = GUTTER, width: total = COLUMNS } = {}) {
   // Painted after wrapping, and all of it cyan: the whole line is the thing
   // to do, so a backticked word inside it has nothing to stand out from.
-  const lines = wrap(text, { indent: indent + 2 })
+  const lines = wrap(text, { indent: indent + 2, width: total })
   return lines.map((line, index) => (index === 0
     ? `${" ".repeat(indent)}${c("typeable.bold", ARROW)} ${c("typeable", line.trimStart())}`
     : `${" ".repeat(indent + 2)}${c("typeable", line.trimStart())}`))
