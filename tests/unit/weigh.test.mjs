@@ -185,11 +185,11 @@ function sleeper(t) {
 }
 
 /**
- * The entry point reads the real /proc, and a system without one (the macOS
- * runner) has nothing to weigh a real process on: those two tests skip
- * there, and say so. Measured on 0.4.2: they passed on macOS only while a
- * pid absent from /proc was read as zeros, and failed the moment that
- * became, rightly, no sample.
+ * The entry point reads the real /proc, and a system without one has
+ * nothing to weigh a real process on: those two tests skip there, and say
+ * so. Measured on 0.4.2: they passed on a system without /proc only while a
+ * pid absent from it was read as zeros, and failed the moment that became,
+ * rightly, no sample.
  */
 function needsProc(t) {
   if (existsSync("/proc/self/stat")) return false

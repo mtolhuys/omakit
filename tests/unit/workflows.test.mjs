@@ -41,13 +41,16 @@ test("every external action is an audited full-SHA pin with its version beside i
   }
 })
 
-test("CI proves both supported Nodes, the portable macOS suite, pin and package", () => {
+test("CI proves both supported Nodes on the platform omakit runs on, pin and package", () => {
+  // Ubuntu only: omakit is an Omarchy tool, and a job for a platform nobody
+  // asked for is maintenance with no owner. Node 22 is the engines minimum
+  // in package.json; Node 24 is the release workflow's runtime.
   const source = workflows["ci.yml"]
   assert.match(source, /\n  push:\n/)
   assert.match(source, /\n  pull_request:\n/)
   assert.match(source, /os: ubuntu-latest\n\s+node: 22/)
   assert.match(source, /os: ubuntu-latest\n\s+node: 24/)
-  assert.match(source, /os: macos-latest\n\s+node: 22/)
+  assert.doesNotMatch(source, /os: macos-latest/, "no job exists for a platform omakit does not run on")
   assert.match(source, /sudo apt-get install --yes zsh fish/)
   assert.match(source, /\.\/bin\/omakit pin/)
   assert.match(source, /npm test/)

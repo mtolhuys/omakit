@@ -21,9 +21,6 @@ jobs:
           - label: Ubuntu · Node 24
             os: ubuntu-latest
             node: 24
-          - label: macOS portable · Node 22
-            os: macos-latest
-            node: 22
 
     steps:
       - name: Check out the exact revision

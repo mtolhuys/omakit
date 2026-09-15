@@ -13,7 +13,7 @@ npm i -g omakit && omakit setup
 npx skills add mtolhuys/omakit
 ```
 
-Requirements: [Node >=22](package.json); Omarchy Quattro.
+Runs where [Node 22+](package.json) and Git run; `weigh` and `audit` need a running Omarchy shell.
 
 Licence: [MIT](LICENSE).
 
