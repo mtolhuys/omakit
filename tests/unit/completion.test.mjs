@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process"
 import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { completionInstall, installCompletion, PLUGIN_IDS_COMMAND, PLUGIN_IDS_JQ, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
+import { completionInstall, installCompletion, PLUGIN_IDS_COMMAND, PLUGIN_IDS_JQ, PLUGIN_IDS_TIMED, renderCompletion, subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { submissionContract, tagSlug } from "../../tools/marketplace/form.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "../../tools/marketplace/usage.mjs"
@@ -125,8 +125,12 @@ test("the jq expression behind weigh <TAB> puts enabled ids first and leaves who
   const result = spawnSync("jq", ["-r", PLUGIN_IDS_JQ], { encoding: "utf8", input: listed })
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(result.stdout.split("\n").filter(Boolean), ["a.on", "c.on", "b.off"], "enabled first in their order, the bar gone, no kinds tolerated")
-  assert.match(PLUGIN_IDS_COMMAND, /^timeout 1 omarchy-shell shell listPlugins 2>\/dev\/null \| jq -r '/, "a one-second timeout, and jq, not node, behind the TAB")
-  for (const shell of COMPLETION_SHELLS) assert.ok(scripts[shell].includes(PLUGIN_IDS_COMMAND), `${shell}: the same pipeline`)
+  assert.match(PLUGIN_IDS_COMMAND, /^omarchy-shell shell listPlugins 2>\/dev\/null \| jq -r '/, "jq, not node, behind the TAB")
+  assert.equal(PLUGIN_IDS_TIMED, `timeout 1 ${PLUGIN_IDS_COMMAND}`, "and a one-second bound where timeout exists")
+  for (const shell of COMPLETION_SHELLS) {
+    assert.ok(scripts[shell].includes(PLUGIN_IDS_TIMED), `${shell}: the bounded pipeline`)
+    assert.ok(scripts[shell].includes(`else ${PLUGIN_IDS_COMMAND}`) || scripts[shell].includes(`else; ${PLUGIN_IDS_COMMAND}`) || scripts[shell].includes(`else ids=(\${(f)"$(${PLUGIN_IDS_COMMAND})"})`), `${shell}: the unbounded one where timeout is missing`)
+  }
   assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "weigh").target, "plugin")
   assert.equal(subcommandsOf(COMMANDS).find((sub) => sub.name === "submit").target, "directory")
 })

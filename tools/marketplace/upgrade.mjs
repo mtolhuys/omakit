@@ -155,7 +155,10 @@ export const COMPLETION_REFRESH_ARGS = Object.freeze(["setup", "--completion"])
 
 function refreshCompletionWith(root, stream) {
   const entryPoint = join(root, "bin/omakit")
-  if (!existsSync(entryPoint)) return { ran: false, reason: `${entryPoint} is not there` }
+  // The reason names the relative path: the root is printed above it, and a
+  // temporary directory on macOS is long enough to push an absolute one
+  // past eighty columns in a sentence (measured in CI: 109).
+  if (!existsSync(entryPoint)) return { ran: false, reason: "this install has no bin/omakit under its root" }
   try {
     const out = execFileSync(process.execPath, [entryPoint, ...COMPLETION_REFRESH_ARGS], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
     stream.write(out)

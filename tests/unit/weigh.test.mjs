@@ -9,7 +9,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawn, spawnSync } from "node:child_process"
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
@@ -24,6 +24,24 @@ import { listWeighings } from "../../tools/weigh/list.mjs"
 import { ARROW, DENSITY, GUTTER, LABEL, overflows, plain, STEP, styler } from "../../tools/marketplace/style.mjs"
 import { renderQuestion } from "../../tools/weigh/confirm.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
+
+/**
+ * The commands the stub shells and the restart stub run, found on this
+ * system's PATH. A system without one of them (measured: the macOS runner
+ * has no md5sum, and its cat is in /bin) cannot host the stub machine, so
+ * every test that builds one skips with the tool named; the code under
+ * test only ever runs on an Omarchy, which has them all.
+ */
+const STUB_TOOLS = ["cat", "cut", "grep", "md5sum", "mkdir", "rm", "tr", "wc"]
+const TOOL_PATHS = Object.fromEntries(STUB_TOOLS.map((name) => [name, spawnSync("sh", ["-c", `command -v ${name}`], { encoding: "utf8" }).stdout.trim() || null]))
+const MISSING_TOOL = STUB_TOOLS.find((name) => !TOOL_PATHS[name]) || null
+
+/** Skip a stub-machine test where this system cannot host the machine; true when it skipped. */
+function needsMachine(t) {
+  if (!MISSING_TOOL) return false
+  t.skip(`${MISSING_TOOL} is not on PATH here, so the stub machine cannot be built`)
+  return true
+}
 
 const SHELL_PID = 4100
 const CHILD_PID = 4242
@@ -122,12 +140,13 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
     `if grep -q '"fixture.poller"' "$config"; then mkdir -p ${proc}/${CHILD_PID}; printf '%s\\n' "${stat(CHILD_PID, "inotifywait", SHELL_PID, { utime: 2, stime: 1 }).trimEnd()}" > ${proc}/${CHILD_PID}/stat; printf 'Name:\\tinotifywait\\nVmRSS:\\t  4096 kB\\n' > ${proc}/${CHILD_PID}/status; printf 'inotifywait\\0-m\\0/tmp\\0' > ${proc}/${CHILD_PID}/cmdline; else rm -rf ${proc}/${CHILD_PID}; fi`,
     "exit 0",
   ].join("\n"))
-  // PATH holds the stubs and the few coreutils they use, and nothing from
-  // /usr/bin: this machine has a packaged omarchy-shell there, and a test
-  // that removes a stub must find nothing behind it.
+  // PATH holds the stubs and the few coreutils they use, found wherever
+  // this system keeps them, and nothing else: this machine has a packaged
+  // omarchy-shell in /usr/bin, and a test that removes a stub must find
+  // nothing behind it.
   const tools = join(root, "coreutils")
   mkdirSync(tools)
-  for (const name of ["cat", "cut", "grep", "md5sum", "mkdir", "rm", "tr", "wc"]) symlinkSync(`/usr/bin/${name}`, join(tools, name))
+  for (const name of STUB_TOOLS) symlinkSync(TOOL_PATHS[name], join(tools, name))
   const env = { PATH: `${bin}:${tools}`, HOME: home, XDG_STATE_HOME: join(home, "xdg-state"), NODE_NO_WARNINGS: "1" }
   // Every restart, with the md5 of shell.json at that moment and, for a
   // measurement configuration, its parsed content; the user's own file has
@@ -149,7 +168,8 @@ const FAST = { runs: 2, windowSeconds: 0.2, settleSeconds: 0 }
 
 // --- the pieces -----------------------------------------------------------------
 
-test("the command table is frozen, and every entry is an Omarchy command or a read of the session", () => {
+test("the command table is frozen, and every entry is an Omarchy command or a read of the session", (t) => {
+  if (needsMachine(t)) return
   assert.deepEqual(Object.fromEntries(Object.entries(COMMANDS).map(([name, entry]) => [name, [entry.command, ...entry.args]])), {
     sessionEnvironment: ["systemctl", "--user", "show-environment"],
     sessionLocked: ["omarchy-hyprland-session-locked"],
@@ -262,14 +282,15 @@ test("the README sentence speaks about CPU and child processes, never about the 
   ]) assert.ok(!/MB/.test(sentence), `no memory figure about the plugin: ${sentence}`)
 })
 
-test("backup and restore are byte for byte, keep the mode, and verify by md5", () => {
+test("backup and restore are byte for byte, keep the mode, and verify by md5", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const backup = backupConfig(m.configFile, "20260914120000")
   assert.equal(backup.backupFile, `${m.configFile}.omakit-backup-20260914120000`)
   assert.equal(readFileSync(backup.backupFile, "utf8"), USER_SHELL_JSON)
   assert.equal(backup.md5Before, md5(Buffer.from(USER_SHELL_JSON)))
   assert.equal(backup.md5Before, spawnSync("md5sum", [m.configFile], { encoding: "utf8" }).stdout.split(" ")[0], "the same md5 md5sum prints")
-  const mode = (path) => spawnSync("stat", ["-c", "%a", path], { encoding: "utf8" }).stdout.trim()
+  const mode = (path) => (statSync(path).mode & 0o777).toString(8)
   assert.equal(mode(backup.backupFile), "600", "a copy of a private file is a private file")
   writeFileSync(m.configFile, "{}\n")
   restoreConfig(backup)
@@ -303,7 +324,8 @@ test("backup and restore are byte for byte, keep the mode, and verify by md5", (
 
 // --- the plan and the confirmation ---------------------------------------------
 
-test("the plan counts restarts as (1 + plugins) × runs and estimates from the stored timing, or the lab's before one exists", () => {
+test("the plan counts restarts as (1 + plugins) × runs and estimates from the stored timing, or the lab's before one exists", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const plan = planWeigh({ target: "fixture.clean", env: m.env, now: new Date("2026-09-14T19:02:25.123Z") })
   assert.deepEqual(plan.audited.map((plugin) => plugin.id), ["fixture.clean"])
@@ -343,7 +365,8 @@ test("the plan counts restarts as (1 + plugins) × runs and estimates from the s
   assert.equal(planWeigh({ target: "fixture.clean", env: m.env, out: join(m.root, "here.json") }).out, join(m.root, "here.json"))
 })
 
-test("the confirmation says the plugins, the restart count, the minutes, the backup and the file, within eighty columns", () => {
+test("the confirmation says the plugins, the restart count, the minutes, the backup and the file, within eighty columns", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const plan = planWeigh({ all: true, env: m.env })
   const text = renderPlan(plan, { colour: false, env: m.env }).join("\n")
@@ -362,7 +385,8 @@ test("the confirmation says the plugins, the restart count, the minutes, the bac
   assert.equal(plain(renderPlan(plan, { colour: true, env: m.env }).join("\n")), text, "colour changes nothing about the words")
 })
 
-test("the compatibility preflight refuses, read-only and before any confirmation, an Omarchy that cannot be weighed on", () => {
+test("the compatibility preflight refuses, read-only and before any confirmation, an Omarchy that cannot be weighed on", (t) => {
+  if (needsMachine(t)) return
   const codeOf = (env) => {
     try {
       planWeigh({ target: "fixture.clean", env })
@@ -423,7 +447,8 @@ test("the compatibility preflight refuses, read-only and before any confirmation
   assert.match(renderPlan(atStock, { colour: false, env: stock.env }).join("\n"), /^shell {9}4\.0\.0\.test$/m, "a stock install prints the version alone")
 })
 
-test("a locked session, a disabled plugin, a whole bar, an unknown id and a missing command are each refused before anything is touched", () => {
+test("a locked session, a disabled plugin, a whole bar, an unknown id and a missing command are each refused before anything is touched", (t) => {
+  if (needsMachine(t)) return
   const codeOf = (options) => {
     try {
       planWeigh(options)
@@ -456,7 +481,8 @@ test("a locked session, a disabled plugin, a whole bar, an unknown id and a miss
 
 // --- the measurement, against the fake machine ------------------------------------
 
-test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baseline without the plugin and the plus with it where it was, and restores byte for byte", async () => {
+test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baseline without the plugin and the plus with it where it was, and restores byte for byte", async (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const md5Before = md5(readFileSync(m.configFile))
   const lines = []
@@ -550,7 +576,8 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   assert.equal(rowState(row), "pass")
 })
 
-test("--runs 1 is a quick look: no floor, every verdict a question with its reason, and no README sentence", async () => {
+test("--runs 1 is a quick look: no floor, every verdict a question with its reason, and no README sentence", async (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const plan = planWeigh({ target: "fixture.poller", env: m.env, runs: 1, windowSeconds: 0.2, settleSeconds: 0 })
   const document = await measureWeigh(plan, { procRoot: m.proc, onLine: () => {} })
@@ -577,7 +604,8 @@ test("--runs 1 is a quick look: no floor, every verdict a question with its reas
   assert.equal(summaryOf("unknown", "unknown", { completed: 0, baselineRuns: 1 }), "no completed run, so nothing is claimed")
 })
 
-test("a restart that does not answer produces no sample, the row says how many completed, and the restore still happens", async () => {
+test("a restart that does not answer produces no sample, the row says how many completed, and the restore still happens", async (t) => {
+  if (needsMachine(t)) return
   const m = machine({ restartFailsAt: 2 })
   const lines = []
   const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
@@ -612,7 +640,8 @@ test("a restart that does not answer produces no sample, the row says how many c
   assert.ok(!rendered.includes("for the README"), "no sentence for a plugin nothing was measured for")
 })
 
-test("a thrown error mid-measurement restores shell.json, and the error keeps its cause", async () => {
+test("a thrown error mid-measurement restores shell.json, and the error keeps its cause", async (t) => {
+  if (needsMachine(t)) return
   // The document is written to --out after the runs and before the restore
   // is reported; a path that cannot be written throws from inside the
   // measurement, and the finally puts the file back first.
@@ -627,7 +656,8 @@ test("a thrown error mid-measurement restores shell.json, and the error keeps it
   assert.ok(lines.some((line) => line.state === "pass" && /restored and verified/.test(line.text)))
 })
 
-test("an aborted signal stops the run at the next wait, restores, and surfaces as interrupted", async () => {
+test("an aborted signal stops the run at the next wait, restores, and surfaces as interrupted", async (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
   const controller = new AbortController()
@@ -644,7 +674,8 @@ test("an aborted signal stops the run at the next wait, restores, and surfaces a
   assert.ok(lines.at(-1).state === "pass" && /restored and verified/.test(lines.at(-1).text))
 })
 
-test("a restore whose md5 differs keeps the backup and says so", async () => {
+test("a restore whose md5 differs keeps the backup and says so", async (t) => {
+  if (needsMachine(t)) return
   // A restart stub that appends to shell.json after it was put back: the
   // shell itself rewriting the file is exactly the case the md5 catches.
   const m = machine()
@@ -841,7 +872,8 @@ function omakit(args, env, { input } = {}) {
   return { code: result.status, out: result.stdout, err: result.stderr }
 }
 
-test("in a pipe, without --yes, the plan is printed and the run is refused with exit 2, and nothing was touched", () => {
+test("in a pipe, without --yes, the plan is printed and the run is refused with exit 2, and nothing was touched", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const result = omakit(["weigh", "fixture.clean"], m.env)
   assert.equal(result.code, 2)
@@ -899,7 +931,8 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
 })
 
-test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", () => {
+test("--yes --json puts the document alone on stdout, the narration on stderr, and the same document in --out", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const out = join(m.root, "doc.json")
   const result = omakit(["weigh", "fixture.poller", "--yes", "--json", "--runs", "2", "--window", "1", "--settle", "0", "--out", out], m.env)
@@ -929,7 +962,8 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
   assert.doesNotMatch(human.out, /\u001b/)
 })
 
-test("SIGINT during a window restores shell.json, restarts the shell once more, removes the backup, and exits 130", async () => {
+test("SIGINT during a window restores shell.json, restarts the shell once more, removes the backup, and exits 130", async (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
     env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
@@ -984,20 +1018,29 @@ test("under a pseudo-terminal the question blocks until a line is entered; y pro
     t.skip("util-linux script(1) is not installed here")
     return
   }
+  if (needsMachine(t)) return
   const ask = (m, answer, extra = []) => new Promise((resolve) => {
     const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} weigh fixture.poller --runs 1 --window 1 --settle 0 ${extra.join(" ")}`
     const child = spawn(scriptBin, ["-qec", command, "/dev/null"], { env: { ...m.env, TERM: "xterm", NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe"] })
     let out = ""
-    child.stdout.on("data", (chunk) => { out += chunk })
-    const timer = setTimeout(async () => {
-      // Two seconds with nothing entered: the prompt is on screen, the
-      // process is alive, and nothing has been decided.
-      const before = plain(out).replace(/\r/g, "")
+    let answered = false
+    // A deterministic wait: the answer goes in when the prompt has been
+    // written, not after a fixed sleep; a process that decides before the
+    // prompt, or never writes one, is caught either way.
+    const seen = () => plain(out).replace(/\r/g, "")
+    const answerWhenPrompted = () => {
+      if (answered) return
+      const before = seen()
+      if (!before.includes("[y/N]:") && child.exitCode === null) return
+      answered = true
       const stillWaiting = child.exitCode === null && !before.includes("NOT WEIGHED") && before.includes("[y/N]:")
-      child.stdin.write(`${answer}\n`)
-      child.on("exit", (code) => resolve({ code, out: plain(out).replace(/\r/g, ""), stillWaiting, before }))
-    }, 2000)
-    child.on("exit", () => clearTimeout(timer))
+      // The prompt was written and the process is still there: enter the answer.
+      if (child.exitCode === null) child.stdin.write(`${answer}\n`)
+      child.once("exit", (code) => resolve({ code, out: seen(), stillWaiting, before }))
+      if (child.exitCode !== null) resolve({ code: child.exitCode, out: seen(), stillWaiting, before })
+    }
+    child.stdout.on("data", (chunk) => { out += chunk; answerWhenPrompted() })
+    child.on("exit", answerWhenPrompted)
   })
   const no = machine()
   const refused = await ask(no, "n")
@@ -1029,7 +1072,8 @@ test("help, the front door and completion know weigh; the skills print the weigh
   assert.match(agent.out, /restarts the shell/)
 })
 
-test("weigh --list: every installed plugin with its last weighing, unweighed enabled plugins first, disabled last with what enables them", () => {
+test("weigh --list: every installed plugin with its last weighing, unweighed enabled plugins first, disabled last with what enables them", (t) => {
+  if (needsMachine(t)) return
   const m = machine()
   // Two documents in the state directory: an older one weighing clean and
   // poller, a newer one weighing clean again; the newest sentence wins.

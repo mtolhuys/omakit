@@ -56,7 +56,15 @@ export function subcommandsOf(commands = COMMANDS) {
  * expression is exported so a test can run it through jq.
  */
 export const PLUGIN_IDS_JQ = "[.[] | select(((.kinds // []) | index(\"bar\")) | not)] | sort_by(.enabled | not) | .[].id"
-export const PLUGIN_IDS_COMMAND = `timeout 1 omarchy-shell shell listPlugins 2>/dev/null | jq -r '${PLUGIN_IDS_JQ}' 2>/dev/null`
+/**
+ * The pipeline, in the shell's own syntax. `timeout 1` bounds the wait
+ * where coreutils has it; a system without `timeout` (measured: the macOS
+ * runner in CI, where the TAB fell back to directories) runs the command
+ * unbounded rather than never, since `omarchy-shell` itself gives up on
+ * its IPC timeout.
+ */
+export const PLUGIN_IDS_COMMAND = `omarchy-shell shell listPlugins 2>/dev/null | jq -r '${PLUGIN_IDS_JQ}' 2>/dev/null`
+export const PLUGIN_IDS_TIMED = `timeout 1 ${PLUGIN_IDS_COMMAND}`
 
 /** What a valued flag takes, by its placeholder: a controlled value, a file, or free text. */
 function placeholderKind(placeholder) {
@@ -175,7 +183,7 @@ function bash({ subcommands, categories, tags, pin, version }) {
   lines.push("# left out, read at TAB time; nothing when the shell does not answer in a")
   lines.push("# second, and the caller falls back to a directory.")
   lines.push("_omakit_plugin_ids() {")
-  lines.push(`  ${PLUGIN_IDS_COMMAND}`)
+  lines.push(`  if command -v timeout >/dev/null 2>&1; then ${PLUGIN_IDS_TIMED}; else ${PLUGIN_IDS_COMMAND}; fi`)
   lines.push("}")
   lines.push("")
   lines.push("# A controlled value may contain a space, so each match is one line and is")
@@ -243,7 +251,7 @@ function zsh({ subcommands, categories, tags, pin, version }) {
   lines.push("# left out, read at TAB time; a directory when the shell does not answer.")
   lines.push("_omakit_plugins() {")
   lines.push("  local -a ids")
-  lines.push(`  ids=(\${(f)"$(${PLUGIN_IDS_COMMAND})"})`)
+  lines.push(`  if (( $+commands[timeout] )); then ids=(\${(f)"$(${PLUGIN_IDS_TIMED})"}); else ids=(\${(f)"$(${PLUGIN_IDS_COMMAND})"}); fi`)
   lines.push("  if (( ${#ids} )); then compadd -a ids; else _directories; fi")
   lines.push("}")
   lines.push("")
@@ -263,7 +271,7 @@ function fish({ subcommands, categories, tags, pin, version }) {
   lines.push("# left out, read at TAB time; nothing when the shell does not answer, and")
   lines.push("# the directories offered beside them stand.")
   lines.push("function __omakit_plugin_ids")
-  lines.push(`  ${PLUGIN_IDS_COMMAND}`)
+  lines.push(`  if command -q timeout; ${PLUGIN_IDS_TIMED}; else; ${PLUGIN_IDS_COMMAND}; end`)
   lines.push("end")
   lines.push("")
   for (const sub of subcommands) {

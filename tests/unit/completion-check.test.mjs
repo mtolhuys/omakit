@@ -40,7 +40,11 @@ function machine({ shell = "bash", loader = "yes", spec = "lazy" } = {}) {
   const tools = join(root, "coreutils")
   const control = join(root, "control")
   for (const dir of [home, bin, tools]) mkdirSync(dir, { recursive: true })
-  for (const name of ["cat", "cut", "grep", "head", "tail"]) symlinkSync(`/usr/bin/${name}`, join(tools, name))
+  for (const name of ["cat", "cut", "grep", "head", "tail"]) {
+    // Found on this system's PATH, wherever it keeps them (/bin on macOS for cat).
+    const found = spawnSync("sh", ["-c", `command -v ${name}`], { encoding: "utf8" }).stdout.trim()
+    if (found) symlinkSync(found, join(tools, name))
+  }
   writeFileSync(control, `${loader}\n${spec}\n`)
   const rc = { bash: join(home, ".bashrc"), zsh: join(home, ".zshrc"), fish: join(home, ".config/fish/config.fish") }[shell]
   const script = {
