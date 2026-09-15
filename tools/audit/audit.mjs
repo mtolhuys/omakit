@@ -22,6 +22,8 @@ const lower = (value) => text(value)?.toLowerCase() || null
 const figure = (value, origin) => (value === null || value === undefined ? null : { value, origin })
 const catalogFigure = (listing, name) => figure(text(listing?.[name]), `site/catalog.json ${name}`)
 const short = (value) => value.slice(0, 8)
+const ROW_ORDER = ["diverged", "ahead", "modified", "unverified", "unlisted", "unknown", "validated"]
+const rowRank = (row) => ROW_ORDER.indexOf(["diverged", "ahead"].includes(row.state) ? row.state : row.flags.includes("modified") ? "modified" : row.state)
 
 function targetId(target) {
   if (!target || !existsSync(target)) return target || null
@@ -184,6 +186,7 @@ export async function auditInstalled(options = {}) {
     }
   }
 
+  rows.sort((a, b) => rowRank(a) - rowRank(b))
   const needsAction = rows.some((row) => row.state === "ahead" || row.state === "diverged")
   let updateRoute = null
   let updateRouteError = null

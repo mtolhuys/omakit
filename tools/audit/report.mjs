@@ -23,6 +23,7 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
   out.push(...field("catalog", catalogText(document.catalog), c))
   out.push(...field("installed", `${document.counts.installed.value}`, c))
   out.push(...field("first-party", `${document.counts.firstPartyExcluded.value} left out`, c))
+  out.push(...field("audited", `${document.counts.audited.value}`, c))
   out.push("")
   for (const row of document.rows) {
     const installed = row.installed?.commit?.value

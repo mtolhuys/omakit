@@ -84,13 +84,14 @@ function fixture({ drift = false, target = null } = {}) {
 
 test("every primary state and every stacking flag comes from its recorded origin", async () => {
   const document = await fixture()
-  assert.deepEqual(document.rows.map((row) => row.state), ["validated", "ahead", "diverged", "unverified", "unlisted", "unknown", "unlisted"])
-  assert.deepEqual(document.rows[0].flags, ["modified", "upstream moved"])
-  assert.deepEqual(document.rows[1].flags, ["upstream moved"])
-  assert.deepEqual(document.rows[4].flags, ["disabled"])
-  assert.match(document.rows[6].fact, /matches p\.conflict, but origin matches p\.by-origin; neither listing was used/)
-  assert.equal(document.rows[1].aheadBy.value, 3)
-  assert.match(document.rows[1].aheadBy.origin, /^git rev-list --count/)
+  assert.deepEqual(document.rows.map((row) => row.id), ["p.diverged", "p.ahead", "p.validated", "p.unverified", "p.unlisted", "p.conflict", "p.unknown"])
+  const byId = Object.fromEntries(document.rows.map((row) => [row.id, row]))
+  assert.deepEqual(byId["p.validated"].flags, ["modified", "upstream moved"])
+  assert.deepEqual(byId["p.ahead"].flags, ["upstream moved"])
+  assert.deepEqual(byId["p.unlisted"].flags, ["disabled"])
+  assert.match(byId["p.conflict"].fact, /matches p\.conflict, but origin matches p\.by-origin; neither listing was used/)
+  assert.equal(byId["p.ahead"].aheadBy.value, 3)
+  assert.match(byId["p.ahead"].aheadBy.origin, /^git rev-list --count/)
   assert.equal(document.counts.firstPartyExcluded.value, 2)
   assert.equal(document.counts.audited.value, 7)
   assert.equal(document.ok, false)
@@ -102,6 +103,28 @@ test("--drift filters validated rows without changing the measured verdict", asy
   assert.equal(document.counts.audited.value, 7)
   assert.equal(document.counts.drift.value, 6)
   assert.equal(document.ok, false)
+  assert.deepEqual(document.rows.map((row) => row.id), (await fixture()).rows.filter((row) => row.state !== "validated").map((row) => row.id))
+  assert.match(renderAudit(document, { colour: false }), /audited +7/)
+})
+
+test("clean validated rows come last while modified remains a stacking flag", async () => {
+  const ids = ["clean", "unknown", "unlisted", "unverified", "modified", "ahead", "diverged"]
+  const document = await auditInstalled({
+    installed: () => ids.map((id) => ({ id, enabled: true, sourceDir: `/p/${id}` })),
+    registry: async () => ({ source: "pin", commit: B, catalog: { plugins: ids.filter((id) => id !== "unlisted").map((id) => listing(id, `https://github.com/example/${id}`, id === "unverified" ? { listingValidatedCommit: null } : {})) } }),
+    checkout: (dir) => {
+      const id = dir.split("/").pop()
+      if (id === "unknown") throw new Error("not a git repository")
+      return { commit: ["clean", "modified"].includes(id) ? A : C, status: id === "modified" ? " M file" : "", repository: `https://github.com/example/${id}` }
+    },
+    hasCommit: () => true,
+    ancestor: (dir) => dir.endsWith("/ahead"),
+    count: () => 1,
+    route: async () => route,
+  })
+  assert.deepEqual(document.rows.map((row) => row.id), ["diverged", "ahead", "modified", "unverified", "unlisted", "unknown", "clean"])
+  assert.equal(document.rows[2].state, "validated")
+  assert.deepEqual(document.rows[2].flags, ["modified"])
 })
 
 test("one installed id is selected, and an absent id is refused", async () => {

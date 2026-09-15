@@ -199,6 +199,11 @@ Validated facts read `validated <short> on <date>`. Ahead facts read
 `<N> commits ahead of validated <short> (<date>); HEAD <short>`. Flags follow
 a semicolon. The ahead fact names HEAD once.
 
+Rows sort as diverged, ahead, modified, unverified, unlisted, unknown, then
+validated. Modified is still a stacking flag, not a replacement state.
+`--drift` retains that order. The header counts installed, first-party and
+audited plugins.
+
 Plugins whose catalog `sourceType` is `builtin`, or whose installed row says
 `firstParty`, are counted in the header and left out of the rows and verdict.
 They ship with the shell.
