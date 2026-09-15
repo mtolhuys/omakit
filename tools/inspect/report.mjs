@@ -18,7 +18,7 @@
 // every qualifier and the whole not observed and not visible lists; `--json`
 // is the document itself, which carries everything either view shows.
 
-import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
+import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { PATTERNS } from "./patterns.mjs"
 import { toolOf } from "./processes.mjs"
@@ -167,71 +167,91 @@ function commandLine(process) {
   return process.argv.map((word, index) => (computed.has(index) || !/[\s"'`]/.test(word) ? word : JSON.stringify(word))).join(" ")
 }
 
-/** The first few sites, then how many more: a pattern row a person reads names three, `--full` names them all. */
-const SHOWN_SITES = 3
-function fewerSites(text) {
-  return text.replace(/((?:[\w./-]+:\d+, ){3,})[\w./-]+:\d+/g, (whole) => {
-    const sites = whole.split(", ")
-    return `${sites.slice(0, SHOWN_SITES).join(", ")} and ${sites.length - SHOWN_SITES} more`
-  })
+/**
+ * Directories a person reads separately: tests, fixtures, documentation
+ * and lab scripts are in the tree and are counted, but they are not what
+ * runs on the desktop.
+ */
+const AUXILIARY = /^(tests?|specs?|docs?|examples?|fixtures?|lab)\//
+
+/**
+ * A table row: a mark, the first cell padded to the column, the main cell,
+ * and the status cell on the same line when it fits and under the gutter
+ * when it does not. The mark is `▓ note` for a row a review class cites,
+ * so the eye finds the rows the reviewer would, and `░ info` otherwise.
+ */
+function cells(state, first, main, status, width, c, mainWidth = 0) {
+  const head = `${mark(state, c)}${c("name", first.padEnd(width))}  `
+  const room = outputColumns() - GUTTER - width - 2
+  const tail = status ? `  ${status}` : ""
+  const padded = mainWidth && mainWidth + tail.length <= room ? main.padEnd(mainWidth) : main
+  if (padded.length + tail.length <= room) return [`${head}${padded}${status ? `  ${c("label", status)}` : ""}`]
+  const lines = wrap(main, { indent: GUTTER, first: GUTTER + width + 2 }, c)
+  const out = [`${head}${lines[0].trimStart()}`, ...lines.slice(1)]
+  if (status) out.push(...wrap(status, { indent: GUTTER }).map((line) => c("label", line)))
+  return out
 }
 
-function compactProcessRow(process, c) {
-  if (process.argvForm === "computed") return row("unknown", site(process), `command: ${process.commandText}, not resolvable`, c)
+/** The sites every review class cites, so a fact row can be marked as one a reviewer would raise. */
+function citedSites(document) {
+  return new Set(document.patterns.flatMap((entry) => entry.sites.map((entry_) => `${entry_.file}:${entry_.line}`)))
+}
+
+function processStatus(process) {
   const absent = []
-  if (process.expressions.length) absent.push(`${plural(process.expressions.length, "element")} computed`)
-  if (process.shellWrapper) absent.push("shell wrapper, the script inside is not followed")
-  if (process.declaredIn === "qml" && !process.detached) {
-    if (!process.deadline.observed) absent.push("no deadline observed")
-    if (process.output.collector !== "none" && !process.output.capObserved) absent.push(`no cap observed on ${process.output.collector}`)
+  if (process.argvForm === "computed") return "not resolvable"
+  if (process.expressions.length) absent.push(`${plural(process.expressions.length, "computed element")}`)
+  if (process.shellWrapper) absent.push("shell wrapper")
+  if (process.detached) absent.push("detached")
+  else if (process.declaredIn === "qml") {
+    if (!process.deadline.observed) absent.push("no deadline")
+    if (process.output.collector !== "none" && !process.output.capObserved) absent.push("no cap")
   }
-  return row("info", site(process), `${commandLine(process) || "[] (an empty argv)"}${process.detached ? " (detached)" : ""}`, c, absent.length ? [absent.join("; ")] : [])
+  return absent.join(", ")
 }
 
-/** The shell lines of one script as one row: how many, and the tools they run. */
-function compactScriptRow(file, rows, c) {
-  const tools = [...new Set(rows.map((entry) => (toolOf(entry.argv).tool || entry.argv[0] || "?").split("/").pop()))]
-  const named = tools.slice(0, 8).join(", ") + (tools.length > 8 ? ` and ${tools.length - 8} more` : "")
+function hostStatus(host) {
   const absent = []
-  const privileged = rows.filter((entry) => entry.argv.some((word) => ["sudo", "pkexec", "doas"].includes(word.split("/").pop()))).length
-  if (privileged) absent.push(`${plural(privileged, "line")} through sudo, pkexec or doas`)
-  const wrappers = rows.filter((entry) => entry.shellWrapper).length
-  if (wrappers) absent.push(`${plural(wrappers, "shell wrapper")}, the script inside is not followed`)
-  return row("info", file, `${plural(rows.length, "shell line")}: ${named}`, c, absent.length ? [absent.join("; ")] : [])
+  if (host.scheme === "http") absent.push("http")
+  if (host.privateAddress) absent.push("private address")
+  if (!host.timeout.observed) absent.push("no timeout")
+  if (!host.sizeCap.observed) absent.push("no size cap")
+  if (host.tool === "curl" && !host.flags.includes("-q")) absent.push("no -q")
+  return absent.join(", ")
 }
 
-function compactHostRow(host, c) {
-  const absent = []
-  if (host.scheme === "http") absent.push("http, not https")
-  if (!host.timeout.observed) absent.push("no timeout observed")
-  if (!host.sizeCap.observed) absent.push("no size cap observed")
-  if (host.tool === "curl" && !host.flags.includes("-q")) absent.push("-q not observed")
-  if (host.privateAddress) absent.push("private or loopback address")
-  return row("info", host.host, `${host.scheme}${host.tool ? ` via ${host.tool}` : ""}, ${site(host)}`, c, absent.length ? [absent.join("; ")] : [])
+function writeStatus(write) {
+  if (write.controlledDirectory === "observed") return `under ${write.controlledBy}`
+  if (write.controlledDirectory === "not-observed") return write.temp ? `shared ${write.canonicalPath.split("/").slice(0, 2).join("/")}` : "outside a controlled directory"
+  return "path from a variable"
 }
 
-function compactWriteRow(write, c) {
-  const shown = write.canonicalPath ?? write.path
-  const absent = []
-  if (write.controlledDirectory === "not-observed") absent.push(`not under a directory the plugin controls${write.temp ? ` (${write.canonicalPath.split("/").slice(0, 2).join("/")} is shared)` : ""}`)
-  if (write.controlledDirectory === "unknown") absent.push("directory unknown, the path is not one literal prefix")
-  if (write.via === "mkdir" && !write.mode) absent.push("no mode observed")
-  return row("info", site(write), `${write.via} ${shown}`, c, absent.length ? [absent.join("; ")] : [])
+function timerText(timer) {
+  if (timer.intervalMs === null) return `interval ${timer.intervalText ?? "not declared"}, not resolvable`
+  const parts = [`${timer.intervalMs} ms`, timer.repeat === true ? "repeat" : timer.repeat === false ? "once" : "repeat bound to an expression"]
+  if (timer.running === true) parts.push("running")
+  if (timer.triggeredOnStart === true) parts.push("triggeredOnStart")
+  if (timer.startedBy) parts.push(`started by ${timer.startedBy}`)
+  return parts.join(", ")
 }
 
-function compactBaseline(section) {
-  if (section.skipped) return { state: "skipped", text: `marketplace baseline skipped (${section.reason})` }
-  if (!section.invoked) return { state: "unknown", text: `marketplace baseline not run: ${section.skipReason}` }
+/** The shell scripts counted by top-level directory: `scripts/ 5, bin/ 2, tests/ 23`. */
+function scriptsByDirectory(processes) {
+  const byDirectory = new Map()
+  for (const file of new Set(processes.filter((entry) => entry.declaredIn === "shell").map((entry) => entry.file))) {
+    const directory = file.includes("/") ? `${file.split("/")[0]}/` : ""
+    byDirectory.set(directory, (byDirectory.get(directory) || 0) + 1)
+  }
+  return [...byDirectory.entries()].map(([directory, count]) => (directory ? `${directory} ${count}` : `${count} at the root`)).join(", ")
+}
+
+function baselineText(section) {
+  if (section.skipped) return `skipped (${section.reason})`
+  if (!section.invoked) return `not run: ${section.skipReason}`
   const official = section.official
-  if (official?.error) return { state: "unknown", text: `marketplace baseline refused the snapshot: ${official.error.code}` }
-  const capabilities = (official.capabilities || []).map((entry) => entry.id)
-  const findings = (official.findings || []).map((entry) => entry.ruleId)
-  const files = [...new Set([...(official.capabilities || []), ...(official.findings || [])].flatMap((entry) => (entry.evidence || []).map((site_) => site_.path)))]
-  const parts = [`marketplace baseline ${official.outcome} at pin ${section.pin.commit.slice(0, 8)}`]
-  if (capabilities.length) parts.push(`capabilities ${capabilities.join(", ")}`)
-  if (findings.length) parts.push(`${plural(findings.length, "finding")} ${findings.join(", ")}`)
-  if (files.length) parts.push(`in ${files.join(", ")}`)
-  return { state: "info", text: parts.join("; ") }
+  if (official?.error) return `the official code refused the snapshot: ${official.error.code}`
+  const names = [...(official.capabilities || []).map((entry) => entry.id), ...(official.findings || []).map((entry) => entry.ruleId)]
+  return `${official.outcome} at pin ${section.pin.commit.slice(0, 8)}${names.length ? `: ${names.join(", ")}` : ""}`
 }
 
 /**
@@ -248,48 +268,78 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   const kinds = Object.entries(read).filter(([, count]) => count > 0).map(([kind, count]) => `${count} ${kind}`)
   const total = Object.values(read).reduce((sum, count) => sum + count, 0)
   const counts = document.counts
-  const processes = `${plural(counts.processes.total, "process", "processes")}${counts.processes.total ? ` (${split(counts.processes)})` : ""}`
+  const cited = citedSites(document)
+  const state = (row_) => (cited.has(site(row_)) ? "advisory" : "info")
+  // A cited row whose own cells show nothing absent names the classes that cite it.
+  const classesCiting = (row_) => document.patterns
+    .filter((entry) => entry.sites.some((entry_) => `${entry_.file}:${entry_.line}` === site(row_)))
+    .map((entry) => PATTERNS.find((pattern) => pattern.id === entry.id)?.label || entry.id).join(", ")
+  const status = (row_, own) => own || (cited.has(site(row_)) ? classesCiting(row_) : "")
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}, ${plural(total, "file")}${kinds.length ? ` (${kinds.join(", ")})` : ""}`, c))
-  out.push(...field("observed", `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}${counts.notResolvable ? `; ${plural(counts.notResolvable, "site")} not resolvable` : ""}`, c))
-  const baseline = compactBaseline(document.marketplaceBaseline)
-  out.push(`${mark(baseline.state, c)}${wrap(baseline.text, { indent: GUTTER }, c).join("\n").trimStart()}`)
+  out.push(...field("baseline", baselineText(document.marketplaceBaseline), c))
   out.push("")
 
+  // Processes: every QML site as a row, the shell scripts as one counted line.
   const qml = document.observed.processes.filter((entry) => entry.declaredIn === "qml")
-  const scripts = new Map()
-  for (const entry of document.observed.processes.filter((row_) => row_.declaredIn === "shell")) scripts.set(entry.file, [...(scripts.get(entry.file) || []), entry])
-  const sections = [
-    ["processes", document.observed.processes.length, () => [...qml.flatMap((entry) => compactProcessRow(entry, c)), ...[...scripts.entries()].flatMap(([file, rows]) => compactScriptRow(file, rows, c))], `, ${split(counts.processes)}`],
-    ["hosts", document.observed.hosts.length, () => document.observed.hosts.flatMap((entry) => compactHostRow(entry, c)), ""],
-    ["writes", document.observed.writes.length, () => document.observed.writes.flatMap((entry) => compactWriteRow(entry, c)), ""],
-    ["timers", document.observed.timers.length, () => document.observed.timers.flatMap((entry) => timerRow(entry, c)), ""],
-  ]
-  for (const [name, count, render, suffix] of sections) {
-    out.push(...field(name, count ? `observed ${count}${suffix}` : NOTHING, c))
-    if (count) out.push(...render())
-    out.push("")
+  const shell = counts.processes.shell
+  const scripts = new Set(document.observed.processes.filter((entry) => entry.declaredIn === "shell").map((entry) => entry.file)).size
+  const heading = qml.length || shell
+    ? [qml.length ? `${plural(qml.length, "process", "processes")} in qml` : "no process in qml", shell ? `${plural(shell, "shell line")} in ${plural(scripts, "script")} (${scriptsByDirectory(document.observed.processes)})` : null].filter(Boolean).join("; ")
+    : NOTHING
+  out.push(...field("processes", heading, c))
+  const width = Math.max(0, ...qml.map((entry) => site(entry).length))
+  for (const entry of qml) {
+    const main = entry.argvForm === "computed" ? `command: ${entry.commandText}` : commandLine(entry) || "[] (an empty argv)"
+    out.push(...cells(entry.argvForm === "computed" ? "unknown" : state(entry), site(entry), main, status(entry, processStatus(entry)), width, c))
   }
+  out.push("")
 
+  // Hosts: every literal, with what is absent beside it.
+  out.push(...field("hosts", document.observed.hosts.length ? `${document.observed.hosts.length}` : NOTHING, c))
+  const hostWidth = Math.max(0, ...document.observed.hosts.map((entry) => entry.host.length))
+  for (const entry of document.observed.hosts) {
+    out.push(...cells(state(entry), entry.host, `${entry.scheme}${entry.tool ? ` via ${entry.tool}` : ""}, ${site(entry)}`, status(entry, hostStatus(entry)), hostWidth, c))
+  }
+  out.push("")
+
+  // Writes: every literal path as a row, the variable paths as one counted line.
+  const literal = document.observed.writes.filter((entry) => entry.controlledDirectory !== "unknown" && !AUXILIARY.test(entry.file))
+  const rest = document.observed.writes.length - literal.length
+  const under = document.observed.writes.filter((entry) => entry.controlledDirectory === "observed").length
+  const outside = document.observed.writes.filter((entry) => entry.controlledDirectory === "not-observed").length
+  const variable = document.observed.writes.length - under - outside
+  const summary = [under ? `${under} under a controlled directory` : null, outside ? `${outside} outside one` : null, variable ? `${variable} to paths from variables` : null].filter(Boolean).join(", ")
+  out.push(...field("writes", document.observed.writes.length ? `${document.observed.writes.length}${summary ? `: ${summary}` : ""}` : NOTHING, c))
+  const writeWidth = Math.max(0, ...literal.map((entry) => site(entry).length))
+  for (const entry of literal) out.push(...cells(state(entry), site(entry), `${entry.via} ${entry.canonicalPath ?? entry.path}`, status(entry, writeStatus(entry)), writeWidth, c))
+  if (rest) out.push(...wrap(`${rest} not listed: paths from variables, or under a tests directory; --full lists them`, { indent: GUTTER }, c).map((line) => c("label", line)))
+  out.push("")
+
+  // Timers: every block as a row.
+  out.push(...field("timers", document.observed.timers.length ? `${document.observed.timers.length}` : NOTHING, c))
+  const timerWidth = Math.max(0, ...document.observed.timers.map((entry) => site(entry).length))
+  for (const entry of document.observed.timers) out.push(...cells(entry.intervalMs === null ? "unknown" : "info", site(entry), timerText(entry), "", timerWidth, c))
+  out.push("")
+
+  // The review table: class, share, what this tree shows; the sites are the marked rows above.
   if (PATTERNS.length) {
-    const width = Math.max(...PATTERNS.map((pattern) => pattern.label.length)) + 1
-    out.push(...field("patterns", document.patterns.length
-      ? `${document.patterns.length} of the ${PATTERNS.length} classes the marketplace's human review raised, each with its share of review findings in a ${PATTERNS[0].sample} (${PATTERNS[0].measurement})`
-      : `none of the ${PATTERNS.length} classes the marketplace's human review raised shows its precondition here (${PATTERNS[0].measurement})`, c))
+    out.push(...field("review", document.patterns.length
+      ? `${document.patterns.length} of the ${PATTERNS.length} classes the marketplace's human review raised (${PATTERNS[0].measurement}, a ${PATTERNS[0].sample}); the marked rows above are the sites`
+      : `none of the ${PATTERNS.length} classes the marketplace's human review raised shows here (${PATTERNS[0].measurement})`, c))
+    const labelWidth = Math.max(...PATTERNS.map((pattern) => pattern.label.length))
+    // The share column aligns across the rows whose summary fits on one line.
+    const room = outputColumns() - GUTTER - labelWidth - 2 - "  20 of 100".length
+    const summaryWidth = Math.max(0, ...document.patterns.map((entry) => entry.summary.length).filter((length) => length <= room))
     for (const entry of document.patterns) {
       const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
-      const label = pattern.label.padEnd(width)
-      const lines = wrap(fewerSites(entry.observation), { indent: GUTTER, first: GUTTER + label.length + 1 }, c)
-      out.push(`${mark("advisory", c)}${c("name", label)} ${lines[0].trimStart()}`, ...lines.slice(1))
-      out.push(...wrap(`about ${Math.round(entry.share * 100)} of every 100 review findings in the sample`, { indent: GUTTER }, c))
+      out.push(...cells("advisory", pattern.label, entry.summary, `${String(Math.round(entry.share * 100)).padStart(2)} of 100`, labelWidth, c, summaryWidth))
     }
     out.push("")
-    const lookedFor = document.lookedFor.map((id) => PATTERNS.find((pattern) => pattern.id === id)?.label || id)
-    // Named only beside observed rows: with none, the patterns line already says so.
-    if (lookedFor.length && document.patterns.length) out.push(...field("not observed", lookedFor.join(", "), c))
   }
-  out.push(...field("not visible", "commands built at run time, values from variables or config, components outside the tree, obfuscated content; --full names every site and --json is the document", c))
+  out.push(...field("not visible", "run-time commands, values from variables or config, components outside the tree", c))
   out.push("")
-  out.push(...verdict("info", INSPECT_VERDICT, `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}; static, see docs/INSPECT.md`, c))
+  const processes = `${plural(counts.processes.total, "process", "processes")}${counts.processes.total ? ` (${split(counts.processes)})` : ""}`
+  out.push(...verdict("info", INSPECT_VERDICT, `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")}; static; --full for every site, --json for the document`, c))
   return out.join("\n")
 }
 

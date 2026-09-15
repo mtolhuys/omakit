@@ -121,6 +121,7 @@
         }
       ],
       "observation": "observed 1 argv with a computed element (Widget.qml:11)",
+      "summary": "1 argv with a computed element",
       "measurement": "M11",
       "share": 0.04
     }

@@ -80,6 +80,7 @@
         }
       ],
       "observation": "observed sudo, docker in argv (Widget.qml:10); named in the README: observed",
+      "summary": "sudo, docker in argv; named in the README: observed",
       "measurement": "M11",
       "share": 0.03
     }

@@ -163,6 +163,7 @@ export function validateInspectDocument(document, known = {}) {
     if (!isString(row.measurement) || !/^M\d+$/.test(row.measurement)) problems.push(`${at}.measurement is not a measurement id`)
     if (typeof row.share !== "number" || !(row.share > 0 && row.share < 1)) problems.push(`${at}.share is not a share between 0 and 1`)
     if (!isString(row.observation) || !/^observed /.test(row.observation)) problems.push(`${at}.observation does not start with the word observed`)
+    if (!isString(row.summary) || !row.summary || /\w:\d+/.test(row.summary)) problems.push(`${at}.summary is not the observation without its sites`)
     if (/\b(?:missing|should|fix)\b/i.test(String(row.observation))) problems.push(`${at}.observation reads as a verdict`)
   }
   if (!Array.isArray(document.lookedFor) || document.lookedFor.some((id) => !isString(id))) problems.push("lookedFor is not a list of pattern ids")

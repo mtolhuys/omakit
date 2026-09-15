@@ -88,6 +88,7 @@
         }
       ],
       "observation": "observed 1 write outside a controlled directory (scripts/refresh.sh:4)",
+      "summary": "1 write outside a controlled directory",
       "measurement": "M11",
       "share": 0.15
     }

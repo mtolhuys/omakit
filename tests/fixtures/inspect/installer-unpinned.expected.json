@@ -121,6 +121,7 @@
         }
       ],
       "observation": "observed 1 tool resolved from PATH (git; scripts/install.sh:3)",
+      "summary": "1 tool resolved from PATH (git)",
       "measurement": "M11",
       "share": 0.07
     },
@@ -138,6 +139,7 @@
         }
       ],
       "observation": "observed 1 baseline finding the pin does not block on (remote-git-execution-unpinned; scripts/install.sh:3, scripts/install.sh:4)",
+      "summary": "1 baseline finding the pin does not block on (remote-git-execution-unpinned)",
       "measurement": "M11",
       "share": 0.07
     }

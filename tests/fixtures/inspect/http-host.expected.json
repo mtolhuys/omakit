@@ -116,6 +116,7 @@
         }
       ],
       "observation": "observed http scheme (Widget.qml:10)",
+      "summary": "http scheme",
       "measurement": "M11",
       "share": 0.05
     }

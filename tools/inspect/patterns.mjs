@@ -130,7 +130,9 @@ export const PATTERNS = Object.freeze([
       const resolved = processes.map((row) => ({ row, tool: pathResolved(row) })).filter((entry) => entry.tool)
       const curls = hosts.filter((row) => row.tool === "curl" && !hasFlag(row.flags, "q", "--disable"))
       const parts = []
-      if (resolved.length) parts.push(`${plural(resolved.length, "tool")} resolved from PATH (${[...new Set(resolved.map((entry) => entry.tool))].join(", ")}; ${sites(resolved.map((entry) => entry.row))})`)
+      const names = [...new Set(resolved.map((entry) => entry.tool))]
+      const named = names.length > 6 ? `${names.slice(0, 6).join(", ")} and ${names.length - 6} more` : names.join(", ")
+      if (resolved.length) parts.push(`${plural(resolved.length, "tool")} resolved from PATH (${named}; ${sites(resolved.map((entry) => entry.row))})`)
       if (curls.length) parts.push(`curl without -q (${sites(curls)})`)
       return { sites: [...resolved.map((entry) => entry.row), ...curls].map(site), observation: `observed ${parts.join("; ")}` }
     },
@@ -235,6 +237,15 @@ export const PATTERNS = Object.freeze([
   },
 ])
 
+/** The observation without its site lists and without the leading word, for a row whose sites are marked elsewhere. */
+export function summaryOf(observation) {
+  const SITE = "[\\w./-]+:\\d+"
+  return observation
+    .replace(new RegExp(`;\\s*${SITE}(?:, ${SITE})*(?=\\))`, "g"), "")
+    .replace(new RegExp(`\\s*\\(${SITE}(?:, ${SITE})*\\)`, "g"), "")
+    .replace(/^observed /, "")
+}
+
 /**
  * @param {{ processes, hosts, writes, timers, files, readme, baseline, blockingRules }} facts the observed facts of one document
  * @returns {{ patterns: Array, lookedFor: string[] }}
@@ -244,7 +255,7 @@ export function evaluatePatterns(facts) {
   const lookedFor = []
   for (const pattern of PATTERNS) {
     const found = pattern.precondition(facts)
-    if (found.sites.length) patterns.push({ id: pattern.id, observedCount: found.sites.length, sites: found.sites, observation: found.observation, measurement: pattern.measurement, share: pattern.share })
+    if (found.sites.length) patterns.push({ id: pattern.id, observedCount: found.sites.length, sites: found.sites, observation: found.observation, summary: summaryOf(found.observation), measurement: pattern.measurement, share: pattern.share })
     else lookedFor.push(pattern.id)
   }
   return { patterns, lookedFor }

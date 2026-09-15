@@ -79,6 +79,7 @@
         }
       ],
       "observation": "observed 1 process with no deadline (Widget.qml:10)",
+      "summary": "1 process with no deadline",
       "measurement": "M11",
       "share": 0.2
     }

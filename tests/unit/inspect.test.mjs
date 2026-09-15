@@ -103,52 +103,69 @@ test("the rendered report, in both views, says the same words with and without c
   }
 })
 
-test("the default view is the one a person reads: a summary block, one line per fact, a second only where something is absent, scripts grouped, and --full is every site", async () => {
+test("the default view is a table a person reads: cited rows marked, status beside the fact, scripts and variable paths counted, --full for every site", async () => {
   const example = (await documentFor("example")).document
   const report = renderInspect(example, { colour: false })
+  const unwrapped = report.replace(/\n {14}/g, " ").replace(/\n {13}/g, " ").replace(/\n {8}/g, " ")
   const full = renderInspect(example, { colour: false, full: true })
   assert.match(report, /^subject {7}.* at [0-9a-f]{8}, 3 files \(1 qml, 2 shell\)$/m)
-  assert.match(report, /^observed {6}5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes, 2 timers;$/m)
-  assert.match(report, /^ {14}1 site not resolvable$/m)
-  assert.match(report, new RegExp(`^${DENSITY.light} info  marketplace baseline review-required at pin [0-9a-f]{8}; capabilities$`, "m"))
-  // A command reads as a command line, not a JSON array, and a fact with nothing absent is one line.
-  assert.match(report, /^░ info  Widget\.qml:12  curl -fsSL --max-time 5 --max-filesize 65536$/m)
+  assert.match(unwrapped, /^baseline {6}review-required at pin [0-9a-f]{8}: installer, privilege, package-manager$/m)
+  assert.match(report, /^processes {5}3 processes in qml; 2 shell lines in 2 scripts \(scripts\/ 2\)$/m)
+  // A command reads as a command line; a row a review class cites wears the note mark and says why.
+  assert.match(unwrapped, new RegExp(`^${DENSITY.dark} note  Widget\\.qml:12  curl -fsSL --max-time 5 --max-filesize 65536 https://api\\.example\\.com/v1/status environment trust, network egress$`, "m"))
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  Widget\\.qml:20  bash scripts/refresh\\.sh  no deadline, no cap$`, "m"))
+  assert.match(report, new RegExp(`^${DENSITY.medium} \\? {5}Widget\\.qml:28  command: root\\.cmd  not resolvable$`, "m"))
   assert.doesNotMatch(report, /\["curl"/)
-  assert.match(full, /\["curl", "-fsSL"/)
-  assert.match(report, /^░ info  Widget\.qml:20  bash scripts\/refresh\.sh\n {8}no deadline observed; no cap observed on SplitParser$/m)
-  assert.match(report, /^▒ \? {5}Widget\.qml:28  command: root\.cmd, not resolvable$/m)
-  // Shell lines are grouped under their script, with the tools they run; --full lists each line.
-  assert.match(report, /^░ info  scripts\/install\.sh  1 shell line: pacman\n {8}1 line through sudo, pkexec or doas$/m)
-  assert.match(report, /^░ info  scripts\/refresh\.sh  1 shell line: df$/m)
-  assert.doesNotMatch(report, /scripts\/install\.sh:3  /)
+  assert.doesNotMatch(report, /scripts\/install\.sh:3/, "a shell line is counted, not listed")
   assert.match(full, /^░ info  scripts\/install\.sh:3  \["sudo", "pacman"/m)
-  // A write under a controlled directory is one line; one outside says so.
-  assert.match(report, /^░ info  Widget\.qml:33  FileView \$XDG_STATE_HOME\/fixture\.example\/state\.json\n░ info  scripts\/refresh\.sh:3  > \/tmp\/fixture\.example\.cache\n {8}not under a directory the plugin controls \(\/tmp is shared\)$/m)
-  // The host row says only what is absent.
-  assert.match(report, /^░ info  api\.example\.com  https via curl, Widget\.qml:12\n {8}-q not observed$/m)
-  // The pattern rows keep their shape; the not observed line names labels; not visible is one short line.
-  assert.match(report, /^patterns {6}6 of the 10 classes/m)
-  assert.match(report, /^not observed  secrets, supply chain, untrusted text to display, argument grammar$/m)
-  assert.match(report, /^not visible   commands built at run time, values from variables or config,$/m)
-  assert.match(report.replace(/\n {14}/g, " "), /--full names every site and --json is the document/)
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  api\\.example\\.com  https via curl, Widget\\.qml:12  no -q$`, "m"))
+  assert.match(report, /^writes {8}2: 1 under a controlled directory, 1 outside one$/m)
+  assert.match(unwrapped, new RegExp(`^${DENSITY.light} info  Widget\\.qml:33 +FileView \\$XDG_STATE_HOME/fixture\\.example/state\\.json under \\$XDG_STATE_HOME$`, "m"))
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  scripts/refresh\\.sh:3  > /tmp/fixture\\.example\\.cache  shared /tmp$`, "m"))
+  assert.match(report, new RegExp(`^${DENSITY.light} info  Widget\\.qml:39  30000 ms, repeat, running, triggeredOnStart$`, "m"))
+  // The review table: class, what this tree shows, the share; no sites, which the marked rows carry.
+  assert.match(report, /^review {8}6 of the 10 classes/m)
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  process lifecycle {10}2 processes with no deadline +20 of 100$`, "m"))
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  privilege disclosure {7}sudo in argv; no README to name it +3 of 100$`, "m"))
+  assert.doesNotMatch(report.split("\nreview")[1], /Widget\.qml:\d+/, "the review table names no site")
+  assert.match(report, /^not visible   run-time commands, values from variables or config, components$/m)
+  assert.match(unwrapped, /INSPECTED  5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes, 2 timers; static; --full for every site, --json for the document$/m)
   assert.doesNotMatch(report, /^method/m)
   assert.match(full, /^method/m)
   assert.ok(report.split("\n").length < full.split("\n").length)
-  // The nothing fixture reads the same four lines, and the method's limit stays in the closing line.
-  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  assert.equal((nothing.match(/observed nothing of this kind/g) || []).length, 4)
-  assert.match(nothing, /^patterns {6}none of the 10 classes/m)
-  assert.doesNotMatch(nothing, /^not observed/m)
-  assert.match(nothing.replace(/\n {13}/g, " "), /static, see docs\/INSPECT\.md/)
+  for (const row of example.patterns) assert.ok(!/\w:\d+/.test(row.summary), `${row.id}: the summary carries a site`)
 })
 
-test("a pattern row in the default view names three sites and counts the rest", async () => {
-  const many = { ...(await documentFor("nothing")).document }
-  many.patterns = [{ id: "process-lifecycle", observedCount: 5, sites: [1, 2, 3, 4, 5].map((line) => ({ file: "A.qml", line })), observation: "observed 5 processes with no deadline (A.qml:1, A.qml:2, A.qml:3, A.qml:4, A.qml:5)", measurement: "M11", share: 0.2 }]
-  many.lookedFor = PATTERNS.map((pattern) => pattern.id).filter((id) => id !== "process-lifecycle")
-  const report = renderInspect(many, { colour: false })
-  assert.match(report.replace(/\n {8}/g, " "), /observed 5 processes with no deadline \(A\.qml:1, A\.qml:2, A\.qml:3 and 2 more\)/)
-  assert.match(renderInspect(many, { colour: false, full: true }).replace(/\n {8}/g, " "), /A\.qml:4, A\.qml:5\)/)
+test("the default view over nothing, and over scripts and variable paths", async () => {
+  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
+  assert.equal((nothing.match(/observed nothing of this kind/g) || []).length, 4)
+  assert.match(nothing, /^review {8}none of the 10 classes/m)
+  assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
+  const base = (await documentFor("example")).document
+  const shell = (file, line, argv) => ({ file, line, declaredIn: "shell", id: null, argv, argvForm: "string", expressions: [], commandText: null, running: true, detached: false, deadline: { observed: false, via: null, ms: null }, output: { collector: "none", capObserved: false, via: null }, shellWrapper: false, pipedFrom: null })
+  const write = (file, line, path, via, controlledDirectory, extra = {}) => ({ file, line, path, canonicalPath: controlledDirectory === "unknown" ? null : path, via, controlledDirectory, controlledBy: controlledDirectory === "observed" ? "$XDG_STATE_HOME" : null, temp: false, mode: null, ...extra })
+  const document = {
+    ...base,
+    patterns: [],
+    lookedFor: PATTERNS.map((pattern) => pattern.id),
+    observed: {
+      ...base.observed,
+      processes: [shell("scripts/scan", 3, ["mktemp", "-d"]), shell("tests/a.test.sh", 2, ["mkdir", "x"]), shell("tests/a.test.sh", 3, ["grep", "x"]), shell("bin/x", 2, ["cp", "a", "b"])],
+      writes: [
+        write("scripts/scan", 4, "$work/out", "mkdir", "unknown"), write("scripts/scan", 6, "$XDG_STATE_HOME/x", ">", "observed"),
+        write("tests/a.test.sh", 3, "/tmp/x", ">", "not-observed", { temp: true }), write("tests/b.test.sh", 3, "$scope/notes", ">", "unknown"),
+      ],
+    },
+    counts: { ...base.counts, processes: { total: 4, qml: 0, shell: 4 }, writes: 4 },
+  }
+  const raw = renderInspect(document, { colour: false })
+  const report = raw.replace(/\n {14}/g, " ").replace(/\n {8}/g, " ")
+  assert.match(report, /^processes {5}no process in qml; 4 shell lines in 3 scripts \(scripts\/ 1, tests\/ 1, bin\/ 1\)$/m)
+  assert.match(report, /^writes {8}4: 1 under a controlled directory, 1 outside one, 2 to paths from variables$/m)
+  assert.match(raw, new RegExp(`^${DENSITY.light} info  scripts/scan:6  > \\$XDG_STATE_HOME/x  under \\$XDG_STATE_HOME$`, "m"))
+  assert.match(raw.replace(/\n {8}lists them/, " lists them"), /^ {8}3 not listed: paths from variables, or under a tests directory; --full lists them$/m)
+  assert.doesNotMatch(report, /tests\/a\.test\.sh:3/)
+  assert.match(renderInspect(document, { colour: false, full: true }), /tests\/a\.test\.sh:3  > \/tmp\/x/)
 })
 
 test("the nothing fixture is reported as observed nothing of this kind, four times, and never as clean", async () => {
@@ -366,7 +383,7 @@ test("exit 0 with a report whatever was observed; --json is the document; --out 
   const report = run(["inspect", fixture.dir])
   assert.equal(report.code, 0, report.err)
   assert.equal(report.err, "")
-  assert.match(report.out, /^processes {5}observed 1, in qml$/m)
+  assert.match(report.out, /^processes {5}1 process in qml$/m)
   assert.match(report.out, /INSPECTED  1 process \(in qml\), 0 hosts/)
   assert.deepEqual(JSON.parse(run(["inspect", fixture.dir, "--json"]).out).counts, { processes: { total: 1, qml: 1, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
   const json = run(["inspect", fixture.dir, "--json"])

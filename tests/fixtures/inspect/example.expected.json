@@ -269,6 +269,7 @@
         }
       ],
       "observation": "observed 2 processes with no deadline (Widget.qml:20, Widget.qml:28)",
+      "summary": "2 processes with no deadline",
       "measurement": "M11",
       "share": 0.2
     },
@@ -282,6 +283,7 @@
         }
       ],
       "observation": "observed 1 collector with no cap (Widget.qml:20)",
+      "summary": "1 collector with no cap",
       "measurement": "M11",
       "share": 0.19
     },
@@ -295,6 +297,7 @@
         }
       ],
       "observation": "observed 1 write outside a controlled directory (scripts/refresh.sh:3)",
+      "summary": "1 write outside a controlled directory",
       "measurement": "M11",
       "share": 0.15
     },
@@ -320,6 +323,7 @@
         }
       ],
       "observation": "observed 3 tools resolved from PATH (curl, bash, pacman; Widget.qml:12, Widget.qml:20, scripts/install.sh:3); curl without -q (Widget.qml:12)",
+      "summary": "3 tools resolved from PATH (curl, bash, pacman); curl without -q",
       "measurement": "M11",
       "share": 0.07
     },
@@ -333,6 +337,7 @@
         }
       ],
       "observation": "observed curl -L without --proto (Widget.qml:12)",
+      "summary": "curl -L without --proto",
       "measurement": "M11",
       "share": 0.05
     },
@@ -346,6 +351,7 @@
         }
       ],
       "observation": "observed sudo in argv (scripts/install.sh:3); no README to name it",
+      "summary": "sudo in argv; no README to name it",
       "measurement": "M11",
       "share": 0.03
     }

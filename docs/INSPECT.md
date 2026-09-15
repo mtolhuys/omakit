@@ -104,92 +104,81 @@ Sites are counted per occurrence with `file:line`, never per file.
 
 Order follows how a reviewer reads a tree. Marks are the six of
 `docs/TUI.md`; `inspect` uses `░ info` for a fact, `▒ ?` for a fact it could
-not resolve (a `command` that is a variable), and `▓ note` for a pattern
-row. It never prints `▁ ok` or `█ FAIL`, because it has no verdict to attach
-them to.
+not resolve (a `command` that is a variable, an interval that is an
+expression), `▓ note` for a fact row that one of the review classes below
+cites and for the rows of the review table, and `▔ skip` for the baseline
+under `--offline`. It never prints `▁ ok` or `█ FAIL`, because it has no
+verdict to attach them to.
 
-Two views of the one document. The default is for a person: a summary
-block (the subject, the counts, the baseline outcome on one line), then one
-line per fact with the command written as a command line, and a second
-line only where something is absent (no deadline, no cap, no timeout, `-q`
-not observed, a write outside a directory the plugin controls); the lines
-of a shell script are one row under the script's name with the tools they
-run; a pattern row names its first three sites and counts the rest; the
-`not observed` line names the classes and the `not visible` line is one
-sentence. `--full` is the exhaustive view: every shell line as its own
-row, every argv as an array, every qualifier whether present or absent,
-the whole `not observed` and `not visible` lists, and the `method` line.
-`--json` is the document, which carries everything either view shows.
-Measured before the split: a listed tree with four shell scripts printed
-372 process rows of two lines each, and the pattern rows a reviewer would
-act on sat under 750 lines of argv.
+Two views of the one document. The default is a table a person reads in
+one screen: the subject and the baseline outcome, then one row per QML
+`Process` with the command as a command line and what is absent beside it
+(`no deadline`, `no cap`, `computed element`, `detached`), the shell
+scripts counted by directory, one row per host with what is absent
+(`no timeout`, `no size cap`, `no -q`, `http`), one row per write to a
+literal path with where it lands (`under $XDG_STATE_HOME`, `shared /tmp`,
+`outside a controlled directory`), the writes to paths from variables and
+under a tests directory counted, one row per timer, and a review table of
+class, what this tree shows and the class's share of review findings. A
+fact row cited by a review class wears `▓ note` and, when its own cells
+show nothing absent, names the classes that cite it; the review table
+names no site, because the marked rows are the sites. `--full` is the
+exhaustive view: every shell line as its own row, every argv as an array,
+every qualifier whether present or absent, every site under every pattern
+row, the whole `not observed` and `not visible` lists, and the `method`
+line. `--json` is the document, which carries everything either view
+shows. Measured before the split: a listed tree with four shell scripts
+printed 372 process rows of two lines each, and the pattern rows a
+reviewer would act on sat under 750 lines of argv.
 
 ```text
 subject       ~/plugins/fixture-example at a3bf9e2d, 3 files (1 qml, 2 shell)
-observed      5 processes (3 in qml, 2 shell lines), 1 host, 2 writes, 2 timers;
-              1 site not resolvable
-░ info  marketplace baseline review-required at pin 38060f89; capabilities
-        installer, privilege, package-manager; in scripts/install.sh
+baseline      review-required at pin 38060f89: installer, privilege,
+              package-manager
 
-processes     observed 5, 3 in qml, 2 shell lines
-░ info  Widget.qml:12  curl -fsSL --max-time 5 --max-filesize 65536
+processes     3 processes in qml; 2 shell lines in 2 scripts (scripts/ 2)
+▓ note  Widget.qml:12  curl -fsSL --max-time 5 --max-filesize 65536
         https://api.example.com/v1/status
-░ info  Widget.qml:20  bash scripts/refresh.sh
-        no deadline observed; no cap observed on SplitParser
-▒ ?     Widget.qml:28  command: root.cmd, not resolvable
-░ info  scripts/install.sh  1 shell line: pacman
-        1 line through sudo, pkexec or doas
-░ info  scripts/refresh.sh  1 shell line: df
+        environment trust, network egress
+▓ note  Widget.qml:20  bash scripts/refresh.sh  no deadline, no cap
+▒ ?     Widget.qml:28  command: root.cmd  not resolvable
 
-hosts         observed 1
-░ info  api.example.com  https via curl, Widget.qml:12
-        -q not observed
+hosts         1
+▓ note  api.example.com  https via curl, Widget.qml:12  no -q
 
-writes        observed 2
-░ info  Widget.qml:33  FileView $XDG_STATE_HOME/fixture.example/state.json
-░ info  scripts/refresh.sh:3  > /tmp/fixture.example.cache
-        not under a directory the plugin controls (/tmp is shared)
+writes        2: 1 under a controlled directory, 1 outside one
+░ info  Widget.qml:33         FileView
+        $XDG_STATE_HOME/fixture.example/state.json
+        under $XDG_STATE_HOME
+▓ note  scripts/refresh.sh:3  > /tmp/fixture.example.cache  shared /tmp
 
-timers        observed 2
-░ info  Widget.qml:39  interval 30000 ms, repeat, running, triggeredOnStart
-░ info  Widget.qml:52  interval 8000 ms, single shot, started by
-        onVisibleChanged
+timers        2
+░ info  Widget.qml:39  30000 ms, repeat, running, triggeredOnStart
+░ info  Widget.qml:52  8000 ms, once, started by onVisibleChanged
 
-patterns      6 of the 10 classes the marketplace's human review raised, each
-              with its share of review findings in a 30-issue sample (M11)
-▓ note  process lifecycle          observed 2 processes with no deadline
-        (Widget.qml:20, Widget.qml:28)
-        about 20 of every 100 review findings in the sample
-▓ note  unbounded buffering        observed 1 collector with no cap
-        (Widget.qml:20)
-        about 19 of every 100 review findings in the sample
-▓ note  file and state boundary    observed 1 write outside a controlled
-        directory (scripts/refresh.sh:3)
-        about 15 of every 100 review findings in the sample
-▓ note  environment trust          observed 3 tools resolved from PATH (curl,
-        bash, pacman; Widget.qml:12, Widget.qml:20, scripts/install.sh:3); curl
-        without -q (Widget.qml:12)
-        about 7 of every 100 review findings in the sample
-▓ note  network egress             observed curl -L without --proto
-        (Widget.qml:12)
-        about 5 of every 100 review findings in the sample
-▓ note  privilege disclosure       observed sudo in argv (scripts/install.sh:3);
-        no README to name it
-        about 3 of every 100 review findings in the sample
+review        6 of the 10 classes the marketplace's human review raised (M11, a
+              30-issue sample); the marked rows above are the sites
+▓ note  process lifecycle          2 processes with no deadline        20 of 100
+▓ note  unbounded buffering        1 collector with no cap             19 of 100
+▓ note  file and state boundary    1 write outside a controlled directory
+        15 of 100
+▓ note  environment trust          3 tools resolved from PATH (curl, bash,
+        pacman); curl without -q
+        7 of 100
+▓ note  network egress             curl -L without --proto              5 of 100
+▓ note  privilege disclosure       sudo in argv; no README to name it   3 of 100
 
-not observed  secrets, supply chain, untrusted text to display, argument grammar
-not visible   commands built at run time, values from variables or config,
-              components outside the tree, obfuscated content; --full names
-              every site and --json is the document
+not visible   run-time commands, values from variables or config, components
+              outside the tree
 
 ░ INSPECTED  5 processes (3 in qml, 2 shell lines), 1 host, 2 writes, 2 timers;
-             static, see docs/INSPECT.md
+             static; --full for every site, --json for the document
 ```
 
 That is the real default output over `tests/fixtures/inspect/example/`, at
-eighty columns as a pipe gets it; a terminal wraps at its own width, up to
-120, and `--full` prints the same tree as five process rows with their argv
-arrays and every qualifier.
+eighty columns as a pipe gets it; a terminal lays the columns out at its
+own width, up to 120, and `--full` prints the same tree as five process
+rows with their argv arrays and every qualifier.
 A pattern row prints only when the tree shows its precondition (a process
 without a deadline, a write outside a controlled directory). A pattern whose
 precondition is absent is not listed as "ok"; it is simply not there, and the
@@ -282,9 +271,9 @@ counts            { processes: { total, qml, shell }, hosts, writes, timers, not
 notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:
                   kind "command" (a computed command), "host" (an expression where the host would be),
                   "timer-interval" (an interval that is an expression)
-patterns          [{ id, observedCount, sites: [{ file, line }], observation, measurement: "M11", share: number }]
-                  only patterns whose precondition was observed; `observation` is the row's first
-                  line, starting with the word observed
+patterns          [{ id, observedCount, sites: [{ file, line }], observation, summary, measurement: "M11", share: number }]
+                  only patterns whose precondition was observed; `observation` is the --full row's
+                  first line, starting with the word observed; `summary` is it without the sites
 lookedFor         string[]  pattern ids whose precondition was not observed
 notVisible        string[]  the five blind spots above, one fixed phrase each, verbatim
 marketplaceBaseline

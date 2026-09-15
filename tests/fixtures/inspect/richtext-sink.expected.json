@@ -77,6 +77,7 @@
         }
       ],
       "observation": "observed 1 Text bound to a collector's output without Text.PlainText (Widget.qml:18)",
+      "summary": "1 Text bound to a collector's output without Text.PlainText",
       "measurement": "M11",
       "share": 0.05
     }
