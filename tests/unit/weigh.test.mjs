@@ -442,7 +442,11 @@ test("the compatibility preflight refuses, read-only and before any confirmation
   assert.ok(good.ipc.includes("enablePlugin"))
   assert.equal(stockShellPath({ HOME: "/home/x" }), "/home/x/.local/share/omarchy")
   const plan = planWeigh({ target: "fixture.clean", env: stock.env })
-  assert.match(renderPlan(plan, { colour: false, env: stock.env }).join("\n"), /^shell {9}4\.0\.0\.test at ~\/\.\.\/omarchy$|^shell {9}4\.0\.0\.test at \/tmp/m, "a shell elsewhere prints its path")
+  // The path is wherever this system keeps its temporary directory (/tmp
+  // here, /var/folders on macOS, where it also wraps): unwrapped, the line
+  // names the version and that exact path.
+  const elsewhere = renderPlan(plan, { colour: false, env: stock.env }).join("\n").replace(/\n {14}/g, " ")
+  assert.match(elsewhere, new RegExp(`^shell {9}4\\.0\\.0\\.test at ${stock.omarchyPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"), "a shell elsewhere prints its path")
   const atStock = { ...plan, omarchyPath: join(stock.home, ".local/share/omarchy") }
   assert.match(renderPlan(atStock, { colour: false, env: stock.env }).join("\n"), /^shell {9}4\.0\.0\.test$/m, "a stock install prints the version alone")
 })
