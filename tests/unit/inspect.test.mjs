@@ -7,6 +7,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { inspectPlugin, NOT_VISIBLE } from "../../tools/inspect/inspect.mjs"
@@ -172,6 +173,71 @@ test("--offline skips the baseline and says so with the skipped mark; the docume
   assert.deepEqual(validateInspectDocument(document, KNOWN), [])
   const report = renderInspect(document, { colour: false })
   assert.match(report, new RegExp(`^${DENSITY.ceiling} ${STATUS.skipped.word}\\s+skipped \\(--offline\\)$`, "m"))
+})
+
+// --- the subject boundary ---------------------------------------------------------------
+
+/** Every string in a document, with the key path it sits under. */
+function strings(value, at = "", out = []) {
+  if (typeof value === "string") out.push({ at, value })
+  else if (Array.isArray(value)) value.forEach((entry, index) => strings(entry, `${at}[${index}]`, out))
+  else if (value && typeof value === "object") for (const [key, entry] of Object.entries(value)) strings(entry, at ? `${at}.${key}` : key, out)
+  return out
+}
+
+test("a plugin below the root of a larger repository is inspected on its own: the baseline sees its tree, and no path outside the plugin directory appears anywhere in the document", async () => {
+  // Measured before this: `omakit inspect tests/fixtures/inspect/example`
+  // ran the baseline over this repository's root, and the capabilities row
+  // named tools/inspect/patterns.mjs and tools/weigh/commands.mjs as the
+  // fixture's evidence. That is the 0.1 Passport's first failure.
+  const dir = join(REPO_ROOT, "tests/fixtures/inspect/example")
+  const document = await inspectPlugin({ repoRoot: REPO_ROOT, target: dir, omakitVersion: VERSION, allowDirty: true, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-inspect-")) })
+  assert.equal(document.subject.dir, dir)
+  assert.equal(document.subject.commit, execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim())
+  assert.deepEqual(validateInspectDocument(document, KNOWN), [])
+  const outside = /(?:^|[\s"'(,;])(?:tools|bin|skills|docs|packaging|tests\/unit|tests\/parity|tests\/fixtures\/(?!inspect\/example\b))\//
+  for (const { at, value } of strings(document)) {
+    if (at === "subject.dir") continue
+    assert.ok(!outside.test(value), `${at} names a path outside the plugin directory: ${JSON.stringify(value)}`)
+  }
+  const official = document.marketplaceBaseline.official
+  const evidence = [...official.capabilities, ...official.findings].flatMap((entry) => entry.evidence.map((site) => site.path))
+  for (const path of evidence) assert.ok(existsSync(join(dir, path)), `${path} is not a file of the plugin directory`)
+  // And the baseline's result is the one the same tree gets as a repository of its own.
+  const own = (await documentFor("example")).document.marketplaceBaseline.official
+  assert.deepEqual(official.capabilities.map((entry) => [entry.id, entry.evidence]), own.capabilities.map((entry) => [entry.id, entry.evidence]))
+  assert.deepEqual(official.findings.map((entry) => [entry.ruleId, entry.evidence]), own.findings.map((entry) => [entry.ruleId, entry.evidence]))
+  assert.equal(official.outcome, own.outcome)
+  assert.ok(document.marketplaceBaseline.assumedByAdapter.some((line) => line.startsWith("tree.root=tests/fixtures/inspect/example/")), "the document says which tree the baseline saw")
+  assert.deepEqual(normalise(document).observed, JSON.parse(readFileSync(inspectExpectedPath("example"), "utf8")).observed, "the facts are the fixture's, not the repository's")
+})
+
+test("a repository of its own is unaffected: no subtree assumption, the root is the plugin", async () => {
+  const { document, fixture } = await documentFor("example")
+  assert.equal(document.subject.dir, fixture.dir)
+  assert.ok(!document.marketplaceBaseline.assumedByAdapter.some((line) => line.startsWith("tree.root=")))
+  assert.deepEqual(document.marketplaceBaseline.assumedByAdapter, JSON.parse(readFileSync(inspectExpectedPath("example"), "utf8")).marketplaceBaseline.assumedByAdapter)
+})
+
+test("reviewer mode is unaffected: a <url>@<sha> subject is read at its root, from the cache, with no subtree assumption", async () => {
+  // The reviewer-mode cache is populated by hand so the test fetches
+  // nothing: the same layout resolveSubject creates, with the commit present.
+  const fixture = materialiseInspectFixture("example")
+  const cacheRoot = mkdtempSync(join(tmpdir(), "omakit-inspect-reviewer-"))
+  const cached = join(cacheRoot, "subjects", "example__omarchy-plugin-fixture-example")
+  mkdirSync(cached, { recursive: true })
+  const git = (...args) => execFileSync("git", ["-C", cached, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  git("init", "-q")
+  git("remote", "add", "origin", fixture.origin)
+  git("fetch", "-q", fixture.dir, fixture.commit)
+  const document = await inspectPlugin({ repoRoot: REPO_ROOT, target: `${fixture.origin}@${fixture.commit}`, omakitVersion: VERSION, cacheRoot })
+  assert.equal(document.subject.mode, "reviewer")
+  assert.equal(document.subject.dir, cached)
+  assert.equal(document.subject.commit, fixture.commit)
+  assert.ok(!document.marketplaceBaseline.assumedByAdapter.some((line) => line.startsWith("tree.root=")))
+  const expected = JSON.parse(readFileSync(inspectExpectedPath("example"), "utf8"))
+  assert.deepEqual(normalise(document).observed, expected.observed)
+  assert.deepEqual(normalise(document).marketplaceBaseline, expected.marketplaceBaseline)
 })
 
 // --- the patterns --------------------------------------------------------------------

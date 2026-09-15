@@ -238,7 +238,16 @@ is recorded as the subject commit and whose tree at that commit is what is
 read, or `<https url>@<40-char sha>` fetched read-only into the cache. A
 directory below the checkout's root is read as the plugin's root, so a
 plugin kept in a subdirectory of a larger repository is inspected on its
-own. A checkout with uncommitted changes is refused with the remedy `submit`
+own: the facts are extracted from that directory's tree, and the baseline
+is run over that tree alone, served to the official code by the local
+transport as if it were the repository, with the line
+`tree.root=<dir>/ (the plugin directory below the repository root, not the
+root)` under `assumedByAdapter` so the document says which tree the
+baseline saw. The subject commit stays the repository's, since that is the
+commit the tree was read at. Nothing from outside the plugin directory is
+ever printed as the plugin's; the unit tests inspect a fixture below this
+repository's own root and hold the whole document to that. A checkout with
+uncommitted changes is refused with the remedy `submit`
 gives, exit 1, and `--allow-dirty` reads the committed tree as it is, the
 way `submit --allow-dirty` does. There is no `--fix`, no `--strict`, no
 threshold flag, because there is nothing to pass or fail.

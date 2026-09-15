@@ -98,7 +98,12 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     marketplaceBaseline = { skipped: true, reason: "--offline" }
   } else {
     onPhase("running the official security baseline over a local snapshot")
-    marketplaceBaseline = await marketplaceBaselineSection({ repoRoot, subject })
+    // The baseline sees the plugin's tree and nothing around it: for a plugin
+    // kept below the root of a larger repository, the local transport serves
+    // that directory's tree as the whole tree. Without this the baseline
+    // scanned the repository root and reported the root's evidence as the
+    // plugin's, which is the 0.1 Passport's first failure.
+    marketplaceBaseline = await marketplaceBaselineSection({ repoRoot, subject, subdir: subject.subdir })
     if (marketplaceBaseline.invoked && marketplaceBaseline.official && !marketplaceBaseline.official.error) {
       blockingRules = (await consequence(requirePin(repoRoot).dir, marketplaceBaseline.official)).selectivelyBlockingRules
     }

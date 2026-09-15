@@ -92,10 +92,14 @@ function fileResponse(buffer, range) {
 }
 
 /**
- * @param {{ repoDir: string, repoUrl: string, commitSha: string, defaultBranch?: string }} options
+ * @param {{ repoDir: string, repoUrl: string, commitSha: string, defaultBranch?: string, subdir?: string }} options
+ *   `subdir` names a directory below the repository root whose tree is served
+ *   as the whole tree: the commit's `<sha>:<subdir>` tree, paths relative to
+ *   it. `omakit inspect` uses it for a plugin kept below the root of a larger
+ *   repository, so the baseline sees the plugin's tree and never the root's.
  * @returns {{ fetchImpl: Function, stats: { api: number, raw: number } }}
  */
-export function createLocalTransport({ repoDir, repoUrl, commitSha, defaultBranch }) {
+export function createLocalTransport({ repoDir, repoUrl, commitSha, defaultBranch, subdir = "" }) {
   const { owner, repository } = parseRepoUrl(repoUrl)
   let commit = ""
   try {
@@ -106,8 +110,16 @@ export function createLocalTransport({ repoDir, repoUrl, commitSha, defaultBranc
   if (commit.toLowerCase() !== String(commitSha).toLowerCase()) {
     throw new Error(`local transport: ${repoDir} does not contain commit ${commitSha}`)
   }
-  const treeSha = git(repoDir, ["rev-parse", `${commit}^{tree}`]).trim()
-  const tree = readTree(repoDir, commit)
+  const root = subdir ? `${commit}:${subdir.replace(/\/+$/, "")}` : `${commit}^{tree}`
+  let treeSha = ""
+  try {
+    treeSha = git(repoDir, ["rev-parse", "--verify", "-q", root]).trim()
+    if (git(repoDir, ["cat-file", "-t", treeSha]).trim() !== "tree") treeSha = ""
+  } catch {
+    treeSha = ""
+  }
+  if (!treeSha) throw new Error(`local transport: ${repoDir} has no directory ${subdir} at commit ${commitSha}`)
+  const tree = readTree(repoDir, treeSha)
   const byPath = new Map(tree.map((entry) => [entry.path, entry]))
   const branch = defaultBranch
     || (() => {

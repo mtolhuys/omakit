@@ -18,7 +18,7 @@ async function loadScanner(pinDir) {
 
 /**
  * @param {{ repoRoot: string, repoUrl: string, commitSha: string, transport: "local"|"github",
- *           repoDir?: string, listedPlugins?: Array, token?: string }} options
+ *           repoDir?: string, repoSubdir?: string, listedPlugins?: Array, token?: string }} options
  */
 export async function runBaseline(options) {
   const { dir: pinDir, identity } = requirePin(options.repoRoot)
@@ -34,6 +34,7 @@ export async function runBaseline(options) {
       repoDir: options.repoDir,
       repoUrl: options.repoUrl,
       commitSha: options.commitSha,
+      subdir: options.repoSubdir || "",
     })
     scanOptions.fetchImpl = transport.fetchImpl
     adapter = {

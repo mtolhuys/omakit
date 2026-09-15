@@ -93,7 +93,16 @@ Timers. `Timer {` blocks with `interval`, `repeat`, `running`,
 is an expression is `▒ ?` with the expression text.
 
 Capabilities. `marketplaceBaselineSection()` from `tools/marketplace/verify.mjs`,
-verbatim, under `--offline` skipped with the mark `▔ skip`.
+verbatim, under `--offline` skipped with the mark `▔ skip`. For a plugin
+directory below the root of a larger repository the section is asked for
+that directory (`subdir`), and the local transport serves the commit's
+`<sha>:<subdir>` tree as the whole tree, paths relative to it, so the
+official code scans the plugin and not the repository around it. Measured
+before this: `inspect tests/fixtures/inspect/example` in this repository
+reported this repository's own installer and privilege evidence as the
+fixture's, the Passport's first failure in a new place. `verify` and
+`submit` still scan the root, which for them is the repository the
+marketplace would fetch.
 
 ## The patterns, each with its number and source
 

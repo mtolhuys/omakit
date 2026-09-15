@@ -6,15 +6,25 @@ import { runBaseline } from "./run-baseline.mjs"
 import { MARKETPLACE_PIN } from "./pin.mjs"
 import { ASSUMED_BY_ADAPTER } from "./local-transport.mjs"
 
+/** The one assumption a subtree scan adds: the tree the official code saw is the plugin directory, not the repository root. */
+function subtreeAssumption(subdir) {
+  return subdir ? [`tree.root=${subdir.replace(/\/+$/, "")}/ (the plugin directory below the repository root, not the root)`] : []
+}
+
 const MARKETPLACE_STATEMENT =
   "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
 
 /**
- * @param {{ repoRoot: string, subject: { dir: string, commit: string, repository: { url: string|null } }, listedPlugins?: Array }} options
+ * @param {{ repoRoot: string, subject: { dir: string, commit: string, repository: { url: string|null } }, listedPlugins?: Array, subdir?: string }} options
+ *   `subdir`, when given, is a directory below the repository root that the
+ *   local transport serves as the whole tree, so the official code scans the
+ *   plugin's directory and not the repository around it; the section records
+ *   it under `assumedByAdapter`. `verify` and `submit` pass none and scan the
+ *   root, which for them is the repository the marketplace would fetch.
  * @returns the `marketplaceBaseline` section: pin, transport, adapter
  *   assumptions, the official result verbatim, and the statement.
  */
-export async function marketplaceBaselineSection({ repoRoot, subject, listedPlugins }) {
+export async function marketplaceBaselineSection({ repoRoot, subject, listedPlugins, subdir = "" }) {
   const pin = {
     repository: MARKETPLACE_PIN.repository,
     commit: MARKETPLACE_PIN.commit,
@@ -40,6 +50,7 @@ export async function marketplaceBaselineSection({ repoRoot, subject, listedPlug
       commitSha: subject.commit,
       transport: "local",
       repoDir: subject.dir,
+      repoSubdir: subdir,
       listedPlugins,
     })
   } catch (error) {
@@ -49,7 +60,7 @@ export async function marketplaceBaselineSection({ repoRoot, subject, listedPlug
       return {
         pin,
         transport: "local-git",
-        assumedByAdapter: [...ASSUMED_BY_ADAPTER],
+        assumedByAdapter: [...ASSUMED_BY_ADAPTER, ...subtreeAssumption(subdir)],
         invoked: true,
         skipReason: null,
         official: { error: { code: error.code, message: error.message, ...(error.details || {}) } },
@@ -61,7 +72,7 @@ export async function marketplaceBaselineSection({ repoRoot, subject, listedPlug
   return {
     pin: { ...pin, commit: run.pin.commit, baselineVersion: run.pin.baselineVersion, enforcementMode: run.pin.enforcementMode },
     transport: "local-git",
-    assumedByAdapter: [...run.adapter.assumedByAdapter],
+    assumedByAdapter: [...run.adapter.assumedByAdapter, ...subtreeAssumption(subdir)],
     invoked: true,
     skipReason: null,
     official: run.result,
