@@ -174,6 +174,63 @@ test("--offline skips the baseline and says so with the skipped mark; the docume
   assert.match(report, new RegExp(`^${DENSITY.ceiling} ${STATUS.skipped.word}\\s+skipped \\(--offline\\)$`, "m"))
 })
 
+// --- the patterns --------------------------------------------------------------------
+
+test("a pattern prints only where its precondition is observed: exactly two on process-without-deadline, none on nothing, supply-chain from the baseline's own evidence on installer-unpinned", async () => {
+  const without = (await documentFor("process-without-deadline")).document
+  assert.deepEqual(without.patterns.map((row) => row.id), ["process-lifecycle", "unbounded-buffering"])
+  assert.deepEqual(without.patterns.map((row) => row.sites), [[{ file: "Widget.qml", line: 10 }], [{ file: "Widget.qml", line: 10 }]])
+  assert.deepEqual(without.patterns.map((row) => [row.measurement, row.share]), [["M11", 0.2], ["M11", 0.19]])
+  assert.equal(without.lookedFor.length, PATTERNS.length - 2)
+  const nothing = (await documentFor("nothing")).document
+  assert.deepEqual(nothing.patterns, [])
+  assert.deepEqual(nothing.lookedFor, PATTERNS.map((pattern) => pattern.id))
+  const withDeadline = (await documentFor("process-with-deadline")).document
+  assert.deepEqual(withDeadline.patterns, [], "a deadline and a cap leave nothing to list")
+  const installer = (await documentFor("installer-unpinned")).document
+  const supply = installer.patterns.find((row) => row.id === "supply-chain")
+  assert.ok(supply, "the baseline's finding is cited")
+  const evidence = installer.marketplaceBaseline.official.findings.flatMap((finding) => finding.evidence.map((entry) => ({ file: entry.path, line: entry.line })))
+  assert.deepEqual(supply.sites, evidence, "the sites are the baseline's own evidence, not a second detection")
+  assert.match(supply.observation, new RegExp(installer.marketplaceBaseline.official.findings[0].ruleId))
+  const offline = (await documentFor("installer-unpinned", { offline: true })).document
+  assert.ok(!offline.patterns.some((row) => row.id === "supply-chain"), "without the baseline there is nothing to cite")
+  assert.ok(offline.lookedFor.includes("supply-chain"))
+})
+
+test("the other patterns, one fixture each", async () => {
+  const ids = async (name) => (await documentFor(name)).document.patterns.map((row) => row.id)
+  assert.deepEqual(await ids("write-tmp"), ["file-and-state-boundary"])
+  assert.deepEqual(await ids("write-state"), [])
+  assert.deepEqual(await ids("curl-with-caps"), [])
+  assert.deepEqual(await ids("curl-without-caps"), ["unbounded-buffering", "environment-trust", "network-egress"])
+  assert.deepEqual(await ids("http-host"), ["network-egress"])
+  assert.deepEqual(await ids("secret-in-argv"), ["secrets"])
+  assert.deepEqual(await ids("richtext-sink"), ["untrusted-text-to-display"])
+  assert.deepEqual(await ids("computed-argv-element"), ["argument-grammar"])
+  assert.deepEqual(await ids("privileged-argv"), ["privilege-disclosure"])
+  assert.deepEqual(await ids("shell-wrapper"), ["process-lifecycle", "environment-trust"])
+  assert.deepEqual(await ids("timer-180ms"), [])
+  assert.deepEqual(await ids("computed-command"), ["process-lifecycle"], "a Process block with no killing Timer and no destruction handler is one with no deadline observed, whatever its argv")
+})
+
+test("a pattern row is two lines: the observation with its sites, then the share, and never a verdict word", async () => {
+  const { document } = await documentFor("process-without-deadline")
+  const report = renderInspect(document, { colour: false })
+  assert.match(report, new RegExp(`^${DENSITY.dark} ${STATUS.advisory.word}\\s+process lifecycle\\s+observed 1 process with no deadline$`, "m"))
+  assert.match(report, /^ {8}\(Widget\.qml:10\)$/m)
+  assert.match(report, /^ {8}about 20 of every 100 review findings in the sample \(M11\)$/m)
+  assert.match(report, /^ {8}about 19 of every 100 review findings in the sample \(M11\)$/m)
+  assert.match(report, /^not observed  no write outside a controlled directory, /m)
+  for (const row of document.patterns) assert.doesNotMatch(row.observation, /\b(?:missing|should|fix)\b/i)
+  assert.doesNotMatch(report, /\b(?:missing|should|fix)\b/i)
+  const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
+  assert.match(nothing, /^patterns {6}none of the 10 classes/m)
+  assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} ${STATUS.advisory.word}`))
+  const unwrapped = nothing.replace(/\n {14}/g, " ")
+  for (const pattern of PATTERNS) assert.ok(unwrapped.includes(pattern.notObserved), `${pattern.id} is not named on the not observed line`)
+})
+
 // --- the entry point ------------------------------------------------------------
 
 test("exit 0 with a report whatever was observed; --json is the document; --out writes it beside the report", async () => {

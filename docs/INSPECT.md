@@ -167,21 +167,24 @@ entry next to the pattern the way every `submit` check names its `why`.
 
 | Pattern | Precondition the extraction can see | Share of findings, M11 |
 | --- | --- | --- |
-| process lifecycle | a `Process` with no observed deadline: no `Timer` whose handler calls `kill()` or `signal()` on it, no `timeout` in argv, no `Component.onDestruction` that stops it | about 20% |
+| process lifecycle | a `Process` block with no observed deadline: no `Timer` whose `onTriggered` calls `kill()` or `signal()` on it or sets its `running` false, no `timeout` in argv, no `Component.onDestruction` that does the same; an `execDetached` call is not one, and a shell line is not one | about 20% |
 | unbounded buffering | `StdioCollector` or `SplitParser` on a process whose argv shows no producer-side cap (`head -c`, `--max-filesize`, `timeout`) | about 19% |
-| file and state boundary | a write whose path is not under `$XDG_STATE_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME/omarchy/plugins/<id>` or `$XDG_RUNTIME_DIR`; a temp file without `mktemp`; `mkdir` without `-m 700` | about 15% |
-| environment trust | a tool name in argv position 0 without a slash; `curl` without `-q` | about 7% |
-| secrets | an argv element or a `console.log` argument matching `Authorization`, `Bearer`, `token=`, `api_key`, `password`; `wl-copy` with a computed value | about 7% |
-| supply chain | `git clone` or `curl` in an installer without a pinned ref or a checksum, as the baseline's own `remote-git-execution-unpinned` and `curl-pipe-shell` already record; `inspect` prints the baseline's evidence and adds nothing | about 7% |
-| network egress | an `http:` URL; `curl` with `-L` and no `--proto`; a literal private address | about 5% |
-| untrusted text to display | a `Text` whose `text` binds to a collector's output and whose `textFormat` is not `Text.PlainText` | about 5% |
-| argument grammar | a `${...}` or `+` expression inside an argv element | about 4% |
-| privilege disclosure | `sudo`, `pkexec`, `docker`, or `/dev/input` in argv, with whether the README mentions it | about 3% |
+| file and state boundary | a write whose canonical path is not under `$XDG_STATE_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME/omarchy/plugins/<id>` or `$XDG_RUNTIME_DIR`, `mktemp` excepted; a `mkdir` with no mode | about 15% |
+| environment trust | a process whose tool word (the first argv word after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted; `curl` reaching a host without `-q` | about 7% |
+| secrets | an argv element, or a `console.log` argument, matching `Authorization`, `Bearer`, `token=`, `api_key`, `password` or `secret=`; `wl-copy` with a computed argv element | about 7% |
+| supply chain | a finding the baseline recorded and does not list as selectively blocking at the pin (at pin `38060f89`: `remote-git-execution-unpinned`, `curl-pipe-shell`, `cargo-git-unpinned`, read from the pinned policy, never named in the code); `inspect` prints the baseline's evidence sites and adds nothing | about 7% |
+| network egress | an `http:` literal; `curl` with `-L` and no `--proto`; a loopback, link-local or private-range literal | about 5% |
+| untrusted text to display | a `Text`, `Label` or `TextEdit` whose `text` binds to a `StdioCollector` or `SplitParser` id's `.text` and whose `textFormat` is not `Text.PlainText` | about 5% |
+| argument grammar | an argv array with an element that is an expression rather than a literal (`"--user=" + name`, a template with `${...}`, a property) | about 4% |
+| privilege disclosure | `sudo`, `pkexec`, `doas`, `docker` or `/dev/input` in argv, with whether the README names each | about 3% |
 
 The percentages are the maintainer's review findings by class in a fixed
 sample, one reader's classification, dated. They say how often reviewers have
 raised a class, not how likely this plugin is to be blocked, and the report
-words them that way.
+words them that way. The ids, the shares and their order are held to
+`docs/evidence/inspect/2026-09-12-review-classes.json` by the unit tests,
+and every entry of `tools/inspect/patterns.mjs` to a measurement that is a
+section of `docs/MEASUREMENTS.md`.
 
 ## Options
 

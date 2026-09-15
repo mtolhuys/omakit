@@ -132,7 +132,9 @@ function patternLines(document, c) {
   if (!PATTERNS.length) return []
   const out = []
   const width = Math.max(...PATTERNS.map((pattern) => pattern.label.length)) + 1
-  out.push(...field("patterns", `of what the marketplace's human review raised, in a ${PATTERNS[0].sample} (${PATTERNS[0].measurement})`, c))
+  out.push(...field("patterns", document.patterns.length
+    ? `of what the marketplace's human review raised, in a ${PATTERNS[0].sample} (${PATTERNS[0].measurement})`
+    : `none of the ${PATTERNS.length} classes the marketplace's human review raised, in a ${PATTERNS[0].sample} (${PATTERNS[0].measurement}), shows its precondition here`, c))
   for (const entry of document.patterns) {
     const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
     const label = pattern.label.padEnd(width)

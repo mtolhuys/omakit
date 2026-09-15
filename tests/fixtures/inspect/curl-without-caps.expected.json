@@ -86,8 +86,60 @@
     ]
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "unbounded-buffering",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed 1 collector with no cap (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.19
+    },
+    {
+      "id": "environment-trust",
+      "observedCount": 2,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        },
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed 1 tool resolved from PATH (curl; Widget.qml:10); curl without -q (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.07
+    },
+    {
+      "id": "network-egress",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed curl -L without --proto (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.05
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "file-and-state-boundary",
+    "secrets",
+    "supply-chain",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

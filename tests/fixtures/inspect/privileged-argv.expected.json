@@ -58,8 +58,32 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "privilege-disclosure",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed sudo, docker in argv (Widget.qml:10); named in the README: observed",
+      "measurement": "M11",
+      "share": 0.03
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

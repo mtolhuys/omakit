@@ -105,12 +105,12 @@ holds every `submit` check to a `why` with a figure is extended to hold every
 
 | id | Precondition in the facts | Number | Source |
 | --- | --- | --- | --- |
-| `process-lifecycle` | a process row with `deadline.observed: false` | about 20% of findings | M11 |
+| `process-lifecycle` | a QML process row with `deadline.observed: false`; not an `execDetached` call, which has no deadline by design, and not a shell line | about 20% of findings | M11 |
 | `unbounded-buffering` | a process row with a collector and `output.capObserved: false` | about 19% | M11 |
 | `file-and-state-boundary` | a write row with `controlledDirectory: "not-observed"`, or a temp path without `mktemp`, or `mkdir` without a mode | about 15% | M11 |
-| `environment-trust` | a process row whose `argv[0]` has no slash, or `curl` without `-q` | about 7% | M11 |
+| `environment-trust` | a process row whose tool word (after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted, or `curl` without `-q` | about 7% | M11 |
 | `secrets` | an argv element or `console.log` argument matching the secret-shaped list | about 7% | M11 |
-| `supply-chain` | the baseline's own `remote-git-execution-unpinned`, `curl-pipe-shell` or `cargo-git-unpinned` evidence present | about 7% of findings; 21 findings ever recorded across 2,916 baselined listings, 11 and 10 of them these two rules | M11, M4 |
+| `supply-chain` | a finding the baseline recorded and does not list as selectively blocking at the pin, which at pin `38060f89` is exactly `remote-git-execution-unpinned`, `curl-pipe-shell` and `cargo-git-unpinned`; the set is read from the pinned policy through `verify`, so no rule id is written into `tools/inspect/` | about 7% of findings; 21 findings ever recorded across 2,916 baselined listings, 11 and 10 of them these two rules | M11, M4 |
 | `network-egress` | a host row with scheme `http`, or `-L` without `--proto`, or a private literal address | about 5% | M11 |
 | `untrusted-text-to-display` | a `Text` bound to a collector's `text` without `textFormat: Text.PlainText` | about 5% | M11 |
 | `argument-grammar` | a process row with an interpolated or concatenated argv element | about 4% | M11 |
@@ -146,7 +146,8 @@ tools/inspect/
   hosts.mjs        URL literals and their flags
   writes.mjs       write sites and the controlled-directory test
   timers.mjs       Timer blocks
-  patterns.mjs     the table above as data: id, precondition function, measurement, share
+  patterns.mjs     the table above as data: id, label, precondition function, measurement, share, the "not observed" phrase
+  text.mjs         the text primitives the extractors share: line numbers, brace blocks, a property's value, string and array literals, the crude shell word split
   contract.mjs     the executable JSON contract
   report.mjs       the terminal rendering, marks through style.mjs only
 tests/fixtures/inspect/<name>/   one small plugin per fact kind and per pattern

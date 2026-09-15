@@ -38,7 +38,18 @@
   },
   "notResolvable": [],
   "patterns": [],
-  "lookedFor": [],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

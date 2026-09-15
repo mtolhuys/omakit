@@ -94,8 +94,32 @@
     ]
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "network-egress",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed http scheme (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.05
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

@@ -99,8 +99,48 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "environment-trust",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "scripts/install.sh",
+          "line": 3
+        }
+      ],
+      "observation": "observed 1 tool resolved from PATH (git; scripts/install.sh:3)",
+      "measurement": "M11",
+      "share": 0.07
+    },
+    {
+      "id": "supply-chain",
+      "observedCount": 2,
+      "sites": [
+        {
+          "file": "scripts/install.sh",
+          "line": 3
+        },
+        {
+          "file": "scripts/install.sh",
+          "line": 4
+        }
+      ],
+      "observation": "observed 1 baseline finding the pin does not block on (remote-git-execution-unpinned; scripts/install.sh:3, scripts/install.sh:4)",
+      "measurement": "M11",
+      "share": 0.07
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "secrets",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

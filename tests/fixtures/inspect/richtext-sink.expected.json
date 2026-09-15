@@ -55,8 +55,32 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "untrusted-text-to-display",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 18
+        }
+      ],
+      "observation": "observed 1 Text bound to a collector's output without Text.PlainText (Widget.qml:18)",
+      "measurement": "M11",
+      "share": 0.05
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

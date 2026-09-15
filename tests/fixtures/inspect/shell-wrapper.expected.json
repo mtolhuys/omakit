@@ -54,8 +54,44 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "process-lifecycle",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 9
+        }
+      ],
+      "observation": "observed 1 process with no deadline (Widget.qml:9)",
+      "measurement": "M11",
+      "share": 0.2
+    },
+    {
+      "id": "environment-trust",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 9
+        }
+      ],
+      "observation": "observed 1 tool resolved from PATH (bash; Widget.qml:9)",
+      "measurement": "M11",
+      "share": 0.07
+    }
+  ],
+  "lookedFor": [
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

@@ -8,6 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { liveRegistry } from "../../tools/marketplace/registry.mjs"
+import { PATTERNS } from "../../tools/inspect/patterns.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
@@ -42,7 +43,7 @@ test("a known-good plugin passes every check and produces a postable issue", asy
   assert.equal(result.baseline.consequence.blocksApproval, false)
 })
 
-test("every check names a source and a measured reason", async () => {
+test("every check names a source and a measured reason, and every inspect pattern a measurement and a share", async () => {
   const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
   const result = await submitPreflight({
     repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: true,
@@ -51,6 +52,24 @@ test("every check names a source and a measured reason", async () => {
     assert.ok(["marketplace-pin", "omakit"].includes(check.source), `${check.id}: bad source ${check.source}`)
     assert.ok(check.why && check.why.length > 40, `${check.id}: no measured reason`)
     assert.ok(/\d/.test(check.why), `${check.id}: the reason carries no number`)
+  }
+  // AGENTS.md, rule 3, for `omakit inspect`: a pattern without a number does
+  // not ship. Every entry names a measurement that is a section heading of
+  // docs/MEASUREMENTS.md, carries the share that section states, and the
+  // ten ids are exactly the classes of the M11 record, share for share.
+  const measurements = readFileSync(join(REPO_ROOT, "docs/MEASUREMENTS.md"), "utf8")
+  const sections = new Set([...measurements.matchAll(/^## (M\d+)\./gm)].map((match) => match[1]))
+  const record = JSON.parse(readFileSync(join(REPO_ROOT, "docs/evidence/inspect/2026-09-12-review-classes.json"), "utf8"))
+  assert.equal(PATTERNS.length, 10)
+  assert.deepEqual(PATTERNS.map((pattern) => [pattern.id, pattern.share]), record.classes.map((entry) => [entry.id, entry.share]))
+  for (const pattern of PATTERNS) {
+    assert.ok(sections.has(pattern.measurement), `${pattern.id}: measurement ${pattern.measurement} is not a section of docs/MEASUREMENTS.md`)
+    for (const also of pattern.also || []) assert.ok(sections.has(also), `${pattern.id}: cites ${also}, which is not a section of docs/MEASUREMENTS.md`)
+    assert.equal(typeof pattern.share, "number", `${pattern.id}: the share is not a number`)
+    assert.ok(pattern.share > 0 && pattern.share < 1, `${pattern.id}: the share is not a share`)
+    assert.equal(typeof pattern.precondition, "function", `${pattern.id}: no precondition`)
+    for (const key of ["label", "notObserved", "sample"]) assert.ok(typeof pattern[key] === "string" && pattern[key], `${pattern.id}: no ${key}`)
+    assert.doesNotMatch(`${pattern.label} ${pattern.notObserved}`, /\b(?:missing|should|fix)\b/i, `${pattern.id}: reads as a verdict`)
   }
 })
 

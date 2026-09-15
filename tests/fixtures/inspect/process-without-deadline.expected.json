@@ -54,8 +54,44 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "process-lifecycle",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed 1 process with no deadline (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.2
+    },
+    {
+      "id": "unbounded-buffering",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "Widget.qml",
+          "line": 10
+        }
+      ],
+      "observation": "observed 1 collector with no cap (Widget.qml:10)",
+      "measurement": "M11",
+      "share": 0.19
+    }
+  ],
+  "lookedFor": [
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",

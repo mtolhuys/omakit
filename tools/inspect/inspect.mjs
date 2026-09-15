@@ -104,7 +104,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     }
   }
 
-  const facts = { processes, hosts, writes, timers, notResolvable, readme: tree.readme, baseline: marketplaceBaseline, blockingRules }
+  const facts = { processes, hosts, writes, timers, notResolvable, files: tree.files, readme: tree.readme, baseline: marketplaceBaseline, blockingRules }
   const { patterns, lookedFor } = evaluatePatterns(facts)
 
   return {

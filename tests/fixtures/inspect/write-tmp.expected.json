@@ -66,8 +66,32 @@
     "timers": []
   },
   "notResolvable": [],
-  "patterns": [],
-  "lookedFor": [],
+  "patterns": [
+    {
+      "id": "file-and-state-boundary",
+      "observedCount": 1,
+      "sites": [
+        {
+          "file": "scripts/refresh.sh",
+          "line": 4
+        }
+      ],
+      "observation": "observed 1 write outside a controlled directory (scripts/refresh.sh:4)",
+      "measurement": "M11",
+      "share": 0.15
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
   "notVisible": [
     "commands built at run time",
     "hosts and paths from variables, properties, config or the environment",
