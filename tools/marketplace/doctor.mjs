@@ -42,7 +42,7 @@ import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
-import { NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
+import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
 import { completionStatus } from "./completion-check.mjs"
 
@@ -205,11 +205,17 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     phase("asking the npm registry for the newest published version")
     const published = await latestVersion(self.name)
     if (published.version) {
-      const current = published.version === self.version
-      versionCheck(current ? "ok" : "advice",
-        current ? `${self.version}, the newest published version` : `${self.version}; ${published.version} is published`,
-        current ? null : `run \`${upgradeCommand(repoRoot, self.name)}\``,
-        published.version, NPM_REGISTRY)
+      const comparison = compareVersions(published.version, self.version)
+      if (comparison === null) {
+        versionCheck("unknown", `${self.version}; the installed or published version is invalid`)
+      } else {
+        versionCheck(comparison > 0 ? "advice" : "ok",
+          comparison === 0 ? `${self.version}, the newest published version`
+            : comparison < 0 ? `${self.version}; ahead of the newest published version ${published.version}`
+              : `${self.version}; ${published.version} is published`,
+          comparison > 0 ? `run \`${upgradeCommand(repoRoot, self.name)}\`` : null,
+          published.version, NPM_REGISTRY)
+      }
     } else {
       versionCheck("unknown", `${self.version}; could not read the npm registry (${published.error?.code || "error"})`)
     }

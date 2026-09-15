@@ -10,6 +10,9 @@ owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 omakit setup                 # the environment, the pin, tab completion, and what to try first
 omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
+omakit watch --all           # check every open marketplace issue authored by your gh account
+omakit watch --list          # list those issues without checking every plugin
+omakit watch                 # choose one or several issues at a terminal
 omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
@@ -77,7 +80,9 @@ is the usage error with the same lists, exit 2. A listed plugin is asked for
 neither. A `READY` or `REFUSED` report ends with the command line that repeats
 the run without asking, and `--json` carries it as `reproduce`.
 
-There is nothing to authenticate. If you have `gh auth login` done, omakit
+Account-wide watch without `--user` requires `gh auth login` so it can discover your account. `--user <login>` can discover a public author's issues without a login. An individual issue URL still works unauthenticated. Discovery reads open authored issues, excludes pull requests, follows pagination, and refuses an incomplete list. JSON, `--out` and pipes never prompt: pass `--all`, `--list` or an issue URL. See [VALIDATION_WATCH.md](VALIDATION_WATCH.md) for batch output and exit codes.
+
+If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
 `GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
 those itself. Without either, `watch` and `parity` share GitHub's

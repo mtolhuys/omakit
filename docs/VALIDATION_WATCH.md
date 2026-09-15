@@ -7,6 +7,27 @@ omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number
 Reads one submission issue and answers one question: is the commit the
 marketplace validated still the commit the repository is on?
 
+## Your account's issues
+
+```bash
+omakit watch --all
+omakit watch --list
+omakit watch
+omakit watch --all --user <login> --json --out <file>
+```
+
+`--all` checks every open issue authored by the account signed in through `gh`. `--list` reads only issue metadata and prints commands for checking individual issues. With no URL or mode, stdin and stdout must both be terminals: a numbered picker accepts one list number, comma-separated list numbers, `all`, or `q` to cancel. JSON, `--out` and pipes never prompt. An empty account exits successfully and reports no open issues.
+
+`--user <login>` selects a public account explicitly; it needs no login lookup and works unauthenticated within GitHub's rate limit. Discovery is limited to the pinned marketplace repository, excludes pull requests and closed issues, and follows repository-issue pagination rather than search's result cap. It refuses a list exceeding 100 pages instead of presenting it as complete. General issues are retained: if no plugin repository or baseline can be read, their validation is reported as unknown.
+
+The batch checks at most four issues concurrently and shares the default-branch HEAD read when multiple issues concern one repository. One read failure leaves an explicit error row and does not discard the other results. It checks fresh issue bodies, uses the same pinned form parsers and baseline-marker parser as a single-issue run, and never edits, comments, labels or publishes. Comment reads exceeding ten pages fail explicitly rather than comparing an older baseline as if it were the latest. Each invocation is one snapshot; it does not subscribe to notifications or poll in the background.
+
+The text report shows each issue's commit verdict, baseline outcome and capabilities, current state and labels, and the latest human discussion other than the author's (up to 240 characters, with a source link). That discussion is not classified as an authorized maintainer decision. A current commit may still need fixes, review, approval or publication; `current` is only the commit comparison. Single-issue JSON adds the full `discussion` record or null, preserving the original text.
+
+List JSON has `mode: "list"`, `account`, `marketplace` and `issues` (number, URL, title, state, labels and update time). Batch JSON has `mode: "all"`, `account`, `marketplace`, `summary` (total/current/stale/unknown), and `issues` with each discovered issue, its full single-issue `report` or null, and its read `error` or null. An empty account or cancelling the picker returns an empty batch. Exit 0 means the list or comparisons completed, including stale results. Exit 2 means at least one comparison is unknown, or the invocation is invalid. Discovery failures exit 1 and cannot be mistaken for an empty account.
+
+Regression proof: [watch-all.test.mjs](../tests/unit/watch-all.test.mjs) covers account selection, filtering, pagination, incomplete lists, shared HEAD reads, independent failures, multi-selection, cancellation, EOF, output wrapping and noninteractive mode conflicts.
+
 ## The mechanism
 
 The marketplace validates one exact commit, and the review that follows is of

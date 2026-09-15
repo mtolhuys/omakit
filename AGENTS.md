@@ -53,7 +53,14 @@ stayed in the archive and is a separate decision. `tests/unit/self-containment.t
 fails if a `scaffold`, `vendor` or `template` command appears, and if any
 module gains a file-copying primitive.
 
-Every command is read-only against the user's own machine, with two
+Passive terminal notices may store only installed/latest version metadata and
+the check time at `$XDG_STATE_HOME/omakit/update-check.json` (or
+`~/.local/state/omakit/update-check.json`), like the existing completion-notice
+stamp. No code, credential or subject data is stored; no update is applied.
+`docs/INSTALL.md` describes the throttle, timeout, skipped modes and opt-out.
+
+Apart from that notification metadata, every command is read-only against the
+user's own machine, with two
 exceptions, and both say so before they act. `omakit setup` writes the
 completion script where the shell in `$SHELL` loads it from, and edits an rc
 file in exactly one case: when a new shell has no completion loader, it asks

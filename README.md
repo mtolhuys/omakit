@@ -25,7 +25,7 @@ See [docs/INSTALL.md](docs/INSTALL.md) for the clone route, PATH, requirements a
 | --- | --- |
 | [`omakit setup`](docs/COMMANDS.md) | The environment, the pin, tab completion, and what to try first. |
 | [`omakit submit <plugin-repo>`](docs/SUBMIT.md) | Every check, the issue title and body; asks for a category and tags at a terminal. |
-| [`omakit watch <issue-url>`](docs/VALIDATION_WATCH.md) | The commit the marketplace validated, against the plugin's current HEAD. |
+| [`omakit watch [<issue-url>]`](docs/VALIDATION_WATCH.md) | Pick your marketplace issues, list them, or check all with `--all`. |
 | [`omakit verify <plugin-repo>`](docs/COMMANDS.md) | The official security baseline over the local transport; `--json` for the document. |
 | [`omakit parity`](docs/COMMANDS.md) | The baseline over GitHub versus the local transport, on real listings; writes the evidence. |
 | [`omakit audit [<plugin>]`](docs/AUDIT.md) | Installed third-party commits against the exact commits the marketplace validated. |
@@ -34,6 +34,11 @@ See [docs/INSTALL.md](docs/INSTALL.md) for the clone route, PATH, requirements a
 | [`omakit pin`](docs/COMMANDS.md) | What setup does for the pin, on its own. |
 | [`omakit upgrade`](docs/COMMANDS.md) | Updates omakit through its own installer: npm, or a fast-forward. |
 | [`omakit help --agent`](docs/COMMANDS.md) | The operating instructions, for the agent running this. |
+
+Normal terminal use also checks for a newer npm release at most once daily
+and shows the upgrade command. It installs nothing automatically; scripts
+and JSON stay quiet. `DISABLE_UPDATE_NOTIFIER=1` disables the notice, and
+`omakit doctor` checks explicitly. [Update behaviour](docs/INSTALL.md#updating).
 
 ### `submit`
 
@@ -51,9 +56,14 @@ Read more: [docs/SUBMIT.md](docs/SUBMIT.md).
 
 ```bash
 omakit watch <submission-issue-url>
+omakit watch --all
+omakit watch --list
+omakit watch                 # choose one or several issues at a terminal
 ```
 
 It decides whether the marketplace validated the plugin's current commit; [73% of parked submissions have a HEAD the marketplace never saw](docs/MEASUREMENTS.md).
+
+Account-wide discovery uses your signed-in `gh` account and reads your open marketplace issues. `--user <login>` reads another public account. Batch output includes baseline results, labels and the latest human discussion; `current` compares commits and does not imply approval or publication. Each command takes one snapshot and posts nothing.
 
 ![omakit watch reporting that a validated commit has fallen behind](docs/media/watch.gif)
 

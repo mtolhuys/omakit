@@ -29,7 +29,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
-import { defaultBranchHead, issue, issueComments, parseIssueUrl, token, GitHubError } from "./github.mjs"
+import { authenticatedUser, repositoryIssues, defaultBranchHead, issue, issueComments, parseIssueUrl, token, GitHubError } from "./github.mjs"
 
 export class WatchError extends Error {
   constructor(code, message) {
@@ -40,6 +40,70 @@ export class WatchError extends Error {
 }
 
 const MARKETPLACE_SLUG = MARKETPLACE_PIN.repository.replace(/^https:\/\/github\.com\//, "").toLowerCase()
+
+/** Text from an issue remains data, including at a terminal. JSON retains the original title. */
+export function watchIssueTitle(value) {
+  return String(value || "").replace(/[\p{Cc}\p{Cf}]/gu, " ")
+}
+
+/** Discover the account's open marketplace issues, without reading every plugin. */
+export async function discoverWatchIssues({ user, github = {}, onPhase = () => {} } = {}) {
+  const read = { authenticatedUser, repositoryIssues, ...github }
+  if (user !== undefined && !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(user)) {
+    throw new WatchError("usage", "--user needs a GitHub login, not a URL or search query")
+  }
+  onPhase("reading the GitHub account")
+  const account = user || await read.authenticatedUser()
+  const [owner, repository] = MARKETPLACE_SLUG.split("/")
+  onPhase(`reading open marketplace issues for ${account}`)
+  const subjects = await read.repositoryIssues(owner, repository, account)
+  // Check the response as well as the server-side creator filter. Never turn
+  // another author's issue, or a PR, into an account-wide watch target.
+  const seen = new Set()
+  const issues = subjects.filter((subject) => {
+    if (subject.pull_request || subject.state !== "open" || subject.user?.login?.toLowerCase() !== account.toLowerCase()) return false
+    if (!Number.isSafeInteger(subject.number) || subject.number < 1 || seen.has(subject.number)) return false
+    seen.add(subject.number)
+    return true
+  }).map((subject) => ({
+    number: subject.number,
+    url: `${MARKETPLACE_PIN.repository}/issues/${subject.number}`,
+    title: subject.title,
+    state: subject.state,
+    labels: (subject.labels || []).map((label) => typeof label === "string" ? label : label?.name).filter(Boolean),
+    updatedAt: subject.updated_at || null,
+  }))
+  return { mode: "list", account, marketplace: MARKETPLACE_PIN.repository, issues }
+}
+
+/** A batch keeps independent read failures visible and shares repository HEAD reads. */
+export async function validationWatchAll({ repoRoot, discovery, github = {}, onPhase = () => {} }) {
+  if (discovery.issues.length) requirePin(repoRoot)
+  const heads = new Map()
+  const readHead = github.defaultBranchHead || defaultBranchHead
+  const shared = { ...github, defaultBranchHead: (url) => {
+    if (!heads.has(url)) heads.set(url, Promise.resolve().then(() => readHead(url)))
+    return heads.get(url)
+  } }
+  const results = new Array(discovery.issues.length)
+  let next = 0
+  async function worker() {
+    while (next < discovery.issues.length) {
+      const index = next++
+      const target = discovery.issues[index]
+      onPhase(`checking issue #${target.number} (${index + 1}/${discovery.issues.length})`)
+      try {
+        results[index] = { issue: target, report: await validationWatch({ repoRoot, issueUrl: target.url, github: shared }), error: null }
+      } catch (error) {
+        results[index] = { issue: target, report: null, error: { code: error.code || "watch-unavailable", message: error.message } }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, discovery.issues.length) }, worker))
+  const summary = { total: results.length, current: 0, stale: 0, unknown: 0 }
+  for (const result of results) summary[result.report?.verdict.state || "unknown"] += 1
+  return { mode: "all", account: discovery.account, marketplace: discovery.marketplace, summary, issues: results }
+}
 
 // The one action that re-runs validation, in the register the marketplace itself
 // uses in its own failure feedback.
@@ -207,6 +271,12 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
     baselineError,
     head,
     headError,
+    discussion: maintainerComments.length ? {
+      body: maintainerComments.at(-1).body || "",
+      url: maintainerComments.at(-1).html_url || null,
+      createdAt: maintainerComments.at(-1).created_at || null,
+      authorAssociation: maintainerComments.at(-1).author_association || null,
+    } : null,
     verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl }),
   }
 }

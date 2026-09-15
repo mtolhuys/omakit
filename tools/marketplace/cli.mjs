@@ -21,15 +21,16 @@ import { ensurePin, MARKETPLACE_PIN, requirePin } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
-import { askChoices } from "./ask.mjs"
-import { validationWatch } from "./watch.mjs"
-import { renderSubmit, renderWatch, renderDoctor, renderVerify } from "./report.mjs"
+import { askChoices, askWatchIssues } from "./ask.mjs"
+import { validationWatch, discoverWatchIssues, validationWatchAll } from "./watch.mjs"
+import { renderSubmit, renderWatch, renderWatchList, renderWatchAll, renderDoctor, renderVerify } from "./report.mjs"
 import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
 import { completionStep, setup } from "./setup.mjs"
 import { staleCompletionNotice } from "./completion-check.mjs"
 import { ACCEPTED, acceptedWords, checkArgs } from "./options.mjs"
 import { upgrade } from "./upgrade.mjs"
+import { updateCheckEnabled, updateNotice } from "./update-check.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
@@ -62,6 +63,7 @@ const REMEDY = Object.freeze({
   "github-unavailable": "Wait for GitHub, then run it again. `gh auth login` raises the rate limit if that is what ran out.",
   "not-found": "Check the issue URL: it has to be an existing issue on the marketplace repository.",
   "head-unreadable": "Check that the plugin repository is public and its URL is right.",
+  "login-required": "gh auth login",
   "not-confirmed": "Run it again and answer y, or pass --yes when the person whose shell it is has agreed.",
   "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
 })
@@ -180,18 +182,41 @@ async function cmdSubmit(args) {
 
 async function cmdWatch(args) {
   const issueUrl = positionals(args)[0]
-  if (!issueUrl) fail("usage", "watch needs an issue: `omakit watch <issue-url>`", 2)
+  const all = args.includes("--all")
+  const list = args.includes("--list")
+  const user = option(args, "--user")
+  const interactive = !args.includes("--json") && !option(args, "--out") && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
+  if ((all && list) || (issueUrl && (all || list || user !== undefined))) {
+    fail("usage", "Use an issue URL, --all, or --list; --user belongs to account-wide discovery.", 2)
+  }
+  if (!issueUrl && !all && !list && !interactive) {
+    fail("usage", "watch needs an issue or a mode: `omakit watch <issue-url>`, `omakit watch --all`, or `omakit watch --list`. A terminal can pick issues with `omakit watch`.", 2)
+  }
   const spinner = spinnerFor(args)
   let result
   try {
-    result = await validationWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
+    if (issueUrl) {
+      result = await validationWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
+    } else {
+      const discovery = await discoverWatchIssues({ user, onPhase: spinner.phase })
+      if (list) {
+        result = discovery
+      } else {
+        if (!all && discovery.issues.length) {
+          spinner.done()
+          discovery.issues = await askWatchIssues({ issues: discovery.issues })
+        }
+        result = await validationWatchAll({ repoRoot: ROOT, discovery, onPhase: spinner.phase })
+      }
+    }
   } catch (error) {
     spinner.done()
     failFrom(error)
   }
   spinner.done()
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : renderWatch(result))
-  process.exit(result.verdict.state === "unknown" ? 2 : 0)
+  const render = result.mode === "list" ? renderWatchList : result.mode === "all" ? renderWatchAll : renderWatch
+  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : render(result))
+  process.exit(result.verdict?.state === "unknown" || result.summary?.unknown > 0 ? 2 : 0)
 }
 
 async function cmdFrontDoor() {
@@ -460,6 +485,11 @@ const [command, ...rest] = process.argv.slice(2)
 // completion script names another omakit, so `omakit we<TAB>` may not know
 // `weigh`. One stat and one short read; never under a pipe, whose stderr
 // stays empty on success, and never for setup, which is the fix.
+if (updateCheckEnabled({ command, args: rest, stdinTTY: process.stdin.isTTY, stdoutTTY: process.stdout.isTTY, stderrTTY: process.stderr.isTTY })) {
+  const notice = await updateNotice({ repoRoot: ROOT, version: VERSION })
+  if (notice) process.stderr.write(`${wrap(notice, {}, styler(colourEnabled(process.stderr))).join("\n")}\n`)
+}
+
 if (command !== "setup" && process.stderr.isTTY) {
   const notice = staleCompletionNotice({ version: VERSION })
   if (notice) process.stderr.write(`${styler(colourEnabled(process.stderr))("label", notice)}\n`)

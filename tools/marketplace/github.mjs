@@ -109,7 +109,7 @@ export function token() {
 /** The one host the borrowed gh credential may be sent to. */
 export const CREDENTIAL_HOST = "api.github.com"
 
-async function get(url, { accept } = {}) {
+async function get(url, { accept, signal } = {}) {
   const { host } = new URL(url)
   // The credential is GitHub's and goes to GitHub's API and nowhere else.
   // Measured before this held: `omakit upgrade` and `doctor` sent the gh
@@ -125,7 +125,7 @@ async function get(url, { accept } = {}) {
   if (auth) headers.authorization = `Bearer ${auth}`
   let response
   try {
-    response = await fetch(url, { method: "GET", headers, redirect: "follow" })
+    response = await fetch(url, { method: "GET", headers, redirect: "follow", ...(signal ? { signal } : {}) })
   } catch (error) {
     // Node reports every transport failure as "fetch failed" with the real
     // reason in `cause`. A person needs the reason, and the CLI keys its
@@ -150,8 +150,8 @@ async function get(url, { accept } = {}) {
   return response
 }
 
-export async function getJson(url) {
-  return (await get(url)).json()
+export async function getJson(url, options) {
+  return (await get(url, options)).json()
 }
 
 export async function getText(url, accept) {
@@ -171,17 +171,38 @@ export async function issue(owner, repository, number) {
   return getJson(`https://api.github.com/repos/${owner}/${repository}/issues/${number}`)
 }
 
-export async function issueComments(owner, repository, number, maxPages = 10) {
+/** Resolve the account whose credential gh lent us; never persist it. */
+export async function authenticatedUser() {
+  if (!token()) throw new GitHubError("login-required", "Account-wide watch needs your GitHub login. Run `gh auth login`, or pass --user <login> to read a public account.")
+  const user = await getJson("https://api.github.com/user")
+  if (!user?.login) throw new GitHubError("github-unavailable", "GitHub did not return the signed-in account's login")
+  return user.login
+}
+
+/** Repository issues by their creator. PRs are excluded; pagination never silently truncates. */
+export async function repositoryIssues(owner, repository, creator, { readJson = getJson, maxPages = 100 } = {}) {
   const all = []
   for (let page = 1; page <= maxPages; page += 1) {
-    const batch = await getJson(
+    const query = new URLSearchParams({ creator, state: "open", sort: "updated", direction: "desc", per_page: "100", page: String(page) })
+    const batch = await readJson(`https://api.github.com/repos/${owner}/${repository}/issues?${query}`)
+    if (!Array.isArray(batch)) throw new GitHubError("github-unavailable", "GitHub did not return an issue list")
+    all.push(...batch.filter((item) => !item.pull_request))
+    if (batch.length < 100) return all
+  }
+  throw new GitHubError("issue-list-incomplete", `The issue list exceeded ${maxPages} pages; no complete account-wide result is available`)
+}
+
+export async function issueComments(owner, repository, number, maxPages = 10, readJson = getJson) {
+  const all = []
+  for (let page = 1; page <= maxPages; page += 1) {
+    const batch = await readJson(
       `https://api.github.com/repos/${owner}/${repository}/issues/${number}/comments?per_page=100&page=${page}`,
     )
-    if (!Array.isArray(batch) || !batch.length) break
+    if (!Array.isArray(batch)) throw new GitHubError("github-unavailable", "GitHub did not return issue comments")
     all.push(...batch)
-    if (batch.length < 100) break
+    if (batch.length < 100) return all
   }
-  return all
+  throw new GitHubError("comments-incomplete", `Issue #${number} exceeded ${maxPages} comment pages; its latest baseline cannot be determined`)
 }
 
 /**

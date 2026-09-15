@@ -27,6 +27,8 @@ push came after a review comment had also commented: engaged, and stuck.
 
 ```bash
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
+omakit watch --all --json
+omakit watch --list --json
 ```
 
 If `omakit` is not installed: `npm install --global omakit` (Omarchy ships Node
@@ -34,6 +36,10 @@ and npm through mise), then `omakit doctor`; if the command is not found after
 the install, `"$(npm prefix --global)/bin/omakit" setup` prints the one line
 that puts npm's bin on PATH. `omakit upgrade` keeps it current through npm.
 Add `--json` for a machine-readable result.
+
+Use `--all --json` to discover and check every open marketplace issue authored by the signed-in `gh` account. `--list --json` discovers issue URLs without reading every plugin; use an individual URL for focused follow-up. `--user <login>` selects an explicit public author. A bare `omakit watch` opens a numbered picker only at a terminal; an agent must pass a URL, `--all` or `--list` and never wait on keyboard input.
+
+Inspect every batch row, including read errors and unknown results; a successful row cannot stand in for a failed one. `current` only says the commit matches HEAD. Read the baseline outcome, labels and latest discussion to understand outstanding work; never equate it with approval, publication or restored catalog verification. A run is a single read-only snapshot, not a background monitor.
 
 Read-only. It does not comment, label, or edit anything, and it cannot. It reads
 the default branch through the REST API when a credential is available, taking

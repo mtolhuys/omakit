@@ -19,6 +19,8 @@ import { pathToFileURL } from "node:url"
 // measured 150,642 bytes, 57 files, 2,958 under that ceiling. The ceiling is
 // now 204,800 bytes, leaving 54,158 bytes while still rejecting an accidental
 // tree with the 15 MB marketplace pin or a cache in it.
+// At 0.4.0, account-wide watch and the update-notice module measured 157,417
+// bytes across 58 files, leaving 47,383 bytes under the unchanged ceiling.
 export const MAX_PACKED_BYTES = 204_800
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
@@ -74,6 +76,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/submit.mjs",
   "tools/marketplace/tree.mjs",
   "tools/marketplace/upgrade.mjs",
+  "tools/marketplace/update-check.mjs",
   "tools/marketplace/usage.mjs",
   "tools/marketplace/verify.mjs",
   "tools/marketplace/watch.mjs",

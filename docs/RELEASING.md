@@ -1,7 +1,9 @@
 # Releasing omakit
 
 A push to `main` runs CI. Publishing is deliberate: update `package.json` to a
-new version, commit it on `main`, and push the matching `v<version>` tag. Never
+new version, add release notes at `docs/releases/<version>.md`, commit it on
+`main`, and push the matching `v<version>` tag. The notes are included before
+the archive checksums in the GitHub Release. Never
 reuse a version or move a release tag. For example, after a version bump and
 commit have passed the checks:
 

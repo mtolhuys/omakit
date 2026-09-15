@@ -17,6 +17,7 @@
 import { createInterface } from "node:readline"
 import { colourEnabled, STEP, action, styler, wrap } from "./style.mjs"
 import { resolveCategory, resolveTags } from "./form.mjs"
+import { watchIssueTitle } from "./watch.mjs"
 
 export class AskError extends Error {
   constructor(message) {
@@ -49,11 +50,13 @@ function reader(input) {
 }
 
 /** Ask one question until an answer resolves; `parse` returns { ok, value } or { ok: false, reason }. */
-async function question(lines, output, c, { name, heading, options, defaultIndexes, parse }) {
+async function question(lines, output, c, { name, heading, options, defaultIndexes, parse, wrapOptions = false, eofRemedy }) {
   const step = " ".repeat(STEP)
   output.write(`${wrap(heading, {}, c).join("\n")}\n`)
   for (const [index, option] of options.entries()) {
-    output.write(`${step}${c("typeable", String(index + 1).padStart(2))}  ${option}\n`)
+    output.write(wrapOptions
+      ? `${wrap(`${String(index + 1).padStart(2)} ${option}`, { indent: STEP }, c).join("\n")}\n`
+      : `${step}${c("typeable", String(index + 1).padStart(2))}  ${option}\n`)
   }
   const fallback = defaultIndexes.length ? defaultIndexes.map((index) => index + 1).join(",") : null
   const prompt = `${action(fallback ? `${name} [${fallback}]:` : `${name}:`, c, { indent: 0 })[0]} `
@@ -62,7 +65,7 @@ async function question(lines, output, c, { name, heading, options, defaultIndex
     const raw = await lines.next()
     if (raw === null) {
       output.write("\n")
-      throw new AskError(`stdin ended before the ${name} was answered; pass --${name} on the command line`)
+      throw new AskError(`stdin ended before the ${name} was answered; ${eofRemedy || `pass --${name} on the command line`}`)
     }
     const text = raw.trim() || (fallback ?? "")
     const parsed = parse(text)
@@ -137,4 +140,31 @@ export async function askChoices({ contract, defaults, missing, input = process.
     lines.close()
   }
   return answers
+}
+
+/** Select one or several discovered issues; nothing is written or opened. */
+export async function askWatchIssues({ issues, input = process.stdin, output = process.stderr, colour = colourEnabled(output) }) {
+  const c = styler(colour)
+  const lines = reader(input)
+  try {
+    return await question(lines, output, c, {
+      name: "issues",
+      heading: "Choose list numbers, comma-separated; all checks every issue, q cancels.",
+      options: issues.map((issue) => `#${issue.number} ${watchIssueTitle(issue.title)}`),
+      defaultIndexes: [],
+      wrapOptions: true,
+      eofRemedy: "pass an issue URL, --all or --list on the command line",
+      parse: (text) => {
+        if (text.toLowerCase() === "q") return { ok: true, value: [] }
+        if (text.toLowerCase() === "all") return { ok: true, value: issues }
+        const indexes = text.split(",").map((value) => value.trim())
+        if (indexes.some((value) => !/^\d+$/.test(value) || Number(value) < 1 || Number(value) > issues.length)) {
+          return { ok: false, reason: `Answer with list numbers from 1 to ${issues.length}, all, or q.` }
+        }
+        return { ok: true, value: [...new Set(indexes.map(Number))].map((index) => issues[index - 1]) }
+      },
+    })
+  } finally {
+    lines.close()
+  }
 }

@@ -74,15 +74,45 @@ export const NPM_REGISTRY = "https://registry.npmjs.org"
  *
  * @returns {Promise<{ version: string|null, error: { code: string, message: string }|null }>}
  */
-export async function registryLatest(name) {
+export async function registryLatest(name, { signal } = {}) {
   try {
-    const meta = await getJson(`${NPM_REGISTRY}/${encodeURIComponent(name)}/latest`)
+    const meta = await getJson(`${NPM_REGISTRY}/${encodeURIComponent(name)}/latest`, { signal })
+    if (meta?.version && compareVersions(meta.version, meta.version) === null) {
+      return { version: null, error: { code: "invalid-version", message: "the registry did not return a valid semantic version" } }
+    }
     return meta?.version
       ? { version: meta.version, error: null }
       : { version: null, error: { code: "unpublished", message: "the registry answered without a version" } }
   } catch (error) {
     return { version: null, error: { code: error?.code || "error", message: String(error?.message || error) } }
   }
+}
+
+/** Semantic precedence, including prereleases; invalid versions are never update targets. */
+export function compareVersions(left, right) {
+  const parse = (value) => {
+    const match = String(value || "").match(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/)
+    if (!match) return null
+    const pre = match[4]?.split(".") || []
+    if (pre.some((part) => /^\d+$/.test(part) && part.length > 1 && part.startsWith("0"))) return null
+    return { core: match.slice(1, 4).map(BigInt), pre }
+  }
+  const a = parse(left), b = parse(right)
+  if (!a || !b) return null
+  for (let index = 0; index < 3; index += 1) {
+    if (a.core[index] !== b.core[index]) return a.core[index] > b.core[index] ? 1 : -1
+  }
+  if (!a.pre.length || !b.pre.length) return a.pre.length === b.pre.length ? 0 : a.pre.length ? -1 : 1
+  for (let index = 0; index < Math.max(a.pre.length, b.pre.length); index += 1) {
+    const x = a.pre[index], y = b.pre[index]
+    if (x === undefined || y === undefined) return x === y ? 0 : x === undefined ? -1 : 1
+    if (x === y) continue
+    const xn = /^\d+$/.test(x), yn = /^\d+$/.test(y)
+    if (xn && yn) return BigInt(x) > BigInt(y) ? 1 : -1
+    if (xn !== yn) return xn ? -1 : 1
+    return x > y ? 1 : -1
+  }
+  return 0
 }
 
 function installedVersion(repoRoot) {
@@ -300,8 +330,10 @@ async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, ref
   if (!newest) {
     return refuse("the npm registry did not answer, so there is nothing to compare against.", "Connect to the network, then run `omakit upgrade` again.")
   }
-  if (newest === current) {
-    ok(`already current at ${current}, the newest published version`)
+  const compared = compareVersions(newest, current)
+  if (compared === null) return refuse("the installed or published version is invalid, so an exact newer release cannot be selected.")
+  if (compared <= 0) {
+    ok(compared === 0 ? `already current at ${current}, the newest published version` : `${current} is ahead of the newest published version ${newest}; no downgrade applied`)
     out()
     lines(wrap("The marketplace pin is a separate thing and is never touched here. `omakit doctor` says whether it is behind.", {}, c))
     return { ok: true, changed: false, version: current }

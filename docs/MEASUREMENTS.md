@@ -554,3 +554,20 @@ generation listing next to the document, so the next cycle can settle 1
 and 2 without a fourth kind of run. A report to the shell's maintainers,
 `docs/evidence/weigh/upstream-memory.md`, carries the three observations,
 the traces and the reproduction, and is a draft a person files.
+
+## Passive npm update notice (0.4.0, 15 September 2026)
+
+The check has a 1,000 ms wall-time network budget, limiting the first normal
+terminal invocation's added wait to one second. Successful checks and notices
+are throttled for 24 hours; an unavailable registry retries after one hour.
+These are explicit latency and request budgets, not inferred network speed.
+There is no process or background polling after an invocation exits.
+
+The live public-registry check with installed version 0.2.0 returned the
+published version 0.3.0 in 360 ms, emitted the upgrade notice, and wrote 81
+bytes of version/time metadata in disposable state. Repeating the invocation
+returned no notice and made no second registry request. The timeout regression
+uses a never-resolving registry with a 20 ms injected budget, verifies abort,
+and requires completion below 500 ms to allow test-runner scheduling.
+`tests/unit/update-check.test.mjs` also proves daily/hourly boundaries, changed
+install versions, unavailable state, prerelease precedence and skipped modes.

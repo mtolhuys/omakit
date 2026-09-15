@@ -71,6 +71,10 @@ Two modules at the pin are deliberately *not* imported:
 | Read live, read pinned | `registry.json` and `site/catalog.json` are read from the marketplace's current default-branch HEAD when the network is there (at the exact commit `defaultBranchHead()` resolved, cached under `$XDG_CACHE_HOME/omakit/registry/<commit>/`, never written into the checkout) and from the pin with `--offline` or when HEAD cannot be read; everything under `scripts/` and `.github/ISSUE_TEMPLATE/` is only ever read from the pin. Measured reason in `docs/MEASUREMENTS.md` M7: 4,201 of 4,293 commits in 30 days touched only `registry.json` |
 | Registry facts | 2,963 sources with `listingValidatedCommit`; 2,916 with an `automatedSecurityBaseline` record (1,681 passed, 1,215 review-required, 20 needs-fixes); 3,001 catalog plugin ids; 22 retired ids; 749 sources (25.3%) with at least one superseded validated commit, 1,108 superseded commits in all |
 
+## GitHub account-wide issue discovery
+
+`tools/marketplace/github.mjs` reads `GET /user` to resolve the signed-in account and `GET /repos/{owner}/{repo}/issues` with `creator`, `state=open`, `sort=updated`, `direction=desc`, `per_page=100` and `page`. GitHub's issue endpoint also returns pull requests; Omakit excludes the `pull_request` key and checks creator/state locally. All requests use the existing GET-only transport and borrowed `gh` credential. An explicit `--user` bypasses `GET /user`. Source: [authenticated user](https://docs.github.com/en/rest/users/users#get-the-authenticated-user), [repository issues](https://docs.github.com/en/rest/issues/issues#list-repository-issues), checked 2026-09-15. Fixture proof: `tests/unit/watch-all.test.mjs`; no marketplace pin or policy is changed.
+
 ## Updating the pin
 
 A deliberate change, in this order:

@@ -197,6 +197,11 @@ test("omakit.version: current and newest is ok, behind is a note with the upgrad
   assert.equal(behind.action, "run `omakit upgrade`")
   assert.deepEqual(behind.evidence, { installed, latest: "9.9.9", source: REGISTRY })
 
+  const ahead = await versionCheck(async () => ({ version: "0.0.1", error: null }))
+  assert.equal(ahead.state, "ok")
+  assert.match(ahead.detail, /ahead of the newest published version 0\.0\.1/)
+  assert.equal(ahead.action, null)
+
   const unreachable = await versionCheck(async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }))
   assert.equal(unreachable.state, "unknown")
   assert.equal(unreachable.detail, `${installed}; could not read the npm registry (network-unavailable)`)

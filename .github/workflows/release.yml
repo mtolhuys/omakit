@@ -106,6 +106,10 @@ jobs:
           )
           npm_sha256=$(sha256sum "release-assets/$npm_file" | cut -d ' ' -f 1)
           {
+            if [[ -f "docs/releases/$VERSION.md" ]]; then
+              cat "docs/releases/$VERSION.md"
+              echo
+            fi
             echo "Both attached archives were built from commit \`$COMMIT\`."
             echo
             echo "## SHA-256"

@@ -119,6 +119,17 @@ test("an npm install that the npm on PATH does not own is refused, with the path
   assert.deepEqual(fake.argv(), ["root --global"], "nothing was installed")
 })
 
+test("npm upgrades never downgrade development versions or execute invalid registry targets", async () => {
+  const fake = npmInstall("0.4.0")
+  const io = collect()
+  const ahead = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: io.stream, latest: async () => "0.3.0" }))
+  assert.deepEqual(ahead, { ok: true, changed: false, version: "0.4.0" })
+  assert.match(io.text(), /no downgrade\s+applied/)
+  const invalid = await withPath(fake.env, () => upgrade({ repoRoot: fake.pkg, stream: collect().stream, latest: async () => "latest;echo x" }))
+  assert.equal(invalid.ok, false)
+  assert.deepEqual(fake.argv(), ["root --global", "root --global"], "neither path installs anything")
+})
+
 test("an npm install with no registry answer is a refusal with a remedy, not a guess", async () => {
   const fake = npmInstall("0.1.0")
   const io = collect()

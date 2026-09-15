@@ -26,6 +26,7 @@ local commit through the transport seam the marketplace tests itself
 | `github.mjs` | Read-only GitHub access. GET only. The credential is your `gh` login, read through one frozen `gh auth token` call, and is never written anywhere. |
 | `style.mjs` | The visual system, defined once: the palette, the status vocabulary, the block ramp, the columns, the motion budgets, and the composition helpers every command draws with. Six states: `▁ ok`, `█ FAIL`, `▓ note`, `░ info`, `▒ ?` for a check that could not be made, and `▔ skip` for a check a flag said not to make, the floor's ink at the ceiling so it is never read as a pass. `docs/TUI.md` explains it. |
 | `report.mjs` | Text rendering of submit, watch, doctor and verify for the agent that runs this tool, and the person reading over its shoulder. |
+| `update-check.mjs` | A passive npm-release notice during normal terminal use, throttled to one check per day with a one-second network budget. Stores only installed/latest version metadata and time under XDG_STATE_HOME/omakit. Offline, JSON, pipes, help and CI skip it; DISABLE_UPDATE_NOTIFIER disables it. Version precedence and the registry GET are shared with doctor/upgrade. |
 | `path-hint.mjs` | Is `omakit` reachable as a bare command, and if not, the one line that makes it so for the install that is here: a symlink for a clone, the npm prefix's `bin` on PATH for a package, said for the shell in `$SHELL`. `setup` and `doctor` print it; nothing writes an rc file. |
 | `usage.mjs` | The help text, as data. |
 | `options.mjs` | Every option every command accepts, in one table, and the parser that reads a command line against it before anything runs; `tests/unit/options.test.mjs` holds the help signatures, and through them the completion scripts, to the table. |
@@ -99,3 +100,5 @@ online, the subject's default-branch HEAD and the marketplace's current
 registry, and `--offline` turns both off; `verify` needs no network at all
 beyond fetching a reviewer-mode subject, and `tests/parity/offline.mjs` proves
 it.
+
+`watch --list` discovers the signed-in account's open marketplace issues through `github.mjs`; `--user` bypasses the account lookup. `watch --all` runs the existing single-issue watch with four workers and shared repository HEAD promises, preserving each read failure. A bare terminal invocation uses `ask.mjs` to choose one or several issues. `report.mjs` composes the list and batch views; all options remain in `options.mjs` and `usage.mjs`, which also generate completion. The batch JSON retains complete single-issue reports; `current` compares commits and never substitutes for review or publication.

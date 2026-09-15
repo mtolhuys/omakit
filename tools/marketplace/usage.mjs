@@ -69,11 +69,18 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit watch <issue-url> [--json] [--out <file>]",
+    signature: [
+      "omakit watch <issue-url> [--json] [--out <file>]",
+      "omakit watch [--all | --list] [--user <login>] [--json] [--out <file>]",
+    ],
     lines: [
       "Compare the commit the marketplace validated on a submission issue with",
       "the plugin repository's current default-branch HEAD, and say what makes",
       "it validate a newer one. Read-only.",
+      "--all checks your open marketplace issues; --list lists them first.",
+      "Without a URL or either flag, a terminal asks which issues to check.",
+      "Uses your gh account, or --user to read another public account. JSON",
+      "and pipes never prompt: use --all or --list. Each run is one snapshot.",
     ],
   },
   {
@@ -104,6 +111,8 @@ export const COMMANDS = Object.freeze([
     lines: [
       "What is installed, what is pinned, and what has moved since. Reads and",
       "prints; it installs nothing and never moves the pin.",
+      "Checks the newest npm release explicitly. Normal terminal use also",
+      "checks at most once daily; DISABLE_UPDATE_NOTIFIER=1 disables notices.",
     ],
   },
   {

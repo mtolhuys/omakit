@@ -69,9 +69,26 @@ move on its own. That distinction is now enforced rather than argued.
 
 **The tool:**
 
+Normal interactive use (`omakit`, `watch`, `submit`, `verify`, `audit` and
+`weigh`) checks npm for a newer release at most once per 24 hours and prints
+the installed and available versions with the upgrade command on stderr.
+It waits at most one second for the network; failures stay quiet and retry
+after an hour. It never installs automatically or sends a GitHub credential
+to npm. Pipes, JSON, `--out`, `--offline`, help, CI, setup and upgrade never
+perform this passive check. Set `DISABLE_UPDATE_NOTIFIER=1` to disable it.
+
+Only installed/latest version metadata and the check time are stored at
+`$XDG_STATE_HOME/omakit/update-check.json` (or
+`~/.local/state/omakit/update-check.json`). An unwritable state directory
+does not prevent commands from running, but cannot throttle later invocations.
+`omakit doctor` always checks explicitly unless `--offline` is passed.
+Version comparisons follow semantic precedence, including prereleases;
+an install ahead of the newest published version is never downgraded.
+
 ```bash
 omakit upgrade          # the npm package, or a clone: through its own installer
 omakit upgrade --dry-run
+omakit doctor          # check the published version now
 ```
 
 It is not a self-updater of the kind this repository warns other people

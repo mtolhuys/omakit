@@ -21,6 +21,7 @@ import {
   action, colourEnabled, COLUMNS, continuation, field, GUTTER, labelled, mark, section, STEP, styler, verdict, width, wrap,
 } from "./style.mjs"
 import { withHomeAbbreviated } from "./paths.mjs"
+import { watchIssueTitle } from "./watch.mjs"
 
 const body = " ".repeat(GUTTER)
 
@@ -241,6 +242,50 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
     {},
     c,
   ))
+  return out.join("\n")
+}
+
+/** Discovery is cheap: issue metadata and repeatable commands, no plugin HEAD reads. */
+export function renderWatchList(result, { colour = colourEnabled() } = {}) {
+  const c = styler(colour)
+  const out = [...field("account", result.account, c), ...field("issues", `${result.issues.length} open marketplace issue(s)`, c), ""]
+  for (const issue of result.issues) {
+    out.push(...wrap(`#${issue.number} ${watchIssueTitle(issue.title)}`, {}, c))
+    out.push(...field("state", `${issue.state}${issue.labels.length ? `; labels ${issue.labels.map(watchIssueTitle).join(", ")}` : ""}`, c))
+    out.push(...action(`omakit watch ${issue.url}`, c, { indent: 0 }), "")
+  }
+  if (!result.issues.length) out.push(...wrap("No open marketplace issues found for this account.", {}, c))
+  else out.push(...action(`omakit watch --all --user ${result.account}`, c, { indent: 0 }))
+  return out.join("\n")
+}
+
+/** Compact batch report; exact commits and full discussion remain in JSON. */
+export function renderWatchAll(result, { colour = colourEnabled() } = {}) {
+  const c = styler(colour)
+  const out = [...field("account", result.account, c), ...field("issues", `${result.summary.total} checked; ${result.summary.current} current, ${result.summary.stale} stale, ${result.summary.unknown} unknown`, c), ""]
+  for (const row of result.issues) {
+    const state = row.report?.verdict.state || "unknown"
+    const style = { current: "pass", stale: "fail", unknown: "unknown" }[state]
+    out.push(...verdict(style, state.toUpperCase(), `#${row.issue.number} ${watchIssueTitle(row.report?.read.title || row.issue.title)}`, c))
+    out.push(...field("issue", row.issue.url, c, { wrapValue: false }))
+    if (row.error) {
+      out.push(...field("read error", watchIssueTitle(`${row.error.code}: ${row.error.message}`), c))
+    } else {
+      const report = row.report
+      out.push(...field("baseline", report.validated ? `${report.validated.outcome}; ${report.validated.findings.length} finding(s); capabilities ${report.validated.capabilities.join(", ") || "none"}` : "no complete baseline", c))
+      out.push(...field("state", `${report.read.state}; labels ${report.read.labels.map(watchIssueTitle).join(", ") || "none"}`, c))
+      if (state !== "current") out.push(...field("comparison", report.verdict.summary, c))
+      if (report.discussion) {
+        const text = watchIssueTitle(report.discussion.body).replace(/\s+/g, " ").trim()
+        out.push(...field("discussion", text.length > 240 ? `${text.slice(0, 240)}…` : text, c))
+        if (report.discussion.url) out.push(...field("source", report.discussion.url, c, { wrapValue: false }))
+      }
+      if (report.verdict.action) out.push(...action(report.verdict.action, c, { indent: 0 }))
+    }
+    out.push("")
+  }
+  if (!result.issues.length) out.push(...wrap("No issues selected for checking.", {}, c))
+  out.push(...wrap("Current means the validated commit matches HEAD. It does not mean review, approval or publication is complete. Read-only; this run posts nothing.", {}, c))
   return out.join("\n")
 }
 

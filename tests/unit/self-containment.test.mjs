@@ -79,10 +79,13 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // one guarded block `setup` appends to an rc file after an explicit yes
     // (rcFile, through appendFileSync, counted below).
     const completionWrites = path === "tools/marketplace/completion-check.mjs" ? /^stampFile,/ : /$^/
+    // A terminal update check stores only installed/latest versions and time
+    // under XDG_STATE_HOME/omakit; it never stores code or writes to a subject.
+    const updateWrites = path === "tools/marketplace/update-check.mjs" ? /^updateFile,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target),
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target),
         `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files weigh may write`,
       )
     }
