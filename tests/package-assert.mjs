@@ -15,20 +15,27 @@ import { pathToFileURL } from "node:url"
 // with completion proven in a new shell, one option table, weigh --list and
 // plugin ids at TAB time, 144,798 bytes, 53 files, 8,802 under it; at 0.2.2,
 // with the question written whole, 145,397 bytes, 53 files, 8,203 under it.
-// The next bump that needs room is the owner's decision, not a side effect.
-export const MAX_PACKED_BYTES = 153_600
+// With `omakit audit`, three audit modules and a fifth skill, the package
+// measured 150,642 bytes, 57 files, 2,958 under that ceiling. The ceiling is
+// now 204,800 bytes, leaving 54,158 bytes while still rejecting an accidental
+// tree with the 15 MB marketplace pin or a cache in it.
+export const MAX_PACKED_BYTES = 204_800
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
   "README.md",
   "bin/omakit",
   "package.json",
+  "skills/omarchy-plugin-audit/SKILL.md",
   "skills/omarchy-plugin-check/SKILL.md",
   "skills/omarchy-plugin-weigh/SKILL.md",
   "skills/omarchy-plugin-submit/SKILL.md",
   "skills/omarchy-plugin-validation-watch/SKILL.md",
   "tests/parity/corpus.mjs",
   "tests/parity/run.mjs",
+  "tools/audit/audit.mjs",
+  "tools/audit/git.mjs",
+  "tools/audit/report.mjs",
   "tools/weigh/audit.mjs",
   "tools/weigh/commands.mjs",
   "tools/weigh/config.mjs",
