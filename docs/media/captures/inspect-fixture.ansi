@@ -1,15 +1,27 @@
-[2msubject[0m       /tmp/omakit-fixture-oUWwrc at 61272e63
+[2msubject[0m       /tmp/omakit-fixture-XsYY5E at 321d3602
 [2mbaseline[0m      passed at pin 38060f89
-[2msize score[0m    none: no function to rank
+[2msize score[0m    4.86 of 10; 10 minus the mean rank of its 4 functions among 6040
+              in 50 listed trees (M12), so a tree of median functions scores
+              5.00
 
-[2mattention[0m     2 classes reviewers raise, biggest first by share of review
-              findings (M11); up to 5 sites each
+[2mattention[0m     long functions first, by length, then 1 class reviewers raise,
+              biggest first by share of review findings (M11); up to 5 sites
+              each
 
-[33m▓ note[0m  [1mprocess lifecycle[0m  [2m20 of 100 findings[0m  1 process with no deadline
-        [1mWidget.qml:10[0m  /usr/bin/df -h /
+[33m▓ note[0m  [1mlong functions[0m  2 functions over what 90 of 100 functions in 50 listed
+        trees, 6040 functions stay under: 22 lines, 6 branches or nesting 3
+        (M12); rank is the share of listed functions smaller than it
+        [1mscripts/helper.sh:8[0m  decide    21 lines, 9 branches, nesting 3, [2mrank 94[0m
+        [1mWidget.qml:12      [0m  classify  20 lines, 6 branches, nesting 4, [2mrank 95[0m
 
-[33m▓ note[0m  [1munbounded buffering[0m  [2m19 of 100 findings[0m  1 collector with no cap
-        [1mWidget.qml:10[0m  /usr/bin/df -h /
+[33m▓ note[0m  [1menvironment trust[0m  [2m7 of 100 findings[0m  6 tools resolved from PATH (say,
+        decide)
+        [1mscripts/helper.sh:13[0m  say $item
+        [1mscripts/helper.sh:19[0m  say one
+        [1mscripts/helper.sh:20[0m  say two
+        [1mscripts/helper.sh:21[0m  say other
+        [1mscripts/helper.sh:25[0m  say none
+[2m        and 1 more (--full)[0m
 
-[2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers observed; static;
-             --full for every site, --json for the document
+[2;1m░ INSPECTED[0m  6 processes (all shell lines), 0 hosts, 0 writes, 0 timers
+             observed; static; --full for every site, --json for the document

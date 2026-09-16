@@ -6,6 +6,20 @@ The marketplace validates one exact commit of your plugin. Push a fix or comment
 
 [![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
 
+## What it delivers
+
+| Command | What you get | Read more |
+| --- | --- | --- |
+| `omakit submit <plugin-repo>` | every check the marketplace applies, run locally on the exact commit, and the issue title and body to paste; never posts | [submit](docs/SUBMIT.md) |
+| `omakit inspect <plugin-dir>` | what the tree does and what needs attention: a size score against listed plugins, the long functions, and the review classes reviewers raise most, with their sites | [inspect](docs/INSPECT.md) |
+| `omakit watch <issue-url>` | whether the commit the marketplace validated is still your HEAD, and the one action that re-runs validation | [watch](docs/VALIDATION_WATCH.md) |
+| `omakit audit` | which installed plugins run commits the marketplace never validated | [audit](docs/AUDIT.md) |
+| `omakit weigh <plugin>` | what a plugin costs the shell in memory and CPU, measured by restarting it without and with the plugin | [weigh](docs/WEIGH.md) |
+| `omakit verify <plugin-repo>` | the marketplace's own security baseline over your commit, verbatim | [commands](docs/COMMANDS.md) |
+| `omakit doctor`, `omakit setup` | what is installed and pinned, and the one-time setup with tab completion | [install](docs/INSTALL.md) |
+
+Every number a command prints has a measured origin in [MEASUREMENTS.md](docs/MEASUREMENTS.md); nothing is a guess and nothing is a grade.
+
 ## Install
 
 ```bash
@@ -37,7 +51,7 @@ Compares your installed plugin commits with the marketplace's validated commits.
 
 ## `omakit inspect <plugin-dir>`
 
-![inspect showing a size score and the two review classes one fixture shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
+![inspect showing a fixture's size score, its two long functions with their ranks, and the one review class it shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
 
 Reads a plugin's tree and prints what needs attention, biggest first: a size score (10 minus the mean rank of its functions among functions in listed plugins, [M12](docs/MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)), the functions over what 90 of 100 listed functions stay under, then each review class the tree shows with the class's measured share of review findings ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)) and up to five sites. No verdict, nothing run from the tree; `--full` is every site, `--json` the document. Over 18 listed plugins read at their validated commits, the extraction counted 515 process sites (57 QML `Process` blocks, 458 shell lines), 17 hosts, 63 writes and 40 timers, left 15 rows it could not resolve, and printed 73 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
 
