@@ -10,13 +10,13 @@ import { blankComments, closingBracket, lineOf } from "./text.mjs"
 
 const JS_BRANCH = /\b(?:if|else if|for|while|do|switch|case|catch)\b|&&|\|\||\?[^.:]/g
 // A block opens with `if`, `for`, `while`, `until`, `case` or `select` and
-// closes with `fi`, `done` or `esac`, each counted anywhere a statement can
-// start (the line's start, after `;`, `&`, `|`, `(`, `then`, `do` or
+// closes with `fi`, `done` or `esac`, each counted only where a statement
+// can start (the line's start, after `;`, `&`, `|`, `(`, `then`, `do` or
 // `else`), over the line with its quoted text removed, so `if x; then y;
 // fi` on one line nets zero and is not a level, `x && if y; then z; fi`
-// nets zero too, and `echo "done"` closes nothing.
+// nets zero too, and neither `echo "done"` nor `echo done` closes anything.
 const SHELL_OPEN = /(?:^|[;&|(]|\b(?:then|do|else))\s*(?:if|for|while|until|case|select)\b/g
-const SHELL_CLOSE = /(?:^|[;&|(\s])(?:fi|done|esac)\b/g
+const SHELL_CLOSE = /(?:^|[;&|(]|\b(?:then|do|else))\s*(?:fi|done|esac)\b/g
 // A case arm, `pattern) command` or `(pattern) command`, is a branch: a `)`
 // with text after it on a line with no `(` before it but an opening one,
 // so a `$(...)` or `(( ))` in a test is not one.
@@ -24,8 +24,10 @@ const SHELL_BRANCH = /\b(?:if|elif|for|while|until|case)\b|\|\||&&|^\s*\(?[^()]*
 // A guard, not a branch: `||` or `&&` followed by one flow word (`return`,
 // `exit`, `continue`, `break`, `true`, `false`, `:`) with an optional
 // status (a number, `$?` or a variable), then nothing but a `;` or the `;;`
-// that ends a case arm, as in `[[ -f $x ]] || return 1`. JavaScript has no
-// such idiom, so shell alone is exempted.
+// that ends a case arm, as in `[[ -f $x ]] || return 1`. One guard per
+// line, the one at its end: `x && return 0 || return 1` is a choice, and
+// its `&&` counts. JavaScript has no such idiom, so shell alone is
+// exempted.
 // Matched against the trimmed end of the code, and anchored there, so a long run of spaces costs nothing.
 const SHELL_GUARD = /(?:\|\||&&)\s*(?:return|exit|continue|break|true|false|:)(?:\s+(?:\$\?|\$\{?\w+\}?|\d+))?\s*;{0,2}$/
 // `<<WORD`, `<<-WORD`, `<<'WORD'`, `<<"WORD"` or `<<\WORD` outside quotes and
@@ -207,14 +209,8 @@ function scanShellLine(line, open) {
 
 /** The code with any guard tail removed, so what is left is what SHELL_BRANCH reads. */
 function withoutGuards(code) {
-  // Peel guards from the end: `a || b && return` is one guard over a real `||`.
-  let trimmed = code.trimEnd()
-  let peeled = trimmed.replace(SHELL_GUARD, "").trimEnd()
-  while (peeled !== trimmed) {
-    trimmed = peeled
-    peeled = trimmed.replace(SHELL_GUARD, "").trimEnd()
-  }
-  return trimmed
+  // The one guard at the end: `a || b && return` is one guard over a real `||`.
+  return code.trimEnd().replace(SHELL_GUARD, "").trimEnd()
 }
 
 function shellFunctions(file) {

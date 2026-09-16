@@ -42,11 +42,14 @@ trees (6034 functions).
   `${...}` and a backtick substitution nested in a string read their own
   quotes the way `$(...)` does. A block that opens and closes on one
   line, `if x; then y; fi`, is a branch and no longer a nesting level,
-  so a run of them no longer reads as nesting.
+  so a run of them no longer reads as nesting, and `echo done` closes
+  nothing.
 - A shell guard, `||` or `&&` followed by one flow word (`return`,
   `exit`, `continue`, `break`, `true`, `false`, `:`) with an optional
   status (a number, `$?` or a variable) and nothing else on the line but
-  a `;` or `;;`, is not a branch; every other `||` and `&&` still is. A 233-line function of guards read as 131 branches
+  a `;` or `;;`, is not a branch, one per line at its end; every other
+  `||` and `&&` still is, so `x && return 0 || return 1` counts its
+  `&&`. A 233-line function of guards read as 131 branches
   before, 5 now (`shell-guards`). The M12 method text states the rule.
 - A listed tree with no function carries `heavyShare: null` in the
   record and is out of the sample the score ranks against, so it no

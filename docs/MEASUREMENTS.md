@@ -889,18 +889,19 @@ continuation are read as such rather than as control flow. In shell, a
 `||` or `&&` followed by one flow word (`return`, `exit`, `continue`,
 `break`, `true`, `false`, `:`) with an optional status (a number, `$?` or
 a variable) and nothing else on the line but a `;` or the `;;` that ends a
-case arm is a guard and not a branch, so `[[ -f $x ]] || return 1` counts
-0 and `x || returns` counts 1; the body of a heredoc up to its delimiter
+case arm is a guard and not a branch, one per line at its end, so
+`[[ -f $x ]] || return 1` counts 0, `x || returns` counts 1 and
+`x && return 0 || return 1`, a choice, counts its `&&`; the body of a heredoc up to its delimiter
 alone on a line, and a quoted string that spans lines (an awk or Python
 program in single quotes, a remote command in double quotes) from its
 opening quote to the line that closes it, count toward the length and
 toward nothing else; a case arm is a `)` with text after it on a line
 with no `(` before it but its own, so `$(...)` in a test is not one; a
 block opens with `if`, `for`, `while`, `until`, `case` or `select` and
-closes with `fi`, `done` or `esac`, each counted anywhere a statement can
-start over the line with its quoted text removed, so `if x; then y; fi`
-on one line is a branch and no level, `x && if y; then z; fi` the same,
-and `echo "done"` closes nothing. A `$(...)`, `${...}` or backtick substitution nested in a string
+closes with `fi`, `done` or `esac`, each counted only where a statement
+can start over the line with its quoted text removed, so `if x; then y;
+fi` on one line is a branch and no level, `x && if y; then z; fi` the
+same, and neither `echo "done"` nor `echo done` closes anything. A `$(...)`, `${...}` or backtick substitution nested in a string
 reads its own quotes, and one that spans lines is shell and read as
 shell. In Python, a line that starts
 while a bracket is open, inside a triple-quoted string, or after a line
@@ -935,7 +936,8 @@ heavy shares, 6 are 0 with functions in the tree and stay, the median is
 Three earlier records are in the file's history. The 0.5.0 record (commit
 `7df451a`; 6041 functions, p90 22 lines, 6 branches, nesting 2, nesting
 max 18, branches max 87, six shares of 0 among 50) carried four kinds of
-noise, each measured on one listed plugin's main branch before the fix: a Python function whose
+noise, each measured on one listed plugin, on its main or its refactor
+branch, before the fix: a Python function whose
 multi-line call sat inside a `for` and a `try` read as nesting 3 from the
 arguments' indentation, over the p90 of 2; a 36-line shell function whose
 body is a Python heredoc read as 9 branches and nesting 4 from the

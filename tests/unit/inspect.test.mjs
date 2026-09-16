@@ -253,6 +253,7 @@ test("the shell scanner's corners: quotes, comments, here-strings and heredoc de
   assert.deepEqual(shell("a() {\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n  if q; then r; fi\n  if q; then r; fi\n}\n"), [["a", 9, 2, 4]], "blocks over lines nest, one-line blocks do not accumulate")
   assert.deepEqual(shell("a() {\n  echo \"done\"\n  x && if y; then z; fi\n  for w in v; do if u; then t; fi; done\n  if x; then\n    y\n  fi\n}\n"), [["a", 8, 1, 3]], "a closer in a string closes nothing, and a one-line block after && or do nets zero")
   assert.deepEqual(shell("a() {\n  echo \"if you can && do\"\n  fix=1\n}\n"), [["a", 4, 0, 0]], "keywords inside a string or inside a word are neither branches nor levels")
+  assert.deepEqual(shell("a() {\n  echo done\n  cat fi.txt\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n}\n"), [["a", 9, 2, 2]], "a closer as a plain argument closes nothing")
   // A run of whitespace does not cost the guard rule quadratic time.
   const started = Date.now()
   shell("a() {\n  x=" + " ".repeat(200000) + "y\n}\n")
@@ -264,9 +265,9 @@ test("the shell scanner's corners: quotes, comments, here-strings and heredoc de
   assert.deepEqual(shell("a() {\n  cat <<-EOF\n\tif y\n\tEOF\n" + tail), [["a", 6, 0, 1], ["b", 3, 0, 0]])
   // The opening line of a string that spans lines is data from the quote on.
   assert.deepEqual(shell("a() {\n  python3 -c 'if x:\n    for y in z: pass'\n  q\n}\n"), [["a", 5, 0, 0]])
-  // A guard is only a guard with nothing else after the flow word; a status may be a number, `$?` or a variable; `;;` may follow; `$(...)` in the test is not a case arm. Four real branches here: `returns`, the braced group, the `&& y`, and the case arm.
-  const tails = extractFunctions({ path: "t.sh", kind: "shell", text: "f() {\n  x || exit 1\n  x || exit $?\n  x || exit \"$code\"\n  x || return ${rc}\n  x && :\n  [[ $(id -u) -eq 0 ]] || return 1\n  y || return 1 ;;\n  x || returns\n  x || { echo no; exit 1; }\n  x || return 1 && y\n  a|b) y ;;\n}\n" })
-  assert.deepEqual(tails.map((entry) => entry.branches), [4])
+  // A guard is only a guard with nothing else after the flow word; a status may be a number, `$?` or a variable; `;;` may follow; `$(...)` in the test is not a case arm; one guard per line, so a choice between two keeps its first operator. Five real branches here: `returns`, the braced group, the `&& y`, the case arm, and the `&&` of the choice.
+  const tails = extractFunctions({ path: "t.sh", kind: "shell", text: "f() {\n  x || exit 1\n  x || exit $?\n  x || exit \"$code\"\n  x || return ${rc}\n  x && :\n  [[ $(id -u) -eq 0 ]] || return 1\n  y || return 1 ;;\n  x || returns\n  x || { echo no; exit 1; }\n  x || return 1 && y\n  a|b) y ;;\n  [[ -n $x ]] && return 0 || return 1\n}\n" })
+  assert.deepEqual(tails.map((entry) => entry.branches), [5])
 })
 
 test("the Python continuation's corners: a bracket in a docstring or a triple-quoted text, a def whose parameters span lines, a backslash, and a bracket never closed; none runs into the next def", () => {
