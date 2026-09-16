@@ -78,6 +78,30 @@ function secretLogs(files) {
   return found
 }
 
+/**
+ * The size thresholds: a function is listed as long when it is longer, more
+ * branched or deeper than 90 of 100 functions in the 18 listed trees of
+ * docs/evidence/inspect/2026-09-16-function-lengths.json (M12). The numbers
+ * are that record's p90 quantiles and tests/unit/submit.test.mjs holds them
+ * to it. Length is what the person asked for first, so the default view
+ * lists long functions before the review classes and says that this order
+ * is a preference and not a share.
+ */
+export const SIZE = Object.freeze({
+  measurement: "M12",
+  sample: "18 listed trees, 715 functions",
+  lines: 18,
+  branches: 7,
+  depth: 2,
+})
+
+/** The functions over any of the thresholds, longest first, then most branched. */
+export function overSize(functions) {
+  return functions
+    .filter((entry) => entry.lines > SIZE.lines || entry.branches > SIZE.branches || entry.depth > SIZE.depth)
+    .sort((a, b) => b.lines - a.lines || b.branches - a.branches || b.depth - a.depth || a.file.localeCompare(b.file) || a.line - b.line)
+}
+
 export const PATTERNS = Object.freeze([
   {
     id: "process-lifecycle",

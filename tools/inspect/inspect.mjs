@@ -21,7 +21,8 @@ import { extractProcesses } from "./processes.mjs"
 import { extractHosts } from "./hosts.mjs"
 import { extractWrites } from "./writes.mjs"
 import { extractTimers } from "./timers.mjs"
-import { evaluatePatterns, PATTERNS } from "./patterns.mjs"
+import { extractFunctions } from "./functions.mjs"
+import { evaluatePatterns, overSize, PATTERNS, SIZE } from "./patterns.mjs"
 
 export const METHOD = "static extraction, regular expressions over qml and shell; observed, not executed"
 
@@ -76,8 +77,10 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   const hosts = []
   const writes = []
   const timers = []
+  const functions = []
   const notResolvable = []
   for (const file of tree.files) {
+    functions.push(...extractFunctions(file))
     const rows = extractProcesses(file)
     processes.push(...rows)
     for (const row of rows) {
@@ -124,7 +127,11 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
       pluginId,
       filesRead: tree.filesRead,
     },
-    observed: { processes, hosts, writes, timers },
+    observed: { processes, hosts, writes, timers, functions },
+    // Size: the functions over the M12 thresholds, longest first. A count of
+    // lines, branches and nesting over the text, compared with what 90 of
+    // 100 functions in listed trees stay under; never a judgement.
+    size: { measurement: SIZE.measurement, thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth }, over: overSize(functions) },
     // The headline split: a shell script contributes one site per command
     // segment, so a tree with a few scripts carries hundreds of process
     // sites beside a handful of QML Process blocks, and the two are said
@@ -138,6 +145,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
       hosts: hosts.length,
       writes: writes.length,
       timers: timers.length,
+      functions: functions.length,
       notResolvable: notResolvable.length,
     },
     notResolvable,

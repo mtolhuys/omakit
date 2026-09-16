@@ -862,3 +862,38 @@ third-party plugins are not published as a list, the same line the
 review-class sample holds. Any regeneration keeps it that way. No plugin is
 named for it in the README. The record replaces nothing and is replaced by a
 run over the desktop set when one is made.
+
+## M12. How long a plugin's functions are, in listed trees
+
+Measured 2026-09-16 over the same 18 listed trees as the `inspect` record of
+2026-09-15 (its selection rule reproduces the set from the pinned catalog),
+read from the reviewer-mode cache at their validated commits, no fetch.
+`extractFunctions` in `tools/inspect/functions.mjs` found 715 functions: a
+`function name(` or a multi-line `onSomething: {` handler in QML and
+JavaScript, a `name() {` or `function name` block in shell, a `def` in
+Python. For each, the length in lines from its first line to its last, the
+deepest nesting below its body, and the branches in it (`if`, `else if`,
+`for`, `while`, `switch`, `case`, `catch`, `&&`, `||`, `?:` and their shell
+and Python equivalents). The quantiles are over all 715 pooled:
+
+| | p50 | p75 | p90 | p95 | max |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| lines | 6 | 10 | 18 | 29 | 128 |
+| branches | 2 | | 7 | | 31 |
+| nesting | 0 | | 2 | | 13 |
+
+The [record](evidence/inspect/2026-09-16-function-lengths.json) carries the
+per-tree function counts and longest lengths, without repository or commit,
+and the method. Limits, stated: a function is what a regular expression
+recognises, so an arrow function assigned to a name, an anonymous callback
+and a shell function declared on one line are not counted; nesting counts
+braces, so an object literal inside a function counts as a level; the
+sample is 18 trees and the p90 is one number from them.
+
+Used by: the `long functions` block of `omakit inspect`, which lists a
+function when it is over the p90 of any of the three (18 lines, 7 branches,
+nesting 2), longest first, and says so in its heading. The person who asked
+for the tool asked for long functions first, so the default view puts that
+block before the review classes; that order is a preference and the report
+names the measurement, not a severity. `--json` carries every function under
+`observed.functions` and the ones over the thresholds under `size.over`.

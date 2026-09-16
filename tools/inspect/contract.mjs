@@ -85,6 +85,14 @@ function write(row, at, problems) {
   if (!nullOr(isString)(row.mode)) problems.push(`${at}.mode is neither a string nor null`)
 }
 
+function fn(row, at, problems) {
+  site(row, at, problems)
+  if (!isString(row.name) || !row.name) problems.push(`${at}.name is not a name`)
+  if (row.kind !== "function" && row.kind !== "handler") problems.push(`${at}.kind is neither function nor handler`)
+  for (const key of ["lines", "depth", "branches"]) if (!isInt(row[key]) || row[key] < 0) problems.push(`${at}.${key} is not a count`)
+  if (isInt(row.lines) && row.lines < 1) problems.push(`${at}.lines is under one`)
+}
+
 function timer(row, at, problems) {
   site(row, at, problems)
   if (!nullOr(isString)(row.id)) problems.push(`${at}.id is neither a string nor null`)
@@ -118,7 +126,7 @@ export function validateInspectDocument(document, known = {}) {
   for (const key of Object.keys(filesRead)) if (!FILE_KINDS.includes(key)) problems.push(`subject.filesRead.${key} is not a kind inspect reads`)
 
   const observed = document.observed || {}
-  for (const [key, check] of [["processes", processRow], ["hosts", host], ["writes", write], ["timers", timer]]) {
+  for (const [key, check] of [["processes", processRow], ["hosts", host], ["writes", write], ["timers", timer], ["functions", fn]]) {
     if (!Array.isArray(observed[key])) {
       problems.push(`observed.${key} is not a list`)
       continue
@@ -135,7 +143,7 @@ export function validateInspectDocument(document, known = {}) {
       if (counts.processes.qml !== observed.processes.filter((row) => row.declaredIn === "qml").length) problems.push("counts.processes.qml is not the number of qml process rows")
     }
   }
-  for (const key of ["hosts", "writes", "timers"]) {
+  for (const key of ["hosts", "writes", "timers", "functions"]) {
     if (!isInt(counts[key]) || counts[key] < 0) problems.push(`counts.${key} is not a count`)
     else if (Array.isArray(observed[key]) && counts[key] !== observed[key].length) problems.push(`counts.${key} is not the number of ${key} rows`)
   }
@@ -152,6 +160,27 @@ export function validateInspectDocument(document, known = {}) {
     }
   }
 
+  const size = document.size
+  if (!size || typeof size !== "object") problems.push("size is missing")
+  else {
+    if (!isString(size.measurement) || !/^M\d+$/.test(size.measurement)) problems.push("size.measurement is not a measurement id")
+    for (const key of ["lines", "branches", "depth"]) if (!isInt(size.thresholds?.[key]) || size.thresholds[key] < 1) problems.push(`size.thresholds.${key} is not a count`)
+    if (!Array.isArray(size.over)) problems.push("size.over is not a list")
+    else {
+      for (const [index, row] of size.over.entries()) {
+        fn(row, `size.over[${index}]`, problems)
+        if (size.thresholds && !(row.lines > size.thresholds.lines || row.branches > size.thresholds.branches || row.depth > size.thresholds.depth)) problems.push(`size.over[${index}] is under every threshold`)
+        if (index && size.over[index - 1].lines < row.lines) problems.push(`size.over[${index}] is longer than the one before it; the list is longest first`)
+      }
+      if (Array.isArray(observed.functions)) {
+        const listed = new Set(size.over.map((row) => `${row.file}:${row.line}`))
+        for (const row of observed.functions) {
+          const over = row.lines > size.thresholds?.lines || row.branches > size.thresholds?.branches || row.depth > size.thresholds?.depth
+          if (over && !listed.has(`${row.file}:${row.line}`)) problems.push(`observed.functions at ${row.file}:${row.line} is over a threshold but not under size.over`)
+        }
+      }
+    }
+  }
   if (!Array.isArray(document.patterns)) problems.push("patterns is not a list")
   else for (const [index, row] of document.patterns.entries()) {
     const at = `patterns[${index}]`

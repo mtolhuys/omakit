@@ -233,7 +233,27 @@
         "triggeredOnStart": false,
         "startedBy": "onVisibleChanged"
       }
+    ],
+    "functions": [
+      {
+        "file": "Widget.qml",
+        "line": 45,
+        "name": "onTriggered",
+        "kind": "handler",
+        "lines": 5,
+        "depth": 0,
+        "branches": 0
+      }
     ]
+  },
+  "size": {
+    "measurement": "M12",
+    "thresholds": {
+      "lines": 18,
+      "branches": 7,
+      "depth": 2
+    },
+    "over": []
   },
   "counts": {
     "processes": {
@@ -244,6 +264,7 @@
     "hosts": 1,
     "writes": 2,
     "timers": 2,
+    "functions": 1,
     "notResolvable": 1
   },
   "notResolvable": [

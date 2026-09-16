@@ -109,16 +109,20 @@ interval that is an expression), `▓ note` for a review class row, and
 `█ FAIL`, because it has no verdict to attach them to.
 
 Two views of the one document. The default is what needs attention,
-biggest first: one block per review class this tree shows, ordered by the
-class's share of review findings in the M11 sample, which is the one
+biggest first. First the long functions: every function over what 90 of
+100 functions in 18 listed trees stay under (18 lines, 7 branches or
+nesting 2, M12), longest first, up to five, each with its name, its lines,
+its branches and its nesting; that block comes first because length is
+what the person reading asks about first, and the heading names the
+measurement. Then one block per review class this tree shows, ordered by
+the class's share of review findings in the M11 sample, which is the one
 measured number that says how much reviewers care; under each block, the
 sites that show the class, up to five, each with the fact there in one
 line (the command, the host, or the write, cut to the width with three
 dots when long); classes under five percent of findings counted on one
 line and not listed; and the counts of what was observed in the closing
-line. Nothing else. The ordering and the threshold are the sample's
-shares, never a judgement of this plugin, and the heading says whose
-number it is. `--full` is the exhaustive view, in the order a reviewer
+line. Nothing else. The thresholds are measured, never a judgement of this
+plugin, and each heading says whose number it is. `--full` is the exhaustive view, in the order a reviewer
 reads a tree: every process with its argv and every qualifier, every host,
 every write, every timer, the capabilities, every pattern row with every
 site, the whole `not observed` and `not visible` lists, and the `method`
@@ -251,8 +255,10 @@ omakit            string   the omakit version that produced the document
 command           "inspect"
 method            string   one sentence: static extraction, regular expressions, observed
 subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
-observed          { processes[], hosts[], writes[], timers[] }
-counts            { processes: { total, qml, shell }, hosts, writes, timers, notResolvable }
+observed          { processes[], hosts[], writes[], timers[], functions[] }
+counts            { processes: { total, qml, shell }, hosts, writes, timers, functions, notResolvable }
+size              { measurement: "M12", thresholds: { lines, branches, depth }, over: function[] }
+                  the functions over any threshold, longest first; the thresholds are M12's p90
                   the headline: how many process sites are QML Process blocks and how many are
                   shell lines, since a script contributes one site per command segment
 notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:
@@ -319,6 +325,9 @@ temp              boolean   under /tmp, /var/tmp or /dev/shm
 mode              string | null   -m on mkdir or install, mktemp's own mode, `chmod N` on the same path
                   in the file, or `umask N` in the file
 ```
+
+A function: `{ file, line, name, kind: "function" | "handler", lines, depth, branches }`,
+counted the way M12 counts them.
 
 A timer:
 

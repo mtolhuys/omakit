@@ -112,9 +112,11 @@ nothing in it says "observed nothing of this kind", and the report ends by
 naming what the method cannot see. No score, no verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
 one word it closes on is `INSPECTED`. The report is what needs attention,
-biggest first: one block per review class the tree shows, ordered by the
-class's measured share of review findings, with up to five sites under each
-and the fact at each site; classes under five percent are counted, not
+biggest first: the functions longer, more branched or deeper than 90 of 100
+functions in listed trees ([M12](MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)),
+longest first, then one block per review class the tree shows, ordered by
+the class's measured share of review findings, with up to five sites under
+each and the fact at each site; classes under five percent are counted, not
 listed; `--full` is every site with every qualifier. `--json` prints the
 document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
 `--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2

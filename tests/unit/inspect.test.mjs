@@ -19,6 +19,8 @@ import { extractProcesses, timeoutMs, toolOf } from "../../tools/inspect/process
 import { extractHosts, hostOf, privateAddress } from "../../tools/inspect/hosts.mjs"
 import { canonicalPath, classifyPath, extractWrites } from "../../tools/inspect/writes.mjs"
 import { extractTimers } from "../../tools/inspect/timers.mjs"
+import { extractFunctions } from "../../tools/inspect/functions.mjs"
+import { SIZE, overSize } from "../../tools/inspect/patterns.mjs"
 import { kindOfShebang } from "../../tools/inspect/walk.mjs"
 import { DENSITY, INSPECT_VERDICT, overflows, plain, STATUS } from "../../tools/marketplace/style.mjs"
 import { INSPECT_FIXTURES, inspectExpectedPath, materialiseInspectFixture } from "../fixtures/inspect.mjs"
@@ -128,13 +130,45 @@ test("the default view is what needs attention, biggest first: one block per cla
   for (const row of example.patterns) assert.ok(!/\w:\d+/.test(row.summary), `${row.id}: the summary carries a site`)
 })
 
+test("long functions come first, longest first, over the measured thresholds, and a tree of short functions has no size block", async () => {
+  const { document } = await documentFor("long-function")
+  assert.equal(document.counts.functions, 4)
+  assert.deepEqual(document.size.thresholds, { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth })
+  assert.deepEqual(document.size.over.map((entry) => [entry.name, entry.lines, entry.branches, entry.depth]), [["decide", 21, 9, 3], ["classify", 20, 6, 4]])
+  assert.deepEqual(document.observed.functions.map((entry) => entry.name).sort(), ["classify", "decide", "say", "short"])
+  const report = renderInspect(document, { colour: false })
+  const blocks = [...report.matchAll(new RegExp(`^${DENSITY.dark} note  ([a-z ]+?)  `, "gm"))].map((match) => match[1])
+  assert.deepEqual(blocks, ["long functions", "environment trust"], "size before the review classes")
+  assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {5}21 lines,  9 branches, nesting 3$/m)
+  assert.match(report, /^ {8}Widget\.qml:12 {8}classify {3}20 lines,  6 branches, nesting 4$/m)
+  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 18 listed trees, 715 functions stay under: 18 lines, 7 branches or nesting 2 \(M12\)/)
+  const full = renderInspect(document, { colour: false, full: true })
+  assert.match(full, /^functions {5}observed 4, 2 over/m)
+  assert.match(full, /^░ info  scripts\/helper\.sh:8  decide, 21 lines, 9 branches, nesting 3$/m)
+  const example = (await documentFor("example")).document
+  assert.deepEqual(example.size.over, [])
+  assert.doesNotMatch(renderInspect(example, { colour: false }), /long functions/)
+  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 18 listed trees, 715 functions \(M12\), and none of the 10 classes/m)
+})
+
+test("functions: the extractor counts lines, branches and nesting in QML and JavaScript, shell and Python, and overSize orders longest first", () => {
+  const qml = extractFunctions({ path: "A.qml", kind: "qml", text: "Item {\n  function f(a) {\n    if (a && b) { return 1 } else { return 2 }\n  }\n  onClicked: {\n    for (var i = 0; i < 3; i++) { x(i) }\n  }\n  onHovered: x()\n  // function g() { never }\n}\n" })
+  assert.deepEqual(qml.map((entry) => [entry.name, entry.kind, entry.line, entry.lines, entry.branches, entry.depth]), [["f", "function", 2, 3, 2, 1], ["onClicked", "handler", 5, 3, 1, 1]])
+  const sh = extractFunctions({ path: "s.sh", kind: "shell", text: "a() {\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n}\nfunction b {\n  c\n}\n" })
+  assert.deepEqual(sh.map((entry) => [entry.name, entry.line, entry.lines, entry.branches, entry.depth]), [["a", 1, 7, 2, 2], ["b", 8, 3, 0, 0]])
+  const py = extractFunctions({ path: "p.py", kind: "python", text: "def f(x):\n    if x:\n        for y in x:\n            pass\n    return 1\n\ndef g():\n    return 2\n" })
+  assert.deepEqual(py.map((entry) => [entry.name, entry.line, entry.lines, entry.branches, entry.depth]), [["f", 1, 5, 2, 3], ["g", 7, 2, 0, 1]])
+  const rows = [{ file: "a", line: 1, name: "x", kind: "function", lines: 5, branches: 1, depth: 0 }, { file: "a", line: 9, name: "y", kind: "function", lines: 30, branches: 1, depth: 0 }, { file: "b", line: 1, name: "z", kind: "function", lines: 5, branches: 9, depth: 0 }]
+  assert.deepEqual(overSize(rows).map((entry) => entry.name), ["y", "z"])
+})
+
 test("the attention view over nothing, and the site cap and the threshold", async () => {
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
+  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 18 listed trees, 715 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
   assert.doesNotMatch(nothing, /^under 5%/m)
   const base = (await documentFor("nothing")).document
-  const many = { ...base, patterns: [
+  const many = { ...base, size: { ...base.size, over: [] }, patterns: [
     { id: "privilege-disclosure", observedCount: 2, sites: [{ file: "A.qml", line: 1 }, { file: "A.qml", line: 2 }], observation: "observed sudo in argv (A.qml:1, A.qml:2)", summary: "sudo in argv", measurement: "M11", share: 0.03 },
     { id: "process-lifecycle", observedCount: 7, sites: [1, 2, 3, 4, 5, 6, 7].map((line) => ({ file: "A.qml", line })), observation: "observed 7 processes with no deadline (A.qml:1, A.qml:2, A.qml:3, A.qml:4, A.qml:5, A.qml:6, A.qml:7)", summary: "7 processes with no deadline", measurement: "M11", share: 0.2 },
   ], lookedFor: PATTERNS.map((pattern) => pattern.id).filter((id) => !["privilege-disclosure", "process-lifecycle"].includes(id)) }
@@ -146,18 +180,18 @@ test("the attention view over nothing, and the site cap and the threshold", asyn
   assert.doesNotMatch(report, new RegExp(`${DENSITY.dark} note  privilege disclosure`))
 })
 
-test("the nothing fixture is reported as observed nothing of this kind, four times, and never as clean", async () => {
+test("the nothing fixture is reported as observed nothing of this kind, five times, and never as clean", async () => {
   const { document } = await documentFor("nothing")
   const report = renderInspect(document, { colour: false, full: true })
-  assert.equal((report.match(/observed nothing of this kind/g) || []).length, 4)
-  for (const key of ["processes", "hosts", "writes", "timers"]) {
+  assert.equal((report.match(/observed nothing of this kind/g) || []).length, 5)
+  for (const key of ["processes", "hosts", "writes", "timers", "functions"]) {
     assert.match(report, new RegExp(`^${key}\\s+observed nothing of this kind$`, "m"))
     assert.deepEqual(document.observed[key], [])
   }
   assert.deepEqual(document.patterns, [])
   assert.doesNotMatch(report, /\bclean\b/)
   assert.match(report, new RegExp(`${DENSITY.light} ${INSPECT_VERDICT}  0 processes, 0 hosts, 0 writes, 0 timers`))
-  assert.deepEqual(document.counts, { processes: { total: 0, qml: 0, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
+  assert.deepEqual(document.counts, { processes: { total: 0, qml: 0, shell: 0 }, hosts: 0, writes: 0, timers: 0, functions: 0, notResolvable: 0 })
 })
 
 test("a command that is not a literal is a ▒ ? row with argv null, listed under notResolvable, never a guess", async () => {
@@ -363,7 +397,7 @@ test("exit 0 with a report whatever was observed; --json is the document; --out 
   assert.equal(report.err, "")
   assert.match(report.out, new RegExp(`^${DENSITY.dark} note  process lifecycle  20 of 100 findings  1 process with no deadline$`, "m"))
   assert.match(report.out, /^ {8}Widget\.qml:10  \/usr\/bin\/df -h \/$/m)
-  assert.deepEqual(JSON.parse(run(["inspect", fixture.dir, "--json"]).out).counts, { processes: { total: 1, qml: 1, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
+  assert.deepEqual(JSON.parse(run(["inspect", fixture.dir, "--json"]).out).counts, { processes: { total: 1, qml: 1, shell: 0 }, hosts: 0, writes: 0, timers: 0, functions: 0, notResolvable: 0 })
   const json = run(["inspect", fixture.dir, "--json"])
   assert.equal(json.code, 0)
   const document = JSON.parse(json.out)

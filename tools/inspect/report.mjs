@@ -19,7 +19,7 @@
 
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
-import { PATTERNS } from "./patterns.mjs"
+import { PATTERNS, SIZE } from "./patterns.mjs"
 import { toolOf } from "./processes.mjs"
 
 const NOTHING = "observed nothing of this kind"
@@ -240,10 +240,27 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   const shown = ranked.filter((entry) => entry.share >= MIN_SHARE)
   const below = ranked.filter((entry) => entry.share < MIN_SHARE)
   const width = outputColumns()
-  if (!ranked.length) {
-    out.push(...field("attention", `nothing: none of the ${PATTERNS.length} classes reviewers raise shows in this tree (${PATTERNS[0]?.measurement || "M11"})`, c))
+  const over = document.size.over
+  if (!ranked.length && !over.length) {
+    out.push(...field("attention", `nothing: no function over the size of ${SIZE.sample} (${SIZE.measurement}), and none of the ${PATTERNS.length} classes reviewers raise shows in this tree (${PATTERNS[0]?.measurement || "M11"})`, c))
   } else {
-    out.push(...field("attention", `${plural(shown.length, "class", "classes")} reviewers raise, biggest first by share of review findings (${PATTERNS[0].measurement}); up to ${SHOWN_SITES} sites each`, c))
+    out.push(...field("attention", `${over.length ? `long functions first, by length, then ` : ""}${plural(shown.length, "class", "classes")} reviewers raise, biggest first by share of review findings (${PATTERNS[0].measurement}); up to ${SHOWN_SITES} sites each`, c))
+  }
+  // Long functions first: what the person asked about, so the order is a
+  // preference and the heading says whose thresholds it uses.
+  if (over.length) {
+    out.push("")
+    const thresholds = `${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth}`
+    const heading = wrap(`${plural(over.length, "function")} over what 90 of 100 functions in ${SIZE.sample} stay under: ${thresholds} (${SIZE.measurement})`, { indent: GUTTER, first: GUTTER + "long functions".length + 2 }, c)
+    out.push(`${mark("advisory", c)}${c("name", "long functions")}  ${heading[0].trimStart()}`, ...heading.slice(1))
+    const top = over.slice(0, SHOWN_SITES)
+    const siteWidth = Math.max(...top.map((entry) => `${entry.file}:${entry.line}`.length))
+    const nameWidth = Math.max(...top.map((entry) => entry.name.length))
+    for (const entry of top) {
+      const at = `${entry.file}:${entry.line}`
+      out.push(`${" ".repeat(GUTTER)}${c("name", at.padEnd(siteWidth))}  ${entry.name.padEnd(nameWidth)}  ${String(entry.lines).padStart(3)} lines, ${String(entry.branches).padStart(2)} branches, nesting ${entry.depth}`)
+    }
+    if (over.length > SHOWN_SITES) out.push(...wrap(`and ${over.length - SHOWN_SITES} more (--full)`, { indent: GUTTER }).map((line) => c("label", line)))
   }
   for (const entry of shown) {
     const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
@@ -293,6 +310,13 @@ function renderFull(document, { colour }) {
     for (const entry of rows) out.push(...render(entry, c))
     out.push("")
   }
+  const functions = document.observed.functions
+  const over = document.size.over
+  out.push(...field("functions", functions.length
+    ? `observed ${functions.length}, ${over.length} over what 90 of 100 functions in ${SIZE.sample} stay under (${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth}; ${SIZE.measurement}), longest first`
+    : NOTHING, c))
+  for (const entry of over) out.push(...row("info", `${entry.file}:${entry.line}`, `${entry.name}, ${plural(entry.lines, "line")}, ${plural(entry.branches, "branch", "branches")}, nesting ${entry.depth}`, c))
+  out.push("")
   out.push(...baselineLines(document.marketplaceBaseline, c))
   out.push("")
   const patterns = patternLines(document, c)

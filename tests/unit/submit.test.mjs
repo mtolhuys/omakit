@@ -8,7 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { liveRegistry } from "../../tools/marketplace/registry.mjs"
-import { PATTERNS } from "../../tools/inspect/patterns.mjs"
+import { PATTERNS, SIZE } from "../../tools/inspect/patterns.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
@@ -71,6 +71,12 @@ test("every check names a source and a measured reason, and every inspect patter
     for (const key of ["label", "notObserved", "sample"]) assert.ok(typeof pattern[key] === "string" && pattern[key], `${pattern.id}: no ${key}`)
     assert.doesNotMatch(`${pattern.label} ${pattern.notObserved}`, /\b(?:missing|should|fix)\b/i, `${pattern.id}: reads as a verdict`)
   }
+  // And the size thresholds are the p90 quantiles of the M12 record, not chosen.
+  assert.ok(sections.has(SIZE.measurement), `size: measurement ${SIZE.measurement} is not a section of docs/MEASUREMENTS.md`)
+  const lengths = JSON.parse(readFileSync(join(REPO_ROOT, "docs/evidence/inspect/2026-09-16-function-lengths.json"), "utf8"))
+  assert.equal(lengths.measurement, SIZE.measurement)
+  assert.deepEqual({ lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth }, { lines: lengths.quantiles.lines.p90, branches: lengths.quantiles.branches.p90, depth: lengths.quantiles.depth.p90 })
+  assert.equal(SIZE.sample, `${lengths.sample.trees} listed trees, ${lengths.sample.functions} functions`)
 })
 
 test("the crafted fixture is refused, and every measured failure class is named", async () => {

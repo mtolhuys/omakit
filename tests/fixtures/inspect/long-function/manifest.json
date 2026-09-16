@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.long-function",
+  "name": "Fixture: long function",
+  "version": "0.0.1",
+  "description": "One QML function and one shell function over the M12 size thresholds, beside short ones.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

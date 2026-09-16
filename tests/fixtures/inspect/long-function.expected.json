@@ -1,0 +1,355 @@
+{
+  "omakit": "<version>",
+  "command": "inspect",
+  "method": "static extraction, regular expressions over qml and shell; observed, not executed",
+  "subject": {
+    "dir": "<dir>",
+    "commit": "<commit>",
+    "repository": {
+      "url": "https://github.com/example/omarchy-plugin-fixture-long-function"
+    },
+    "mode": "author",
+    "pluginId": "fixture.long-function",
+    "filesRead": {
+      "qml": 1,
+      "js": 0,
+      "shell": 1,
+      "python": 0,
+      "other": 0
+    }
+  },
+  "observed": {
+    "processes": [
+      {
+        "file": "scripts/helper.sh",
+        "line": 13,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "say",
+          "$item"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 19,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "say",
+          "one"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 20,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "say",
+          "two"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 21,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "say",
+          "other"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 25,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "say",
+          "none"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 30,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "decide",
+          "${1:-a}"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      }
+    ],
+    "hosts": [],
+    "writes": [],
+    "timers": [],
+    "functions": [
+      {
+        "file": "Widget.qml",
+        "line": 8,
+        "name": "short",
+        "kind": "function",
+        "lines": 3,
+        "depth": 0,
+        "branches": 0
+      },
+      {
+        "file": "Widget.qml",
+        "line": 12,
+        "name": "classify",
+        "kind": "function",
+        "lines": 20,
+        "depth": 4,
+        "branches": 6
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 4,
+        "name": "say",
+        "kind": "function",
+        "lines": 3,
+        "depth": 0,
+        "branches": 0
+      },
+      {
+        "file": "scripts/helper.sh",
+        "line": 8,
+        "name": "decide",
+        "kind": "function",
+        "lines": 21,
+        "depth": 3,
+        "branches": 9
+      }
+    ]
+  },
+  "size": {
+    "measurement": "M12",
+    "thresholds": {
+      "lines": 18,
+      "branches": 7,
+      "depth": 2
+    },
+    "over": [
+      {
+        "file": "scripts/helper.sh",
+        "line": 8,
+        "name": "decide",
+        "kind": "function",
+        "lines": 21,
+        "depth": 3,
+        "branches": 9
+      },
+      {
+        "file": "Widget.qml",
+        "line": 12,
+        "name": "classify",
+        "kind": "function",
+        "lines": 20,
+        "depth": 4,
+        "branches": 6
+      }
+    ]
+  },
+  "counts": {
+    "processes": {
+      "total": 6,
+      "qml": 0,
+      "shell": 6
+    },
+    "hosts": 0,
+    "writes": 0,
+    "timers": 0,
+    "functions": 4,
+    "notResolvable": 0
+  },
+  "notResolvable": [],
+  "patterns": [
+    {
+      "id": "environment-trust",
+      "observedCount": 6,
+      "sites": [
+        {
+          "file": "scripts/helper.sh",
+          "line": 13
+        },
+        {
+          "file": "scripts/helper.sh",
+          "line": 19
+        },
+        {
+          "file": "scripts/helper.sh",
+          "line": 20
+        },
+        {
+          "file": "scripts/helper.sh",
+          "line": 21
+        },
+        {
+          "file": "scripts/helper.sh",
+          "line": 25
+        },
+        {
+          "file": "scripts/helper.sh",
+          "line": 30
+        }
+      ],
+      "observation": "observed 6 tools resolved from PATH (say, decide; scripts/helper.sh:13, scripts/helper.sh:19, scripts/helper.sh:20, scripts/helper.sh:21, scripts/helper.sh:25, scripts/helper.sh:30)",
+      "summary": "6 tools resolved from PATH (say, decide)",
+      "measurement": "M11",
+      "share": 0.07
+    }
+  ],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
+  "notVisible": [
+    "commands built at run time",
+    "hosts and paths from variables, properties, config or the environment",
+    "scripts a command calls that inspect does not follow",
+    "components loaded from outside the tree",
+    "encoded or obfuscated content, and what a sh -c or eval string runs"
+  ],
+  "marketplaceBaseline": {
+    "pin": {
+      "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
+      "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+      "baselineVersion": "3",
+      "enforcementMode": "selective"
+    },
+    "transport": "local-git",
+    "assumedByAdapter": [
+      "repository.private=false",
+      "repository.disabled=false",
+      "repository.archived=false",
+      "tree.truncated=false (the local tree is always complete)"
+    ],
+    "invoked": true,
+    "skipReason": null,
+    "official": {
+      "schemaVersion": 1,
+      "baselineVersion": "3",
+      "repository": "example/omarchy-plugin-fixture-long-function",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-long-function",
+      "commitSha": "<commit>",
+      "checkedAt": "1970-01-01T00:00:00.000Z",
+      "outcome": "passed",
+      "enforcementMode": "selective",
+      "disposition": "clear",
+      "blocksApproval": false,
+      "findings": [],
+      "capabilities": []
+    },
+    "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
+  }
+}

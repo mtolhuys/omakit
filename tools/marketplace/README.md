@@ -68,7 +68,8 @@ the tree, no verdict:
 | `inspect/hosts.mjs` | Every `http` or `https` literal with its host, the tool it reaches, and the timeout and size-cap flags in the same argv; a host behind an expression is not resolvable, never guessed. |
 | `inspect/writes.mjs` | Write sites in QML (`FileView` with a write), shell (redirects, `tee`, `cp`, `mv`, `mkdir`, `mktemp`, `install`, `touch`), JavaScript and Python, with the controlled-directory test over the canonical path prefix and the mode the file shows. |
 | `inspect/timers.mjs` | `Timer {` blocks: interval, repeat, running, triggeredOnStart, and the handler outside the block that starts it. |
-| `inspect/patterns.mjs` | The ten review classes of M11 as data: id, label, precondition over the facts, measurement, share, and the phrase for the `not observed` line. `supply-chain` cites the baseline's own findings and detects nothing. |
+| `inspect/functions.mjs` | Function sites: `function name(` and multi-line handlers in QML and JavaScript, shell functions, Python defs, each with its length in lines, deepest nesting and branch count. |
+| `inspect/patterns.mjs` | The ten review classes of M11 as data: id, label, precondition over the facts, measurement, share, and the phrase for the `not observed` line. `supply-chain` cites the baseline's own findings and detects nothing. Also the M12 size thresholds as data, and the longest-first order over them. |
 | `inspect/contract.mjs` | The JSON contract of docs/INSPECT.md as a validator, run by the unit tests over every fixture document. |
 | `inspect/report.mjs` | The report for a person, drawn with `style.mjs` only: `░ info` for a fact, `▒ ?` for one that could not be read, `▓ note` for a pattern row, `▔ skip` under `--offline`, and the closing word `INSPECTED`. |
 

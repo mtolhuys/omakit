@@ -105,9 +105,10 @@ export const COMMANDS = Object.freeze([
       "each with its measured share, only where the tree shows the class.",
       "Regular expressions over QML and shell, labelled observed; runs nothing",
       "from the tree, decides nothing, exits 0 with a report and 2 when the",
-      "target cannot be read. The report is what needs attention, biggest",
-      "first by measured share, up to five sites a class; --full is every",
-      "site with every qualifier; --json prints the document; --out writes it.",
+      "target cannot be read. The report is what needs attention: functions",
+      "over the measured size of listed trees, longest first, then the review",
+      "classes by measured share, five sites each; --full is every site with",
+      "every qualifier; --json prints the document; --out writes it.",
     ],
   },
   {

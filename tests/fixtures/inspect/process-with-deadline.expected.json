@@ -74,7 +74,17 @@
         "triggeredOnStart": false,
         "startedBy": null
       }
-    ]
+    ],
+    "functions": []
+  },
+  "size": {
+    "measurement": "M12",
+    "thresholds": {
+      "lines": 18,
+      "branches": 7,
+      "depth": 2
+    },
+    "over": []
   },
   "counts": {
     "processes": {
@@ -85,6 +95,7 @@
     "hosts": 0,
     "writes": 0,
     "timers": 2,
+    "functions": 0,
     "notResolvable": 0
   },
   "notResolvable": [],

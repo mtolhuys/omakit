@@ -49,7 +49,11 @@ review class the marketplace's human review has raised, only where the tree
 shows the class's precondition (a process with no deadline, a collector with
 no cap, a write under `/tmp`, `curl` without `-q`), with the class's measured
 share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
-`lookedFor` names the classes whose precondition was not observed. Read
+`lookedFor` names the classes whose precondition was not observed.
+`size.over` lists the functions longer, more branched or deeper than 90 of
+100 functions in listed trees (the thresholds are in `size.thresholds`,
+from M12), longest first; when the owner asks for simpler code, start
+there. Read
 the document, not the report: the report a person sees lists at most five
 sites per class and drops classes under five percent, `--full` prints every
 site, and `--json` carries all of it either way.

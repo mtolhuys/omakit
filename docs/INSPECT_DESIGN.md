@@ -155,6 +155,7 @@ tools/inspect/
   hosts.mjs        URL literals and their flags
   writes.mjs       write sites and the controlled-directory test
   timers.mjs       Timer blocks
+  functions.mjs    every function, handler, shell function and def with its lines, nesting and branches; the M12 thresholds sit in patterns.mjs as data
   patterns.mjs     the table above as data: id, label, precondition function, measurement, share, the "not observed" phrase
   text.mjs         the text primitives the extractors share: line numbers, brace blocks, a property's value, string and array literals, the crude shell word split
   contract.mjs     the executable JSON contract
@@ -202,6 +203,8 @@ or two files, small enough to read in a minute:
 - `example`: the tree behind the example block in `docs/INSPECT.md`, so the
   document's example is real output and the test that compares it stays a
   diff.
+- `long-function`: one QML function and one shell function over the M12
+  thresholds beside short ones, for the size block.
 
 Each fixture's expected document is committed as JSON next to it, and the
 test compares the produced document field by field, so a change in

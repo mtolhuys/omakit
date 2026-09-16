@@ -1,0 +1,247 @@
+{
+  "measurement": "M12",
+  "date": "2026-09-16",
+  "method": "extractFunctions from tools/inspect/functions.mjs over the same 18 listed trees as the 2026-09-15 inspect record (selection rule in that record), read from the reviewer-mode cache at their validated commits, no fetch. A function is a `function name(` or a multi-line `onSomething: {` handler in QML and JavaScript, a `name() {` or `function name` block in shell, a `def` in Python. Lines are first to last line inclusive; depth is the deepest nesting below the body; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are over every function in the sample pooled, not per tree.",
+  "sample": {
+    "trees": 18,
+    "functions": 715
+  },
+  "quantiles": {
+    "lines": {
+      "p50": 6,
+      "p75": 10,
+      "p90": 18,
+      "p95": 29,
+      "max": 128
+    },
+    "depth": {
+      "p50": 0,
+      "p90": 2,
+      "max": 13
+    },
+    "branches": {
+      "p50": 2,
+      "p90": 7,
+      "max": 31
+    }
+  },
+  "rows": [
+    {
+      "row": 1,
+      "functions": 130,
+      "byKind": {
+        "qml": 130,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 81,
+      "medianLines": 5
+    },
+    {
+      "row": 2,
+      "functions": 53,
+      "byKind": {
+        "qml": 44,
+        "js": 0,
+        "shell": 0,
+        "python": 9
+      },
+      "longest": 101,
+      "medianLines": 4
+    },
+    {
+      "row": 3,
+      "functions": 52,
+      "byKind": {
+        "qml": 44,
+        "js": 0,
+        "shell": 0,
+        "python": 8
+      },
+      "longest": 128,
+      "medianLines": 5
+    },
+    {
+      "row": 4,
+      "functions": 11,
+      "byKind": {
+        "qml": 7,
+        "js": 4,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 17,
+      "medianLines": 5
+    },
+    {
+      "row": 5,
+      "functions": 40,
+      "byKind": {
+        "qml": 26,
+        "js": 1,
+        "shell": 0,
+        "python": 13
+      },
+      "longest": 50,
+      "medianLines": 7
+    },
+    {
+      "row": 6,
+      "functions": 51,
+      "byKind": {
+        "qml": 26,
+        "js": 6,
+        "shell": 0,
+        "python": 19
+      },
+      "longest": 52,
+      "medianLines": 7
+    },
+    {
+      "row": 7,
+      "functions": 8,
+      "byKind": {
+        "qml": 8,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 23,
+      "medianLines": 6
+    },
+    {
+      "row": 8,
+      "functions": 27,
+      "byKind": {
+        "qml": 10,
+        "js": 5,
+        "shell": 12,
+        "python": 0
+      },
+      "longest": 91,
+      "medianLines": 6
+    },
+    {
+      "row": 9,
+      "functions": 20,
+      "byKind": {
+        "qml": 12,
+        "js": 8,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 23,
+      "medianLines": 8
+    },
+    {
+      "row": 10,
+      "functions": 4,
+      "byKind": {
+        "qml": 4,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 70,
+      "medianLines": 5
+    },
+    {
+      "row": 11,
+      "functions": 24,
+      "byKind": {
+        "qml": 24,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 14,
+      "medianLines": 5
+    },
+    {
+      "row": 12,
+      "functions": 2,
+      "byKind": {
+        "qml": 2,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 4,
+      "medianLines": 4
+    },
+    {
+      "row": 13,
+      "functions": 58,
+      "byKind": {
+        "qml": 58,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 23,
+      "medianLines": 5
+    },
+    {
+      "row": 14,
+      "functions": 19,
+      "byKind": {
+        "qml": 0,
+        "js": 0,
+        "shell": 19,
+        "python": 0
+      },
+      "longest": 63,
+      "medianLines": 13
+    },
+    {
+      "row": 15,
+      "functions": 87,
+      "byKind": {
+        "qml": 45,
+        "js": 29,
+        "shell": 13,
+        "python": 0
+      },
+      "longest": 50,
+      "medianLines": 9
+    },
+    {
+      "row": 16,
+      "functions": 86,
+      "byKind": {
+        "qml": 72,
+        "js": 0,
+        "shell": 0,
+        "python": 14
+      },
+      "longest": 108,
+      "medianLines": 6
+    },
+    {
+      "row": 17,
+      "functions": 30,
+      "byKind": {
+        "qml": 16,
+        "js": 9,
+        "shell": 0,
+        "python": 5
+      },
+      "longest": 55,
+      "medianLines": 6
+    },
+    {
+      "row": 18,
+      "functions": 13,
+      "byKind": {
+        "qml": 6,
+        "js": 7,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 71,
+      "medianLines": 9
+    }
+  ],
+  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin."
+}
