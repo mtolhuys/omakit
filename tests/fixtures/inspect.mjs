@@ -25,10 +25,11 @@ export function inspectExpectedPath(name) {
   return join(HERE, "inspect", `${name}.expected.json`)
 }
 
-function readTree(dir, base = dir, out = {}) {
+/** Every file under a fixture directory, path to text. */
+export function readFixtureTree(dir, base = dir, out = {}) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
-    if (entry.isDirectory()) readTree(path, base, out)
+    if (entry.isDirectory()) readFixtureTree(path, base, out)
     else out[relative(base, path)] = readFileSync(path, "utf8")
   }
   return out
@@ -40,6 +41,6 @@ function readTree(dir, base = dir, out = {}) {
  */
 export function materialiseInspectFixture(name) {
   const origin = `https://github.com/example/omarchy-plugin-fixture-${name}`
-  const files = readTree(inspectFixtureDir(name))
+  const files = readFixtureTree(inspectFixtureDir(name))
   return { ...materialise(files, { origin }), origin }
 }

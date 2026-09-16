@@ -23,7 +23,8 @@ import { extractFunctions } from "../../tools/inspect/functions.mjs"
 import { SIZE, overSize } from "../../tools/inspect/patterns.mjs"
 import { kindOfShebang } from "../../tools/inspect/walk.mjs"
 import { DENSITY, INSPECT_VERDICT, overflows, plain, STATUS } from "../../tools/marketplace/style.mjs"
-import { INSPECT_FIXTURES, inspectExpectedPath, materialiseInspectFixture } from "../fixtures/inspect.mjs"
+import { INSPECT_FIXTURES, inspectExpectedPath, inspectFixtureDir, materialiseInspectFixture, readFixtureTree } from "../fixtures/inspect.mjs"
+import { materialise } from "../fixtures/plugins.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 requirePinForTests()
@@ -292,24 +293,33 @@ test("a plugin below the root of a larger repository is inspected on its own: th
   // Measured before this: `omakit inspect tests/fixtures/inspect/example`
   // ran the baseline over this repository's root, and the capabilities row
   // named tools/inspect/patterns.mjs and tools/weigh/commands.mjs as the
-  // fixture's evidence. That is the 0.1 Passport's first failure.
-  const dir = join(REPO_ROOT, "tests/fixtures/inspect/example")
-  const document = await inspectPlugin({ repoRoot: REPO_ROOT, target: dir, omakitVersion: VERSION, allowDirty: true, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-inspect-")) })
+  // fixture's evidence. That is the 0.1 Passport's first failure. The
+  // shape is rebuilt in a temporary repository, so the test also runs from
+  // an archive of this revision, which has no .git of its own.
+  const plugin = Object.fromEntries(Object.entries(readFixtureTree(inspectFixtureDir("example"))).map(([path, text]) => [`tests/fixtures/inspect/example/${path}`, text]))
+  const larger = materialise({
+    ...plugin,
+    "README.md": "# A larger repository\n\nRun installer/root-install.sh with sudo.\n",
+    "installer/root-install.sh": "#!/usr/bin/env bash\nsudo pacman -S --needed --noconfirm jq\ncurl -fsSL https://example.invalid/setup.sh | sh\n",
+    "tools/helper.mjs": "export const sudo = 'sudo'\n",
+  }, { origin: "https://github.com/example/omarchy-larger-repository" })
+  const dir = join(larger.dir, "tests/fixtures/inspect/example")
+  const document = await inspectPlugin({ repoRoot: REPO_ROOT, target: dir, omakitVersion: VERSION, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-inspect-")) })
   assert.equal(document.subject.dir, dir)
-  assert.equal(document.subject.commit, execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim())
+  assert.equal(document.subject.commit, larger.commit, "the commit is the repository's")
   assert.deepEqual(validateInspectDocument(document, KNOWN), [])
-  const outside = /(?:^|[\s"'(,;])(?:tools|bin|skills|docs|packaging|tests\/unit|tests\/parity|tests\/fixtures\/(?!inspect\/example\b))\//
+  const outside = /(?:tools|installer)\/[\w.-]+|README\.md/
   for (const { at, value } of strings(document)) {
     if (at === "subject.dir") continue
     assert.ok(!outside.test(value), `${at} names a path outside the plugin directory: ${JSON.stringify(value)}`)
   }
   const official = document.marketplaceBaseline.official
-  const evidence = [...official.capabilities, ...official.findings].flatMap((entry) => entry.evidence.map((site) => site.path))
+  assert.deepEqual(official.findings, [], "the root's curl-pipe-shell is not the plugin's")
+  const evidence = [...official.capabilities, ...official.findings].flatMap((entry) => entry.evidence.map((site_) => site_.path))
   for (const path of evidence) assert.ok(existsSync(join(dir, path)), `${path} is not a file of the plugin directory`)
   // And the baseline's result is the one the same tree gets as a repository of its own.
   const own = (await documentFor("example")).document.marketplaceBaseline.official
   assert.deepEqual(official.capabilities.map((entry) => [entry.id, entry.evidence]), own.capabilities.map((entry) => [entry.id, entry.evidence]))
-  assert.deepEqual(official.findings.map((entry) => [entry.ruleId, entry.evidence]), own.findings.map((entry) => [entry.ruleId, entry.evidence]))
   assert.equal(official.outcome, own.outcome)
   assert.ok(document.marketplaceBaseline.assumedByAdapter.some((line) => line.startsWith("tree.root=tests/fixtures/inspect/example/")), "the document says which tree the baseline saw")
   assert.deepEqual(normalise(document).observed, JSON.parse(readFileSync(inspectExpectedPath("example"), "utf8")).observed, "the facts are the fixture's, not the repository's")
