@@ -229,26 +229,37 @@ test("the noise fixtures: a Python continuation is not nesting, heredoc and quot
 test("the shell scanner's corners: quotes, comments, here-strings and heredoc delimiters, none of which swallows a later function; and the guard rule's edges", () => {
   // Each of these once opened a string or a heredoc that ran to the end of the file: a `'` inside double quotes, a `#` inside quotes, a `#` after a case pattern's `)`, `$'it\'s'`, a here-string `<<< word`, `<<EOF` inside a string, a delimiter with a `-`, `<<` in arithmetic.
   const shell = (text) => extractFunctions({ path: "c.sh", kind: "shell", text }).map((entry) => [entry.name, entry.lines, entry.depth, entry.branches])
+  // The tail's one-line `if x; then y; fi` is a branch and no level: it opens and closes on the line.
   const tail = "  if x; then y; fi\n}\nb() {\n  c\n}\n"
-  assert.deepEqual(shell("a() {\n  [[ $url != *'#'* && $url != *'\\\\'* ]] || return 1\n  fail \"it's broken\" # don't\n" + tail), [["a", 5, 1, 2], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  [[ $url != *'#'* && $url != *'\\\\'* ]] || return 1\n  fail \"it's broken\" # don't\n" + tail), [["a", 5, 0, 2], ["b", 3, 0, 0]])
   assert.deepEqual(shell("a() {\n  case $x in\n    y)# don't\n      z ;;\n  esac\n" + tail), [["a", 7, 1, 2], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  printf $'it\\'s\\n'\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  read -r x <<< yes\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  echo \"cat <<EOF\"\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  cat <<'END-HELP'\nif x\nEND-HELP\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  (( x = y << 2 ))\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  (( x = y << n ))\n  z=$(( y << n ))\n" + tail), [["a", 5, 1, 1], ["b", 3, 0, 0]], "a shift by a name is not a heredoc either")
-  assert.deepEqual(shell("a() {\n  cat <<\\EOF\nif x\nEOF\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]], "a backslash-quoted delimiter")
-  assert.deepEqual(shell("a() {\n  x=\"$(printf \"it's\")\"\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]], "a quote inside $( ) inside a quote is the substitution's own")
-  assert.deepEqual(shell("a() {\n  x=\"$(cat <<EOF\nif y\nEOF\n)\"\n" + tail), [["a", 7, 1, 1], ["b", 3, 0, 0]], "a heredoc inside $( ) inside a quote")
-  assert.deepEqual(shell("a() {\n  x=\"$(\n    if y; then z; fi\n  )\"\n" + tail), [["a", 6, 2, 2], ["b", 3, 0, 0]], "a $( ) spanning lines holds shell, read as shell")
+  assert.deepEqual(shell("a() {\n  printf $'it\\'s\\n'\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  read -r x <<< yes\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  echo \"cat <<EOF\"\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  cat <<'END-HELP'\nif x\nEND-HELP\n" + tail), [["a", 6, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  (( x = y << 2 ))\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  (( x = y << n ))\n  z=$(( y << n ))\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "a shift by a name is not a heredoc either")
+  assert.deepEqual(shell("a() {\n  cat <<\\EOF\nif x\nEOF\n" + tail), [["a", 6, 0, 1], ["b", 3, 0, 0]], "a backslash-quoted delimiter")
+  assert.deepEqual(shell("a() {\n  x=\"$(printf \"it's\")\"\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]], "a quote inside $( ) inside a quote is the substitution's own")
+  assert.deepEqual(shell("a() {\n  x=\"$(cat <<EOF\nif y\nEOF\n)\"\n" + tail), [["a", 7, 0, 1], ["b", 3, 0, 0]], "a heredoc inside $( ) inside a quote")
+  assert.deepEqual(shell("a() {\n  x=\"$(\n    if y; then z; fi\n  )\"\n" + tail), [["a", 6, 0, 2], ["b", 3, 0, 0]], "a $( ) spanning lines holds shell, read as shell")
   assert.deepEqual(shell("a() {\n  x\n} # end\nb() {\n  c\n} >/dev/null 2>&1\nc() {\n  d\n}\n"), [["a", 3, 0, 0], ["b", 3, 0, 0], ["c", 3, 0, 0]], "a closing brace with a comment or a redirection after it still closes")
   assert.deepEqual(shell("a() {\n  case $x in\n    (a|b) y ;;\n  esac\n}\n"), [["a", 5, 1, 2]], "the POSIX (pattern) arm is a branch")
+  // The critic's corners: arithmetic, a comment, `${...}` with its own quotes and a backtick, each inside a double-quoted string, and a shift by a name inside `(( ))`.
+  assert.deepEqual(shell("a() {\n  x=\"$(echo $(( 1 + 2 )))\"\n" + tail), [["a", 4, 0, 1], ["b", 3, 0, 0]], "$(( )) inside $( ) inside a quote closes")
+  assert.deepEqual(shell("a() {\n  x=\"$(\n    echo y # the \"thing\" isn't\n  )\"\n" + tail), [["a", 6, 0, 1], ["b", 3, 0, 0]], "a comment inside a $( ) spanning lines is a comment")
+  assert.deepEqual(shell("a() {\n  x=\"$(( 1 << n ))\"\n  (( flags |= 1 << idx ))\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "a shift by a name, quoted or not, is not a heredoc")
+  assert.deepEqual(shell("a() {\n  x=\"${y:-\"it's\"}\"\n  z=\"`printf \"it's\"`\"\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "quotes nested in ${ } and in a backtick under a quote are their own")
+  assert.deepEqual(shell("a() {\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n  if q; then r; fi\n  if q; then r; fi\n}\n"), [["a", 9, 2, 4]], "blocks over lines nest, one-line blocks do not accumulate")
+  // A run of whitespace does not cost the guard rule quadratic time.
+  const started = Date.now()
+  shell("a() {\n  x=" + " ".repeat(200000) + "y\n}\n")
+  assert.ok(Date.now() - started < 1000, `${Date.now() - started} ms for one long line`)
   assert.deepEqual(shell("a() {\n  awk '\n    if (x) y\n  ' \"$f\" || echo failed\n}\n"), [["a", 5, 0, 1]], "what follows a string's close on its last line is read")
-  assert.deepEqual(shell("a() {\n  ssh h \"echo it's &&\n    if y; then z; fi\"\n" + tail), [["a", 5, 1, 1], ["b", 3, 0, 0]], "a double-quoted string spanning lines is data from its quote on")
+  assert.deepEqual(shell("a() {\n  ssh h \"echo it's &&\n    if y; then z; fi\"\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "a double-quoted string spanning lines is data from its quote on")
   // A heredoc body may hold a `}` at the function's indent; a `<<-` body may be tab-indented, delimiter included.
-  assert.deepEqual(shell("a() {\n  cat <<EOF\n}\nif y\nEOF\n" + tail), [["a", 7, 1, 1], ["b", 3, 0, 0]])
-  assert.deepEqual(shell("a() {\n  cat <<-EOF\n\tif y\n\tEOF\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  cat <<EOF\n}\nif y\nEOF\n" + tail), [["a", 7, 0, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  cat <<-EOF\n\tif y\n\tEOF\n" + tail), [["a", 6, 0, 1], ["b", 3, 0, 0]])
   // The opening line of a string that spans lines is data from the quote on.
   assert.deepEqual(shell("a() {\n  python3 -c 'if x:\n    for y in z: pass'\n  q\n}\n"), [["a", 5, 0, 0]])
   // A guard is only a guard with nothing else after the flow word; a status may be a number, `$?` or a variable; `;;` may follow; `$(...)` in the test is not a case arm. Four real branches here: `returns`, the braced group, the `&& y`, and the case arm.

@@ -33,7 +33,7 @@
         "lines": 13,
         "depth": 2,
         "branches": 2,
-        "percentile": 88.3
+        "percentile": 88.4
       },
       {
         "file": "scripts/link.py",
@@ -43,7 +43,7 @@
         "lines": 5,
         "depth": 3,
         "branches": 3,
-        "percentile": 96.3
+        "percentile": 96.4
       }
     ]
   },
@@ -82,7 +82,7 @@
         0.2222,
         0.3084,
         0.3705,
-        0.6607,
+        0.6468,
         0.3928,
         0.6786,
         0.3247,
@@ -120,7 +120,7 @@
         "lines": 5,
         "depth": 3,
         "branches": 3,
-        "percentile": 96.3
+        "percentile": 96.4
       }
     ]
   },

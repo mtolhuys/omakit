@@ -9,8 +9,11 @@
 import { blankComments, closingBracket, lineOf } from "./text.mjs"
 
 const JS_BRANCH = /\b(?:if|else if|for|while|do|switch|case|catch)\b|&&|\|\||\?[^.:]/g
+// A block opens with a keyword at the start of a line and closes with `fi`,
+// `done` or `esac` anywhere a statement can start, so `if x; then y; fi` on
+// one line nets zero and is not a level.
 const SHELL_OPEN = /^\s*(?:if|for|while|until|case|select)\b/
-const SHELL_CLOSE = /^\s*(?:fi|done|esac)\b/
+const SHELL_CLOSE = /(?:^|[;\s])(?:fi|done|esac)\b/g
 // A case arm, `pattern) command` or `(pattern) command`, is a branch: a `)`
 // with text after it on a line with no `(` before it but an opening one,
 // so a `$(...)` or `(( ))` in a test is not one.
@@ -20,7 +23,8 @@ const SHELL_BRANCH = /\b(?:if|elif|for|while|until|case)\b|\|\||&&|^\s*\(?[^()]*
 // status (a number, `$?` or a variable), then nothing but a `;` or the `;;`
 // that ends a case arm, as in `[[ -f $x ]] || return 1`. JavaScript has no
 // such idiom, so shell alone is exempted.
-const SHELL_GUARD = /^(.*?)\s*(?:\|\||&&)\s*(?:return|exit|continue|break|true|false|:)(?:\s+(?:\$\?|\$\{?\w+\}?|\d+))?\s*;{0,2}\s*$/
+// Matched against the trimmed end of the code, and anchored there, so a long run of spaces costs nothing.
+const SHELL_GUARD = /(?:\|\||&&)\s*(?:return|exit|continue|break|true|false|:)(?:\s+(?:\$\?|\$\{?\w+\}?|\d+))?\s*;{0,2}$/
 // `<<WORD`, `<<-WORD`, `<<'WORD'`, `<<"WORD"` or `<<\WORD` outside quotes and
 // outside `(( ))`; `<<<` is a here-string and `<<` in arithmetic a shift.
 const HEREDOC = /^<<(-?)\s*(?:(['"])([A-Za-z_][\w.-]*)\2|\\?([A-Za-z_][\w.-]*))/
@@ -108,18 +112,19 @@ function jsFunctions(file) {
 /**
  * One shell line read left to right with a stack of contexts: a
  * single-quoted string, a double-quoted string, an ANSI-C `$'...'` string,
- * and `$(...)` nested in a double-quoted string, which is what lets
- * `"$(printf "it's")"` read its inner quotes as its own. It returns the
+ * and, nested in a double-quoted string, `$(...)`, `${...}` and a
+ * backtick substitution, which is what lets `"$(printf "it's")"` and
+ * `"${x:-"it's"}"` read their inner quotes as their own. It returns the
  * code before a `#` that starts a comment, the heredoc the line opens, and
  * the contexts left open at its end. Quoted text that opens and closes on
  * the line is kept in the code with its quote marks dropped, so `<<'PY'`
  * and `<<PY` read alike; text inside a quote that spans lines is data and
- * left out, from the quote to its close, while what a `$(...)` spanning
- * lines holds is shell and kept. A `'` inside double quotes ("Okomart's")
- * and a `#` inside quotes (`*'#'*`) are text; a backslash escapes in code,
- * inside double quotes and inside `$'...'`, and inside plain single quotes
- * nothing does. `<<` in shell, at the top or inside `$(...)`, and outside
- * `(( ))`, is a heredoc.
+ * left out, from the quote to its close, while what a substitution
+ * spanning lines holds is shell and kept. A `'` inside double quotes
+ * ("Okomart's") and a `#` inside quotes (`*'#'*`) are text; a backslash
+ * escapes in code, inside double quotes and inside `$'...'`, and inside
+ * plain single quotes nothing does. `<<` in shell, at the top or inside a
+ * substitution, and outside `(( ))`, is a heredoc.
  * @param {string} line
  * @param {Array<{ kind: string, depth: number }>} open the contexts open from the line above, innermost last
  * @returns {{ code: string, open: Array<{ kind: string, depth: number }>, heredoc: { word: string, strip: boolean } | null }}
@@ -129,12 +134,14 @@ function scanShellLine(line, open) {
   const stack = open.map((entry) => ({ ...entry, fresh: false, since: 0 }))
   let code = ""
   let heredoc = null
+  // Depth of `((` arithmetic on this line, inside which `<<` is a shift.
   let arith = 0
   const top = () => stack[stack.length - 1] || null
+  const isCode = (kind) => kind === "code" || kind === "$(" || kind === "${" || kind === "`"
   // Text inside a string that spans lines is data; everything else is kept.
   const keep = () => {
     const inner = top()
-    return !inner || inner.kind === "$(" || inner.fresh
+    return !inner || isCode(inner.kind) || inner.fresh
   }
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i]
@@ -152,17 +159,23 @@ function scanShellLine(line, open) {
     }
     if (kind === '"' || kind === "$'") {
       if (ch === kind[kind.length - 1]) stack.pop()
-      else if (kind === '"' && ch === "$" && line[i + 1] === "(") {
-        stack.push({ kind: "$(", depth: 0, fresh: true, since: code.length })
-        code += "$("
+      else if (kind === '"' && ch === "$" && (line[i + 1] === "(" || line[i + 1] === "{")) {
+        stack.push({ kind: `$${line[i + 1]}`, depth: 0, fresh: true, since: code.length })
+        code += `$${line[i + 1]}`
         i += 1
+        // `$((` under a quote is arithmetic: its `<<` is a shift.
+        if (line[i] === "(" && line[i + 1] === "(") arith += 1
+      } else if (kind === '"' && ch === "`") {
+        stack.push({ kind: "`", depth: 0, fresh: true, since: code.length })
+        code += ch
       } else if (keep()) code += ch
       continue
     }
-    // Shell code, at the top or inside `$(` under a double quote.
-    if (kind === "$(") {
-      if (ch === "(") context.depth += 1
-      else if (ch === ")") {
+    // Shell code: at the top, or inside a substitution under a double quote.
+    if (kind === "$(" || kind === "${") {
+      const [opener, closer] = kind === "$(" ? ["(", ")"] : ["{", "}"]
+      if (ch === opener) context.depth += 1
+      else if (ch === closer) {
         if (context.depth === 0) {
           stack.pop()
           code += ch
@@ -170,18 +183,18 @@ function scanShellLine(line, open) {
         }
         context.depth -= 1
       }
-    } else if (ch === "#" && (i === 0 || /[\s;()&|]/.test(line[i - 1]))) break
+    } else if (kind === "`" && ch === "`") {
+      stack.pop()
+      code += ch
+      continue
+    }
+    if (ch === "#" && (i === 0 || /[\s;()&|]/.test(line[i - 1]))) break
     if (ch === "'" || ch === '"') {
       stack.push({ kind: ch === "'" && line[i - 1] === "$" ? "$'" : ch, depth: 0, fresh: true, since: code.length })
       continue
     }
     if (ch === "(" && line[i + 1] === "(") arith += 1
-    else if (ch === ")" && line[i + 1] === ")" && arith) {
-      arith -= 1
-      i += 1
-      code += "))"
-      continue
-    }
+    else if (ch === ")" && line[i + 1] === ")" && arith) arith -= 1
     if (ch === "<" && line[i + 1] === "<" && line[i - 1] !== "<" && line[i + 2] !== "<" && !heredoc && !arith) {
       const found = line.slice(i).match(HEREDOC)
       if (found) heredoc = { word: found[3] || found[4], strip: found[1] === "-" }
@@ -189,19 +202,20 @@ function scanShellLine(line, open) {
     code += ch
   }
   // A quote opened on this line and still open at its end: the text from that quote on is data.
-  const unclosed = stack.find((entry) => entry.fresh && entry.kind !== "$(")
+  const unclosed = stack.find((entry) => entry.fresh && !isCode(entry.kind))
   return { code: unclosed ? code.slice(0, unclosed.since) : code, open: stack.map(({ kind, depth }) => ({ kind, depth })), heredoc }
 }
 
 /** The code with any guard tail removed, so what is left is what SHELL_BRANCH reads. */
 function withoutGuards(code) {
   // Peel guards from the end: `a || b && return` is one guard over a real `||`.
-  let guard = code.match(SHELL_GUARD)
-  while (guard) {
-    code = guard[1]
-    guard = code.match(SHELL_GUARD)
+  let trimmed = code.trimEnd()
+  let peeled = trimmed.replace(SHELL_GUARD, "").trimEnd()
+  while (peeled !== trimmed) {
+    trimmed = peeled
+    peeled = trimmed.replace(SHELL_GUARD, "").trimEnd()
   }
-  return code
+  return trimmed
 }
 
 function shellFunctions(file) {
@@ -240,16 +254,15 @@ function shellFunctions(file) {
       }
       const scanned = scanShellLine(line, open)
       // A line that starts inside a string from the line above is data up to the string's close; one that starts inside a `$(` is shell.
-      const carried = open.length > 0 && open[open.length - 1].kind !== "$("
+      const carried = open.length > 0 && !["$(", "${", "`"].includes(open[open.length - 1].kind)
       const code = withoutGuards(scanned.code)
       open = scanned.open
       heredoc = scanned.heredoc
       // A line that opens inside a string is read only after the string closes: no `if` at its start, only what the code holds.
-      if (!carried && SHELL_OPEN.test(line)) {
-        depth += 1
-        if (depth > deepest) deepest = depth
-      }
-      if (!carried && SHELL_CLOSE.test(line)) depth -= 1
+      // The line's net: `if x; then y; fi` on one line is no level.
+      const net = (!carried && SHELL_OPEN.test(line) ? 1 : 0) - (code.match(SHELL_CLOSE) || []).length
+      depth += net
+      if (depth > deepest) deepest = depth
       if (SHELL_BRANCH.test(code)) branches += 1
       end = at
     }

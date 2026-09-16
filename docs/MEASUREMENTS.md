@@ -895,8 +895,13 @@ alone on a line, and a quoted string that spans lines (an awk or Python
 program in single quotes, a remote command in double quotes) from its
 opening quote to the line that closes it, count toward the length and
 toward nothing else; a case arm is a `)` with text after it on a line
-with no `(` before it, so `$(...)` in a test is not one. A `$(...)` that spans lines
-inside a string is shell and read as shell. In Python, a line that starts
+with no `(` before it but its own, so `$(...)` in a test is not one; a
+block opens with `if`, `for`, `while`, `until`, `case` or `select` at the
+start of a line and closes with `fi`, `done` or `esac` anywhere a
+statement can start, so `if x; then y; fi` on one line is a branch and no
+level. A `$(...)`, `${...}` or backtick substitution nested in a string
+reads its own quotes, and one that spans lines is shell and read as
+shell. In Python, a line that starts
 while a bracket is open, inside a triple-quoted string, or after a line
 ending in a backslash is a continuation of the statement above it, and a
 def's parameter list spanning lines is a continuation of the def: it

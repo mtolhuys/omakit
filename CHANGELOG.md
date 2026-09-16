@@ -38,7 +38,11 @@ trees (6034 functions).
   not open a string or a heredoc that swallows the rest of the file, and
   a `$(...)` spanning lines inside a string is read as the shell it is.
   A case arm is a `)` with text after it on a line with no `(` before it
-  but its own, so a `$(...)` in a guard's test is not a branch either.
+  but its own, so a `$(...)` in a guard's test is not a branch either;
+  `${...}` and a backtick substitution nested in a string read their own
+  quotes the way `$(...)` does. A block that opens and closes on one
+  line, `if x; then y; fi`, is a branch and no longer a nesting level,
+  so a run of them no longer reads as nesting.
 - A shell guard, `||` or `&&` followed by one flow word (`return`,
   `exit`, `continue`, `break`, `true`, `false`, `:`) with an optional
   status (a number, `$?` or a variable) and nothing else on the line but

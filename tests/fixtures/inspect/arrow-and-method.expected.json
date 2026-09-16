@@ -33,7 +33,7 @@
         "lines": 9,
         "depth": 2,
         "branches": 2,
-        "percentile": 88.3
+        "percentile": 88.4
       },
       {
         "file": "Model.js",
@@ -53,7 +53,7 @@
         "lines": 5,
         "depth": 1,
         "branches": 1,
-        "percentile": 63.8
+        "percentile": 63.9
       },
       {
         "file": "Model.js",
@@ -63,7 +63,7 @@
         "lines": 5,
         "depth": 1,
         "branches": 1,
-        "percentile": 63.8
+        "percentile": 63.9
       },
       {
         "file": "Model.js",
@@ -103,7 +103,7 @@
         "lines": 6,
         "depth": 1,
         "branches": 1,
-        "percentile": 63.8
+        "percentile": 63.9
       }
     ]
   },
@@ -142,7 +142,7 @@
         0.2222,
         0.3084,
         0.3705,
-        0.6607,
+        0.6468,
         0.3928,
         0.6786,
         0.3247,
