@@ -111,12 +111,13 @@ command that is not one literal is a `▒ ?` row with no argv, a section with
 nothing in it says "observed nothing of this kind", and the report ends by
 naming what the method cannot see. No score, no verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
-one word it closes on is `INSPECTED`. The report is an overview that fits
-one screen and names no site: the count of each kind of fact with the
-ratios a reviewer asks about, then the review classes the tree shows with
-their share and how many sites show each; `--full` is every site with every
-qualifier. `--json` prints the document of [INSPECT.md](INSPECT.md),
-`--out` writes it to a file as well, `--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
+one word it closes on is `INSPECTED`. The report is what needs attention,
+biggest first: one block per review class the tree shows, ordered by the
+class's measured share of review findings, with up to five sites under each
+and the fact at each site; classes under five percent are counted, not
+listed; `--full` is every site with every qualifier. `--json` prints the
+document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
+`--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
 when the target could not be read.
 
 `omakit doctor` names the credential source it found, or that it found none.

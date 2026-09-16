@@ -11,9 +11,9 @@
   raised, printed only where the tree shows the class's precondition, with
   its measured share (M11). Regular expressions over QML and shell, every
   row labelled observed, no score, no verdict, runs nothing from the tree.
-  The report is a one-screen overview of counts and ratios and the review
-  classes shown, naming no site; `--full` is every site with every
-  qualifier. `docs/INSPECT.md` is the contract; `--json`
+  The report is what needs attention, biggest first: one block per review
+  class the tree shows, ordered by measured share, with up to five sites
+  under each; `--full` is every site with every qualifier. `docs/INSPECT.md` is the contract; `--json`
   is the document.
 - `doctor`, `pin` and `setup` read the pinned checkout's size from `du`'s total
   whatever its exit status, so a git lock file vanishing mid-walk no longer

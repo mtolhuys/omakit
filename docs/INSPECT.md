@@ -108,59 +108,69 @@ interval that is an expression), `▓ note` for a review class row, and
 `▔ skip` for the baseline under `--offline`. It never prints `▁ ok` or
 `█ FAIL`, because it has no verdict to attach them to.
 
-Two views of the one document. The default is an overview that fits one
-screen and names no site: the subject, the files read and the baseline
-outcome; then one line per kind of fact with its count and the ratios a
-reviewer asks about (`deadline 1 of 3`, `output cap 1 of 2`, `timeout 1 of
-1`, `curl -q 0 of 1`, `under a controlled directory 1`), the shell lines
-counted by script and directory; then the review classes this tree shows,
-each with its share of review findings in the M11 sample and how many
-sites here show it, and the classes not shown. That is what a person reads
-to know the shape of a tree, and it is the same for a tree with one script
-and one with thirty. `--full` is the exhaustive view, in the order a
-reviewer reads a tree: every process with its argv and every qualifier,
-every host, every write, every timer, the capabilities, every pattern row
-with every site, the whole `not observed` and `not visible` lists, and the
-`method` line. `--json` is the document, which carries everything either
-view shows. Measured before the split: a listed tree with four shell
-scripts printed 372 process rows of two lines each, and the pattern rows a
-reviewer would act on sat under 750 lines of argv.
+Two views of the one document. The default is what needs attention,
+biggest first: one block per review class this tree shows, ordered by the
+class's share of review findings in the M11 sample, which is the one
+measured number that says how much reviewers care; under each block, the
+sites that show the class, up to five, each with the fact there in one
+line (the command, the host, or the write, cut to the width with three
+dots when long); classes under five percent of findings counted on one
+line and not listed; and the counts of what was observed in the closing
+line. Nothing else. The ordering and the threshold are the sample's
+shares, never a judgement of this plugin, and the heading says whose
+number it is. `--full` is the exhaustive view, in the order a reviewer
+reads a tree: every process with its argv and every qualifier, every host,
+every write, every timer, the capabilities, every pattern row with every
+site, the whole `not observed` and `not visible` lists, and the `method`
+line. `--json` is the document, which carries everything either view
+shows. Measured before the split: a listed tree with four shell scripts
+printed 372 process rows of two lines each, and the rows a reviewer would
+act on sat under 750 lines of argv.
 
 ```text
 subject       ~/plugins/fixture-example at a3bf9e2d
-files         3 read: 1 qml, 2 shell
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
 
-processes     3  deadline 1 of 3, output cap 1 of 2, not resolvable 1
-shell lines   2  in 2 scripts: scripts/ 2
-hosts         1  https 1 of 1, timeout 1 of 1, size cap 1 of 1, curl -q 0 of 1
-writes        2  under a controlled directory 1, outside one 1
-timers        2  repeating 1 of 2, intervals 8000 to 30000 ms
+attention     5 classes reviewers raise, biggest first by share of review
+              findings (M11); up to 5 sites each
 
-review        6 of 10 classes reviewers raise show here; their share of review
-              findings (M11, a 30-issue sample), and the sites here
-▓ note  process lifecycle          20%  2 sites
-▓ note  unbounded buffering        19%  1 site
-▓ note  file and state boundary    15%  1 site
-▓ note  environment trust           7%  4 sites
-▓ note  network egress              5%  1 site
-▓ note  privilege disclosure        3%  1 site
-not shown     secrets, supply chain, untrusted text to display, argument grammar
+▓ note  process lifecycle  20 of 100 findings  2 processes with no deadline
+        Widget.qml:20  bash scripts/refresh.sh
+        Widget.qml:28  command: root.cmd
 
-░ INSPECTED  static reading, so run-time commands and values from variables are
-             not seen; --full for every site, --json for the document
+▓ note  unbounded buffering  19 of 100 findings  1 collector with no cap
+        Widget.qml:20  bash scripts/refresh.sh
+
+▓ note  file and state boundary  15 of 100 findings  1 write outside a
+        controlled directory
+        scripts/refresh.sh:3  > /tmp/fixture.example.cache
+
+▓ note  environment trust  7 of 100 findings  3 tools resolved from PATH (curl,
+        bash, pacman); curl without -q
+        Widget.qml:12         curl -fsSL --max-time 5 --max-filesize 65536 ht...
+        Widget.qml:20         bash scripts/refresh.sh
+        scripts/install.sh:3  sudo pacman -S --needed --noconfirm jq
+
+▓ note  network egress  5 of 100 findings  curl -L without --proto
+        Widget.qml:12  https://api.example.com via curl
+
+under 5%      privilege disclosure (1 site)
+
+░ INSPECTED  5 processes (3 in qml, 2 shell lines), 1 host, 2 writes, 2 timers
+             observed; static; --full for every site, --json for the document
 ```
 
 That is the real default output over `tests/fixtures/inspect/example/`, at
 eighty columns as a pipe gets it; `--full` prints the same tree as five
 process rows with their argv arrays and every qualifier, one row per host,
-write and timer, and every site under every pattern row.
+write and timer, and every site under every pattern row, uncut.
 A pattern row prints only when the tree shows its precondition (a process
 without a deadline, a write outside a controlled directory). A pattern whose
 precondition is absent is not listed as "ok"; it is simply not there, and the
-`not observed` line of `--full` (`not shown` in the overview) names what
-was looked for. The share is the sample's, cited from `docs/MEASUREMENTS.md`,
+`not observed` line of `--full` names what was looked for; the default
+view lists only what was observed, and counts the classes under its
+threshold. The share is the sample's, cited from `docs/MEASUREMENTS.md`,
 and the source names the entry next to the pattern the way every `submit`
 check names its `why`. The review line for a tree that shows none of the
 ten preconditions says so.

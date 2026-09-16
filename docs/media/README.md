@@ -297,11 +297,11 @@ fixture from `tests/fixtures/inspect/`, materialised into a temporary Git
 repository the way `submit.gif`'s subject is, so anyone can reproduce it
 without a plugin of their own and no third-party tree is named. The capture
 is the real stdout, unedited, at the eighty columns a pipe gets; the scene
-is 110 columns wide so nothing is cut, 23 rows, and
-omits nothing. The last frame holds on the review classes and the closing
+is 110 columns wide so nothing is cut, 17 rows, and
+omits nothing. The last frame holds on the attention list and the closing
 line for 8.16 s. Re-captured and re-rendered as the default report changed,
-with the same pipeline and versions, last when it became the one-screen
-overview.
+with the same pipeline and versions, last on 2026-09-16 when it became the
+attention list.
 
 ```bash
 node --input-type=module -e '
@@ -320,8 +320,8 @@ another ffmpeg, which is the reason the version is recorded.
 
 | GIF | Bytes | Duration | Final hold | Final screen |
 | --- | ---: | ---: | ---: | --- |
-| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 22,400 | 11.20 s | 8.16 s | the overview: counts and ratios per kind, the two review classes with their shares and site counts, and INSPECTED |
+| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 18,144 | 11.08 s | 8.16 s | the two review classes with their shares, the site under each with the command there, and INSPECTED |
 
-The capture has 20 lines, none wider than 80 columns, and its sha256 and the
+The capture has 14 lines, none wider than 80 columns, and its sha256 and the
 GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
 beside the other GIFs.

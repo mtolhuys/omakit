@@ -101,51 +101,49 @@ test("the rendered report, in both views, says the same words with and without c
     assert.match(uncoloured, new RegExp(`${DENSITY.light} ${INSPECT_VERDICT}`))
     // What the method cannot see is named at the end of both views: a line of its own in --full, in the closing line of the overview.
     if (full) assert.match(uncoloured, /^not visible   /m)
-    else assert.match(uncoloured, /INSPECTED  static reading, so run-time commands and values from variables are/)
+    else assert.match(uncoloured.replace(/\n {13}/g, " "), /observed; static; --full for every site, --json for the document/)
   }
 })
 
-test("the default view is a one-screen overview: counts and ratios per kind, the review classes with share and site count, and no site named", async () => {
+test("the default view is what needs attention, biggest first: one block per class by share, the sites under it with the fact at each, classes under 5% counted, nothing else", async () => {
   const example = (await documentFor("example")).document
   const report = renderInspect(example, { colour: false })
-  const unwrapped = report.replace(/\n {17}/g, " ").replace(/\n {14}/g, " ").replace(/\n {13}/g, " ")
+  const unwrapped = report.replace(/\n {14}/g, " ").replace(/\n {13}/g, " ").replace(/\n {8}/g, " ")
   const full = renderInspect(example, { colour: false, full: true })
   assert.match(report, /^subject {7}.* at [0-9a-f]{8}$/m)
-  assert.match(report, /^files {9}3 read: 1 qml, 2 shell$/m)
   assert.match(unwrapped, /^baseline {6}review-required at pin [0-9a-f]{8}: installer, privilege, package-manager$/m)
-  assert.match(report, /^processes {5}3  deadline 1 of 3, output cap 1 of 2, not resolvable 1$/m)
-  assert.match(report, /^shell lines {3}2  in 2 scripts: scripts\/ 2$/m)
-  assert.match(report, /^hosts {9}1  https 1 of 1, timeout 1 of 1, size cap 1 of 1, curl -q 0 of 1$/m)
-  assert.match(unwrapped, /^writes {8}2  under a controlled directory 1, outside one 1$/m)
-  assert.match(report, /^timers {8}2  repeating 1 of 2, intervals 8000 to 30000 ms$/m)
-  assert.match(report, /^review {8}6 of 10 classes reviewers raise show here/m)
-  assert.match(report, new RegExp(`^${DENSITY.dark} note  process lifecycle {10}20%  2 sites$`, "m"))
-  assert.match(report, new RegExp(`^${DENSITY.dark} note  environment trust {11}7%  4 sites$`, "m"))
-  assert.match(report, new RegExp(`^${DENSITY.dark} note  unbounded buffering {8}19%  1 site$`, "m"))
-  assert.match(unwrapped, /^not shown {5}secrets, supply chain, untrusted text to display, argument grammar$/m)
-  assert.match(unwrapped, /INSPECTED  static reading, so run-time commands and values from variables are not seen; --full for every site, --json for the document$/m)
-  // No site, no argv, no path: those are --full's and the document's.
-  assert.doesNotMatch(report, /\w+\.qml:\d+|\.sh:\d+/, "the overview names no site")
-  assert.doesNotMatch(report, /curl -fsSL|\/tmp\/fixture/)
-  assert.doesNotMatch(report, /^method/m)
-  assert.match(full, /^method/m)
-  assert.match(full, /^░ info  scripts\/install\.sh:3  \["sudo", "pacman"/m)
-  assert.ok(report.split("\n").length <= 24, `${report.split("\n").length} lines is more than a screen`)
+  assert.match(unwrapped, /^attention {5}5 classes reviewers raise, biggest first by share of review findings \(M11\); up to 5 sites each$/m)
+  // Ordered by share, each block a heading then its sites with the fact there.
+  const blocks = [...report.matchAll(new RegExp(`^${DENSITY.dark} note  ([a-z ]+?)  (\\d+) of 100 findings`, "gm"))].map((match) => [match[1], Number(match[2])])
+  assert.deepEqual(blocks, [["process lifecycle", 20], ["unbounded buffering", 19], ["file and state boundary", 15], ["environment trust", 7], ["network egress", 5]])
+  assert.match(report, new RegExp(`^${DENSITY.dark} note  process lifecycle  20 of 100 findings  2 processes with no deadline\\n {8}Widget\\.qml:20  bash scripts/refresh\\.sh\\n {8}Widget\\.qml:28  command: root\\.cmd$`, "m"))
+  assert.match(report, /^ {8}scripts\/refresh\.sh:3  > \/tmp\/fixture\.example\.cache$/m, "a write site shows the write, not the command on the same line")
+  assert.match(report, /^ {8}Widget\.qml:12 +curl -fsSL --max-time 5 --max-filesize 65536 ht\.\.\.$/m, "a long command is cut, --full has it whole")
+  assert.equal((report.match(/^ {8}Widget\.qml:12 /gm) || []).length, 2, "one line per site per class: cited twice by environment trust, listed once there and once under network egress")
+  assert.match(report, /^under 5% {6}privilege disclosure \(1 site\)$/m)
+  assert.match(unwrapped, /INSPECTED  5 processes \(3 in qml, 2 shell lines\), 1 host, 2 writes, 2 timers observed; static; --full for every site, --json for the document$/m)
+  assert.doesNotMatch(report, /^processes|^hosts|^writes|^timers|^method/m, "no fact section: the facts are --full's")
+  assert.match(full, /^processes {5}observed 5/m)
+  assert.ok(report.split("\n").length <= 40, `${report.split("\n").length} lines is more than a screen`)
   for (const row of example.patterns) assert.ok(!/\w:\d+/.test(row.summary), `${row.id}: the summary carries a site`)
 })
 
-test("the overview over nothing, and the ratios over a tree of scripts", async () => {
+test("the attention view over nothing, and the site cap and the threshold", async () => {
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  for (const label of ["processes", "shell lines", "hosts", "writes", "timers"]) assert.match(nothing, new RegExp(`^${label} +0  none observed$`, "m"))
-  assert.match(nothing, /^review {8}none of the 10 classes reviewers raise shows here \(M11\)$/m)
+  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
-  assert.doesNotMatch(nothing, /^not shown/m)
-  const radar = (await documentFor("write-tmp")).document
-  const report = renderInspect(radar, { colour: false })
-  assert.match(report, /^processes {5}0  none observed$/m)
-  assert.match(report, /^shell lines {3}1  in 1 script: scripts\/ 1$/m)
-  assert.match(report, /^writes {8}1  outside one 1$/m)
-  assert.match(report, new RegExp(`^${DENSITY.dark} note  file and state boundary {4}15%  1 site$`, "m"))
+  assert.doesNotMatch(nothing, /^under 5%/m)
+  const base = (await documentFor("nothing")).document
+  const many = { ...base, patterns: [
+    { id: "privilege-disclosure", observedCount: 2, sites: [{ file: "A.qml", line: 1 }, { file: "A.qml", line: 2 }], observation: "observed sudo in argv (A.qml:1, A.qml:2)", summary: "sudo in argv", measurement: "M11", share: 0.03 },
+    { id: "process-lifecycle", observedCount: 7, sites: [1, 2, 3, 4, 5, 6, 7].map((line) => ({ file: "A.qml", line })), observation: "observed 7 processes with no deadline (A.qml:1, A.qml:2, A.qml:3, A.qml:4, A.qml:5, A.qml:6, A.qml:7)", summary: "7 processes with no deadline", measurement: "M11", share: 0.2 },
+  ], lookedFor: PATTERNS.map((pattern) => pattern.id).filter((id) => !["privilege-disclosure", "process-lifecycle"].includes(id)) }
+  const report = renderInspect(many, { colour: false })
+  assert.match(report, /^attention {5}1 class reviewers raise/m)
+  assert.equal((report.match(/^ {8}A\.qml:\d/gm) || []).length, 5, "five sites shown")
+  assert.match(report, /^ {8}and 2 more \(--full\)$/m)
+  assert.match(report, /^under 5% {6}privilege disclosure \(2 sites\)$/m)
+  assert.doesNotMatch(report, new RegExp(`${DENSITY.dark} note  privilege disclosure`))
 })
 
 test("the nothing fixture is reported as observed nothing of this kind, four times, and never as clean", async () => {
@@ -363,8 +361,8 @@ test("exit 0 with a report whatever was observed; --json is the document; --out 
   const report = run(["inspect", fixture.dir])
   assert.equal(report.code, 0, report.err)
   assert.equal(report.err, "")
-  assert.match(report.out, /^processes {5}1  deadline 0 of 1, output cap 0 of 1$/m)
-  assert.match(report.out, /INSPECTED  static reading/)
+  assert.match(report.out, new RegExp(`^${DENSITY.dark} note  process lifecycle  20 of 100 findings  1 process with no deadline$`, "m"))
+  assert.match(report.out, /^ {8}Widget\.qml:10  \/usr\/bin\/df -h \/$/m)
   assert.deepEqual(JSON.parse(run(["inspect", fixture.dir, "--json"]).out).counts, { processes: { total: 1, qml: 1, shell: 0 }, hosts: 0, writes: 0, timers: 0, notResolvable: 0 })
   const json = run(["inspect", fixture.dir, "--json"])
   assert.equal(json.code, 0)

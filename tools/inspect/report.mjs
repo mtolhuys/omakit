@@ -6,20 +6,18 @@
 // line says what was observed, and a section with nothing in it says
 // "observed nothing of this kind", never "clean".
 //
-// Two views of one document. The default is an overview a person reads in
-// one screen and never scrolls: the subject, the files and the baseline
-// outcome, then one line per kind of fact with its count and the ratios a
-// reviewer asks about (deadline 2 of 6, output cap 3 of 6, timeout 0 of 2,
-// writes under a controlled directory 3), then the review classes this
-// tree shows with their share and how many sites show each. No site is
-// named. Measured before this: a listed tree with four shell scripts
-// printed 372 process rows of two lines each, and the two pattern rows a
+// Two views of one document. The default is what needs attention, biggest
+// first: one block per review class this tree shows, ordered by the
+// class's share of review findings in the M11 sample, which is the one
+// measured number that says how much reviewers care; under each, up to
+// five sites with the fact at each in one line; classes under five percent
+// counted on one line. Measured before this: a listed tree with four shell
+// scripts printed 372 process rows of two lines each, and the two rows a
 // reviewer would act on sat under 750 lines of argv. `--full` is the
-// exhaustive view, every site with every qualifier and the whole not
-// observed and not visible lists; `--json` is the document itself, which
-// carries everything either view shows.
+// exhaustive view, every site of every kind with every qualifier; `--json`
+// is the document itself, which carries everything either view shows.
 
-import { colourEnabled, field, GUTTER, INSPECT_VERDICT, LABEL, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
+import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { PATTERNS } from "./patterns.mjs"
 import { toolOf } from "./processes.mjs"
@@ -163,28 +161,54 @@ function patternLines(document, c) {
 }
 
 /**
- * A stats line: the label in the label column, the count right-aligned in
- * a column as wide as the widest count, then the ratios and the split as
- * one phrase, wrapped under the phrase. Numbers are counts of what the
- * extraction saw; "2 of 6" is two rows out of six that show the thing.
+ * The default view: what needs attention, biggest first. One block per
+ * review class this tree shows, ordered by the class's share of review
+ * findings in the M11 sample, which is the one measured number that says
+ * how much reviewers care; under each, the sites that show it, up to
+ * SHOWN_SITES, with the fact at each site in one line. Classes under
+ * MIN_SHARE are counted on one line and not listed. Nothing else is
+ * printed: the counts of what was observed go in the closing line, and
+ * `--full` has every site of every kind.
  */
-function statLine(label, count, phrase, countWidth, c) {
-  const head = `${c("label", label.padEnd(LABEL))}${String(count).padStart(countWidth)}  `
-  const indent = LABEL + countWidth + 2
-  const lines = phrase ? wrap(phrase, { indent }, c) : [""]
-  return [`${head}${lines[0].trimStart()}`, ...lines.slice(1)]
+const MIN_SHARE = 0.05
+const SHOWN_SITES = 5
+
+/** A shell word for the eye: quoted only when it holds a space or a quote, an expression element as its source text. */
+function commandLine(process) {
+  const computed = new Set(process.expressions.map((entry) => entry.index))
+  return process.argv.map((word, index) => (computed.has(index) || !/[\s"'`]/.test(word) ? word : JSON.stringify(word))).join(" ")
 }
 
-const of = (part, whole) => `${part} of ${whole}`
-
-/** The shell scripts counted by top-level directory: `scripts/ 5, bin/ 2, tests/ 23`. */
-function scriptsByDirectory(processes) {
-  const byDirectory = new Map()
-  for (const file of new Set(processes.filter((entry) => entry.declaredIn === "shell").map((entry) => entry.file))) {
-    const directory = file.includes("/") ? `${file.split("/")[0]}/` : ""
-    byDirectory.set(directory, (byDirectory.get(directory) || 0) + 1)
+/**
+ * The fact at a site, in one line: the write there for the file class, the
+ * host there for the egress class, otherwise the command, then the host,
+ * then the write, whichever the site has.
+ */
+function factAt(document, at, patternId) {
+  const same = (row) => `${row.file}:${row.line}` === at
+  const process = () => {
+    const row = document.observed.processes.find(same)
+    return row ? (row.argvForm === "computed" ? `command: ${row.commandText}` : commandLine(row) || "[] (an empty argv)") : ""
   }
-  return [...byDirectory.entries()].map(([directory, count]) => (directory ? `${directory} ${count}` : `${count} at the root`)).join(", ")
+  const host = () => {
+    const row = document.observed.hosts.find(same)
+    return row ? `${row.scheme}://${row.host}${row.tool ? ` via ${row.tool}` : ""}` : ""
+  }
+  const write = () => {
+    const row = document.observed.writes.find(same)
+    return row ? `${row.via} ${row.canonicalPath ?? row.path}` : ""
+  }
+  const order = patternId === "file-and-state-boundary" ? [write, process, host] : patternId === "network-egress" ? [host, process, write] : [process, host, write]
+  for (const fact of order) {
+    const text = fact()
+    if (text) return text
+  }
+  return ""
+}
+
+/** Text cut to a width with three dots, for a command a person only needs to recognise; --full has it whole. */
+function cut(text, width) {
+  return text.length <= width ? text : `${text.slice(0, Math.max(0, width - 3))}...`
 }
 
 function baselineText(section) {
@@ -199,90 +223,51 @@ function baselineText(section) {
 /**
  * @param {object} document the document of docs/INSPECT.md
  * @param {{ colour?: boolean, full?: boolean }} [options] `full` is the
- *   exhaustive view behind `--full`; the default is the overview.
+ *   exhaustive view behind `--full`; the default is what needs attention,
+ *   biggest first.
  * @returns {string}
  */
 export function renderInspect(document, { colour = colourEnabled(), full = false } = {}) {
   if (full) return renderFull(document, { colour })
   const c = styler(colour)
   const out = []
-  const read = document.subject.filesRead
-  const kinds = Object.entries(read).filter(([, count]) => count > 0).map(([kind, count]) => `${count} ${kind}`)
-  const total = Object.values(read).reduce((sum, count) => sum + count, 0)
   const counts = document.counts
-  const { processes, hosts, writes, timers } = document.observed
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}`, c))
-  out.push(...field("files", `${total} read${kinds.length ? `: ${kinds.join(", ")}` : ""}`, c))
   out.push(...field("baseline", baselineText(document.marketplaceBaseline), c))
   out.push("")
 
-  // One line per kind: the count, then the ratios that a reviewer asks about.
-  const qml = processes.filter((entry) => entry.declaredIn === "qml" && !entry.detached)
-  const detached = processes.filter((entry) => entry.detached).length
-  const collectors = qml.filter((entry) => entry.output.collector === "StdioCollector" || entry.output.collector === "SplitParser")
-  const computed = processes.filter((entry) => entry.argvForm === "computed").length
-  const expressions = processes.filter((entry) => entry.expressions.length).length
-  const processPhrase = counts.processes.qml
-    ? [
-      qml.length ? `deadline ${of(qml.filter((entry) => entry.deadline.observed).length, qml.length)}` : null,
-      collectors.length ? `output cap ${of(collectors.filter((entry) => entry.output.capObserved).length, collectors.length)}` : null,
-      detached ? `detached ${detached}` : null,
-      expressions ? `computed argv element ${expressions}` : null,
-      computed ? `not resolvable ${computed}` : null,
-    ].filter(Boolean).join(", ")
-    : "none observed"
-  const scripts = new Set(processes.filter((entry) => entry.declaredIn === "shell").map((entry) => entry.file)).size
-  const shellPhrase = counts.processes.shell ? `in ${plural(scripts, "script")}: ${scriptsByDirectory(processes)}` : "none observed"
-  const curls = hosts.filter((entry) => entry.tool === "curl")
-  const hostPhrase = hosts.length
-    ? [
-      `https ${of(hosts.filter((entry) => entry.scheme === "https").length, hosts.length)}`,
-      `timeout ${of(hosts.filter((entry) => entry.timeout.observed).length, hosts.length)}`,
-      `size cap ${of(hosts.filter((entry) => entry.sizeCap.observed).length, hosts.length)}`,
-      curls.length ? `curl -q ${of(curls.filter((entry) => entry.flags.includes("-q")).length, curls.length)}` : null,
-      hosts.some((entry) => entry.privateAddress) ? `private address ${hosts.filter((entry) => entry.privateAddress).length}` : null,
-    ].filter(Boolean).join(", ")
-    : "none observed"
-  const under = writes.filter((entry) => entry.controlledDirectory === "observed").length
-  const outside = writes.filter((entry) => entry.controlledDirectory === "not-observed").length
-  const variable = writes.length - under - outside
-  const writePhrase = writes.length
-    ? [under ? `under a controlled directory ${under}` : null, outside ? `outside one ${outside}` : null, variable ? `path from a variable ${variable}` : null].filter(Boolean).join(", ")
-    : "none observed"
-  const intervals = timers.map((entry) => entry.intervalMs).filter((value) => value !== null)
-  const timerPhrase = timers.length
-    ? [
-      `repeating ${of(timers.filter((entry) => entry.repeat === true).length, timers.length)}`,
-      intervals.length ? (intervals.length === 1 ? `interval ${intervals[0]} ms` : `intervals ${Math.min(...intervals)} to ${Math.max(...intervals)} ms`) : null,
-      timers.length - intervals.length ? `interval not resolvable ${timers.length - intervals.length}` : null,
-    ].filter(Boolean).join(", ")
-    : "none observed"
-  const rows = [
-    ["processes", counts.processes.qml, processPhrase],
-    ["shell lines", counts.processes.shell, shellPhrase],
-    ["hosts", hosts.length, hostPhrase],
-    ["writes", writes.length, writePhrase],
-    ["timers", timers.length, timerPhrase],
-  ]
-  const countWidth = Math.max(...rows.map(([, count]) => String(count).length))
-  for (const [label, count, phrase] of rows) out.push(...statLine(label, count, phrase, countWidth, c))
-  out.push("")
-
-  // The review classes: what reviewers raise, how often, and how many sites show it here.
-  if (PATTERNS.length) {
-    out.push(...field("review", document.patterns.length
-      ? `${of(document.patterns.length, PATTERNS.length)} classes reviewers raise show here; their share of review findings (${PATTERNS[0].measurement}, a ${PATTERNS[0].sample}), and the sites here`
-      : `none of the ${PATTERNS.length} classes reviewers raise shows here (${PATTERNS[0].measurement})`, c))
-    const labelWidth = Math.max(...PATTERNS.map((pattern) => pattern.label.length))
-    for (const entry of document.patterns) {
-      const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
-      out.push(`${mark("advisory", c)}${c("name", pattern.label.padEnd(labelWidth))}  ${String(Math.round(entry.share * 100)).padStart(2)}%  ${plural(entry.observedCount, "site")}`)
-    }
-    const lookedFor = document.lookedFor.map((id) => PATTERNS.find((pattern) => pattern.id === id)?.label || id)
-    if (lookedFor.length && document.patterns.length) out.push(...field("not shown", lookedFor.join(", "), c))
-    out.push("")
+  const ranked = [...document.patterns].sort((a, b) => b.share - a.share)
+  const shown = ranked.filter((entry) => entry.share >= MIN_SHARE)
+  const below = ranked.filter((entry) => entry.share < MIN_SHARE)
+  const width = outputColumns()
+  if (!ranked.length) {
+    out.push(...field("attention", `nothing: none of the ${PATTERNS.length} classes reviewers raise shows in this tree (${PATTERNS[0]?.measurement || "M11"})`, c))
+  } else {
+    out.push(...field("attention", `${plural(shown.length, "class", "classes")} reviewers raise, biggest first by share of review findings (${PATTERNS[0].measurement}); up to ${SHOWN_SITES} sites each`, c))
   }
-  out.push(...verdict("info", INSPECT_VERDICT, "static reading, so run-time commands and values from variables are not seen; --full for every site, --json for the document", c))
+  for (const entry of shown) {
+    const pattern = PATTERNS.find((candidate) => candidate.id === entry.id)
+    out.push("")
+    const share = `${Math.round(entry.share * 100)} of 100 findings`
+    const heading = wrap(entry.summary, { indent: GUTTER, first: GUTTER + pattern.label.length + 2 + share.length + 2 }, c)
+    out.push(`${mark("advisory", c)}${c("name", pattern.label)}  ${c("label", share)}  ${heading[0].trimStart()}`, ...heading.slice(1))
+    // A site cited twice by one class (curl from PATH and curl without -q) is one line.
+    const sites = [...new Set(entry.sites.map((site_) => `${site_.file}:${site_.line}`))]
+    const siteWidth = Math.max(...sites.slice(0, SHOWN_SITES).map((at) => at.length))
+    for (const at of sites.slice(0, SHOWN_SITES)) {
+      const fact = factAt(document, at, entry.id)
+      const room = width - GUTTER - siteWidth - 2
+      out.push(`${" ".repeat(GUTTER)}${c("name", at.padEnd(siteWidth))}${fact ? `  ${cut(fact, room)}` : ""}`)
+    }
+    if (sites.length > SHOWN_SITES) out.push(...wrap(`and ${sites.length - SHOWN_SITES} more (--full)`, { indent: GUTTER }).map((line) => c("label", line)))
+  }
+  if (below.length) {
+    out.push("")
+    out.push(...field(`under ${Math.round(MIN_SHARE * 100)}%`, below.map((entry) => `${PATTERNS.find((candidate) => candidate.id === entry.id)?.label || entry.id} (${plural(entry.observedCount, "site")})`).join(", "), c))
+  }
+  out.push("")
+  const processes = `${plural(counts.processes.total, "process", "processes")}${counts.processes.total ? ` (${split(counts.processes)})` : ""}`
+  out.push(...verdict("info", INSPECT_VERDICT, `${processes}, ${plural(counts.hosts, "host")}, ${plural(counts.writes, "write")}, ${plural(counts.timers, "timer")} observed; static; --full for every site, --json for the document`, c))
   return out.join("\n")
 }
 
