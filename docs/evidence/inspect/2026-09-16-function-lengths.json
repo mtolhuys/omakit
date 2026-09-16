@@ -2,7 +2,7 @@
   "measurement": "M12",
   "date": "2026-09-16",
   "command": "node tools/inspect/measure-functions.mjs",
-  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule), each fetched read-only at that commit in reviewer mode. A function is a `function name(`, a named arrow function (`const load = (rows) => {`, `this.load = rows => {`), a method shorthand `load(rows) {` inside an object literal or a class, or a multi-line `onSomething: {` handler in QML and JavaScript; a `name() {` or `function name` block in shell; a `def` in Python. Anonymous callbacks are not counted. Lines are first to last line inclusive; depth is the deepest nesting below the body, the body itself at 0 in every language, a brace that opens an object or array literal or an inline arrow body not a level; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are nearest-rank over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same functions, value to count, from which a function's percentile rank is read. Per tree, functionLines is the lines inside every function, heavyLines the lines inside functions over any p90 threshold of this record, and heavyShare their ratio, 0 with no function; the size score of omakit inspect is a tree's position among these 50 heavyShares.",
+  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule), each fetched read-only at that commit in reviewer mode. A function is a `function name(`, a named arrow function (`const load = (rows) => {`, `this.load = rows => {`), a method shorthand `load(rows) {` inside an object literal or a class, or a multi-line `onSomething: {` handler in QML and JavaScript; a `name() {` or `function name` block in shell; a `def` in Python. Anonymous callbacks are not counted. Lines are first to last line inclusive; depth is the deepest nesting below the body, the body itself at 0 in every language, a brace that opens an object or array literal or an inline arrow body not a level; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). In shell, a ",
   "sample": {
     "trees": 50,
     "functions": 6041,
@@ -19,12 +19,12 @@
     "depth": {
       "p50": 0,
       "p90": 2,
-      "max": 18
+      "max": 7
     },
     "branches": {
       "p50": 1,
       "p90": 6,
-      "max": 87
+      "max": 85
     }
   },
   "distribution": {
@@ -123,7 +123,6 @@
       "98": 1,
       "99": 1,
       "100": 1,
-      "101": 1,
       "102": 2,
       "104": 1,
       "108": 1,
@@ -137,14 +136,15 @@
       "119": 1,
       "120": 1,
       "121": 1,
-      "128": 2,
+      "128": 1,
       "129": 1,
-      "133": 1,
+      "133": 2,
       "134": 1,
       "144": 1,
       "145": 1,
       "154": 1,
       "161": 1,
+      "162": 1,
       "173": 1,
       "253": 1,
       "277": 1,
@@ -153,71 +153,62 @@
       "495": 1
     },
     "branches": {
-      "0": 2336,
-      "1": 1096,
-      "2": 807,
-      "3": 455,
-      "4": 339,
-      "5": 233,
-      "6": 171,
+      "0": 2377,
+      "1": 1112,
+      "2": 806,
+      "3": 453,
+      "4": 330,
+      "5": 225,
+      "6": 170,
       "7": 125,
-      "8": 90,
-      "9": 68,
+      "8": 85,
+      "9": 71,
       "10": 47,
-      "11": 53,
-      "12": 24,
-      "13": 26,
-      "14": 18,
-      "15": 11,
-      "16": 17,
-      "17": 18,
-      "18": 12,
-      "19": 12,
-      "20": 11,
-      "21": 3,
-      "22": 5,
-      "23": 7,
-      "24": 8,
-      "25": 4,
+      "11": 48,
+      "12": 25,
+      "13": 24,
+      "14": 15,
+      "15": 9,
+      "16": 16,
+      "17": 13,
+      "18": 11,
+      "19": 11,
+      "20": 12,
+      "21": 6,
+      "22": 4,
+      "23": 4,
+      "24": 6,
+      "25": 2,
       "26": 1,
-      "27": 6,
+      "27": 5,
       "28": 4,
-      "29": 5,
+      "29": 3,
       "31": 1,
       "32": 3,
-      "33": 3,
-      "34": 1,
+      "33": 2,
       "35": 1,
-      "36": 4,
-      "37": 1,
+      "36": 3,
       "38": 1,
+      "39": 1,
       "40": 1,
-      "41": 1,
-      "43": 2,
-      "44": 1,
-      "45": 2,
-      "46": 1,
+      "43": 1,
+      "45": 1,
+      "48": 1,
+      "58": 1,
       "64": 1,
       "75": 1,
       "78": 1,
-      "85": 1,
-      "87": 2
+      "85": 1
     },
     "depth": {
-      "0": 3794,
-      "1": 1421,
-      "2": 481,
-      "3": 155,
-      "4": 80,
-      "5": 62,
-      "6": 27,
-      "7": 10,
-      "8": 5,
-      "9": 2,
-      "12": 1,
-      "13": 1,
-      "15": 1,
-      "18": 1
+      "0": 3969,
+      "1": 1439,
+      "2": 454,
+      "3": 115,
+      "4": 37,
+      "5": 22,
+      "6": 4,
+      "7": 1
     }
   },
   "rows": [
@@ -245,11 +236,11 @@
         "shell": 0,
         "python": 9
       },
-      "longest": 101,
+      "longest": 133,
       "medianLines": 4,
-      "functionLines": 366,
-      "heavyLines": 123,
-      "heavyShare": 0.3361
+      "functionLines": 398,
+      "heavyLines": 155,
+      "heavyShare": 0.3894
     },
     {
       "row": 3,
@@ -260,11 +251,11 @@
         "shell": 0,
         "python": 8
       },
-      "longest": 128,
+      "longest": 162,
       "medianLines": 4.5,
-      "functionLines": 405,
-      "heavyLines": 164,
-      "heavyShare": 0.4049
+      "functionLines": 439,
+      "heavyLines": 198,
+      "heavyShare": 0.451
     },
     {
       "row": 4,
@@ -308,8 +299,8 @@
       "longest": 52,
       "medianLines": 7,
       "functionLines": 499,
-      "heavyLines": 223,
-      "heavyShare": 0.4469
+      "heavyLines": 206,
+      "heavyShare": 0.4128
     },
     {
       "row": 7,
@@ -518,8 +509,8 @@
       "longest": 110,
       "medianLines": 6,
       "functionLines": 827,
-      "heavyLines": 564,
-      "heavyShare": 0.682
+      "heavyLines": 548,
+      "heavyShare": 0.6626
     },
     {
       "row": 21,
@@ -608,8 +599,8 @@
       "longest": 72,
       "medianLines": 7,
       "functionLines": 647,
-      "heavyLines": 464,
-      "heavyShare": 0.7172
+      "heavyLines": 440,
+      "heavyShare": 0.6801
     },
     {
       "row": 27,
@@ -638,8 +629,8 @@
       "longest": 55,
       "medianLines": 6,
       "functionLines": 1500,
-      "heavyLines": 562,
-      "heavyShare": 0.3747
+      "heavyLines": 486,
+      "heavyShare": 0.324
     },
     {
       "row": 29,
@@ -743,8 +734,8 @@
       "longest": 14,
       "medianLines": 6,
       "functionLines": 55,
-      "heavyLines": 14,
-      "heavyShare": 0.2545
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 36,
@@ -818,8 +809,8 @@
       "longest": 90,
       "medianLines": 10.5,
       "functionLines": 827,
-      "heavyLines": 360,
-      "heavyShare": 0.4353
+      "heavyLines": 345,
+      "heavyShare": 0.4172
     },
     {
       "row": 41,
@@ -834,7 +825,7 @@
       "medianLines": null,
       "functionLines": 0,
       "heavyLines": 0,
-      "heavyShare": 0
+      "heavyShare": null
     },
     {
       "row": 42,
@@ -848,8 +839,8 @@
       "longest": 154,
       "medianLines": 6,
       "functionLines": 9341,
-      "heavyLines": 3250,
-      "heavyShare": 0.3479
+      "heavyLines": 2634,
+      "heavyShare": 0.282
     },
     {
       "row": 43,
@@ -863,8 +854,8 @@
       "longest": 71,
       "medianLines": 8,
       "functionLines": 311,
-      "heavyLines": 190,
-      "heavyShare": 0.6109
+      "heavyLines": 175,
+      "heavyShare": 0.5627
     },
     {
       "row": 44,
@@ -908,8 +899,8 @@
       "longest": 144,
       "medianLines": 7,
       "functionLines": 14911,
-      "heavyLines": 8386,
-      "heavyShare": 0.5624
+      "heavyLines": 8137,
+      "heavyShare": 0.5457
     },
     {
       "row": 47,
@@ -923,8 +914,8 @@
       "longest": 292,
       "medianLines": 10,
       "functionLines": 5966,
-      "heavyLines": 4047,
-      "heavyShare": 0.6783
+      "heavyLines": 4035,
+      "heavyShare": 0.6763
     },
     {
       "row": 48,
@@ -953,8 +944,8 @@
       "longest": 110,
       "medianLines": 9,
       "functionLines": 515,
-      "heavyLines": 313,
-      "heavyShare": 0.6078
+      "heavyLines": 291,
+      "heavyShare": 0.565
     },
     {
       "row": 50,
@@ -972,5 +963,5 @@
       "heavyShare": 0.5826
     }
   ],
-  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. Re-measured on 2026-09-16 after three extraction fixes, so the quantiles are not comparable with the 0.4.3 record (this file at commit 6619c26: 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3; and before it 18 trees, 715 functions, p90 18 lines, 7 branches, nesting 2): a Python body now starts at depth 0 the way a brace body does, where it started at 1; a brace that opens an object or array literal is no longer a nesting level; and a named arrow function or a method shorthand is a function, where only `function name(` and `onSomething: {` were."
+  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. Re-measured on 2026-09-16 after three extraction fixes, so the quantiles are not comparable with the 0.4.3 record (this file at commit 6619c26: 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3; and before it 18 trees, 715 functions, p90 18 lines, 7 branches, nesting 2): a Python body now starts at depth 0 the way a brace body does, where it started at 1; a brace that opens an object or array literal is no longer a nesting level; and a named arrow function or a method shorthand is a function, where only `function name(` and `onSomething: {` were. Re-measured again for 0.5.1 after four more (the 0.5.0 record is this file at commit 7df451a: 6041 functions, p90 22 lines, 6 branches, nesting 2, six heavyShares of 0 among 50): a Python continuation line inside an open bracket no longer counts as nesting; a shell heredoc body and a single-quoted program spanning lines are no longer read as shell; a shell guard (`|| return 1`) is no longer a branch; and a tree with no function carries heavyShare null instead of 0, so it no longer lifts every other tree's rank."
 }

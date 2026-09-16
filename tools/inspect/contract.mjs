@@ -169,7 +169,7 @@ export function validateInspectDocument(document, known = {}) {
     for (const key of ["lines", "branches", "depth"]) if (!isInt(size.thresholds?.[key]) || size.thresholds[key] < 1) problems.push(`size.thresholds.${key} is not a count`)
     const shares = size.sample?.heavyShares
     if (!size.sample || !isInt(size.sample.trees) || !isInt(size.sample.functions)) problems.push("size.sample is not { trees, functions, heavyShares }")
-    else if (!Array.isArray(shares) || shares.length !== size.sample.trees || !shares.every((share) => typeof share === "number" && share >= 0 && share <= 1)) problems.push("size.sample.heavyShares is not one share from 0 to 1 per listed tree")
+    else if (!Array.isArray(shares) || !shares.length || shares.length > size.sample.trees || !shares.every((share) => typeof share === "number" && share >= 0 && share <= 1)) problems.push("size.sample.heavyShares is not one share from 0 to 1 per listed tree with a function")
     const scorable = Array.isArray(observed.functions) && observed.functions.length > 0
     if (typeof size.heavyShare !== "number" || size.heavyShare < 0 || size.heavyShare > 1) problems.push("size.heavyShare is not a share from 0 to 1")
     else if (Array.isArray(observed.functions) && size.thresholds) {

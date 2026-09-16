@@ -869,8 +869,8 @@ Measured 2026-09-16 over the first 50 distinct repositories in the pinned
 catalog's order whose listing is community, laid out as a root plugin and
 carrying a validated commit (the `inspect` record's selection rule of
 2026-09-15, widened from 18 to 50), each fetched read-only at that commit
-in reviewer mode, and re-measured the same day after three extraction
-fixes (below). The run is reproducible:
+in reviewer mode, re-measured the same day after three extraction fixes,
+and again after four more (both below). The run is reproducible:
 
 ```bash
 node tools/inspect/measure-functions.mjs   # writes docs/evidence/inspect/<date>-function-lengths.json
@@ -884,26 +884,48 @@ and JavaScript; a `name() {` or `function name` block in shell; a `def` in
 Python. For each, the length in lines from its first line to its last, the
 deepest nesting below its body, and the branches in it (`if`, `else if`,
 `for`, `while`, `switch`, `case`, `catch`, `&&`, `||`, `?:` and their shell
-and Python equivalents). The quantiles are nearest-rank over all 6041
-pooled:
+and Python equivalents). Three shell and Python shapes are read as what
+they are rather than as control flow: in shell, a `||` or `&&` followed by
+one flow word (`return`, `exit`, `continue`, `break`, `true`, `false`,
+`:`) with an optional status and nothing else on the line is a guard and
+not a branch, so `[[ -f $x ]] || return 1` counts 0; the body of a heredoc
+up to its delimiter, and a quoted string that spans lines (an awk or
+Python program in single quotes), count toward the length and toward
+nothing else; in Python, a line that starts while a bracket is open is a
+continuation of the statement above it and never a nesting level. The
+quantiles are nearest-rank over all 6041 pooled:
 
 | | p50 | p75 | p90 | p95 | max |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | lines | 7 | 12 | 22 | 34 | 495 |
 | branches | 1 | | 6 | | 87 |
-| nesting | 0 | | 2 | | 18 |
+| nesting | 0 | | 2 | | 7 |
 
 The [record](evidence/inspect/2026-09-16-function-lengths.json) carries,
 per tree and without repository or commit, the function count by kind, the
 longest and median length, the lines inside every function
 (`functionLines`), the lines inside functions over any p90 threshold
-(`heavyLines`) and their ratio (`heavyShare`); the histogram of each
-measure; and the method. Three trees hold nearly half the functions
+(`heavyLines`) and their ratio (`heavyShare`, `null` for the one tree with
+no function: a tree with nothing to measure did not measure light, and a 0
+there would lift every other tree's rank); the histogram of each measure;
+and the method. Three trees hold nearly half the functions
 (1,130, 1,090 and 619, QML and Python), which the pooling takes as it is: a
-listed function is a listed function whichever tree it is in. Of the 50
-heavy shares, 6 are 0, the median is 0.42 and the largest 0.84.
+listed function is a listed function whichever tree it is in. Of the 49
+heavy shares, 6 are 0 with functions in the tree and stay, the median is
+0.42 and the largest 0.84.
 
-Two earlier records are in the file's history. The 0.4.3 record (commit
+Three earlier records are in the file's history. The 0.5.0 record (commit
+`7df451a`; 6041 functions, the same three p90 values, nesting max 18,
+branches max 87, six shares of 0 among 50) carried four kinds of noise,
+each measured on one listed plugin before the fix: a Python function whose
+multi-line call sat inside a `for` and a `try` read as nesting 3 from the
+arguments' indentation, over the p90 of 2; a 36-line shell function whose
+body is a Python heredoc read as 9 branches and nesting 4 from the
+Python's `if`, `for` and `with` lines, and an awk program in single quotes
+the same way; a 233-line shell function of `|| return 1` guards read as
+131 branches, 19 after the fix; and the tree with no function sat in the
+sample as a share of 0. The fixes moved no p90; the nesting max fell from
+18 to 7 and the branches max from 87 to 85. The 0.4.3 record (commit
 `6619c26`; 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3)
 was made with three extraction faults, each of which moved a measure
 without the code changing shape, so it was re-measured rather than kept: a
@@ -915,20 +937,24 @@ lines was nesting; and only `function name(` and `onSomething: {` were
 functions, so a named arrow function or a method shorthand, which is where
 a `*Model.js` keeps its logic, was invisible. The first record over 18
 trees (715 functions, p90 18 lines, 7 branches, nesting 2) is behind it.
-The nesting p90 moved from 3 to 2 with the fixes; the line and branch
+The nesting p90 moved from 3 to 2 with those fixes; the line and branch
 quantiles did not move. Limits, stated: a function is still what a regular
 expression recognises, so an anonymous callback, a method whose parameter
 list spans lines and a shell function declared on one line are not
 counted; the literal test reads the text before a brace and is not a
-parser; the sample is 50 trees and the p90 is one number from them.
+parser; the shell line scanner tracks quotes and a comment start but not
+`$(...)` nesting, so a quote inside a command substitution can open a
+string the scanner then reads to its close; the sample is 50 trees and
+the p90 is one number from them.
 
-`tools/inspect/patterns.mjs` carries the same three histograms and the 50
+`tools/inspect/patterns.mjs` carries the same three histograms and the 49
 heavy shares as data, held equal to the record by the unit tests, so a
 function's rank and a tree's position can be read without the document: a
 function's rank is the share of listed functions with a smaller value, 0
 for the smallest listed value and 100 for one over every listed value, the
 largest of the three being the function's rank; a tree's rank is the share
-of listed trees with a strictly smaller heavy share.
+of listed trees with a share and a strictly smaller one, and the report
+says "of 49 listed trees" for that reason.
 
 Used by: the `long functions` block of `omakit inspect`, which lists a
 function when it is over the p90 of any of the three (22 lines, 6 branches,

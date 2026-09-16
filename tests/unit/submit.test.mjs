@@ -85,8 +85,10 @@ test("every check names a source and a measured reason, and every inspect patter
   }
   // The per-tree heavy shares in code are the record's rows, in order, and each row's share is its own ratio under the record's thresholds.
   assert.equal(SIZE.trees, lengths.sample.trees)
-  assert.deepEqual([...SIZE.distribution.heavyShare], lengths.rows.map((row) => row.heavyShare))
-  for (const row of lengths.rows) assert.equal(row.heavyShare, row.functionLines ? Math.round((row.heavyLines / row.functionLines) * 10000) / 10000 : 0, `row ${row.row}: heavyShare is not heavyLines over functionLines`)
+  assert.deepEqual([...SIZE.distribution.heavyShare], lengths.rows.map((row) => row.heavyShare).filter((share) => share !== null), "the shares in code are the record's non-null rows, in order")
+  for (const row of lengths.rows) assert.equal(row.heavyShare, row.functionLines ? Math.round((row.heavyLines / row.functionLines) * 10000) / 10000 : null, `row ${row.row}: heavyShare is not heavyLines over functionLines, or null with no function`)
+  assert.ok(lengths.rows.some((row) => row.heavyShare === null), "the record has a tree with no function, held out of the sample")
+  assert.ok(lengths.rows.some((row) => row.heavyShare === 0 && row.functions > 0), "and a tree that measured light, kept in it")
   // And the rank reads off the histogram the way M12 says: the share strictly smaller.
   assert.equal(percentile("lines", 1), 0)
   assert.equal(percentile("lines", 1000), 100)

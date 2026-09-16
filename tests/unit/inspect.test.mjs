@@ -152,7 +152,7 @@ test("long functions come first, longest first, over the measured thresholds, an
   assert.deepEqual(blocks, ["long functions", "environment trust"], "size before the review classes")
   assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {4}21 lines, 9 branches, nesting 3, rank \d+$/m)
   assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 3, rank \d+$/m)
-  assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, less than 0 of 100 listed trees \(M12\)$/m)
+  assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, less than 0 of 49 listed trees \(M12\)$/m)
   assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6041 functions stay under: 22 lines, 6 branches or nesting 2 \(M12\)/)
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /^functions {5}observed 4, 2 over/m)
@@ -162,12 +162,12 @@ test("long functions come first, longest first, over the measured thresholds, an
   assert.doesNotMatch(renderInspect(example, { colour: false }), /long functions/)
   assert.equal(example.size.heavyShare, 0)
   assert.equal(example.size.score, 10, "one handler under every threshold: no heavy line, the ceiling")
-  assert.match(renderInspect(example, { colour: false }).replace(/\n {14}/g, " "), /^size score {4}10\.00 of 10; 0% of its function lines sit in functions over the measured size, less than 100 of 100 listed trees \(M12\)$/m)
+  assert.match(renderInspect(example, { colour: false }).replace(/\n {14}/g, " "), /^size score {4}10\.00 of 10; 0% of its function lines sit in functions over the measured size, less than 49 of 49 listed trees \(M12\)$/m)
   const empty = (await documentFor("nothing")).document
   assert.equal(empty.size.score, null, "no function, no score")
   assert.equal(empty.size.heavyShare, 0)
   assert.match(renderInspect(empty, { colour: false }), /^size score {4}none: no function to rank$/m)
-  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), /size score 0\.00 of 10: 87% of its function lines sit in functions over the measured size, less than 0 of 100 listed trees \(M12\)/)
+  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), /size score 0\.00 of 10: 87% of its function lines sit in functions over the measured size, less than 0 of 49 listed trees \(M12\)/)
   assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6041 functions \(M12\), and none of the 10 classes/m)
 })
 

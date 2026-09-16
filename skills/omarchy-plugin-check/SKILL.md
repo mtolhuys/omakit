@@ -57,7 +57,7 @@ from M12), longest first, each with its `percentile` among them, and
 those functions, and `size.score` is 10 minus the share of listed trees
 with a strictly smaller `heavyShare`, divided by 10: 10.00 when no
 function is over a threshold, 0.00 when the tree is heavier than every
-listed one (`size.sample.heavyShares` holds the listed trees' shares). It
+listed one (`size.sample.heavyShares` holds the shares of the listed trees that have a function, 49 of 50). It
 is line-weighted, so splitting a long function into short ones raises it
 and adding small functions beside a long one barely moves it. When the
 owner asks for simpler code, start with the top of `size.over`, and read

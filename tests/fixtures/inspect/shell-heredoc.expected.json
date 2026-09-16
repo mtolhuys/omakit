@@ -6,10 +6,10 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-installer-unpinned"
+      "url": "https://github.com/example/omarchy-plugin-fixture-shell-heredoc"
     },
     "mode": "author",
-    "pluginId": "fixture.installer-unpinned",
+    "pluginId": "fixture.shell-heredoc",
     "filesRead": {
       "qml": 1,
       "js": 0,
@@ -22,15 +22,13 @@
   "observed": {
     "processes": [
       {
-        "file": "scripts/install.sh",
-        "line": 3,
+        "file": "scripts/read.sh",
+        "line": 5,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "git",
-          "clone",
-          "https://github.com/example/helper.git",
-          "~/.local/share/helper"
+          "python3",
+          "-"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -51,12 +49,69 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/install.sh",
-        "line": 4,
+        "file": "scripts/read.sh",
+        "line": 19,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "./build.sh"
+          "awk",
+          "-F=",
+          "\n    BEGIN { in_theme=0 }\n    /^\\[Icon Theme\\]/ { in_theme=1; next }\n    /^\\[/ { in_theme=0 }\n    in_theme && $1 ~ /^Inherits[[       ]]*$/ {\n      if ($2 != \"\") print $2\n      exit\n    }\n  ",
+          "$index"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/read.sh",
+        "line": 30,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "read_entry",
+          "$1"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/read.sh",
+        "line": 31,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "theme_inherits",
+          "$2"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -77,28 +132,31 @@
         "pipedFrom": null
       }
     ],
-    "hosts": [
-      {
-        "host": "github.com",
-        "scheme": "https",
-        "file": "scripts/install.sh",
-        "line": 3,
-        "tool": "git",
-        "timeout": {
-          "observed": false,
-          "via": null
-        },
-        "sizeCap": {
-          "observed": false,
-          "via": null
-        },
-        "flags": [],
-        "privateAddress": false
-      }
-    ],
+    "hosts": [],
     "writes": [],
     "timers": [],
-    "functions": []
+    "functions": [
+      {
+        "file": "scripts/read.sh",
+        "line": 4,
+        "name": "read_entry",
+        "kind": "function",
+        "lines": 12,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 74.3
+      },
+      {
+        "file": "scripts/read.sh",
+        "line": 17,
+        "name": "theme_inherits",
+        "kind": "function",
+        "lines": 12,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 74.3
+      }
+    ]
   },
   "size": {
     "measurement": "M12",
@@ -163,52 +221,46 @@
       "depth": 2
     },
     "heavyShare": 0,
-    "score": null,
+    "score": 10,
     "over": []
   },
   "counts": {
     "processes": {
-      "total": 2,
+      "total": 4,
       "qml": 0,
-      "shell": 2
+      "shell": 4
     },
-    "hosts": 1,
+    "hosts": 0,
     "writes": 0,
     "timers": 0,
-    "functions": 0,
+    "functions": 2,
     "notResolvable": 0
   },
   "notResolvable": [],
   "patterns": [
     {
       "id": "environment-trust",
-      "observedCount": 1,
+      "observedCount": 4,
       "sites": [
         {
-          "file": "scripts/install.sh",
-          "line": 3
-        }
-      ],
-      "observation": "observed 1 tool resolved from PATH (git; scripts/install.sh:3)",
-      "summary": "1 tool resolved from PATH (git)",
-      "measurement": "M11",
-      "share": 0.07
-    },
-    {
-      "id": "supply-chain",
-      "observedCount": 2,
-      "sites": [
-        {
-          "file": "scripts/install.sh",
-          "line": 3
+          "file": "scripts/read.sh",
+          "line": 5
         },
         {
-          "file": "scripts/install.sh",
-          "line": 4
+          "file": "scripts/read.sh",
+          "line": 19
+        },
+        {
+          "file": "scripts/read.sh",
+          "line": 30
+        },
+        {
+          "file": "scripts/read.sh",
+          "line": 31
         }
       ],
-      "observation": "observed 1 baseline finding the pin does not block on (remote-git-execution-unpinned; scripts/install.sh:3, scripts/install.sh:4)",
-      "summary": "1 baseline finding the pin does not block on (remote-git-execution-unpinned)",
+      "observation": "observed 4 tools resolved from PATH (python3, awk, read_entry, theme_inherits; scripts/read.sh:5, scripts/read.sh:19, scripts/read.sh:30, scripts/read.sh:31)",
+      "summary": "4 tools resolved from PATH (python3, awk, read_entry, theme_inherits)",
       "measurement": "M11",
       "share": 0.07
     }
@@ -218,6 +270,7 @@
     "unbounded-buffering",
     "file-and-state-boundary",
     "secrets",
+    "supply-chain",
     "network-egress",
     "untrusted-text-to-display",
     "argument-grammar",
@@ -249,64 +302,16 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-installer-unpinned",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-installer-unpinned",
+      "repository": "example/omarchy-plugin-fixture-shell-heredoc",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-shell-heredoc",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
-      "outcome": "needs-fixes",
+      "outcome": "passed",
       "enforcementMode": "selective",
-      "disposition": "review-required",
+      "disposition": "clear",
       "blocksApproval": false,
-      "findings": [
-        {
-          "ruleId": "remote-git-execution-unpinned",
-          "title": "Remote Git source is executed without a fixed commit",
-          "why": "A branch or tag can move after review, causing users to execute source that was not part of the reviewed snapshot.",
-          "actions": [
-            "Require a full 40-character commit SHA before fetching or building.",
-            "Check out that exact commit in detached mode before executing the downloaded source.",
-            "Remove the remote source-build path if an exact commit cannot be required."
-          ],
-          "evidence": [
-            {
-              "path": "scripts/install.sh",
-              "line": 3,
-              "snippet": "git clone https://github.com/example/helper.git ~/.local/share/helper"
-            },
-            {
-              "path": "scripts/install.sh",
-              "line": 4,
-              "snippet": "./build.sh"
-            }
-          ]
-        }
-      ],
-      "capabilities": [
-        {
-          "id": "installer",
-          "title": "Installer or setup path",
-          "why": "Installer code can modify the user environment and needs a maintainer to confirm its documented scope.",
-          "evidence": [
-            {
-              "path": "scripts/install.sh",
-              "line": 1,
-              "snippet": "Installer or setup file"
-            }
-          ]
-        },
-        {
-          "id": "remote-build",
-          "title": "Remote source build",
-          "why": "The installation path builds, installs, or directly executes source obtained from a remote repository.",
-          "evidence": [
-            {
-              "path": "scripts/install.sh",
-              "line": 3,
-              "snippet": "git clone https://github.com/example/helper.git ~/.local/share/helper"
-            }
-          ]
-        }
-      ]
+      "findings": [],
+      "capabilities": []
     },
     "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
   }

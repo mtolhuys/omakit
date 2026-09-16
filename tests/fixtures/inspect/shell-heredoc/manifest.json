@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.shell-heredoc",
+  "name": "Fixture: shell heredoc",
+  "version": "0.0.1",
+  "description": "Two shell functions whose bodies are data: a Python heredoc and a single-quoted awk program; neither reads as shell branches or nesting.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

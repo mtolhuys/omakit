@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.shell-guards",
+  "name": "Fixture: shell guards",
+  "version": "0.0.1",
+  "description": "A shell function of five guard lines, read as 0 branches, beside the same lines with a command after the operator, read as 5.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

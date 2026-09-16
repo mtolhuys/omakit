@@ -6,86 +6,46 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-curl-without-caps"
+      "url": "https://github.com/example/omarchy-plugin-fixture-python-continuation"
     },
     "mode": "author",
-    "pluginId": "fixture.curl-without-caps",
+    "pluginId": "fixture.python-continuation",
     "filesRead": {
       "qml": 1,
       "js": 0,
       "shell": 0,
-      "python": 0,
+      "python": 1,
       "other": 0
     },
     "uncommittedFiles": 0
   },
   "observed": {
-    "processes": [
-      {
-        "file": "Widget.qml",
-        "line": 10,
-        "declaredIn": "qml",
-        "id": "fetchStatus",
-        "argv": [
-          "curl",
-          "-fsSL",
-          "https://api.example.com/v1/status"
-        ],
-        "argvForm": "array",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": true,
-          "via": "timer-kill",
-          "ms": 8000
-        },
-        "output": {
-          "collector": "StdioCollector",
-          "capObserved": false,
-          "via": null
-        },
-        "shellWrapper": false,
-        "pipedFrom": null
-      }
-    ],
-    "hosts": [
-      {
-        "host": "api.example.com",
-        "scheme": "https",
-        "file": "Widget.qml",
-        "line": 10,
-        "tool": "curl",
-        "timeout": {
-          "observed": false,
-          "via": null
-        },
-        "sizeCap": {
-          "observed": false,
-          "via": null
-        },
-        "flags": [
-          "-fsSL"
-        ],
-        "privateAddress": false
-      }
-    ],
+    "processes": [],
+    "hosts": [],
     "writes": [],
-    "timers": [
+    "timers": [],
+    "functions": [
       {
-        "file": "Widget.qml",
-        "line": 16,
-        "id": "fetchDeadline",
-        "intervalMs": 8000,
-        "intervalText": null,
-        "repeat": false,
-        "running": null,
-        "triggeredOnStart": false,
-        "startedBy": null
+        "file": "scripts/link.py",
+        "line": 6,
+        "name": "link_unused_name",
+        "kind": "function",
+        "lines": 13,
+        "depth": 2,
+        "branches": 2,
+        "percentile": 89.5
+      },
+      {
+        "file": "scripts/link.py",
+        "line": 21,
+        "name": "deep",
+        "kind": "function",
+        "lines": 5,
+        "depth": 3,
+        "branches": 3,
+        "percentile": 97
       }
-    ],
-    "functions": []
+    ]
   },
   "size": {
     "measurement": "M12",
@@ -149,76 +109,43 @@
       "branches": 6,
       "depth": 2
     },
-    "heavyShare": 0,
-    "score": null,
-    "over": []
+    "heavyShare": 0.2778,
+    "score": 7.76,
+    "over": [
+      {
+        "file": "scripts/link.py",
+        "line": 21,
+        "name": "deep",
+        "kind": "function",
+        "lines": 5,
+        "depth": 3,
+        "branches": 3,
+        "percentile": 97
+      }
+    ]
   },
   "counts": {
     "processes": {
-      "total": 1,
-      "qml": 1,
+      "total": 0,
+      "qml": 0,
       "shell": 0
     },
-    "hosts": 1,
+    "hosts": 0,
     "writes": 0,
-    "timers": 1,
-    "functions": 0,
+    "timers": 0,
+    "functions": 2,
     "notResolvable": 0
   },
   "notResolvable": [],
-  "patterns": [
-    {
-      "id": "unbounded-buffering",
-      "observedCount": 1,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 10
-        }
-      ],
-      "observation": "observed 1 collector with no cap (Widget.qml:10)",
-      "summary": "1 collector with no cap",
-      "measurement": "M11",
-      "share": 0.19
-    },
-    {
-      "id": "environment-trust",
-      "observedCount": 2,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 10
-        },
-        {
-          "file": "Widget.qml",
-          "line": 10
-        }
-      ],
-      "observation": "observed 1 tool resolved from PATH (curl; Widget.qml:10); curl without -q (Widget.qml:10)",
-      "summary": "1 tool resolved from PATH (curl); curl without -q",
-      "measurement": "M11",
-      "share": 0.07
-    },
-    {
-      "id": "network-egress",
-      "observedCount": 1,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 10
-        }
-      ],
-      "observation": "observed curl -L without --proto (Widget.qml:10)",
-      "summary": "curl -L without --proto",
-      "measurement": "M11",
-      "share": 0.05
-    }
-  ],
+  "patterns": [],
   "lookedFor": [
     "process-lifecycle",
+    "unbounded-buffering",
     "file-and-state-boundary",
+    "environment-trust",
     "secrets",
     "supply-chain",
+    "network-egress",
     "untrusted-text-to-display",
     "argument-grammar",
     "privilege-disclosure"
@@ -249,8 +176,8 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-curl-without-caps",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-curl-without-caps",
+      "repository": "example/omarchy-plugin-fixture-python-continuation",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-python-continuation",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
       "outcome": "passed",

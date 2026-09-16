@@ -6,10 +6,10 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-long-function"
+      "url": "https://github.com/example/omarchy-plugin-fixture-shell-guards"
     },
     "mode": "author",
-    "pluginId": "fixture.long-function",
+    "pluginId": "fixture.shell-guards",
     "filesRead": {
       "qml": 1,
       "js": 0,
@@ -22,13 +22,14 @@
   "observed": {
     "processes": [
       {
-        "file": "scripts/helper.sh",
-        "line": 13,
+        "file": "scripts/guards.sh",
+        "line": 9,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "say",
-          "$item"
+          "command",
+          "-v",
+          "jq"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -49,13 +50,97 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/helper.sh",
+        "file": "scripts/guards.sh",
+        "line": 16,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "mkdir",
+          "-p",
+          "$dir"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/guards.sh",
+        "line": 17,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "touch",
+          "$file"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/guards.sh",
+        "line": 18,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "chmod",
+          "u+r",
+          "$file"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/guards.sh",
         "line": 19,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "say",
-          "one"
+          "command",
+          "-v",
+          "jq"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -76,13 +161,13 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/helper.sh",
-        "line": 20,
+        "file": "scripts/guards.sh",
+        "line": 24,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "say",
-          "two"
+          "require",
+          "$@"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -103,67 +188,13 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/helper.sh",
-        "line": 21,
-        "declaredIn": "shell",
-        "id": null,
-        "argv": [
-          "say",
-          "other"
-        ],
-        "argvForm": "string",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": false,
-          "via": null,
-          "ms": null
-        },
-        "output": {
-          "collector": "none",
-          "capObserved": false,
-          "via": null
-        },
-        "shellWrapper": false,
-        "pipedFrom": null
-      },
-      {
-        "file": "scripts/helper.sh",
+        "file": "scripts/guards.sh",
         "line": 25,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "say",
-          "none"
-        ],
-        "argvForm": "string",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": false,
-          "via": null,
-          "ms": null
-        },
-        "output": {
-          "collector": "none",
-          "capObserved": false,
-          "via": null
-        },
-        "shellWrapper": false,
-        "pipedFrom": null
-      },
-      {
-        "file": "scripts/helper.sh",
-        "line": 30,
-        "declaredIn": "shell",
-        "id": null,
-        "argv": [
-          "decide",
-          "${1:-a}"
+          "recover",
+          "$@"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -185,48 +216,51 @@
       }
     ],
     "hosts": [],
-    "writes": [],
+    "writes": [
+      {
+        "file": "scripts/guards.sh",
+        "line": 16,
+        "path": "$dir",
+        "canonicalPath": "$dir",
+        "via": "mkdir",
+        "controlledDirectory": "unknown",
+        "controlledBy": null,
+        "temp": false,
+        "mode": null
+      },
+      {
+        "file": "scripts/guards.sh",
+        "line": 17,
+        "path": "$file",
+        "canonicalPath": "$file",
+        "via": "touch",
+        "controlledDirectory": "unknown",
+        "controlledBy": null,
+        "temp": false,
+        "mode": "chmod u+r"
+      }
+    ],
     "timers": [],
     "functions": [
       {
-        "file": "Widget.qml",
-        "line": 8,
-        "name": "short",
-        "kind": "function",
-        "lines": 3,
-        "depth": 0,
-        "branches": 0,
-        "percentile": 8.5
-      },
-      {
-        "file": "Widget.qml",
-        "line": 12,
-        "name": "classify",
-        "kind": "function",
-        "lines": 20,
-        "depth": 3,
-        "branches": 6,
-        "percentile": 97
-      },
-      {
-        "file": "scripts/helper.sh",
+        "file": "scripts/guards.sh",
         "line": 4,
-        "name": "say",
+        "name": "require",
         "kind": "function",
-        "lines": 3,
+        "lines": 9,
         "depth": 0,
         "branches": 0,
-        "percentile": 8.5
+        "percentile": 62.2
       },
       {
-        "file": "scripts/helper.sh",
-        "line": 8,
-        "name": "decide",
+        "file": "scripts/guards.sh",
+        "line": 14,
+        "name": "recover",
         "kind": "function",
-        "lines": 21,
-        "depth": 3,
-        "branches": 9,
-        "percentile": 97
+        "lines": 9,
+        "depth": 0,
+        "branches": 5,
+        "percentile": 84.1
       }
     ]
   },
@@ -292,76 +326,73 @@
       "branches": 6,
       "depth": 2
     },
-    "heavyShare": 0.8723,
-    "score": 0,
-    "over": [
-      {
-        "file": "scripts/helper.sh",
-        "line": 8,
-        "name": "decide",
-        "kind": "function",
-        "lines": 21,
-        "depth": 3,
-        "branches": 9,
-        "percentile": 97
-      },
-      {
-        "file": "Widget.qml",
-        "line": 12,
-        "name": "classify",
-        "kind": "function",
-        "lines": 20,
-        "depth": 3,
-        "branches": 6,
-        "percentile": 97
-      }
-    ]
+    "heavyShare": 0,
+    "score": 10,
+    "over": []
   },
   "counts": {
     "processes": {
-      "total": 6,
+      "total": 7,
       "qml": 0,
-      "shell": 6
+      "shell": 7
     },
     "hosts": 0,
-    "writes": 0,
+    "writes": 2,
     "timers": 0,
-    "functions": 4,
+    "functions": 2,
     "notResolvable": 0
   },
   "notResolvable": [],
   "patterns": [
     {
-      "id": "environment-trust",
-      "observedCount": 6,
+      "id": "file-and-state-boundary",
+      "observedCount": 1,
       "sites": [
         {
-          "file": "scripts/helper.sh",
-          "line": 13
+          "file": "scripts/guards.sh",
+          "line": 16
+        }
+      ],
+      "observation": "observed 1 mkdir with no mode (scripts/guards.sh:16)",
+      "summary": "1 mkdir with no mode",
+      "measurement": "M11",
+      "share": 0.15
+    },
+    {
+      "id": "environment-trust",
+      "observedCount": 7,
+      "sites": [
+        {
+          "file": "scripts/guards.sh",
+          "line": 9
         },
         {
-          "file": "scripts/helper.sh",
+          "file": "scripts/guards.sh",
+          "line": 16
+        },
+        {
+          "file": "scripts/guards.sh",
+          "line": 17
+        },
+        {
+          "file": "scripts/guards.sh",
+          "line": 18
+        },
+        {
+          "file": "scripts/guards.sh",
           "line": 19
         },
         {
-          "file": "scripts/helper.sh",
-          "line": 20
+          "file": "scripts/guards.sh",
+          "line": 24
         },
         {
-          "file": "scripts/helper.sh",
-          "line": 21
-        },
-        {
-          "file": "scripts/helper.sh",
+          "file": "scripts/guards.sh",
           "line": 25
-        },
-        {
-          "file": "scripts/helper.sh",
-          "line": 30
         }
       ],
-      "observation": "observed 6 tools resolved from PATH (say, decide; scripts/helper.sh:13, scripts/helper.sh:19, scripts/helper.sh:20, scripts/helper.sh:21, scripts/helper.sh:25, scripts/helper.sh:30)",
-      "summary": "6 tools resolved from PATH (say, decide)",
+      "observation": "observed 7 tools resolved from PATH (jq, mkdir, touch, chmod, require, recover; scripts/guards.sh:9, scripts/guards.sh:16, scripts/guards.sh:17, scripts/guards.sh:18, scripts/guards.sh:19, scripts/guards.sh:24, scripts/guards.sh:25)",
+      "summary": "7 tools resolved from PATH (jq, mkdir, touch, chmod, require, recover)",
       "measurement": "M11",
       "share": 0.07
     }
@@ -369,7 +400,6 @@
   "lookedFor": [
     "process-lifecycle",
     "unbounded-buffering",
-    "file-and-state-boundary",
     "secrets",
     "supply-chain",
     "network-egress",
@@ -403,8 +433,8 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-long-function",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-long-function",
+      "repository": "example/omarchy-plugin-fixture-shell-guards",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-shell-guards",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
       "outcome": "passed",

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.python-continuation",
+  "name": "Fixture: python continuation",
+  "version": "0.0.1",
+  "description": "A Python function whose multi-line call sits inside a for and a try, read as nesting 2, beside a function that really nests three deep.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

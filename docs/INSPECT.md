@@ -146,7 +146,7 @@ subject       ~/plugins/fixture-example at a3bf9e2d
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
 size score    10.00 of 10; 0% of its function lines sit in functions over the
-              measured size, less than 100 of 100 listed trees (M12)
+              measured size, less than 49 of 49 listed trees (M12)
 
 attention     5 classes reviewers raise, biggest first by share of review
               findings (M11); up to 5 sites each
@@ -279,7 +279,8 @@ size              { measurement: "M12", sample: { trees, functions, heavyShares:
                     over: function[] }
                   the functions over any threshold, longest first; the thresholds are M12's p90;
                   heavyShare is the lines inside those functions over the lines inside every
-                  function, 0 with none; sample.heavyShares is the same share for each listed tree;
+                  function, 0 with none; sample.heavyShares is the same share for each listed tree
+                  that has a function (49 of the 50, so the report says "of 49 listed trees");
                   score is 10 minus the share of listed trees with a strictly smaller heavyShare
                   divided by 10, two decimals, null with no function
                   the headline: how many process sites are QML Process blocks and how many are

@@ -38,8 +38,10 @@ function percent(share) {
 /** The score sentence after the number: the share, then the position among the listed trees the document itself carries. */
 function scoreText(size) {
   const shares = size.sample.heavyShares
-  const rank = (shares.filter((share) => share < size.heavyShare).length / shares.length) * 100
-  return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, less than ${100 - Math.round(rank)} of 100 listed trees (${size.measurement})`
+  // Over the listed trees that have a share: "of 100" when it is every listed tree, the real count otherwise.
+  const of = shares.length === size.sample.trees ? 100 : shares.length
+  const under = Math.round(((shares.length - shares.filter((share) => share < size.heavyShare).length) / shares.length) * of)
+  return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, less than ${under} of ${of} listed trees (${size.measurement})`
 }
 
 /** Under --allow-dirty: what the checkout holds that the tree at the commit does not. */
