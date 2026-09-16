@@ -930,7 +930,7 @@ arguments' indentation, over the p90 of 2; a 36-line shell function whose
 body is a Python heredoc read as 9 branches and nesting 4 from the
 Python's `if`, `for` and `with` lines, and an awk program in single quotes
 the same way; a 233-line shell function of `|| return 1` guards read as
-131 branches, 19 after the fix; and the tree with no function sat in the
+131 branches, 5 after the fix; and the tree with no function sat in the
 sample as a share of 0. A fifth, found while reviewing the fix: a `def`
 whose parameter list spans lines was read as its signature only, four to
 nine lines at depth 0, so a 217-line `send` in a vendored library counted

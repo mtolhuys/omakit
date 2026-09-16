@@ -37,7 +37,7 @@ re-measured over the same 50 trees (6041 functions).
   `exit`, `continue`, `break`, `true`, `false`, `:`) with an optional
   status (a number, `$?` or a variable) and nothing else on the line but
   a `;` or `;;`, is not a branch; every other `||` and `&&` still is. A 233-line function of guards read as 131 branches
-  before, 19 now (`shell-guards`). The M12 method text states the rule.
+  before, 5 now (`shell-guards`). The M12 method text states the rule.
 - A listed tree with no function carries `heavyShare: null` in the
   record and is out of the sample the score ranks against, so it no
   longer lifts every other tree's rank; `size.sample.heavyShares` has 49
@@ -47,7 +47,7 @@ re-measured over the same 50 trees (6041 functions).
   and in `docs/MEASUREMENTS.md`.
 
 On omarchy-theme-manager, `read_entry` reads 0 branches, the acceptance
-script drops from 131 to 19, publish-wallpaper.py has no function over the
+script drops from 131 to 5, publish-wallpaper.py has no function over the
 thresholds after its refactor, and the refactor branch still ranks above
 main. A unit test now holds the record generator's null share and the
 method text whole (its first cut was silently truncated by a backtick
