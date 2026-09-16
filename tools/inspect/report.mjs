@@ -35,13 +35,17 @@ function percent(share) {
   return `${rounded}%`
 }
 
-/** The score sentence after the number: the share, then the position among the listed trees the document itself carries. */
+/**
+ * The score sentence after the number: the share, then the position among
+ * the listed trees the document itself carries. The rank counts the listed
+ * trees with a strictly smaller share, so the tree is "no heavier than"
+ * the rest: a tie is level, not lighter.
+ */
 function scoreText(size) {
   const shares = size.sample.heavyShares
-  // Over the listed trees that have a share: "of 100" when it is every listed tree, the real count otherwise.
-  const of = shares.length === size.sample.trees ? 100 : shares.length
-  const under = Math.round(((shares.length - shares.filter((share) => share < size.heavyShare).length) / shares.length) * of)
-  return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, less than ${under} of ${of} listed trees (${size.measurement})`
+  if (!shares.length) return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size; no listed tree to place it among (${size.measurement})`
+  const lighter = shares.filter((share) => share < size.heavyShare).length
+  return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, no heavier than ${shares.length - lighter} of ${shares.length} listed trees (${size.measurement})`
 }
 
 /** Under --allow-dirty: what the checkout holds that the tree at the commit does not. */
@@ -273,7 +277,12 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   if (!ranked.length && !over.length) {
     out.push(...field("attention", `nothing: no function over the size of ${SIZE.sample} (${SIZE.measurement}), and none of the ${PATTERNS.length} classes reviewers raise shows in this tree (${PATTERNS[0]?.measurement || "M11"})`, c))
   } else {
-    out.push(...field("attention", `${over.length ? `long functions first, by length, then ` : ""}${plural(shown.length, "class", "classes")} reviewers raise, biggest first by share of review findings (${PATTERNS[0].measurement}); up to ${SHOWN_SITES} sites each`, c))
+    const classes = shown.length
+      ? `${plural(shown.length, "class", "classes")} reviewers raise, biggest first by share of review findings (${PATTERNS[0].measurement}); up to ${SHOWN_SITES} sites each`
+      : below.length
+        ? `only classes under ${Math.round(MIN_SHARE * 100)}% of review findings show (${PATTERNS[0].measurement}), counted below`
+        : `none of the classes reviewers raise shows in this tree (${PATTERNS[0].measurement})`
+    out.push(...field("attention", `${over.length ? `long functions first, by length${shown.length ? ", then " : "; "}` : ""}${classes}`, c))
   }
   // Long functions first: what the person asked about, so the order is a
   // preference and the heading says whose thresholds it uses.

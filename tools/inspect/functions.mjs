@@ -11,17 +11,21 @@ import { blankComments, closingBracket, lineOf } from "./text.mjs"
 const JS_BRANCH = /\b(?:if|else if|for|while|do|switch|case|catch)\b|&&|\|\||\?[^.:]/g
 const SHELL_OPEN = /^\s*(?:if|for|while|until|case|select)\b/
 const SHELL_CLOSE = /^\s*(?:fi|done|esac)\b/
-// A case arm, `pattern) command`, is a branch: a `)` with text after it on
-// a line with no `(` before it, so a `$(...)` or `(( ))` in a test is not one.
-const SHELL_BRANCH = /\b(?:if|elif|for|while|until|case)\b|\|\||&&|^\s*[^()]*\)\s*(?!\s*$)/
+// A case arm, `pattern) command` or `(pattern) command`, is a branch: a `)`
+// with text after it on a line with no `(` before it but an opening one,
+// so a `$(...)` or `(( ))` in a test is not one.
+const SHELL_BRANCH = /\b(?:if|elif|for|while|until|case)\b|\|\||&&|^\s*\(?[^()]*\)\s*(?!\s*$)/
 // A guard, not a branch: `||` or `&&` followed by one flow word (`return`,
 // `exit`, `continue`, `break`, `true`, `false`, `:`) with an optional
 // status (a number, `$?` or a variable), then nothing but a `;` or the `;;`
 // that ends a case arm, as in `[[ -f $x ]] || return 1`. JavaScript has no
 // such idiom, so shell alone is exempted.
 const SHELL_GUARD = /^(.*?)\s*(?:\|\||&&)\s*(?:return|exit|continue|break|true|false|:)(?:\s+(?:\$\?|\$\{?\w+\}?|\d+))?\s*;{0,2}\s*$/
-// `<<WORD`, `<<-WORD`, `<<'WORD'` or `<<"WORD"` outside quotes; `<<<` is a here-string and not one.
-const HEREDOC = /^<<(-?)\s*(['"]?)([A-Za-z_][\w.-]*)\2/
+// `<<WORD`, `<<-WORD`, `<<'WORD'`, `<<"WORD"` or `<<\WORD` outside quotes and
+// outside `(( ))`; `<<<` is a here-string and `<<` in arithmetic a shift.
+const HEREDOC = /^<<(-?)\s*(?:(['"])([A-Za-z_][\w.-]*)\2|\\?([A-Za-z_][\w.-]*))/
+// The line that closes a shell function: `}` alone, or `}` with a comment or a redirection after it.
+const SHELL_END = /^\}\s*(?:#.*|[<>&|].*)?$/
 const PY_BRANCH = /^\s*(?:if|elif|for|while|except|with)\b|\band\b|\bor\b/
 
 /**
@@ -102,54 +106,91 @@ function jsFunctions(file) {
 }
 
 /**
- * One shell line read left to right: the code before a `#` that starts a
- * comment, with the quoted text kept and the quote marks dropped, the
- * heredoc the line opens, and the quote it leaves open at its end, if
- * any. A `'` inside double quotes ("Okomart's") and a `#` inside quotes
- * (`*'#'*`) are text; a backslash escapes outside quotes, inside double
- * quotes and inside `$'...'`, and inside plain single quotes nothing does.
- * A quote left open at the end of the line starts a string that spans
- * lines, so the text from that quote on is data and is not in `code`.
- * Starting inside a quote from the line above means the line is the rest
- * of that string. A `<<` outside quotes is a heredoc; `<<` inside quotes
- * (a script writing another script) is text.
- * @returns {{ code: string, open: "'" | '"' | "$'" | null, heredoc: { word: string, strip: boolean } | null }}
+ * One shell line read left to right with a stack of contexts: a
+ * single-quoted string, a double-quoted string, an ANSI-C `$'...'` string,
+ * and `$(...)` nested in a double-quoted string, which is what lets
+ * `"$(printf "it's")"` read its inner quotes as its own. It returns the
+ * code before a `#` that starts a comment, the heredoc the line opens, and
+ * the contexts left open at its end. Quoted text that opens and closes on
+ * the line is kept in the code with its quote marks dropped, so `<<'PY'`
+ * and `<<PY` read alike; text inside a quote that spans lines is data and
+ * left out, from the quote to its close, while what a `$(...)` spanning
+ * lines holds is shell and kept. A `'` inside double quotes ("Okomart's")
+ * and a `#` inside quotes (`*'#'*`) are text; a backslash escapes in code,
+ * inside double quotes and inside `$'...'`, and inside plain single quotes
+ * nothing does. `<<` in shell, at the top or inside `$(...)`, and outside
+ * `(( ))`, is a heredoc.
+ * @param {string} line
+ * @param {Array<{ kind: string, depth: number }>} open the contexts open from the line above, innermost last
+ * @returns {{ code: string, open: Array<{ kind: string, depth: number }>, heredoc: { word: string, strip: boolean } | null }}
  */
 function scanShellLine(line, open) {
-  let quote = open
+  // `fresh` marks a context opened on this line; `since` is where in the code it began.
+  const stack = open.map((entry) => ({ ...entry, fresh: false, since: 0 }))
   let code = ""
   let heredoc = null
-  let since = 0
+  let arith = 0
+  const top = () => stack[stack.length - 1] || null
+  // Text inside a string that spans lines is data; everything else is kept.
+  const keep = () => {
+    const inner = top()
+    return !inner || inner.kind === "$(" || inner.fresh
+  }
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i]
-    if (quote === "'") {
-      if (ch === "'") quote = null
-      else code += ch
+    const context = top()
+    const kind = context ? context.kind : "code"
+    if (kind === "'") {
+      if (ch === "'") stack.pop()
+      else if (keep()) code += ch
       continue
     }
     if (ch === "\\") {
       i += 1
-      code += ch + (line[i] ?? "")
+      if (keep()) code += ch + (line[i] ?? "")
       continue
     }
-    if (quote) {
-      if (ch === quote[quote.length - 1]) quote = null
-      else code += ch
+    if (kind === '"' || kind === "$'") {
+      if (ch === kind[kind.length - 1]) stack.pop()
+      else if (kind === '"' && ch === "$" && line[i + 1] === "(") {
+        stack.push({ kind: "$(", depth: 0, fresh: true, since: code.length })
+        code += "$("
+        i += 1
+      } else if (keep()) code += ch
       continue
     }
-    if (ch === "#" && (i === 0 || /[\s;()&|]/.test(line[i - 1]))) break
+    // Shell code, at the top or inside `$(` under a double quote.
+    if (kind === "$(") {
+      if (ch === "(") context.depth += 1
+      else if (ch === ")") {
+        if (context.depth === 0) {
+          stack.pop()
+          code += ch
+          continue
+        }
+        context.depth -= 1
+      }
+    } else if (ch === "#" && (i === 0 || /[\s;()&|]/.test(line[i - 1]))) break
     if (ch === "'" || ch === '"') {
-      quote = ch === "'" && line[i - 1] === "$" ? "$'" : ch
-      since = code.length
+      stack.push({ kind: ch === "'" && line[i - 1] === "$" ? "$'" : ch, depth: 0, fresh: true, since: code.length })
       continue
     }
-    if (ch === "<" && line[i + 1] === "<" && line[i - 1] !== "<" && line[i + 2] !== "<" && !heredoc) {
+    if (ch === "(" && line[i + 1] === "(") arith += 1
+    else if (ch === ")" && line[i + 1] === ")" && arith) {
+      arith -= 1
+      i += 1
+      code += "))"
+      continue
+    }
+    if (ch === "<" && line[i + 1] === "<" && line[i - 1] !== "<" && line[i + 2] !== "<" && !heredoc && !arith) {
       const found = line.slice(i).match(HEREDOC)
-      if (found) heredoc = { word: found[3], strip: found[1] === "-" }
+      if (found) heredoc = { word: found[3] || found[4], strip: found[1] === "-" }
     }
     code += ch
   }
-  return { code: quote ? code.slice(0, since) : code, open: quote, heredoc }
+  // A quote opened on this line and still open at its end: the text from that quote on is data.
+  const unclosed = stack.find((entry) => entry.fresh && entry.kind !== "$(")
+  return { code: unclosed ? code.slice(0, unclosed.since) : code, open: stack.map(({ kind, depth }) => ({ kind, depth })), heredoc }
 }
 
 /** The code with any guard tail removed, so what is left is what SHELL_BRANCH reads. */
@@ -185,7 +226,7 @@ function shellFunctions(file) {
     // Two heredocs on one line: the first is tracked, the second's body is
     // read as shell.
     let heredoc = null
-    let open = null
+    let open = []
     for (let at = index + 1; at < lines.length; at += 1) {
       const line = lines[at]
       if (heredoc) {
@@ -193,24 +234,22 @@ function shellFunctions(file) {
         end = at
         continue
       }
-      if (open) {
-        open = scanShellLine(line, open).open
-        end = at
-        continue
-      }
-      if (line.trim() === "}" && line.startsWith(indent) && line.match(/^\s*/)[0].length === indent.length) {
+      if (!open.length && SHELL_END.test(line.trim()) && line.startsWith(indent) && line.match(/^\s*/)[0].length === indent.length) {
         end = at
         break
       }
-      const scanned = scanShellLine(line, null)
+      const scanned = scanShellLine(line, open)
+      // A line that starts inside a string from the line above is data up to the string's close; one that starts inside a `$(` is shell.
+      const carried = open.length > 0 && open[open.length - 1].kind !== "$("
       const code = withoutGuards(scanned.code)
       open = scanned.open
       heredoc = scanned.heredoc
-      if (SHELL_OPEN.test(line)) {
+      // A line that opens inside a string is read only after the string closes: no `if` at its start, only what the code holds.
+      if (!carried && SHELL_OPEN.test(line)) {
         depth += 1
         if (depth > deepest) deepest = depth
       }
-      if (SHELL_CLOSE.test(line)) depth -= 1
+      if (!carried && SHELL_CLOSE.test(line)) depth -= 1
       if (SHELL_BRANCH.test(code)) branches += 1
       end = at
     }
@@ -223,14 +262,17 @@ function shellFunctions(file) {
 /**
  * Opening brackets minus closing ones on a line, outside string literals
  * and comments, carrying the state of a triple-quoted string across lines
- * so a bracket inside a docstring or an SQL text counts nothing.
+ * so a bracket inside a docstring or an SQL text counts nothing; and the
+ * code of the line with its strings and comment removed, so `and`, `or`
+ * and `if` in prose are not branches.
  * @param {string} line
  * @param {string|null} triple the triple quote open from the line above, or null
- * @returns {{ balance: number, triple: string|null, continued: boolean }} `continued` when the line ends in a backslash outside a string
+ * @returns {{ balance: number, triple: string|null, continued: boolean, code: string }} `continued` when the line ends in a backslash outside a string
  */
 function bracketBalance(line, triple) {
   let balance = 0
   let quote = triple
+  let code = ""
   let i = 0
   for (; i < line.length; i += 1) {
     const ch = line[i]
@@ -246,21 +288,33 @@ function bracketBalance(line, triple) {
     if (ch === '"' || ch === "'") {
       quote = line.startsWith(ch.repeat(3), i) ? ch.repeat(3) : ch
       i += quote.length - 1
-    } else if (ch === "(" || ch === "[" || ch === "{") balance += 1
+      continue
+    }
+    if (ch === "(" || ch === "[" || ch === "{") balance += 1
     else if (ch === ")" || ch === "]" || ch === "}") balance -= 1
+    code += ch
   }
   // A single quote never spans a line; a triple one does.
   const open = quote && quote.length === 3 ? quote : null
-  return { balance, triple: open, continued: !open && /\\$/.test(line.slice(0, i === line.length ? undefined : i).trimEnd()) }
+  return { balance, triple: open, continued: !open && /\\$/.test(code.trimEnd()), code }
 }
 
 const PY_DEF = /^(\s*)(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/
-const PY_DEDENT_ENDS = /^\s*(?:def|class|@|if|for|while|try|with)\b/
+const PY_CLOSER = /^\s*[)\]}]/
 
 function pythonFunctions(file) {
   const lines = file.text.split("\n")
   const rows = []
+  // Whether each line starts inside a triple-quoted string, over the whole
+  // file, so a `def` quoted in a docstring's example is not a function.
+  const quoted = new Array(lines.length)
+  let moduleTriple = null
+  for (let at = 0; at < lines.length; at += 1) {
+    quoted[at] = moduleTriple !== null
+    moduleTriple = bracketBalance(lines[at], moduleTriple).triple
+  }
   for (let index = 0; index < lines.length; index += 1) {
+    if (quoted[index]) continue
     const head = lines[index].match(PY_DEF)
     if (!head) continue
     const base = head[1].length
@@ -281,8 +335,11 @@ function pythonFunctions(file) {
     // parameter list, when it spans lines, is a continuation of the def.
     // The balance is over `(`, `[` and `{` minus their closers, outside
     // string literals, the way braceDepth skips quotes. A miscount cannot
-    // run past the function: a line at the def's indent or shallower that
-    // starts a statement ends it whatever the balance says.
+    // run past the function: a bracket or backslash continuation ends at
+    // the first line at the def's indent or shallower that is not a
+    // closing bracket, whatever the balance says; a triple-quoted string
+    // runs to its close, since an SQL or help text inside it may sit at
+    // column 0.
     let state = bracketBalance(lines[index], null)
     let balance = Math.max(0, state.balance)
     let triple = state.triple
@@ -292,13 +349,13 @@ function pythonFunctions(file) {
       if (!line.trim()) continue
       const indent = line.match(/^\s*/)[0].length
       const continuation = balance > 0 || triple !== null || continued
-      if (continuation && indent <= base && PY_DEDENT_ENDS.test(line)) break
+      if (continuation && triple === null && indent <= base && !PY_CLOSER.test(line)) break
       state = bracketBalance(line, triple)
       if (continuation) {
         balance = Math.max(0, balance + state.balance)
         triple = state.triple
         continued = state.continued
-        if (PY_BRANCH.test(line)) branches += 1
+        if (PY_BRANCH.test(state.code)) branches += 1
         end = at
         continue
       }
@@ -312,7 +369,7 @@ function pythonFunctions(file) {
       }
       const level = Math.max(0, Math.floor((indent - base) / unit) - 1)
       if (level > deepest) deepest = level
-      if (PY_BRANCH.test(line)) branches += 1
+      if (PY_BRANCH.test(state.code)) branches += 1
       end = at
     }
     rows.push({ file: file.path, line: index + 1, name: head[2], kind: "function", lines: end - index + 1, depth: deepest, branches })

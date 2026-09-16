@@ -145,15 +145,16 @@ test("long functions come first, longest first, over the measured thresholds, an
   assert.equal(document.size.score, Math.round((10 - treeRank(document.size.heavyShare) / 10) * 100) / 100)
   // Two of its four functions hold 41 of 47 lines, more than any listed tree: the floor.
   assert.equal(document.size.score, 0)
-  assert.deepEqual(document.size.sample, { trees: 50, functions: 6041, heavyShares: [...SIZE.distribution.heavyShare] })
+  assert.deepEqual(document.size.sample, { trees: 50, functions: SIZE.functions, heavyShares: [...SIZE.distribution.heavyShare] })
+  assert.equal(SIZE.distribution.heavyShare.length, SIZE.trees - 1, "the one listed tree with no function has no share and is not in the sample")
   assert.deepEqual(document.observed.functions.map((entry) => entry.name).sort(), ["classify", "decide", "say", "short"])
   const report = renderInspect(document, { colour: false })
   const blocks = [...report.matchAll(new RegExp(`^${DENSITY.dark} note  ([a-z ]+?)  `, "gm"))].map((match) => match[1])
   assert.deepEqual(blocks, ["long functions", "environment trust"], "size before the review classes")
   assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {4}21 lines, 9 branches, nesting 3, rank \d+$/m)
   assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 3, rank \d+$/m)
-  assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, less than 0 of 49 listed trees \(M12\)$/m)
-  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6041 functions stay under: 25 lines, 7 branches or nesting 2 \(M12\)/)
+  assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, no heavier than 0 of 49 listed trees \(M12\)$/m)
+  assert.match(report.replace(/\n {8}/g, " "), new RegExp(`long functions  2 functions over what 90 of 100 functions in 50 listed trees, ${SIZE.functions} functions stay under: ${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth} \\(M12\\)`))
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /^functions {5}observed 4, 2 over/m)
   assert.match(full.replace(/\n {8}/g, " "), /░ info  scripts\/helper\.sh:8  decide, 21 lines, 9 branches, nesting 3, over [\d.]+ of 100 listed/)
@@ -162,13 +163,13 @@ test("long functions come first, longest first, over the measured thresholds, an
   assert.doesNotMatch(renderInspect(example, { colour: false }), /long functions/)
   assert.equal(example.size.heavyShare, 0)
   assert.equal(example.size.score, 10, "one handler under every threshold: no heavy line, the ceiling")
-  assert.match(renderInspect(example, { colour: false }).replace(/\n {14}/g, " "), /^size score {4}10\.00 of 10; 0% of its function lines sit in functions over the measured size, less than 49 of 49 listed trees \(M12\)$/m)
+  assert.match(renderInspect(example, { colour: false }).replace(/\n {14}/g, " "), /^size score {4}10\.00 of 10; 0% of its function lines sit in functions over the measured size, no heavier than 49 of 49 listed trees \(M12\)$/m)
   const empty = (await documentFor("nothing")).document
   assert.equal(empty.size.score, null, "no function, no score")
   assert.equal(empty.size.heavyShare, 0)
   assert.match(renderInspect(empty, { colour: false }), /^size score {4}none: no function to rank$/m)
-  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), /size score 0\.00 of 10: 87% of its function lines sit in functions over the measured size, less than 0 of 49 listed trees \(M12\)/)
-  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6041 functions \(M12\), and none of the 10 classes/m)
+  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), /size score 0\.00 of 10: 87% of its function lines sit in functions over the measured size, no heavier than 0 of 49 listed trees \(M12\)/)
+  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6034 functions \(M12\), and none of the 10 classes/m)
 })
 
 test("the size score is line-weighted: splitting a long function raises it, and padding a heavy tree with small functions barely moves it", () => {
@@ -236,6 +237,15 @@ test("the shell scanner's corners: quotes, comments, here-strings and heredoc de
   assert.deepEqual(shell("a() {\n  echo \"cat <<EOF\"\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
   assert.deepEqual(shell("a() {\n  cat <<'END-HELP'\nif x\nEND-HELP\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
   assert.deepEqual(shell("a() {\n  (( x = y << 2 ))\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  (( x = y << n ))\n  z=$(( y << n ))\n" + tail), [["a", 5, 1, 1], ["b", 3, 0, 0]], "a shift by a name is not a heredoc either")
+  assert.deepEqual(shell("a() {\n  cat <<\\EOF\nif x\nEOF\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]], "a backslash-quoted delimiter")
+  assert.deepEqual(shell("a() {\n  x=\"$(printf \"it's\")\"\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]], "a quote inside $( ) inside a quote is the substitution's own")
+  assert.deepEqual(shell("a() {\n  x=\"$(cat <<EOF\nif y\nEOF\n)\"\n" + tail), [["a", 7, 1, 1], ["b", 3, 0, 0]], "a heredoc inside $( ) inside a quote")
+  assert.deepEqual(shell("a() {\n  x=\"$(\n    if y; then z; fi\n  )\"\n" + tail), [["a", 6, 2, 2], ["b", 3, 0, 0]], "a $( ) spanning lines holds shell, read as shell")
+  assert.deepEqual(shell("a() {\n  x\n} # end\nb() {\n  c\n} >/dev/null 2>&1\nc() {\n  d\n}\n"), [["a", 3, 0, 0], ["b", 3, 0, 0], ["c", 3, 0, 0]], "a closing brace with a comment or a redirection after it still closes")
+  assert.deepEqual(shell("a() {\n  case $x in\n    (a|b) y ;;\n  esac\n}\n"), [["a", 5, 1, 2]], "the POSIX (pattern) arm is a branch")
+  assert.deepEqual(shell("a() {\n  awk '\n    if (x) y\n  ' \"$f\" || echo failed\n}\n"), [["a", 5, 0, 1]], "what follows a string's close on its last line is read")
+  assert.deepEqual(shell("a() {\n  ssh h \"echo it's &&\n    if y; then z; fi\"\n" + tail), [["a", 5, 1, 1], ["b", 3, 0, 0]], "a double-quoted string spanning lines is data from its quote on")
   // A heredoc body may hold a `}` at the function's indent; a `<<-` body may be tab-indented, delimiter included.
   assert.deepEqual(shell("a() {\n  cat <<EOF\n}\nif y\nEOF\n" + tail), [["a", 7, 1, 1], ["b", 3, 0, 0]])
   assert.deepEqual(shell("a() {\n  cat <<-EOF\n\tif y\n\tEOF\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
@@ -256,6 +266,11 @@ test("the Python continuation's corners: a bracket in a docstring or a triple-qu
   assert.deepEqual(python("def a(x):\n    if x and \\\n            y:\n        pass\n    return 1" + next), [["a", 5, 1, 1], ["b", 2, 0, 0]])
   assert.deepEqual(python("def a(x):\n    if (x\n        and y\n        or z):\n        pass" + next), [["a", 5, 1, 3], ["b", 2, 0, 0]], "branches on a continuation line still count")
   assert.deepEqual(python("def a(x):\n    foo(\n    return 1" + next), [["a", 3, 0, 0], ["b", 2, 0, 0]], "a bracket never closed ends at the next def, not at the end of the file")
+  assert.deepEqual(python("def a(x):\n    foo(\nx = 1" + next), [["a", 2, 0, 0], ["b", 2, 0, 0]], "or at any statement at the def's indent that is not a closing bracket")
+  assert.deepEqual(python("def a(c):\n    c.execute(\"\"\"\nselect 1\nfrom t\n\"\"\")\n    return 1" + next), [["a", 6, 0, 0], ["b", 2, 0, 0]], "while a triple-quoted text at column 0 runs to its close")
+  assert.deepEqual(python("def a(\n    x,\n):\n  if x:\n    y()" + next), [["a", 5, 1, 1], ["b", 2, 0, 0]], "the unit is read from the first body line, not from the signature's continuation")
+  assert.deepEqual(python("def a(x):\n    \"\"\"Return x and y, or z if x.\"\"\"\n    return x" + next), [["a", 3, 0, 0], ["b", 2, 0, 0]], "and, or and if in a docstring are prose, not branches")
+  assert.deepEqual(python("def a(x):\n    \"\"\"Example:\n\n    def inner():\n        pass\n    \"\"\"\n    return x" + next), [["a", 7, 0, 0], ["b", 2, 0, 0]], "a def quoted in a docstring is not a function")
 })
 
 test("functions: the extractor counts lines, branches and nesting in QML and JavaScript, shell and Python, and overSize orders longest first", () => {
@@ -271,7 +286,7 @@ test("functions: the extractor counts lines, branches and nesting in QML and Jav
 
 test("the attention view over nothing, and the site cap and the threshold", async () => {
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6041 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
+  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6034 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
   assert.doesNotMatch(nothing, /^under 5%/m)
   const base = (await documentFor("nothing")).document

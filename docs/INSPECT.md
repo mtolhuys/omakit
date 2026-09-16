@@ -121,7 +121,7 @@ interval that is an expression), `▓ note` for a review class row, and
 Two views of the one document. The default is what needs attention,
 biggest first, under the subject, the baseline outcome and the size score.
 First the long functions: every function over what 90 of
-100 functions in 50 listed trees stay under (25 lines, 7 branches or
+100 functions in 50 listed trees stay under (25 lines, 6 branches or
 nesting 2, M12), longest first, up to five, each with its name, its lines,
 its branches and its nesting; that block comes first because length is
 what the person reading asks about first, and the heading names the
@@ -147,7 +147,7 @@ subject       ~/plugins/fixture-example at a3bf9e2d
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
 size score    10.00 of 10; 0% of its function lines sit in functions over the
-              measured size, less than 49 of 49 listed trees (M12)
+              measured size, no heavier than 49 of 49 listed trees (M12)
 
 attention     5 classes reviewers raise, biggest first by share of review
               findings (M11); up to 5 sites each
