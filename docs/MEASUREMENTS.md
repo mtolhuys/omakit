@@ -890,9 +890,22 @@ and a shell function declared on one line are not counted; nesting counts
 braces, so an object literal inside a function counts as a level; the
 sample is 18 trees and the p90 is one number from them.
 
+The record also carries the histogram of each measure over the 715, value
+to count, and `tools/inspect/patterns.mjs` carries the same three
+histograms as data, held equal by the unit tests, so a function's rank can
+be read without the document: the share of listed functions with a smaller
+value, 0 for the smallest listed value and 100 for one over every listed
+value, the largest of the three being the function's rank.
+
 Used by: the `long functions` block of `omakit inspect`, which lists a
 function when it is over the p90 of any of the three (18 lines, 7 branches,
-nesting 2), longest first, and says so in its heading. The person who asked
+nesting 2), longest first, each with its rank, and says so in its heading;
+and the size score, 10 minus the mean rank of the tree's functions divided
+by ten, two decimals, printed under the baseline line. A tree of median
+functions scores about 5, a tree of one-line functions 10.00, and every
+function made shorter, flatter or less branched raises the number, which is
+what makes it something to work towards. It is a position among listed
+plugins and never a grade of one; a tree with no function has no score. The person who asked
 for the tool asked for long functions first, so the default view puts that
 block before the review classes; that order is a preference and the report
 names the measurement, not a severity. `--json` carries every function under

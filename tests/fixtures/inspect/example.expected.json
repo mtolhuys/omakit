@@ -242,17 +242,23 @@
         "kind": "handler",
         "lines": 5,
         "depth": 0,
-        "branches": 0
+        "branches": 0,
+        "percentile": 35.5
       }
     ]
   },
   "size": {
     "measurement": "M12",
+    "sample": {
+      "trees": 18,
+      "functions": 715
+    },
     "thresholds": {
       "lines": 18,
       "branches": 7,
       "depth": 2
     },
+    "score": 6.45,
     "over": []
   },
   "counts": {

@@ -57,11 +57,16 @@
   },
   "size": {
     "measurement": "M12",
+    "sample": {
+      "trees": 18,
+      "functions": 715
+    },
     "thresholds": {
       "lines": 18,
       "branches": 7,
       "depth": 2
     },
+    "score": null,
     "over": []
   },
   "counts": {

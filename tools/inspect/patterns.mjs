@@ -90,10 +90,48 @@ function secretLogs(files) {
 export const SIZE = Object.freeze({
   measurement: "M12",
   sample: "18 listed trees, 715 functions",
+  functions: 715,
   lines: 18,
   branches: 7,
   depth: 2,
+  // The histogram of each measure over the 715 functions, value to count,
+  // from which a function's percentile rank among listed functions is read.
+  distribution: Object.freeze({
+    lines: Object.freeze({ 1: 58, 2: 10, 3: 94, 4: 92, 5: 97, 6: 58, 7: 43, 8: 41, 9: 34, 10: 25, 11: 19, 12: 13, 13: 22, 14: 9, 15: 8, 16: 5, 17: 9, 18: 8, 19: 2, 20: 5, 21: 3, 22: 5, 23: 7, 24: 5, 25: 1, 26: 2, 27: 1, 28: 1, 29: 4, 30: 5, 31: 1, 33: 1, 34: 2, 37: 1, 39: 2, 40: 2, 41: 1, 42: 3, 43: 1, 48: 1, 49: 1, 50: 2, 52: 1, 55: 1, 63: 1, 70: 1, 71: 1, 81: 2, 91: 1, 101: 1, 108: 1, 128: 1 }),
+    branches: Object.freeze({ 0: 218, 1: 128, 2: 119, 3: 79, 4: 47, 5: 33, 6: 14, 7: 21, 8: 15, 9: 9, 10: 3, 11: 5, 12: 6, 13: 1, 14: 3, 15: 1, 17: 1, 18: 1, 19: 1, 20: 2, 22: 2, 23: 1, 24: 1, 25: 1, 27: 1, 29: 1, 31: 1 }),
+    depth: Object.freeze({ 0: 435, 1: 167, 2: 65, 3: 25, 4: 8, 5: 5, 6: 7, 7: 2, 13: 1 }),
+  }),
 })
+
+/**
+ * Where a value sits among the sample's: the share of listed functions
+ * with a smaller value, as a percentage, so the smallest listed value ranks
+ * 0 and a value over every listed one ranks 100. A function's rank is the
+ * largest of its three, since one long measure is what a reader sees.
+ */
+export function percentile(measure, value) {
+  const histogram = SIZE.distribution[measure]
+  let below = 0
+  for (const [key, count] of Object.entries(histogram)) if (Number(key) < value) below += count
+  return Math.round((below / SIZE.functions) * 1000) / 10
+}
+
+export function rankOf(entry) {
+  return Math.max(percentile("lines", entry.lines), percentile("branches", entry.branches), percentile("depth", entry.depth))
+}
+
+/**
+ * The size score of a tree: 10 minus the mean rank of its functions among
+ * the 715 listed ones, on 0 to 10 with two decimals. A tree of median
+ * functions scores 5.00; every function made shorter, flatter or less
+ * branched raises it. It says where the tree sits among listed plugins,
+ * never whether it is good, and a tree with no function has no score.
+ */
+export function sizeScore(functions) {
+  if (!functions.length) return null
+  const mean = functions.reduce((sum, entry) => sum + rankOf(entry), 0) / functions.length
+  return Math.round((10 - mean / 10) * 100) / 100
+}
 
 /** The functions over any of the thresholds, longest first, then most branched. */
 export function overSize(functions) {

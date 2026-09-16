@@ -11,7 +11,9 @@
   raised, printed only where the tree shows the class's precondition, with
   its measured share (M11). Regular expressions over QML and shell, every
   row labelled observed, no score, no verdict, runs nothing from the tree.
-  The report is what needs attention, biggest first: the functions over
+  The report opens with a size score, 10 minus the mean rank of the tree's
+  functions among 715 in listed trees (M12), then what needs attention,
+  biggest first: the functions over
   what 90 of 100 functions in listed trees stay under (M12), longest first,
   then one block per review class the tree shows, ordered by measured
   share, with up to five sites under each; `--full` is every site with

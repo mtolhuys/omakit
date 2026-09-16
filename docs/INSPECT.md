@@ -36,10 +36,15 @@ reviewer who is handed the same list reads the tree faster.
 - Not a security review, not a scan, not a lint. It does not say "safe",
   "unsafe", "pass" or "fail" about anything, and it never blocks. The
   marketplace's automated baseline blocks; `inspect` reports.
-- Not a scorer. There is no number at the bottom, no grade, no percentage of
-  anything for the plugin. The only percentages it prints are the measured
-  shares of review findings behind each pattern, and those describe the
-  marketplace's review history, not the plugin.
+- Not a grader. It prints one number about the plugin, the size score,
+  and that number is a position, not a grade: 10 minus the mean rank of the
+  plugin's functions among the 715 functions in 18 listed trees (M12), so
+  a tree of median functions scores 5.00 and every function made shorter,
+  flatter or less branched raises it. It says where the tree sits among
+  listed plugins, never whether it is good, it never blocks, and a tree with
+  no function has no score. The other percentages it prints are the
+  measured shares of review findings behind each pattern, and those
+  describe the marketplace's review history, not the plugin.
 - Not a data-flow analysis. It matches text. A command assembled at run time
   from variables, a URL read from a config file, a path built by string
   concatenation and a component instantiated from a file outside the tree are
@@ -109,7 +114,8 @@ interval that is an expression), `▓ note` for a review class row, and
 `█ FAIL`, because it has no verdict to attach them to.
 
 Two views of the one document. The default is what needs attention,
-biggest first. First the long functions: every function over what 90 of
+biggest first, under the subject, the baseline outcome and the size score.
+First the long functions: every function over what 90 of
 100 functions in 18 listed trees stay under (18 lines, 7 branches or
 nesting 2, M12), longest first, up to five, each with its name, its lines,
 its branches and its nesting; that block comes first because length is
@@ -135,6 +141,8 @@ act on sat under 750 lines of argv.
 subject       ~/plugins/fixture-example at a3bf9e2d
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
+size score    6.45 of 10; 10 minus the mean rank of its 1 function among 715 in
+              18 listed trees (M12), so a tree of median functions scores 5.00
 
 attention     5 classes reviewers raise, biggest first by share of review
               findings (M11); up to 5 sites each
@@ -257,8 +265,10 @@ method            string   one sentence: static extraction, regular expressions,
 subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
 observed          { processes[], hosts[], writes[], timers[], functions[] }
 counts            { processes: { total, qml, shell }, hosts, writes, timers, functions, notResolvable }
-size              { measurement: "M12", thresholds: { lines, branches, depth }, over: function[] }
-                  the functions over any threshold, longest first; the thresholds are M12's p90
+size              { measurement: "M12", sample: { trees, functions }, thresholds: { lines, branches, depth },
+                    score: number|null, over: function[] }
+                  the functions over any threshold, longest first; the thresholds are M12's p90; the
+                  score is 10 minus the mean percentile of every function, two decimals, null with none
                   the headline: how many process sites are QML Process blocks and how many are
                   shell lines, since a script contributes one site per command segment
 notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:
@@ -326,8 +336,9 @@ mode              string | null   -m on mkdir or install, mktemp's own mode, `ch
                   in the file, or `umask N` in the file
 ```
 
-A function: `{ file, line, name, kind: "function" | "handler", lines, depth, branches }`,
-counted the way M12 counts them.
+A function: `{ file, line, name, kind: "function" | "handler", lines, depth, branches, percentile }`,
+counted the way M12 counts them; `percentile` is the largest of its three
+ranks among the listed functions, the share with a smaller value, 0 to 100.
 
 A timer:
 

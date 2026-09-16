@@ -8,7 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { liveRegistry } from "../../tools/marketplace/registry.mjs"
-import { PATTERNS, SIZE } from "../../tools/inspect/patterns.mjs"
+import { PATTERNS, percentile, SIZE, sizeScore } from "../../tools/inspect/patterns.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
@@ -77,6 +77,18 @@ test("every check names a source and a measured reason, and every inspect patter
   assert.equal(lengths.measurement, SIZE.measurement)
   assert.deepEqual({ lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth }, { lines: lengths.quantiles.lines.p90, branches: lengths.quantiles.branches.p90, depth: lengths.quantiles.depth.p90 })
   assert.equal(SIZE.sample, `${lengths.sample.trees} listed trees, ${lengths.sample.functions} functions`)
+  assert.equal(SIZE.functions, lengths.sample.functions)
+  // The histograms in code are the record's, value for value, and each sums to every function.
+  for (const measure of ["lines", "branches", "depth"]) {
+    assert.deepEqual(Object.fromEntries(Object.entries(SIZE.distribution[measure]).map(([k, v]) => [String(k), v])), lengths.distribution[measure], `size: the ${measure} histogram is not the record's`)
+    assert.equal(Object.values(SIZE.distribution[measure]).reduce((sum, count) => sum + count, 0), lengths.sample.functions)
+  }
+  // And the rank reads off the histogram the way M12 says: the share strictly smaller.
+  assert.equal(percentile("lines", 1), 0)
+  assert.equal(percentile("lines", 1000), 100)
+  assert.equal(percentile("lines", lengths.quantiles.lines.p50) < 50, true)
+  assert.equal(sizeScore([]), null)
+  assert.equal(sizeScore([{ lines: 1, branches: 0, depth: 0 }]), 10)
 })
 
 test("the crafted fixture is refused, and every measured failure class is named", async () => {

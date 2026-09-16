@@ -22,7 +22,7 @@ import { extractHosts } from "./hosts.mjs"
 import { extractWrites } from "./writes.mjs"
 import { extractTimers } from "./timers.mjs"
 import { extractFunctions } from "./functions.mjs"
-import { evaluatePatterns, overSize, PATTERNS, SIZE } from "./patterns.mjs"
+import { evaluatePatterns, overSize, PATTERNS, rankOf, SIZE, sizeScore } from "./patterns.mjs"
 
 export const METHOD = "static extraction, regular expressions over qml and shell; observed, not executed"
 
@@ -80,7 +80,8 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   const functions = []
   const notResolvable = []
   for (const file of tree.files) {
-    functions.push(...extractFunctions(file))
+    // Each function carries its rank among the 715 listed ones (M12).
+    functions.push(...extractFunctions(file).map((entry) => ({ ...entry, percentile: rankOf(entry) })))
     const rows = extractProcesses(file)
     processes.push(...rows)
     for (const row of rows) {
@@ -131,7 +132,16 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     // Size: the functions over the M12 thresholds, longest first. A count of
     // lines, branches and nesting over the text, compared with what 90 of
     // 100 functions in listed trees stay under; never a judgement.
-    size: { measurement: SIZE.measurement, thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth }, over: overSize(functions) },
+    size: {
+      measurement: SIZE.measurement,
+      sample: { trees: 18, functions: SIZE.functions },
+      thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth },
+      // 10 minus the mean rank of this tree's functions among the listed
+      // ones: where the tree sits, never whether it is good; null with no
+      // function to rank.
+      score: sizeScore(functions),
+      over: overSize(functions),
+    },
     // The headline split: a shell script contributes one site per command
     // segment, so a tree with a few scripts carries hundreds of process
     // sites beside a handful of QML Process blocks, and the two are said

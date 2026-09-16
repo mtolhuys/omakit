@@ -91,6 +91,7 @@ function fn(row, at, problems) {
   if (row.kind !== "function" && row.kind !== "handler") problems.push(`${at}.kind is neither function nor handler`)
   for (const key of ["lines", "depth", "branches"]) if (!isInt(row[key]) || row[key] < 0) problems.push(`${at}.${key} is not a count`)
   if (isInt(row.lines) && row.lines < 1) problems.push(`${at}.lines is under one`)
+  if (typeof row.percentile !== "number" || row.percentile < 0 || row.percentile > 100) problems.push(`${at}.percentile is not a rank between 0 and 100`)
 }
 
 function timer(row, at, problems) {
@@ -165,6 +166,16 @@ export function validateInspectDocument(document, known = {}) {
   else {
     if (!isString(size.measurement) || !/^M\d+$/.test(size.measurement)) problems.push("size.measurement is not a measurement id")
     for (const key of ["lines", "branches", "depth"]) if (!isInt(size.thresholds?.[key]) || size.thresholds[key] < 1) problems.push(`size.thresholds.${key} is not a count`)
+    if (!size.sample || !isInt(size.sample.trees) || !isInt(size.sample.functions)) problems.push("size.sample is not { trees, functions }")
+    const scorable = Array.isArray(observed.functions) && observed.functions.length > 0
+    if (size.score === null) {
+      if (scorable) problems.push("size.score is null for a tree with functions")
+    } else if (typeof size.score !== "number" || size.score < 0 || size.score > 10 || Math.round(size.score * 100) !== size.score * 100) problems.push("size.score is not a number from 0 to 10 with two decimals")
+    else if (!scorable) problems.push("size.score is set for a tree with no function")
+    else {
+      const expected = Math.round((10 - observed.functions.reduce((sum, row) => sum + row.percentile, 0) / observed.functions.length / 10) * 100) / 100
+      if (Math.abs(expected - size.score) > 0.011) problems.push(`size.score is ${size.score}; the mean rank of the functions says ${expected}`)
+    }
     if (!Array.isArray(size.over)) problems.push("size.over is not a list")
     else {
       for (const [index, row] of size.over.entries()) {

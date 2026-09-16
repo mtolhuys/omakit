@@ -234,6 +234,10 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   const counts = document.counts
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}`, c))
   out.push(...field("baseline", baselineText(document.marketplaceBaseline), c))
+  const score = document.size.score
+  out.push(...field("size score", score === null
+    ? `none: no function to rank`
+    : `${score.toFixed(2)} of 10; 10 minus the mean rank of its ${plural(counts.functions, "function")} among ${SIZE.functions} in ${document.size.sample.trees} listed trees (${SIZE.measurement}), so a tree of median functions scores 5.00`, c))
   out.push("")
 
   const ranked = [...document.patterns].sort((a, b) => b.share - a.share)
@@ -251,14 +255,14 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   if (over.length) {
     out.push("")
     const thresholds = `${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth}`
-    const heading = wrap(`${plural(over.length, "function")} over what 90 of 100 functions in ${SIZE.sample} stay under: ${thresholds} (${SIZE.measurement})`, { indent: GUTTER, first: GUTTER + "long functions".length + 2 }, c)
+    const heading = wrap(`${plural(over.length, "function")} over what 90 of 100 functions in ${SIZE.sample} stay under: ${thresholds} (${SIZE.measurement}); rank is the share of listed functions smaller than it`, { indent: GUTTER, first: GUTTER + "long functions".length + 2 }, c)
     out.push(`${mark("advisory", c)}${c("name", "long functions")}  ${heading[0].trimStart()}`, ...heading.slice(1))
     const top = over.slice(0, SHOWN_SITES)
     const siteWidth = Math.max(...top.map((entry) => `${entry.file}:${entry.line}`.length))
     const nameWidth = Math.max(...top.map((entry) => entry.name.length))
     for (const entry of top) {
       const at = `${entry.file}:${entry.line}`
-      out.push(`${" ".repeat(GUTTER)}${c("name", at.padEnd(siteWidth))}  ${entry.name.padEnd(nameWidth)}  ${String(entry.lines).padStart(3)} lines, ${String(entry.branches).padStart(2)} branches, nesting ${entry.depth}`)
+      out.push(`${" ".repeat(GUTTER)}${c("name", at.padEnd(siteWidth))}  ${entry.name.padEnd(nameWidth)}  ${entry.lines} lines, ${entry.branches} branches, nesting ${entry.depth}, ${c("label", `rank ${Math.round(entry.percentile)}`)}`)
     }
     if (over.length > SHOWN_SITES) out.push(...wrap(`and ${over.length - SHOWN_SITES} more (--full)`, { indent: GUTTER }).map((line) => c("label", line)))
   }
@@ -315,7 +319,8 @@ function renderFull(document, { colour }) {
   out.push(...field("functions", functions.length
     ? `observed ${functions.length}, ${over.length} over what 90 of 100 functions in ${SIZE.sample} stay under (${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth}; ${SIZE.measurement}), longest first`
     : NOTHING, c))
-  for (const entry of over) out.push(...row("info", `${entry.file}:${entry.line}`, `${entry.name}, ${plural(entry.lines, "line")}, ${plural(entry.branches, "branch", "branches")}, nesting ${entry.depth}`, c))
+  for (const entry of over) out.push(...row("info", `${entry.file}:${entry.line}`, `${entry.name}, ${plural(entry.lines, "line")}, ${plural(entry.branches, "branch", "branches")}, nesting ${entry.depth}, over ${entry.percentile} of 100 listed`, c))
+  if (functions.length) out.push(...wrap(`size score ${document.size.score.toFixed(2)} of 10: 10 minus the mean rank of the ${functions.length} among ${SIZE.functions} listed functions (${SIZE.measurement})`, { indent: GUTTER }, c))
   out.push("")
   out.push(...baselineLines(document.marketplaceBaseline, c))
   out.push("")

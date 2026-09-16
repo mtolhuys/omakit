@@ -111,8 +111,10 @@ command that is not one literal is a `▒ ?` row with no argv, a section with
 nothing in it says "observed nothing of this kind", and the report ends by
 naming what the method cannot see. No score, no verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
-one word it closes on is `INSPECTED`. The report is what needs attention,
-biggest first: the functions longer, more branched or deeper than 90 of 100
+one word it closes on is `INSPECTED`. The report opens with the size score,
+10 minus the mean rank of the plugin's functions among those in listed
+trees, a position to work towards and never a grade; then what needs
+attention, biggest first: the functions longer, more branched or deeper than 90 of 100
 functions in listed trees ([M12](MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)),
 longest first, then one block per review class the tree shows, ordered by
 the class's measured share of review findings, with up to five sites under

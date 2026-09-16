@@ -52,8 +52,12 @@ share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
 `lookedFor` names the classes whose precondition was not observed.
 `size.over` lists the functions longer, more branched or deeper than 90 of
 100 functions in listed trees (the thresholds are in `size.thresholds`,
-from M12), longest first; when the owner asks for simpler code, start
-there. Read
+from M12), longest first, each with its `percentile` among them, and
+`size.score` is 10 minus the mean percentile of every function in the
+tree. When the owner asks for simpler code, start with the top of
+`size.over`, and read the score before and after as the measure of the
+change; it is a position among listed plugins, not a grade, so never tell
+the owner a score is good or bad, only that it moved. Read
 the document, not the report: the report a person sees lists at most five
 sites per class and drops classes under five percent, `--full` prints every
 site, and `--json` carries all of it either way.
