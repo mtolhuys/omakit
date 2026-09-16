@@ -1,21 +1,21 @@
 {
   "title": "omakit inspect",
   "width": 110,
-  "rows": 18,
+  "rows": 30,
   "fontSize": 12,
   "steps": [
     {
-      "command": "omakit inspect ~/src/omarchy-plugin-fixture-process-without-deadline",
+      "command": "omakit inspect ~/src/omarchy-plugin-fixture-long-function",
       "capture": "docs/media/captures/inspect-fixture.ansi",
       "reveal": 4,
       "pace": 12,
       "pauses": [
         [
-          8,
+          6,
           160
         ],
         [
-          26,
+          10,
           220
         ]
       ],
