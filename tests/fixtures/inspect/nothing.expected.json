@@ -28,13 +28,13 @@
   "size": {
     "measurement": "M12",
     "sample": {
-      "trees": 18,
-      "functions": 715
+      "trees": 50,
+      "functions": 6040
     },
     "thresholds": {
-      "lines": 18,
-      "branches": 7,
-      "depth": 2
+      "lines": 22,
+      "branches": 6,
+      "depth": 3
     },
     "score": null,
     "over": []

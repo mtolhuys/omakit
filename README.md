@@ -37,9 +37,9 @@ Compares your installed plugin commits with the marketplace's validated commits.
 
 ## `omakit inspect <plugin-dir>`
 
-![inspect listing one process with no deadline and the two review classes it shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
+![inspect showing a size score and the two review classes one fixture shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
 
-Lists what a plugin's tree does, as observations, beside the review classes a human reviewer raises most, each with its measured share ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)). No score, no verdict, nothing run from the tree. Over 18 listed plugins read at their validated commits, the extraction counted 515 process sites (57 QML `Process` blocks, 458 shell lines), 17 hosts, 63 writes and 40 timers, left 15 rows it could not resolve, and printed 73 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
+Reads a plugin's tree and prints what needs attention, biggest first: a size score (10 minus the mean rank of its functions among functions in listed plugins, [M12](docs/MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)), the functions over what 90 of 100 listed functions stay under, then each review class the tree shows with the class's measured share of review findings ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)) and up to five sites. No verdict, nothing run from the tree; `--full` is every site, `--json` the document. Over 18 listed plugins read at their validated commits, the extraction counted 515 process sites (57 QML `Process` blocks, 458 shell lines), 17 hosts, 63 writes and 40 timers, left 15 rows it could not resolve, and printed 73 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
 
 ## `omakit weigh <plugin>`
 

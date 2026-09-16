@@ -140,15 +140,15 @@ test("long functions come first, longest first, over the measured thresholds, an
   const mean = document.observed.functions.reduce((sum, entry) => sum + entry.percentile, 0) / document.observed.functions.length
   assert.equal(document.size.score, Math.round((10 - mean / 10) * 100) / 100)
   assert.ok(document.size.score > 0 && document.size.score < 10)
-  assert.deepEqual(document.size.sample, { trees: 18, functions: 715 })
+  assert.deepEqual(document.size.sample, { trees: 50, functions: 6040 })
   assert.deepEqual(document.observed.functions.map((entry) => entry.name).sort(), ["classify", "decide", "say", "short"])
   const report = renderInspect(document, { colour: false })
   const blocks = [...report.matchAll(new RegExp(`^${DENSITY.dark} note  ([a-z ]+?)  `, "gm"))].map((match) => match[1])
   assert.deepEqual(blocks, ["long functions", "environment trust"], "size before the review classes")
   assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {4}21 lines, 9 branches, nesting 3, rank \d+$/m)
   assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 4, rank \d+$/m)
-  assert.match(report.replace(/\n {14}/g, " "), new RegExp(`^size score {4}${document.size.score.toFixed(2)} of 10; 10 minus the mean rank of its 4 functions among 715 in 18 listed trees \\(M12\\), so a tree of median functions scores 5\\.00$`, "m"))
-  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 18 listed trees, 715 functions stay under: 18 lines, 7 branches or nesting 2 \(M12\)/)
+  assert.match(report.replace(/\n {14}/g, " "), new RegExp(`^size score {4}${document.size.score.toFixed(2)} of 10; 10 minus the mean rank of its 4 functions among 6040 in 50 listed trees \\(M12\\), so a tree of median functions scores 5\\.00$`, "m"))
+  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6040 functions stay under: 22 lines, 6 branches or nesting 3 \(M12\)/)
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /^functions {5}observed 4, 2 over/m)
   assert.match(full.replace(/\n {8}/g, " "), /░ info  scripts\/helper\.sh:8  decide, 21 lines, 9 branches, nesting 3, over [\d.]+ of 100 listed/)
@@ -159,8 +159,8 @@ test("long functions come first, longest first, over the measured thresholds, an
   const empty = (await documentFor("nothing")).document
   assert.equal(empty.size.score, null, "no function, no score")
   assert.match(renderInspect(empty, { colour: false }), /^size score {4}none: no function to rank$/m)
-  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), new RegExp(`size score ${document.size.score.toFixed(2)} of 10: 10 minus the mean rank of the 4 among 715 listed functions \\(M12\\)`))
-  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 18 listed trees, 715 functions \(M12\), and none of the 10 classes/m)
+  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), new RegExp(`size score ${document.size.score.toFixed(2)} of 10: 10 minus the mean rank of the 4 among 6040 listed functions \\(M12\\)`))
+  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6040 functions \(M12\), and none of the 10 classes/m)
 })
 
 test("functions: the extractor counts lines, branches and nesting in QML and JavaScript, shell and Python, and overSize orders longest first", () => {
@@ -176,7 +176,7 @@ test("functions: the extractor counts lines, branches and nesting in QML and Jav
 
 test("the attention view over nothing, and the site cap and the threshold", async () => {
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 18 listed trees, 715 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
+  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6040 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
   assert.doesNotMatch(nothing, /^under 5%/m)
   const base = (await documentFor("nothing")).document

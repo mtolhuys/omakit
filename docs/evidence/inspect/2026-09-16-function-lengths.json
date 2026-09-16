@@ -1,124 +1,222 @@
 {
   "measurement": "M12",
   "date": "2026-09-16",
-  "method": "extractFunctions from tools/inspect/functions.mjs over the same 18 listed trees as the 2026-09-15 inspect record (selection rule in that record), read from the reviewer-mode cache at their validated commits, no fetch. A function is a `function name(` or a multi-line `onSomething: {` handler in QML and JavaScript, a `name() {` or `function name` block in shell, a `def` in Python. Lines are first to last line inclusive; depth is the deepest nesting below the body; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same 715 functions, value to count, from which a function's percentile rank is read.",
+  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule, widened from 18 to 50), each fetched read-only at that commit in reviewer mode. A function is a `function name(` or a multi-line `onSomething: {` handler in QML and JavaScript, a `name() {` or `function name` block in shell, a `def` in Python. Lines are first to last line inclusive; depth is the deepest nesting below the body; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same functions, value to count, from which a function's percentile rank is read.",
   "sample": {
-    "trees": 18,
-    "functions": 715
+    "trees": 50,
+    "functions": 6040,
+    "fetchFailed": []
   },
   "quantiles": {
     "lines": {
-      "p50": 6,
-      "p75": 10,
-      "p90": 18,
-      "p95": 29,
-      "max": 128
+      "p50": 7,
+      "p75": 12,
+      "p90": 22,
+      "p95": 34,
+      "max": 495
     },
     "depth": {
-      "p50": 0,
-      "p90": 2,
-      "max": 13
+      "p50": 1,
+      "p90": 3,
+      "max": 18
     },
     "branches": {
-      "p50": 2,
-      "p90": 7,
-      "max": 31
+      "p50": 1,
+      "p90": 6,
+      "max": 87
     }
   },
   "distribution": {
     "lines": {
-      "1": 58,
-      "2": 10,
-      "3": 94,
-      "4": 92,
-      "5": 97,
-      "6": 58,
-      "7": 43,
-      "8": 41,
-      "9": 34,
-      "10": 25,
-      "11": 19,
-      "12": 13,
-      "13": 22,
-      "14": 9,
-      "15": 8,
-      "16": 5,
-      "17": 9,
-      "18": 8,
-      "19": 2,
-      "20": 5,
+      "1": 330,
+      "2": 185,
+      "3": 682,
+      "4": 659,
+      "5": 629,
+      "6": 514,
+      "7": 420,
+      "8": 339,
+      "9": 301,
+      "10": 235,
+      "11": 192,
+      "12": 138,
+      "13": 150,
+      "14": 129,
+      "15": 104,
+      "16": 75,
+      "17": 84,
+      "18": 64,
+      "19": 70,
+      "20": 48,
+      "21": 51,
+      "22": 46,
+      "23": 45,
+      "24": 42,
+      "25": 27,
+      "26": 25,
+      "27": 16,
+      "28": 24,
+      "29": 24,
+      "30": 17,
+      "31": 18,
+      "32": 23,
+      "33": 18,
+      "34": 19,
+      "35": 10,
+      "36": 5,
+      "37": 11,
+      "38": 12,
+      "39": 12,
+      "40": 9,
+      "41": 10,
+      "42": 12,
+      "43": 9,
+      "44": 8,
+      "45": 7,
+      "46": 14,
+      "47": 8,
+      "48": 11,
+      "49": 8,
+      "50": 6,
+      "51": 2,
+      "52": 2,
+      "53": 6,
+      "54": 2,
+      "55": 7,
+      "56": 4,
+      "57": 3,
+      "58": 5,
+      "60": 6,
+      "61": 2,
+      "62": 3,
+      "63": 6,
+      "64": 1,
+      "65": 3,
+      "66": 1,
+      "67": 3,
+      "68": 4,
+      "69": 8,
+      "70": 5,
+      "71": 6,
+      "72": 2,
+      "73": 2,
+      "74": 1,
+      "75": 1,
+      "76": 1,
+      "77": 1,
+      "78": 1,
+      "79": 3,
+      "80": 1,
+      "81": 3,
+      "82": 1,
+      "83": 1,
+      "85": 1,
+      "87": 1,
+      "89": 1,
+      "90": 2,
+      "91": 2,
+      "92": 1,
+      "94": 1,
+      "96": 2,
+      "97": 2,
+      "98": 1,
+      "99": 1,
+      "100": 1,
+      "101": 1,
+      "102": 2,
+      "104": 1,
+      "108": 1,
+      "110": 2,
+      "111": 1,
+      "112": 1,
+      "113": 1,
+      "115": 2,
+      "116": 1,
+      "117": 1,
+      "119": 1,
+      "120": 1,
+      "121": 1,
+      "128": 2,
+      "129": 1,
+      "133": 1,
+      "134": 1,
+      "144": 1,
+      "145": 1,
+      "154": 1,
+      "161": 1,
+      "173": 1,
+      "253": 1,
+      "277": 1,
+      "292": 1,
+      "365": 1,
+      "495": 1
+    },
+    "branches": {
+      "0": 2336,
+      "1": 1096,
+      "2": 807,
+      "3": 454,
+      "4": 339,
+      "5": 233,
+      "6": 171,
+      "7": 125,
+      "8": 90,
+      "9": 68,
+      "10": 47,
+      "11": 53,
+      "12": 24,
+      "13": 26,
+      "14": 18,
+      "15": 11,
+      "16": 17,
+      "17": 18,
+      "18": 12,
+      "19": 12,
+      "20": 11,
       "21": 3,
       "22": 5,
       "23": 7,
-      "24": 5,
-      "25": 1,
-      "26": 2,
-      "27": 1,
-      "28": 1,
-      "29": 4,
-      "30": 5,
+      "24": 8,
+      "25": 4,
+      "26": 1,
+      "27": 6,
+      "28": 4,
+      "29": 5,
       "31": 1,
-      "33": 1,
-      "34": 2,
+      "32": 3,
+      "33": 3,
+      "34": 1,
+      "35": 1,
+      "36": 4,
       "37": 1,
-      "39": 2,
-      "40": 2,
+      "38": 1,
+      "40": 1,
       "41": 1,
-      "42": 3,
-      "43": 1,
-      "48": 1,
-      "49": 1,
-      "50": 2,
-      "52": 1,
-      "55": 1,
-      "63": 1,
-      "70": 1,
-      "71": 1,
-      "81": 2,
-      "91": 1,
-      "101": 1,
-      "108": 1,
-      "128": 1
-    },
-    "branches": {
-      "0": 218,
-      "1": 128,
-      "2": 119,
-      "3": 79,
-      "4": 47,
-      "5": 33,
-      "6": 14,
-      "7": 21,
-      "8": 15,
-      "9": 9,
-      "10": 3,
-      "11": 5,
-      "12": 6,
-      "13": 1,
-      "14": 3,
-      "15": 1,
-      "17": 1,
-      "18": 1,
-      "19": 1,
-      "20": 2,
-      "22": 2,
-      "23": 1,
-      "24": 1,
-      "25": 1,
-      "27": 1,
-      "29": 1,
-      "31": 1
+      "43": 2,
+      "44": 1,
+      "45": 2,
+      "46": 1,
+      "64": 1,
+      "75": 1,
+      "78": 1,
+      "85": 1,
+      "87": 2
     },
     "depth": {
-      "0": 435,
-      "1": 167,
-      "2": 65,
-      "3": 25,
-      "4": 8,
-      "5": 5,
-      "6": 7,
-      "7": 2,
-      "13": 1
+      "0": 2606,
+      "1": 1938,
+      "2": 859,
+      "3": 327,
+      "4": 133,
+      "5": 71,
+      "6": 60,
+      "7": 26,
+      "8": 8,
+      "9": 6,
+      "10": 2,
+      "13": 2,
+      "15": 1,
+      "18": 1
     }
   },
   "rows": [
@@ -337,7 +435,391 @@
       },
       "longest": 71,
       "medianLines": 9
+    },
+    {
+      "row": 19,
+      "functions": 54,
+      "byKind": {
+        "qml": 44,
+        "js": 0,
+        "shell": 0,
+        "python": 10
+      },
+      "longest": 134,
+      "medianLines": 5
+    },
+    {
+      "row": 20,
+      "functions": 60,
+      "byKind": {
+        "qml": 58,
+        "js": 0,
+        "shell": 2,
+        "python": 0
+      },
+      "longest": 110,
+      "medianLines": 6
+    },
+    {
+      "row": 21,
+      "functions": 38,
+      "byKind": {
+        "qml": 38,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 19,
+      "medianLines": 6
+    },
+    {
+      "row": 22,
+      "functions": 28,
+      "byKind": {
+        "qml": 17,
+        "js": 0,
+        "shell": 11,
+        "python": 0
+      },
+      "longest": 495,
+      "medianLines": 6
+    },
+    {
+      "row": 23,
+      "functions": 103,
+      "byKind": {
+        "qml": 103,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 35,
+      "medianLines": 6
+    },
+    {
+      "row": 24,
+      "functions": 91,
+      "byKind": {
+        "qml": 42,
+        "js": 0,
+        "shell": 49,
+        "python": 0
+      },
+      "longest": 65,
+      "medianLines": 7
+    },
+    {
+      "row": 25,
+      "functions": 7,
+      "byKind": {
+        "qml": 4,
+        "js": 0,
+        "shell": 3,
+        "python": 0
+      },
+      "longest": 11,
+      "medianLines": 4
+    },
+    {
+      "row": 26,
+      "functions": 50,
+      "byKind": {
+        "qml": 22,
+        "js": 12,
+        "shell": 3,
+        "python": 13
+      },
+      "longest": 72,
+      "medianLines": 7
+    },
+    {
+      "row": 27,
+      "functions": 619,
+      "byKind": {
+        "qml": 476,
+        "js": 142,
+        "shell": 1,
+        "python": 0
+      },
+      "longest": 94,
+      "medianLines": 9
+    },
+    {
+      "row": 28,
+      "functions": 194,
+      "byKind": {
+        "qml": 58,
+        "js": 24,
+        "shell": 33,
+        "python": 79
+      },
+      "longest": 55,
+      "medianLines": 6
+    },
+    {
+      "row": 29,
+      "functions": 92,
+      "byKind": {
+        "qml": 72,
+        "js": 20,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 45,
+      "medianLines": 6
+    },
+    {
+      "row": 30,
+      "functions": 64,
+      "byKind": {
+        "qml": 39,
+        "js": 7,
+        "shell": 18,
+        "python": 0
+      },
+      "longest": 116,
+      "medianLines": 6
+    },
+    {
+      "row": 31,
+      "functions": 126,
+      "byKind": {
+        "qml": 82,
+        "js": 44,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 65,
+      "medianLines": 6
+    },
+    {
+      "row": 32,
+      "functions": 236,
+      "byKind": {
+        "qml": 203,
+        "js": 32,
+        "shell": 1,
+        "python": 0
+      },
+      "longest": 365,
+      "medianLines": 10
+    },
+    {
+      "row": 33,
+      "functions": 39,
+      "byKind": {
+        "qml": 30,
+        "js": 8,
+        "shell": 1,
+        "python": 0
+      },
+      "longest": 41,
+      "medianLines": 3
+    },
+    {
+      "row": 34,
+      "functions": 51,
+      "byKind": {
+        "qml": 30,
+        "js": 0,
+        "shell": 21,
+        "python": 0
+      },
+      "longest": 98,
+      "medianLines": 5
+    },
+    {
+      "row": 35,
+      "functions": 8,
+      "byKind": {
+        "qml": 7,
+        "js": 0,
+        "shell": 1,
+        "python": 0
+      },
+      "longest": 14,
+      "medianLines": 7
+    },
+    {
+      "row": 36,
+      "functions": 51,
+      "byKind": {
+        "qml": 35,
+        "js": 11,
+        "shell": 5,
+        "python": 0
+      },
+      "longest": 34,
+      "medianLines": 5
+    },
+    {
+      "row": 37,
+      "functions": 16,
+      "byKind": {
+        "qml": 16,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 12,
+      "medianLines": 5
+    },
+    {
+      "row": 38,
+      "functions": 22,
+      "byKind": {
+        "qml": 11,
+        "js": 4,
+        "shell": 0,
+        "python": 7
+      },
+      "longest": 41,
+      "medianLines": 8
+    },
+    {
+      "row": 39,
+      "functions": 42,
+      "byKind": {
+        "qml": 29,
+        "js": 13,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 44,
+      "medianLines": 6
+    },
+    {
+      "row": 40,
+      "functions": 58,
+      "byKind": {
+        "qml": 21,
+        "js": 0,
+        "shell": 4,
+        "python": 33
+      },
+      "longest": 90,
+      "medianLines": 11
+    },
+    {
+      "row": 41,
+      "functions": 0,
+      "byKind": {
+        "qml": 0,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": null,
+      "medianLines": null
+    },
+    {
+      "row": 42,
+      "functions": 1130,
+      "byKind": {
+        "qml": 419,
+        "js": 111,
+        "shell": 129,
+        "python": 471
+      },
+      "longest": 154,
+      "medianLines": 6
+    },
+    {
+      "row": 43,
+      "functions": 25,
+      "byKind": {
+        "qml": 11,
+        "js": 4,
+        "shell": 1,
+        "python": 9
+      },
+      "longest": 71,
+      "medianLines": 8
+    },
+    {
+      "row": 44,
+      "functions": 219,
+      "byKind": {
+        "qml": 44,
+        "js": 41,
+        "shell": 1,
+        "python": 133
+      },
+      "longest": 49,
+      "medianLines": 5
+    },
+    {
+      "row": 45,
+      "functions": 298,
+      "byKind": {
+        "qml": 274,
+        "js": 24,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 120,
+      "medianLines": 6
+    },
+    {
+      "row": 46,
+      "functions": 1090,
+      "byKind": {
+        "qml": 177,
+        "js": 152,
+        "shell": 60,
+        "python": 701
+      },
+      "longest": 144,
+      "medianLines": 7
+    },
+    {
+      "row": 47,
+      "functions": 322,
+      "byKind": {
+        "qml": 165,
+        "js": 52,
+        "shell": 105,
+        "python": 0
+      },
+      "longest": 292,
+      "medianLines": 10
+    },
+    {
+      "row": 48,
+      "functions": 48,
+      "byKind": {
+        "qml": 48,
+        "js": 0,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 53,
+      "medianLines": 6
+    },
+    {
+      "row": 49,
+      "functions": 37,
+      "byKind": {
+        "qml": 11,
+        "js": 4,
+        "shell": 0,
+        "python": 22
+      },
+      "longest": 110,
+      "medianLines": 9
+    },
+    {
+      "row": 50,
+      "functions": 107,
+      "byKind": {
+        "qml": 31,
+        "js": 76,
+        "shell": 0,
+        "python": 0
+      },
+      "longest": 133,
+      "medianLines": 7
     }
   ],
-  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin."
+  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. The first measurement, 2026-09-16 over 18 trees, is in this file's history: 715 functions, p90 18 lines, 7 branches, nesting 2."
 }

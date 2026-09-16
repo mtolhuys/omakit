@@ -10,7 +10,8 @@ names the review patterns that the marketplace's human review has raised most
 often, each with the measured share behind it, where the tree shows the
 pattern's precondition.
 
-It produces no score and no verdict. Every row is an observation, and every
+It produces no verdict. Its one number, the size score, is a position among
+listed plugins and never a grade. Every row is an observation, and every
 observation is labelled as one, because it comes from regular expressions over
 QML and shell, not from running the plugin.
 
@@ -38,7 +39,7 @@ reviewer who is handed the same list reads the tree faster.
   marketplace's automated baseline blocks; `inspect` reports.
 - Not a grader. It prints one number about the plugin, the size score,
   and that number is a position, not a grade: 10 minus the mean rank of the
-  plugin's functions among the 715 functions in 18 listed trees (M12), so
+  plugin's functions among the 6040 functions in 50 listed trees (M12), so
   a tree of median functions scores 5.00 and every function made shorter,
   flatter or less branched raises it. It says where the tree sits among
   listed plugins, never whether it is good, it never blocks, and a tree with
@@ -116,8 +117,8 @@ interval that is an expression), `▓ note` for a review class row, and
 Two views of the one document. The default is what needs attention,
 biggest first, under the subject, the baseline outcome and the size score.
 First the long functions: every function over what 90 of
-100 functions in 18 listed trees stay under (18 lines, 7 branches or
-nesting 2, M12), longest first, up to five, each with its name, its lines,
+100 functions in 50 listed trees stay under (22 lines, 6 branches or
+nesting 3, M12), longest first, up to five, each with its name, its lines,
 its branches and its nesting; that block comes first because length is
 what the person reading asks about first, and the heading names the
 measurement. Then one block per review class this tree shows, ordered by
@@ -141,8 +142,8 @@ act on sat under 750 lines of argv.
 subject       ~/plugins/fixture-example at a3bf9e2d
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
-size score    6.45 of 10; 10 minus the mean rank of its 1 function among 715 in
-              18 listed trees (M12), so a tree of median functions scores 5.00
+size score    6.93 of 10; 10 minus the mean rank of its 1 function among 6040 in
+              50 listed trees (M12), so a tree of median functions scores 5.00
 
 attention     5 classes reviewers raise, biggest first by share of review
               findings (M11); up to 5 sites each

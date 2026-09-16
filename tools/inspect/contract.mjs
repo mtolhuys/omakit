@@ -170,7 +170,7 @@ export function validateInspectDocument(document, known = {}) {
     const scorable = Array.isArray(observed.functions) && observed.functions.length > 0
     if (size.score === null) {
       if (scorable) problems.push("size.score is null for a tree with functions")
-    } else if (typeof size.score !== "number" || size.score < 0 || size.score > 10 || Math.round(size.score * 100) !== size.score * 100) problems.push("size.score is not a number from 0 to 10 with two decimals")
+    } else if (typeof size.score !== "number" || size.score < 0 || size.score > 10 || Math.abs(Math.round(size.score * 100) - size.score * 100) > 1e-6) problems.push("size.score is not a number from 0 to 10 with two decimals")
     else if (!scorable) problems.push("size.score is set for a tree with no function")
     else {
       const expected = Math.round((10 - observed.functions.reduce((sum, row) => sum + row.percentile, 0) / observed.functions.length / 10) * 100) / 100

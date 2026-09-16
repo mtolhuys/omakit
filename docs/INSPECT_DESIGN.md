@@ -133,7 +133,9 @@ rather than duplicating it. The "agent-control files" check (M3) stays in
 
 ## Wording of a pattern row
 
-Two lines, always the same shape:
+In the `--full` view, two lines, always the same shape (the default view
+prints the same class with its share and summary as a block heading, the
+sites under it, up to five, and the fact at each site):
 
 ```text
 ▓ note  <class, padded>  observed <count> <thing> (<file:line>[, ...])

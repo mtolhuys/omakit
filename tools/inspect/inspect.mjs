@@ -2,7 +2,8 @@
 // Resolve the subject the way `submit` does, read its installable tree at
 // the commit, run the four extractors over every file inspect reads, run
 // the marketplace's own baseline through `verify` for the capabilities,
-// and build the document of docs/INSPECT.md. No verdict, no score: every
+// and build the document of docs/INSPECT.md. No verdict, and the one score
+// a position among listed plugins, never a grade: every
 // row is a fact the text shows, labelled observed, and the document ends
 // with what the method cannot see.
 //
@@ -80,7 +81,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   const functions = []
   const notResolvable = []
   for (const file of tree.files) {
-    // Each function carries its rank among the 715 listed ones (M12).
+    // Each function carries its rank among the listed ones (M12).
     functions.push(...extractFunctions(file).map((entry) => ({ ...entry, percentile: rankOf(entry) })))
     const rows = extractProcesses(file)
     processes.push(...rows)
@@ -134,7 +135,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     // 100 functions in listed trees stay under; never a judgement.
     size: {
       measurement: SIZE.measurement,
-      sample: { trees: 18, functions: SIZE.functions },
+      sample: { trees: SIZE.trees, functions: SIZE.functions },
       thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth },
       // 10 minus the mean rank of this tree's functions among the listed
       // ones: where the tree sits, never whether it is good; null with no

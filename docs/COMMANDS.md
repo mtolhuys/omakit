@@ -109,7 +109,7 @@ share of review findings ([M11](MEASUREMENTS.md#m11-what-the-human-review-raises
 It is regular expressions over QML and shell, and every row says so: a
 command that is not one literal is a `▒ ?` row with no argv, a section with
 nothing in it says "observed nothing of this kind", and the report ends by
-naming what the method cannot see. No score, no verdict, no `--fix`: it runs
+naming what the method cannot see. No verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
 one word it closes on is `INSPECTED`. The report opens with the size score,
 10 minus the mean rank of the plugin's functions among those in listed
