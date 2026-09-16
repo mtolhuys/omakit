@@ -253,7 +253,8 @@ function shellFunctions(file) {
       // A line that opens inside a string is read only after the string closes: no `if` at its start, only what the code holds.
       // The line's net over its code: `if x; then y; fi` on one line is no level.
       const net = (code.match(SHELL_OPEN) || []).length - (code.match(SHELL_CLOSE) || []).length
-      depth += net
+      // Never below the body: a close the scanner misread cannot hide every later level.
+      depth = Math.max(0, depth + net)
       if (depth > deepest) deepest = depth
       if (SHELL_BRANCH.test(code)) branches += 1
       end = at
