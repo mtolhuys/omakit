@@ -19,7 +19,7 @@
 
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
-import { PATTERNS, SIZE, treeRank } from "./patterns.mjs"
+import { PATTERNS, SIZE } from "./patterns.mjs"
 import { toolOf } from "./processes.mjs"
 
 const NOTHING = "observed nothing of this kind"
@@ -35,9 +35,10 @@ function percent(share) {
   return `${rounded}%`
 }
 
-/** The score sentence after the number: the share, then the position among listed trees. */
+/** The score sentence after the number: the share, then the position among the listed trees the document itself carries. */
 function scoreText(size) {
-  const rank = treeRank(size.heavyShare)
+  const shares = size.sample.heavyShares
+  const rank = (shares.filter((share) => share < size.heavyShare).length / shares.length) * 100
   return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, less than ${100 - Math.round(rank)} of 100 listed trees (${size.measurement})`
 }
 
