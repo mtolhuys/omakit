@@ -896,10 +896,11 @@ program in single quotes, a remote command in double quotes) from its
 opening quote to the line that closes it, count toward the length and
 toward nothing else; a case arm is a `)` with text after it on a line
 with no `(` before it but its own, so `$(...)` in a test is not one; a
-block opens with `if`, `for`, `while`, `until`, `case` or `select` at the
-start of a line and closes with `fi`, `done` or `esac` anywhere a
-statement can start, so `if x; then y; fi` on one line is a branch and no
-level. A `$(...)`, `${...}` or backtick substitution nested in a string
+block opens with `if`, `for`, `while`, `until`, `case` or `select` and
+closes with `fi`, `done` or `esac`, each counted anywhere a statement can
+start over the line with its quoted text removed, so `if x; then y; fi`
+on one line is a branch and no level, `x && if y; then z; fi` the same,
+and `echo "done"` closes nothing. A `$(...)`, `${...}` or backtick substitution nested in a string
 reads its own quotes, and one that spans lines is shell and read as
 shell. In Python, a line that starts
 while a bracket is open, inside a triple-quoted string, or after a line

@@ -251,6 +251,8 @@ test("the shell scanner's corners: quotes, comments, here-strings and heredoc de
   assert.deepEqual(shell("a() {\n  x=\"$(( 1 << n ))\"\n  (( flags |= 1 << idx ))\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "a shift by a name, quoted or not, is not a heredoc")
   assert.deepEqual(shell("a() {\n  x=\"${y:-\"it's\"}\"\n  z=\"`printf \"it's\"`\"\n" + tail), [["a", 5, 0, 1], ["b", 3, 0, 0]], "quotes nested in ${ } and in a backtick under a quote are their own")
   assert.deepEqual(shell("a() {\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n  if q; then r; fi\n  if q; then r; fi\n}\n"), [["a", 9, 2, 4]], "blocks over lines nest, one-line blocks do not accumulate")
+  assert.deepEqual(shell("a() {\n  echo \"done\"\n  x && if y; then z; fi\n  for w in v; do if u; then t; fi; done\n  if x; then\n    y\n  fi\n}\n"), [["a", 8, 1, 3]], "a closer in a string closes nothing, and a one-line block after && or do nets zero")
+  assert.deepEqual(shell("a() {\n  echo \"if you can && do\"\n  fix=1\n}\n"), [["a", 4, 0, 0]], "keywords inside a string or inside a word are neither branches nor levels")
   // A run of whitespace does not cost the guard rule quadratic time.
   const started = Date.now()
   shell("a() {\n  x=" + " ".repeat(200000) + "y\n}\n")

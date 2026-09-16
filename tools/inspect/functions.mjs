@@ -9,11 +9,14 @@
 import { blankComments, closingBracket, lineOf } from "./text.mjs"
 
 const JS_BRANCH = /\b(?:if|else if|for|while|do|switch|case|catch)\b|&&|\|\||\?[^.:]/g
-// A block opens with a keyword at the start of a line and closes with `fi`,
-// `done` or `esac` anywhere a statement can start, so `if x; then y; fi` on
-// one line nets zero and is not a level.
-const SHELL_OPEN = /^\s*(?:if|for|while|until|case|select)\b/
-const SHELL_CLOSE = /(?:^|[;\s])(?:fi|done|esac)\b/g
+// A block opens with `if`, `for`, `while`, `until`, `case` or `select` and
+// closes with `fi`, `done` or `esac`, each counted anywhere a statement can
+// start (the line's start, after `;`, `&`, `|`, `(`, `then`, `do` or
+// `else`), over the line with its quoted text removed, so `if x; then y;
+// fi` on one line nets zero and is not a level, `x && if y; then z; fi`
+// nets zero too, and `echo "done"` closes nothing.
+const SHELL_OPEN = /(?:^|[;&|(]|\b(?:then|do|else))\s*(?:if|for|while|until|case|select)\b/g
+const SHELL_CLOSE = /(?:^|[;&|(\s])(?:fi|done|esac)\b/g
 // A case arm, `pattern) command` or `(pattern) command`, is a branch: a `)`
 // with text after it on a line with no `(` before it but an opening one,
 // so a `$(...)` or `(( ))` in a test is not one.
@@ -116,11 +119,10 @@ function jsFunctions(file) {
  * backtick substitution, which is what lets `"$(printf "it's")"` and
  * `"${x:-"it's"}"` read their inner quotes as their own. It returns the
  * code before a `#` that starts a comment, the heredoc the line opens, and
- * the contexts left open at its end. Quoted text that opens and closes on
- * the line is kept in the code with its quote marks dropped, so `<<'PY'`
- * and `<<PY` read alike; text inside a quote that spans lines is data and
- * left out, from the quote to its close, while what a substitution
- * spanning lines holds is shell and kept. A `'` inside double quotes
+ * the contexts left open at its end. Quoted text is data and left out of
+ * the code, whether the quote closes on the line or spans lines (the
+ * heredoc delimiter is read here, before the quotes go, so `<<'PY'` and
+ * `<<PY` read alike), while what a substitution holds is shell and kept. A `'` inside double quotes
  * ("Okomart's") and a `#` inside quotes (`*'#'*`) are text; a backslash
  * escapes in code, inside double quotes and inside `$'...'`, and inside
  * plain single quotes nothing does. `<<` in shell, at the top or inside a
@@ -130,18 +132,17 @@ function jsFunctions(file) {
  * @returns {{ code: string, open: Array<{ kind: string, depth: number }>, heredoc: { word: string, strip: boolean } | null }}
  */
 function scanShellLine(line, open) {
-  // `fresh` marks a context opened on this line; `since` is where in the code it began.
-  const stack = open.map((entry) => ({ ...entry, fresh: false, since: 0 }))
+  const stack = open.map((entry) => ({ ...entry }))
   let code = ""
   let heredoc = null
   // Depth of `((` arithmetic on this line, inside which `<<` is a shift.
   let arith = 0
   const top = () => stack[stack.length - 1] || null
   const isCode = (kind) => kind === "code" || kind === "$(" || kind === "${" || kind === "`"
-  // Text inside a string that spans lines is data; everything else is kept.
+  // Text inside a string is data; text in shell, nested or not, is kept.
   const keep = () => {
     const inner = top()
-    return !inner || isCode(inner.kind) || inner.fresh
+    return !inner || isCode(inner.kind)
   }
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i]
@@ -160,13 +161,13 @@ function scanShellLine(line, open) {
     if (kind === '"' || kind === "$'") {
       if (ch === kind[kind.length - 1]) stack.pop()
       else if (kind === '"' && ch === "$" && (line[i + 1] === "(" || line[i + 1] === "{")) {
-        stack.push({ kind: `$${line[i + 1]}`, depth: 0, fresh: true, since: code.length })
+        stack.push({ kind: `$${line[i + 1]}`, depth: 0 })
         code += `$${line[i + 1]}`
         i += 1
         // `$((` under a quote is arithmetic: its `<<` is a shift.
         if (line[i] === "(" && line[i + 1] === "(") arith += 1
       } else if (kind === '"' && ch === "`") {
-        stack.push({ kind: "`", depth: 0, fresh: true, since: code.length })
+        stack.push({ kind: "`", depth: 0 })
         code += ch
       } else if (keep()) code += ch
       continue
@@ -190,7 +191,7 @@ function scanShellLine(line, open) {
     }
     if (ch === "#" && (i === 0 || /[\s;()&|]/.test(line[i - 1]))) break
     if (ch === "'" || ch === '"') {
-      stack.push({ kind: ch === "'" && line[i - 1] === "$" ? "$'" : ch, depth: 0, fresh: true, since: code.length })
+      stack.push({ kind: ch === "'" && line[i - 1] === "$" ? "$'" : ch, depth: 0 })
       continue
     }
     if (ch === "(" && line[i + 1] === "(") arith += 1
@@ -201,9 +202,7 @@ function scanShellLine(line, open) {
     }
     code += ch
   }
-  // A quote opened on this line and still open at its end: the text from that quote on is data.
-  const unclosed = stack.find((entry) => entry.fresh && !isCode(entry.kind))
-  return { code: unclosed ? code.slice(0, unclosed.since) : code, open: stack.map(({ kind, depth }) => ({ kind, depth })), heredoc }
+  return { code, open: stack.map(({ kind, depth }) => ({ kind, depth })), heredoc }
 }
 
 /** The code with any guard tail removed, so what is left is what SHELL_BRANCH reads. */
@@ -232,13 +231,12 @@ function shellFunctions(file) {
     let deepest = 0
     let branches = 0
     // Data inside the function is not shell: the body of a heredoc up to its
-    // delimiter alone on a line (leading tabs allowed after `<<-`), and a
-    // quoted string that spans lines (an awk or python program in single
-    // quotes, a remote command in double quotes) from the quote to the line
-    // that closes it. Those lines count toward the length and toward
-    // nothing else; what a line holds before the quote opens is still read.
-    // Two heredocs on one line: the first is tracked, the second's body is
-    // read as shell.
+    // delimiter alone on a line (leading tabs allowed after `<<-`), and
+    // quoted text, on one line or spanning lines (an awk or python program
+    // in single quotes, a remote command in double quotes). Those count
+    // toward the length and toward nothing else; the shell around them,
+    // and inside a substitution nested in them, is read. Two heredocs on
+    // one line: the first is tracked, the second's body is read as shell.
     let heredoc = null
     let open = []
     for (let at = index + 1; at < lines.length; at += 1) {
@@ -253,14 +251,12 @@ function shellFunctions(file) {
         break
       }
       const scanned = scanShellLine(line, open)
-      // A line that starts inside a string from the line above is data up to the string's close; one that starts inside a `$(` is shell.
-      const carried = open.length > 0 && !["$(", "${", "`"].includes(open[open.length - 1].kind)
       const code = withoutGuards(scanned.code)
       open = scanned.open
       heredoc = scanned.heredoc
       // A line that opens inside a string is read only after the string closes: no `if` at its start, only what the code holds.
-      // The line's net: `if x; then y; fi` on one line is no level.
-      const net = (!carried && SHELL_OPEN.test(line) ? 1 : 0) - (code.match(SHELL_CLOSE) || []).length
+      // The line's net over its code: `if x; then y; fi` on one line is no level.
+      const net = (code.match(SHELL_OPEN) || []).length - (code.match(SHELL_CLOSE) || []).length
       depth += net
       if (depth > deepest) deepest = depth
       if (SHELL_BRANCH.test(code)) branches += 1
