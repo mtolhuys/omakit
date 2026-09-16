@@ -10,13 +10,13 @@ The marketplace validates one exact commit of your plugin. Push a fix or comment
 
 | Command | What you get | Read more |
 | --- | --- | --- |
-| `omakit submit <plugin-repo>` | every check the marketplace applies, run locally on the exact commit, and the issue title and body to paste; never posts | [submit](docs/SUBMIT.md) |
-| `omakit inspect <plugin-dir>` | what the tree does and what needs attention: a size score against listed plugins, the long functions, and the review classes reviewers raise most, with their sites | [inspect](docs/INSPECT.md) |
-| `omakit watch <issue-url>` | whether the commit the marketplace validated is still your HEAD, and the one action that re-runs validation | [watch](docs/VALIDATION_WATCH.md) |
-| `omakit audit` | which installed plugins run commits the marketplace never validated | [audit](docs/AUDIT.md) |
-| `omakit weigh <plugin>` | what a plugin costs the shell in memory and CPU, measured by restarting it without and with the plugin | [weigh](docs/WEIGH.md) |
-| `omakit verify <plugin-repo>` | the marketplace's own security baseline over your commit, verbatim | [commands](docs/COMMANDS.md) |
-| `omakit doctor`, `omakit setup` | what is installed and pinned, and the one-time setup with tab completion | [install](docs/INSTALL.md) |
+| `omakit submit <plugin-repo>` | Run the marketplace's own checks before you open the issue, and get the issue text ready to paste. Nothing is posted for you. | [submit](docs/SUBMIT.md) |
+| `omakit inspect <plugin-dir>` | See what needs attention in your plugin before a reviewer does: the longest functions, and the things reviewers flag most often, each with the file and line. | [inspect](docs/INSPECT.md) |
+| `omakit watch <issue-url>` | Know whether the commit the marketplace checked is still the one you are shipping, and what to do when it is not. | [watch](docs/VALIDATION_WATCH.md) |
+| `omakit audit` | Find installed plugins that are running code the marketplace never checked. | [audit](docs/AUDIT.md) |
+| `omakit weigh <plugin>` | Find out what a plugin costs the shell in memory and CPU. | [weigh](docs/WEIGH.md) |
+| `omakit verify <plugin-repo>` | Get the marketplace's security result for your commit, exactly as it would see it. | [commands](docs/COMMANDS.md) |
+| `omakit doctor`, `omakit setup` | Check what is installed and pinned, or set everything up once, with tab completion. | [install](docs/INSTALL.md) |
 
 Every number a command prints has a measured origin in [MEASUREMENTS.md](docs/MEASUREMENTS.md); nothing is a guess and nothing is a grade.
 
