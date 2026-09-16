@@ -55,7 +55,8 @@ function expandHome(text) {
 /**
  * @param {string} target
  * @param {{ cacheRoot: string, allowDirty?: boolean }} options
- * @returns {{ mode, dir, commit, clean, repository: { kind: "git", url: string|null, declared: boolean } }}
+ * @returns {{ mode, dir, subdir, commit, clean, uncommittedFiles: number, repository: { kind: "git", url: string|null, declared: boolean } }}
+ *   `uncommittedFiles` is the number of paths `git status --porcelain` lists, 0 for a clean or a fetched tree
  */
 export function resolveSubject(target, options) {
   const parsed = parseTarget(target)
@@ -73,8 +74,12 @@ export function resolveSubject(target, options) {
     } catch {
       throw new SubjectError("commit-not-found", `${top} has no commit yet`)
     }
-    const clean = git(top, ["status", "--porcelain"]).trim().length === 0
-    if (!clean && !options.allowDirty) throw new SubjectError("dirty-worktree", `${top} has uncommitted changes; commit them or pass --allow-dirty`)
+    // Every check reads the tree at HEAD from the object database, so an
+    // uncommitted edit is never read; the count says how many files it
+    // leaves out, and the message says so instead of promising the tree as it is.
+    const status = git(top, ["status", "--porcelain"]).split("\n").filter((line) => line.trim().length)
+    const clean = status.length === 0
+    if (!clean && !options.allowDirty) throw new SubjectError("dirty-worktree", `${top} has uncommitted changes (${status.length} ${status.length === 1 ? "file" : "files"}); commit them, or pass --allow-dirty to read HEAD as committed; uncommitted edits are not read`)
     let originUrl = null
     try {
       originUrl = git(top, ["remote", "get-url", "origin"]).trim()
@@ -88,6 +93,7 @@ export function resolveSubject(target, options) {
       subdir: resolve(parsed.path) === top ? "" : resolve(parsed.path).slice(top.length + 1),
       commit,
       clean,
+      uncommittedFiles: status.length,
       repository: { kind: "git", url: gh ? gh.url : null, declared: Boolean(gh) },
     }
   }
@@ -119,6 +125,7 @@ export function resolveSubject(target, options) {
     subdir: "",
     commit: parsed.commit,
     clean: true,
+    uncommittedFiles: 0,
     repository: { kind: "git", url: gh.url, declared: true },
   }
 }

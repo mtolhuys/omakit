@@ -58,7 +58,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const REMEDY = Object.freeze({
   "usage": "omakit help",
   "marketplace-unavailable": "omakit pin",
-  "dirty-worktree": "Commit the changes, or pass --allow-dirty to check the tree as it is.",
+  "dirty-worktree": "Commit the changes, or pass --allow-dirty to read HEAD as committed; uncommitted edits are not read.",
   "subject-not-found": "Pass a local Git repository path, or <https url>@<40-char sha>.",
   "not-a-git-repository": "Pass a local Git repository path, or <https url>@<40-char sha>.",
   "commit-not-found": "Commit first; the checks read the tree at an exact commit, never the working copy.",

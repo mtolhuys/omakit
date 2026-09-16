@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.arrow-and-method",
+  "name": "Fixture: arrow and method",
+  "version": "0.0.1",
+  "description": "JavaScript logic held in named arrow functions and method shorthand, which are functions; an anonymous callback beside them, which is not.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

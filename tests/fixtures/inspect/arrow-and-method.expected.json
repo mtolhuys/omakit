@@ -6,13 +6,13 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-richtext-sink"
+      "url": "https://github.com/example/omarchy-plugin-fixture-arrow-and-method"
     },
     "mode": "author",
-    "pluginId": "fixture.richtext-sink",
+    "pluginId": "fixture.arrow-and-method",
     "filesRead": {
       "qml": 1,
-      "js": 0,
+      "js": 1,
       "shell": 0,
       "python": 0,
       "other": 0
@@ -20,41 +20,92 @@
     "uncommittedFiles": 0
   },
   "observed": {
-    "processes": [
-      {
-        "file": "Widget.qml",
-        "line": 9,
-        "declaredIn": "qml",
-        "id": "fortune",
-        "argv": [
-          "/usr/bin/timeout",
-          "5",
-          "/usr/bin/fortune",
-          "-s"
-        ],
-        "argvForm": "array",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": true,
-          "via": "timeout-argv",
-          "ms": 5000
-        },
-        "output": {
-          "collector": "StdioCollector",
-          "capObserved": true,
-          "via": "timeout"
-        },
-        "shellWrapper": false,
-        "pipedFrom": null
-      }
-    ],
+    "processes": [],
     "hosts": [],
     "writes": [],
     "timers": [],
-    "functions": []
+    "functions": [
+      {
+        "file": "Model.js",
+        "line": 3,
+        "name": "load",
+        "kind": "function",
+        "lines": 9,
+        "depth": 2,
+        "branches": 2,
+        "percentile": 86.3
+      },
+      {
+        "file": "Model.js",
+        "line": 14,
+        "name": "normalise",
+        "kind": "function",
+        "lines": 4,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 19.8
+      },
+      {
+        "file": "Model.js",
+        "line": 21,
+        "name": "add",
+        "kind": "function",
+        "lines": 5,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 62.8
+      },
+      {
+        "file": "Model.js",
+        "line": 26,
+        "name": "flush",
+        "kind": "function",
+        "lines": 5,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 62.8
+      },
+      {
+        "file": "Model.js",
+        "line": 33,
+        "name": "reset",
+        "kind": "function",
+        "lines": 3,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 8.5
+      },
+      {
+        "file": "Model.js",
+        "line": 38,
+        "name": "constructor",
+        "kind": "function",
+        "lines": 3,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 8.5
+      },
+      {
+        "file": "Model.js",
+        "line": 42,
+        "name": "of",
+        "kind": "function",
+        "lines": 3,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 8.5
+      },
+      {
+        "file": "Model.js",
+        "line": 46,
+        "name": "put",
+        "kind": "function",
+        "lines": 6,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 62.8
+      }
+    ]
   },
   "size": {
     "measurement": "M12",
@@ -120,38 +171,23 @@
       "depth": 2
     },
     "heavyShare": 0,
-    "score": null,
+    "score": 10,
     "over": []
   },
   "counts": {
     "processes": {
-      "total": 1,
-      "qml": 1,
+      "total": 0,
+      "qml": 0,
       "shell": 0
     },
     "hosts": 0,
     "writes": 0,
     "timers": 0,
-    "functions": 0,
+    "functions": 8,
     "notResolvable": 0
   },
   "notResolvable": [],
-  "patterns": [
-    {
-      "id": "untrusted-text-to-display",
-      "observedCount": 1,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 18
-        }
-      ],
-      "observation": "observed 1 Text bound to a collector's output without Text.PlainText (Widget.qml:18)",
-      "summary": "1 Text bound to a collector's output without Text.PlainText",
-      "measurement": "M11",
-      "share": 0.05
-    }
-  ],
+  "patterns": [],
   "lookedFor": [
     "process-lifecycle",
     "unbounded-buffering",
@@ -160,6 +196,7 @@
     "secrets",
     "supply-chain",
     "network-egress",
+    "untrusted-text-to-display",
     "argument-grammar",
     "privilege-disclosure"
   ],
@@ -189,8 +226,8 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-richtext-sink",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-richtext-sink",
+      "repository": "example/omarchy-plugin-fixture-arrow-and-method",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-arrow-and-method",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
       "outcome": "passed",

@@ -19,13 +19,34 @@
 
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
-import { PATTERNS, SIZE } from "./patterns.mjs"
+import { PATTERNS, SIZE, treeRank } from "./patterns.mjs"
 import { toolOf } from "./processes.mjs"
 
 const NOTHING = "observed nothing of this kind"
 
 const plural = (count, word, words = `${word}s`) => `${count} ${count === 1 ? word : words}`
 const site = (row) => `${row.file}:${row.line}`
+
+/** A share as a whole percentage; one that would round to 0 or 100 says so instead of rounding past the truth. */
+function percent(share) {
+  const rounded = Math.round(share * 100)
+  if (share > 0 && rounded === 0) return "under 1%"
+  if (share < 1 && rounded === 100) return "over 99%"
+  return `${rounded}%`
+}
+
+/** The score sentence after the number: the share, then the position among listed trees. */
+function scoreText(size) {
+  const rank = treeRank(size.heavyShare)
+  return `${percent(size.heavyShare)} of its function lines sit in functions over the measured size, less than ${100 - Math.round(rank)} of 100 listed trees (${size.measurement})`
+}
+
+/** Under --allow-dirty: what the checkout holds that the tree at the commit does not. */
+function uncommittedLine(document, c) {
+  const count = document.subject.uncommittedFiles
+  if (!count) return []
+  return field("uncommitted", `${plural(count, "file")} differ${count === 1 ? "s" : ""} from HEAD and ${count === 1 ? "was" : "were"} not inspected; the tree at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "the commit"} is what was read`, c)
+}
 
 /** A row: a mark, the site in bold, then the text, wrapped under the gutter. */
 function row(state, head, text, c, extra = []) {
@@ -233,11 +254,12 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   const out = []
   const counts = document.counts
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}`, c))
+  out.push(...uncommittedLine(document, c))
   out.push(...field("baseline", baselineText(document.marketplaceBaseline), c))
   const score = document.size.score
   out.push(...field("size score", score === null
     ? `none: no function to rank`
-    : `${score.toFixed(2)} of 10; 10 minus the mean rank of its ${plural(counts.functions, "function")} among ${SIZE.functions} in ${document.size.sample.trees} listed trees (${SIZE.measurement}), so a tree of median functions scores 5.00`, c))
+    : `${score.toFixed(2)} of 10; ${scoreText(document.size)}`, c))
   out.push("")
 
   const ranked = [...document.patterns].sort((a, b) => b.share - a.share)
@@ -300,6 +322,7 @@ function renderFull(document, { colour }) {
   const kinds = Object.entries(read).filter(([, count]) => count > 0).map(([kind, count]) => `${count} ${kind}`)
   const total = Object.values(read).reduce((sum, count) => sum + count, 0)
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}, ${plural(total, "file")} read${kinds.length ? ` (${kinds.join(", ")})` : ""}`, c))
+  out.push(...uncommittedLine(document, c))
   out.push(...field("method", document.method, c))
   out.push("")
 
@@ -320,7 +343,7 @@ function renderFull(document, { colour }) {
     ? `observed ${functions.length}, ${over.length} over what 90 of 100 functions in ${SIZE.sample} stay under (${SIZE.lines} lines, ${SIZE.branches} branches or nesting ${SIZE.depth}; ${SIZE.measurement}), longest first`
     : NOTHING, c))
   for (const entry of over) out.push(...row("info", `${entry.file}:${entry.line}`, `${entry.name}, ${plural(entry.lines, "line")}, ${plural(entry.branches, "branch", "branches")}, nesting ${entry.depth}, over ${entry.percentile} of 100 listed`, c))
-  if (functions.length) out.push(...wrap(`size score ${document.size.score.toFixed(2)} of 10: 10 minus the mean rank of the ${functions.length} among ${SIZE.functions} listed functions (${SIZE.measurement})`, { indent: GUTTER }, c))
+  if (functions.length) out.push(...wrap(`size score ${document.size.score.toFixed(2)} of 10: ${scoreText(document.size)}`, { indent: GUTTER }, c))
   out.push("")
   out.push(...baselineLines(document.marketplaceBaseline, c))
   out.push("")

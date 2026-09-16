@@ -20,7 +20,7 @@ import { extractHosts, hostOf, privateAddress } from "../../tools/inspect/hosts.
 import { canonicalPath, classifyPath, extractWrites } from "../../tools/inspect/writes.mjs"
 import { extractTimers } from "../../tools/inspect/timers.mjs"
 import { extractFunctions } from "../../tools/inspect/functions.mjs"
-import { SIZE, overSize } from "../../tools/inspect/patterns.mjs"
+import { heavyShare, SIZE, overSize, sizeScore, treeRank } from "../../tools/inspect/patterns.mjs"
 import { kindOfShebang } from "../../tools/inspect/walk.mjs"
 import { DENSITY, INSPECT_VERDICT, overflows, plain, STATUS } from "../../tools/marketplace/style.mjs"
 import { INSPECT_FIXTURES, inspectExpectedPath, inspectFixtureDir, materialiseInspectFixture, readFixtureTree } from "../fixtures/inspect.mjs"
@@ -135,33 +135,83 @@ test("long functions come first, longest first, over the measured thresholds, an
   const { document } = await documentFor("long-function")
   assert.equal(document.counts.functions, 4)
   assert.deepEqual(document.size.thresholds, { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth })
-  assert.deepEqual(document.size.over.map((entry) => [entry.name, entry.lines, entry.branches, entry.depth]), [["decide", 21, 9, 3], ["classify", 20, 6, 4]])
-  // The score is 10 minus the mean rank, and every function carries its rank.
+  assert.deepEqual(document.size.over.map((entry) => [entry.name, entry.lines, entry.branches, entry.depth]), [["decide", 21, 9, 3], ["classify", 20, 6, 3]])
+  // The score is the tree's position among listed trees by the share of its
+  // function lines in long functions; every function still carries its rank.
   for (const entry of document.observed.functions) assert.ok(entry.percentile >= 0 && entry.percentile <= 100, `${entry.name}: rank ${entry.percentile}`)
-  const mean = document.observed.functions.reduce((sum, entry) => sum + entry.percentile, 0) / document.observed.functions.length
-  assert.equal(document.size.score, Math.round((10 - mean / 10) * 100) / 100)
-  assert.ok(document.size.score > 0 && document.size.score < 10)
-  assert.deepEqual(document.size.sample, { trees: 50, functions: 6040 })
+  const lines = document.observed.functions.reduce((sum, entry) => sum + entry.lines, 0)
+  const heavy = document.size.over.reduce((sum, entry) => sum + entry.lines, 0)
+  assert.equal(document.size.heavyShare, Math.round((heavy / lines) * 10000) / 10000)
+  assert.equal(document.size.score, Math.round((10 - treeRank(document.size.heavyShare) / 10) * 100) / 100)
+  // Two of its four functions hold 41 of 47 lines, more than any listed tree: the floor.
+  assert.equal(document.size.score, 0)
+  assert.deepEqual(document.size.sample, { trees: 50, functions: 6041, heavyShares: [...SIZE.distribution.heavyShare] })
   assert.deepEqual(document.observed.functions.map((entry) => entry.name).sort(), ["classify", "decide", "say", "short"])
   const report = renderInspect(document, { colour: false })
   const blocks = [...report.matchAll(new RegExp(`^${DENSITY.dark} note  ([a-z ]+?)  `, "gm"))].map((match) => match[1])
   assert.deepEqual(blocks, ["long functions", "environment trust"], "size before the review classes")
   assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {4}21 lines, 9 branches, nesting 3, rank \d+$/m)
-  assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 4, rank \d+$/m)
-  assert.match(report.replace(/\n {14}/g, " "), new RegExp(`^size score {4}${document.size.score.toFixed(2)} of 10; 10 minus the mean rank of its 4 functions among 6040 in 50 listed trees \\(M12\\), so a tree of median functions scores 5\\.00$`, "m"))
-  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6040 functions stay under: 22 lines, 6 branches or nesting 3 \(M12\)/)
+  assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 3, rank \d+$/m)
+  assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, less than 0 of 100 listed trees \(M12\)$/m)
+  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6041 functions stay under: 22 lines, 6 branches or nesting 2 \(M12\)/)
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /^functions {5}observed 4, 2 over/m)
   assert.match(full.replace(/\n {8}/g, " "), /░ info  scripts\/helper\.sh:8  decide, 21 lines, 9 branches, nesting 3, over [\d.]+ of 100 listed/)
   const example = (await documentFor("example")).document
   assert.deepEqual(example.size.over, [])
   assert.doesNotMatch(renderInspect(example, { colour: false }), /long functions/)
-  assert.ok(example.size.score > 0 && example.size.score <= 10, "one handler, one rank, a score")
+  assert.equal(example.size.heavyShare, 0)
+  assert.equal(example.size.score, 10, "one handler under every threshold: no heavy line, the ceiling")
+  assert.match(renderInspect(example, { colour: false }).replace(/\n {14}/g, " "), /^size score {4}10\.00 of 10; 0% of its function lines sit in functions over the measured size, less than 100 of 100 listed trees \(M12\)$/m)
   const empty = (await documentFor("nothing")).document
   assert.equal(empty.size.score, null, "no function, no score")
+  assert.equal(empty.size.heavyShare, 0)
   assert.match(renderInspect(empty, { colour: false }), /^size score {4}none: no function to rank$/m)
-  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), new RegExp(`size score ${document.size.score.toFixed(2)} of 10: 10 minus the mean rank of the 4 among 6040 listed functions \\(M12\\)`))
-  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6040 functions \(M12\), and none of the 10 classes/m)
+  assert.match(renderInspect(document, { colour: false, full: true }).replace(/\n {8}/g, " "), /size score 0\.00 of 10: 87% of its function lines sit in functions over the measured size, less than 0 of 100 listed trees \(M12\)/)
+  assert.match(renderInspect((await documentFor("nothing")).document, { colour: false }).replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6041 functions \(M12\), and none of the 10 classes/m)
+})
+
+test("the size score is line-weighted: splitting a long function raises it, and padding a heavy tree with small functions barely moves it", () => {
+  const one = [{ file: "a.js", line: 1, name: "big", kind: "function", lines: 100, branches: 0, depth: 0 }]
+  const ten = Array.from({ length: 10 }, (_, index) => ({ file: "a.js", line: 1 + index * 10, name: `part${index}`, kind: "function", lines: 10, branches: 0, depth: 0 }))
+  assert.equal(heavyShare(one), 1)
+  assert.equal(heavyShare(ten), 0)
+  assert.equal(sizeScore(one), 0, "heavier than every listed tree")
+  assert.equal(sizeScore(ten), 10, "the same 100 lines in ten functions under the thresholds")
+  assert.ok(sizeScore(ten) > sizeScore(one))
+  // A heavy tree: one 60-line function beside three short ones.
+  const heavy = [{ file: "b.js", line: 1, name: "big", kind: "function", lines: 60, branches: 0, depth: 0 }, ...ten.slice(0, 3)]
+  const padded = [...heavy, ...Array.from({ length: 20 }, (_, index) => ({ file: "c.js", line: 1 + index * 3, name: `tiny${index}`, kind: "function", lines: 3, branches: 0, depth: 0 }))]
+  const split = [...ten.slice(0, 3), ...Array.from({ length: 6 }, (_, index) => ({ file: "b.js", line: 1 + index * 10, name: `step${index}`, kind: "function", lines: 10, branches: 0, depth: 0 }))]
+  assert.equal(heavyShare(heavy), 60 / 90)
+  assert.equal(heavyShare(padded), 60 / 150)
+  assert.equal(heavyShare(split), 0)
+  const bySplitting = sizeScore(split) - sizeScore(heavy)
+  const byPadding = sizeScore(padded) - sizeScore(heavy)
+  assert.ok(bySplitting > 0)
+  assert.ok(byPadding < bySplitting, `padding moved the score by ${byPadding}, splitting by ${bySplitting}`)
+  // The rank is the share of listed trees strictly lighter, so the ceiling and the floor are exact.
+  assert.equal(treeRank(0), 0)
+  assert.equal(treeRank(1), 100)
+  assert.equal(sizeScore([]), null)
+})
+
+test("the three extraction fixtures: Python depth is relative to the body at any indent, a literal is not nesting, and a named arrow or method is a function", async () => {
+  const python = (await documentFor("python-depth")).document.observed.functions
+  assert.deepEqual(python.map((entry) => [entry.file, entry.name, entry.depth, entry.branches]), [
+    ["scripts/four.py", "flat", 0, 0], ["scripts/four.py", "one_if", 1, 1], ["scripts/four.py", "two_deep", 2, 2],
+    ["scripts/two.py", "flat", 0, 0], ["scripts/two.py", "one_if", 1, 1], ["scripts/two.py", "two_deep", 2, 2],
+  ])
+  const literal = (await documentFor("literal-nesting")).document.observed.functions
+  assert.deepEqual(literal.map((entry) => [entry.name, entry.depth, entry.branches]), [["describe", 1, 1], ["pairs", 0, 0], ["settings", 1, 3]])
+  const arrows = (await documentFor("arrow-and-method")).document.observed.functions
+  assert.deepEqual(arrows.map((entry) => [entry.name, entry.kind, entry.line]), [["load", "function", 3], ["normalise", "function", 14], ["add", "function", 21], ["flush", "function", 26], ["reset", "function", 33], ["constructor", "function", 38], ["of", "function", 42], ["put", "function", 46]])
+  assert.ok(!arrows.some((entry) => entry.line === 55 || entry.line === 59), "the anonymous callbacks are not functions")
+  for (const name of ["python-depth", "literal-nesting", "arrow-and-method"]) {
+    const { document } = await documentFor(name)
+    assert.equal(document.size.heavyShare, 0)
+    assert.equal(document.size.score, 10)
+  }
 })
 
 test("functions: the extractor counts lines, branches and nesting in QML and JavaScript, shell and Python, and overSize orders longest first", () => {
@@ -170,14 +220,14 @@ test("functions: the extractor counts lines, branches and nesting in QML and Jav
   const sh = extractFunctions({ path: "s.sh", kind: "shell", text: "a() {\n  if x; then\n    for y in z; do\n      w\n    done\n  fi\n}\nfunction b {\n  c\n}\n" })
   assert.deepEqual(sh.map((entry) => [entry.name, entry.line, entry.lines, entry.branches, entry.depth]), [["a", 1, 7, 2, 2], ["b", 8, 3, 0, 0]])
   const py = extractFunctions({ path: "p.py", kind: "python", text: "def f(x):\n    if x:\n        for y in x:\n            pass\n    return 1\n\ndef g():\n    return 2\n" })
-  assert.deepEqual(py.map((entry) => [entry.name, entry.line, entry.lines, entry.branches, entry.depth]), [["f", 1, 5, 2, 3], ["g", 7, 2, 0, 1]])
+  assert.deepEqual(py.map((entry) => [entry.name, entry.line, entry.lines, entry.branches, entry.depth]), [["f", 1, 5, 2, 2], ["g", 7, 2, 0, 0]])
   const rows = [{ file: "a", line: 1, name: "x", kind: "function", lines: 5, branches: 1, depth: 0 }, { file: "a", line: 9, name: "y", kind: "function", lines: 30, branches: 1, depth: 0 }, { file: "b", line: 1, name: "z", kind: "function", lines: 5, branches: 9, depth: 0 }]
   assert.deepEqual(overSize(rows).map((entry) => entry.name), ["y", "z"])
 })
 
 test("the attention view over nothing, and the site cap and the threshold", async () => {
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false })
-  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6040 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
+  assert.match(nothing.replace(/\n {14}/g, " "), /^attention {5}nothing: no function over the size of 50 listed trees, 6041 functions \(M12\), and none of the 10 classes reviewers raise shows in this tree \(M11\)$/m)
   assert.doesNotMatch(nothing, new RegExp(`${DENSITY.dark} note`))
   assert.doesNotMatch(nothing, /^under 5%/m)
   const base = (await documentFor("nothing")).document
@@ -478,9 +528,19 @@ test("a dirty checkout is refused with the same remedy submit gives, and --allow
   assert.equal(refused.code, 1)
   assert.match(refused.err, /dirty-worktree/)
   assert.match(refused.err, /--allow-dirty/)
+  assert.match(refused.err.replace(/\n {8,10}/g, " "), /has uncommitted changes \(1 file\); commit them, or pass --allow-dirty to inspect HEAD as committed; uncommitted edits are not read/)
   const allowed = run(["inspect", fixture.dir, "--allow-dirty", "--json"])
   assert.equal(allowed.code, 0)
-  assert.equal(JSON.parse(allowed.out).subject.filesRead.qml, 1, "the tree at the commit, not the working copy")
+  const document = JSON.parse(allowed.out)
+  assert.equal(document.subject.filesRead.qml, 1, "the tree at the commit, not the working copy")
+  assert.equal(document.subject.uncommittedFiles, 1)
+  // And the report says what was left out, in both views; a clean tree has no such line.
+  for (const view of [[], ["--full"]]) {
+    const report = run(["inspect", fixture.dir, "--allow-dirty", ...view]).out
+    assert.match(report.replace(/\n {14}/g, " "), /^uncommitted {3}1 file differs from HEAD and was not inspected; the tree at [0-9a-f]{8} is what was read$/m)
+  }
+  const clean = run(["inspect", materialiseInspectFixture("nothing").dir]).out
+  assert.doesNotMatch(clean, /uncommitted/)
 })
 
 // --- the extractors on text ------------------------------------------------------

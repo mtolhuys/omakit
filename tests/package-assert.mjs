@@ -22,8 +22,13 @@ import { pathToFileURL } from "node:url"
 // At 0.4.0, account-wide watch and the update-notice module measured 157,417
 // bytes across 58 files, leaving 47,383 bytes under the unchanged ceiling.
 // With `omakit inspect`, eleven modules under tools/inspect/, the package
-// measured 201,424 bytes across 72 files, 3,376 under the same ceiling.
-export const MAX_PACKED_BYTES = 204_800
+// measured 201,424 bytes across 72 files, 3,376 under the same ceiling. At
+// 0.5.0, with the M12 measurement script (tools/inspect/measure-functions.mjs),
+// the 50 listed heavy shares as data and the re-measured record's history in
+// the docs, it measured 209,579 bytes across 73 files, 4,779 over it, so the
+// ceiling is now 256,000 bytes: 46,421 bytes of room, still a sixtieth of an
+// accidental tree with the 15 MB marketplace pin in it.
+export const MAX_PACKED_BYTES = 256_000
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
@@ -44,6 +49,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/inspect/functions.mjs",
   "tools/inspect/hosts.mjs",
   "tools/inspect/inspect.mjs",
+  "tools/inspect/measure-functions.mjs",
   "tools/inspect/patterns.mjs",
   "tools/inspect/processes.mjs",
   "tools/inspect/report.mjs",

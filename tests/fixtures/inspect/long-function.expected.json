@@ -16,7 +16,8 @@
       "shell": 1,
       "python": 0,
       "other": 0
-    }
+    },
+    "uncommittedFiles": 0
   },
   "observed": {
     "processes": [
@@ -203,9 +204,9 @@
         "name": "classify",
         "kind": "function",
         "lines": 20,
-        "depth": 4,
+        "depth": 3,
         "branches": 6,
-        "percentile": 94.9
+        "percentile": 94.3
       },
       {
         "file": "scripts/helper.sh",
@@ -225,7 +226,7 @@
         "lines": 21,
         "depth": 3,
         "branches": 9,
-        "percentile": 93.6
+        "percentile": 94.3
       }
     ]
   },
@@ -233,14 +234,67 @@
     "measurement": "M12",
     "sample": {
       "trees": 50,
-      "functions": 6040
+      "functions": 6041,
+      "heavyShares": [
+        0.421,
+        0.3361,
+        0.4049,
+        0,
+        0.3687,
+        0.4469,
+        0.4107,
+        0.6167,
+        0.2635,
+        0.8434,
+        0,
+        0,
+        0.193,
+        0.7036,
+        0.4506,
+        0.4846,
+        0.5047,
+        0.5337,
+        0.3628,
+        0.682,
+        0.0554,
+        0.7775,
+        0.3548,
+        0.3552,
+        0,
+        0.7172,
+        0.2542,
+        0.3747,
+        0.4275,
+        0.6607,
+        0.4322,
+        0.6941,
+        0.3247,
+        0.5225,
+        0.2545,
+        0.1462,
+        0,
+        0.5817,
+        0.5891,
+        0.4353,
+        0,
+        0.3479,
+        0.6109,
+        0.296,
+        0.3882,
+        0.5624,
+        0.6783,
+        0.4385,
+        0.6078,
+        0.5826
+      ]
     },
     "thresholds": {
       "lines": 22,
       "branches": 6,
-      "depth": 3
+      "depth": 2
     },
-    "score": 4.86,
+    "heavyShare": 0.8723,
+    "score": 0,
     "over": [
       {
         "file": "scripts/helper.sh",
@@ -250,7 +304,7 @@
         "lines": 21,
         "depth": 3,
         "branches": 9,
-        "percentile": 93.6
+        "percentile": 94.3
       },
       {
         "file": "Widget.qml",
@@ -258,9 +312,9 @@
         "name": "classify",
         "kind": "function",
         "lines": 20,
-        "depth": 4,
+        "depth": 3,
         "branches": 6,
-        "percentile": 94.9
+        "percentile": 94.3
       }
     ]
   },

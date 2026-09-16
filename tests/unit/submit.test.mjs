@@ -8,7 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { liveRegistry } from "../../tools/marketplace/registry.mjs"
-import { PATTERNS, percentile, SIZE, sizeScore } from "../../tools/inspect/patterns.mjs"
+import { heavyShare, PATTERNS, percentile, SIZE, sizeScore, treeRank } from "../../tools/inspect/patterns.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
 import { readFileSync } from "node:fs"
@@ -83,12 +83,19 @@ test("every check names a source and a measured reason, and every inspect patter
     assert.deepEqual(Object.fromEntries(Object.entries(SIZE.distribution[measure]).map(([k, v]) => [String(k), v])), lengths.distribution[measure], `size: the ${measure} histogram is not the record's`)
     assert.equal(Object.values(SIZE.distribution[measure]).reduce((sum, count) => sum + count, 0), lengths.sample.functions)
   }
+  // The per-tree heavy shares in code are the record's rows, in order, and each row's share is its own ratio under the record's thresholds.
+  assert.equal(SIZE.trees, lengths.sample.trees)
+  assert.deepEqual([...SIZE.distribution.heavyShare], lengths.rows.map((row) => row.heavyShare))
+  for (const row of lengths.rows) assert.equal(row.heavyShare, row.functionLines ? Math.round((row.heavyLines / row.functionLines) * 10000) / 10000 : 0, `row ${row.row}: heavyShare is not heavyLines over functionLines`)
   // And the rank reads off the histogram the way M12 says: the share strictly smaller.
   assert.equal(percentile("lines", 1), 0)
   assert.equal(percentile("lines", 1000), 100)
   assert.equal(percentile("lines", lengths.quantiles.lines.p50) < 50, true)
   assert.equal(sizeScore([]), null)
+  assert.equal(heavyShare([]), 0)
   assert.equal(sizeScore([{ lines: 1, branches: 0, depth: 0 }]), 10)
+  assert.equal(treeRank(0), 0, "no listed tree is lighter than a tree with no heavy line")
+  assert.equal(sizeScore([{ lines: SIZE.lines + 1, branches: 0, depth: 0 }]), 0, "every line heavy: heavier than every listed tree")
 })
 
 test("the crafted fixture is refused, and every measured failure class is named", async () => {

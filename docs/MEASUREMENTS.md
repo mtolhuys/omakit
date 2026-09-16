@@ -869,50 +869,86 @@ Measured 2026-09-16 over the first 50 distinct repositories in the pinned
 catalog's order whose listing is community, laid out as a root plugin and
 carrying a validated commit (the `inspect` record's selection rule of
 2026-09-15, widened from 18 to 50), each fetched read-only at that commit
-in reviewer mode. `extractFunctions` in `tools/inspect/functions.mjs` found
-6040 functions: a `function name(` or a multi-line `onSomething: {` handler
-in QML and JavaScript, a `name() {` or `function name` block in shell, a
-`def` in Python. For each, the length in lines from its first line to its
-last, the deepest nesting below its body, and the branches in it (`if`,
-`else if`, `for`, `while`, `switch`, `case`, `catch`, `&&`, `||`, `?:` and
-their shell and Python equivalents). The quantiles are over all 6040 pooled:
+in reviewer mode, and re-measured the same day after three extraction
+fixes (below). The run is reproducible:
+
+```bash
+node tools/inspect/measure-functions.mjs   # writes docs/evidence/inspect/<date>-function-lengths.json
+```
+
+`extractFunctions` in `tools/inspect/functions.mjs` found 6041 functions: a
+`function name(`, a named arrow function (`const load = (rows) => {`,
+`this.load = rows => {`), a method shorthand `load(rows) {` inside an
+object literal or a class, or a multi-line `onSomething: {` handler in QML
+and JavaScript; a `name() {` or `function name` block in shell; a `def` in
+Python. For each, the length in lines from its first line to its last, the
+deepest nesting below its body, and the branches in it (`if`, `else if`,
+`for`, `while`, `switch`, `case`, `catch`, `&&`, `||`, `?:` and their shell
+and Python equivalents). The quantiles are nearest-rank over all 6041
+pooled:
 
 | | p50 | p75 | p90 | p95 | max |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | lines | 7 | 12 | 22 | 34 | 495 |
 | branches | 1 | | 6 | | 87 |
-| nesting | 1 | | 3 | | 18 |
+| nesting | 0 | | 2 | | 18 |
 
-The [record](evidence/inspect/2026-09-16-function-lengths.json) carries the
-per-tree function counts and longest lengths, without repository or commit,
-the histogram of each measure, and the method. Three trees hold nearly half
-the functions (1,130, 1,090 and 619, QML and Python), which the pooling
-takes as it is: a listed function is a listed function whichever tree it
-is in. The first measurement over 18 trees (715 functions, p90 18 lines, 7
-branches, nesting 2) is in the record's history. Limits, stated: a function
-is what a regular expression recognises, so an arrow function assigned to a
-name, an anonymous callback and a shell function declared on one line are
-not counted; nesting counts braces, so an object literal inside a function
-counts as a level; the sample is 50 trees and the p90 is one number from
-them.
+The [record](evidence/inspect/2026-09-16-function-lengths.json) carries,
+per tree and without repository or commit, the function count by kind, the
+longest and median length, the lines inside every function
+(`functionLines`), the lines inside functions over any p90 threshold
+(`heavyLines`) and their ratio (`heavyShare`); the histogram of each
+measure; and the method. Three trees hold nearly half the functions
+(1,130, 1,090 and 619, QML and Python), which the pooling takes as it is: a
+listed function is a listed function whichever tree it is in. Of the 50
+heavy shares, 6 are 0, the median is 0.42 and the largest 0.84.
 
-`tools/inspect/patterns.mjs` carries the same three histograms as data, held
-equal to the record by the unit tests, so a function's rank can be read
-without the document: the share of listed functions with a smaller value, 0
+Two earlier records are in the file's history. The 0.4.3 record (commit
+`6619c26`; 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3)
+was made with three extraction faults, each of which moved a measure
+without the code changing shape, so it was re-measured rather than kept: a
+Python body counted as depth 1 and one `if` as depth 2, where a shell or
+QML body starts at 0, so a five-line Python function with one `if` ranked
+above 75 of 100 listed functions; a brace that opens an object or array
+literal counted as a nesting level, so a `return { a, b }` spread over
+lines was nesting; and only `function name(` and `onSomething: {` were
+functions, so a named arrow function or a method shorthand, which is where
+a `*Model.js` keeps its logic, was invisible. The first record over 18
+trees (715 functions, p90 18 lines, 7 branches, nesting 2) is behind it.
+The nesting p90 moved from 3 to 2 with the fixes; the line and branch
+quantiles did not move. Limits, stated: a function is still what a regular
+expression recognises, so an anonymous callback, a method whose parameter
+list spans lines and a shell function declared on one line are not
+counted; the literal test reads the text before a brace and is not a
+parser; the sample is 50 trees and the p90 is one number from them.
+
+`tools/inspect/patterns.mjs` carries the same three histograms and the 50
+heavy shares as data, held equal to the record by the unit tests, so a
+function's rank and a tree's position can be read without the document: a
+function's rank is the share of listed functions with a smaller value, 0
 for the smallest listed value and 100 for one over every listed value, the
-largest of the three being the function's rank.
+largest of the three being the function's rank; a tree's rank is the share
+of listed trees with a strictly smaller heavy share.
 
 Used by: the `long functions` block of `omakit inspect`, which lists a
 function when it is over the p90 of any of the three (22 lines, 6 branches,
-nesting 3), longest first, each with its rank, and says so in its heading;
-and the size score, 10 minus the mean rank of the tree's functions divided
-by ten, two decimals, printed under the baseline line. A tree of median
-functions scores about 5, a tree of one-line functions 10.00, and every
-function made shorter, flatter or less branched raises the number, which is
-what makes it something to work towards. It is a position among listed
-plugins and never a grade of one; a tree with no function has no score. The
-person who asked for the tool asked for long functions first, so the
-default view puts that block before the review classes; that order is a
-preference and the report names the measurement, not a severity. `--json`
-carries every function under `observed.functions` and the ones over the
-thresholds under `size.over`.
+nesting 2), longest first, each with its rank, and says so in its heading;
+and the size score, 10 minus the tree's rank divided by ten, two decimals,
+printed under the baseline line. The score is line-weighted on purpose. The
+0.4.3 score was 10 minus the mean rank of the tree's functions, which
+weighed ten small functions the same as one huge one, so every
+decomposition raised the mean: on a listed plugin of 332 functions scoring
+3.75, splitting a 12-function shell script into 35 single-purpose functions
+left it at 3.75 and splitting an 84-line, nesting-5 Python function into
+eight named steps lowered it to 3.72. Under the heavy share those lines
+leave the heavy set, so the split raises the score, and twenty three-line
+functions added beside a long one barely move it, which `tests/unit/inspect.test.mjs`
+holds. A tree with no function over the thresholds scores 10.00, a tree
+heavier than every listed tree 0.00. It is a position among listed plugins
+and never a grade of one; a tree with no function has no score. The person
+who asked for the tool asked for long functions first, so the default view
+puts that block before the review classes; that order is a preference and
+the report names the measurement, not a severity. `--json` carries every
+function under `observed.functions`, the ones over the thresholds under
+`size.over`, the tree's share under `size.heavyShare` and the listed trees'
+shares under `size.sample.heavyShares`.

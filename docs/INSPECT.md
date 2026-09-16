@@ -11,7 +11,8 @@ often, each with the measured share behind it, where the tree shows the
 pattern's precondition.
 
 It produces no verdict. Its one number, the size score, is a position among
-listed plugins and never a grade. Every row is an observation, and every
+listed trees, by how much of the tree's function text sits in long
+functions, and never a grade. Every row is an observation, and every
 observation is labelled as one, because it comes from regular expressions over
 QML and shell, not from running the plugin.
 
@@ -38,10 +39,12 @@ reviewer who is handed the same list reads the tree faster.
   "unsafe", "pass" or "fail" about anything, and it never blocks. The
   marketplace's automated baseline blocks; `inspect` reports.
 - Not a grader. It prints one number about the plugin, the size score,
-  and that number is a position, not a grade: 10 minus the mean rank of the
-  plugin's functions among the 6040 functions in 50 listed trees (M12), so
-  a tree of median functions scores 5.00 and every function made shorter,
-  flatter or less branched raises it. It says where the tree sits among
+  and that number is a position, not a grade: the share of the plugin's
+  function lines that sit in functions over the M12 thresholds, placed
+  among the same share in 50 listed trees, so a tree with no function over
+  them scores 10.00, a tree heavier than every listed tree 0.00, and a long
+  function split into short ones raises it while small functions added
+  beside a long one barely move it. It says where the tree sits among
   listed plugins, never whether it is good, it never blocks, and a tree with
   no function has no score. The other percentages it prints are the
   measured shares of review findings behind each pattern, and those
@@ -118,7 +121,7 @@ Two views of the one document. The default is what needs attention,
 biggest first, under the subject, the baseline outcome and the size score.
 First the long functions: every function over what 90 of
 100 functions in 50 listed trees stay under (22 lines, 6 branches or
-nesting 3, M12), longest first, up to five, each with its name, its lines,
+nesting 2, M12), longest first, up to five, each with its name, its lines,
 its branches and its nesting; that block comes first because length is
 what the person reading asks about first, and the heading names the
 measurement. Then one block per review class this tree shows, ordered by
@@ -142,8 +145,8 @@ act on sat under 750 lines of argv.
 subject       ~/plugins/fixture-example at a3bf9e2d
 baseline      review-required at pin 38060f89: installer, privilege,
               package-manager
-size score    6.93 of 10; 10 minus the mean rank of its 1 function among 6040 in
-              50 listed trees (M12), so a tree of median functions scores 5.00
+size score    10.00 of 10; 0% of its function lines sit in functions over the
+              measured size, less than 100 of 100 listed trees (M12)
 
 attention     5 classes reviewers raise, biggest first by share of review
               findings (M11); up to 5 sites each
@@ -238,8 +241,9 @@ commit the tree was read at. Nothing from outside the plugin directory is
 ever printed as the plugin's; the unit tests inspect a fixture below this
 repository's own root and hold the whole document to that. A checkout with
 uncommitted changes is refused with the remedy `submit`
-gives, exit 1, and `--allow-dirty` reads the committed tree as it is, the
-way `submit --allow-dirty` does. There is no `--fix`, no `--strict`, no
+gives, exit 1, and `--allow-dirty` reads HEAD as committed, the way
+`submit --allow-dirty` does: the edits are not read, and the report says
+how many files differ from HEAD and were not inspected. There is no `--fix`, no `--strict`, no
 threshold flag, because there is nothing to pass or fail.
 
 ## Exit status
@@ -263,13 +267,21 @@ every produced document to it.
 omakit            string   the omakit version that produced the document
 command           "inspect"
 method            string   one sentence: static extraction, regular expressions, observed
-subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other } }
+subject           { dir, commit, mode, pluginId|null, repository: { url|null }, filesRead: { qml, js, shell, python, other },
+                    uncommittedFiles }
+                  uncommittedFiles is the number of paths `git status` lists at the checkout under
+                  --allow-dirty, 0 for a clean checkout or a fetched commit; the tree was read at the
+                  commit, so those files were not inspected, and the report says so on one line
 observed          { processes[], hosts[], writes[], timers[], functions[] }
 counts            { processes: { total, qml, shell }, hosts, writes, timers, functions, notResolvable }
-size              { measurement: "M12", sample: { trees, functions }, thresholds: { lines, branches, depth },
-                    score: number|null, over: function[] }
-                  the functions over any threshold, longest first; the thresholds are M12's p90; the
-                  score is 10 minus the mean percentile of every function, two decimals, null with none
+size              { measurement: "M12", sample: { trees, functions, heavyShares: number[] },
+                    thresholds: { lines, branches, depth }, heavyShare: number, score: number|null,
+                    over: function[] }
+                  the functions over any threshold, longest first; the thresholds are M12's p90;
+                  heavyShare is the lines inside those functions over the lines inside every
+                  function, 0 with none; sample.heavyShares is the same share for each listed tree;
+                  score is 10 minus the share of listed trees with a strictly smaller heavyShare
+                  divided by 10, two decimals, null with no function
                   the headline: how many process sites are QML Process blocks and how many are
                   shell lines, since a script contributes one site per command segment
 notResolvable     [{ file, line, kind, text }]   sites the extraction saw but could not read:

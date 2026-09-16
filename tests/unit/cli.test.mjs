@@ -119,12 +119,15 @@ test("under a pseudo-terminal, a successful doctor writes nothing but its progre
   // notice when this machine's completion script names another omakit,
   // which is that machine's state and not this contract's. Measured: the
   // test went red on a machine whose script said 0.2.0 the moment
-  // package.json said 0.2.1. The pin is still read from the real cache.
+  // package.json said 0.2.1, and again at 0.5.0 on a machine whose
+  // XDG_DATA_HOME named the real completion script under the real home,
+  // so the XDG directories that place the script and the notice's stamp
+  // go with it. The pin is still read from the real cache.
   const home = mkdtempSync(join(tmpdir(), "omakit-pty-home-"))
   const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} doctor --offline >/dev/null`
   const result = spawnSync("script", ["-qec", command, "/dev/null"], {
     encoding: "utf8",
-    env: { ...process.env, NODE_NO_WARNINGS: "1", TERM: "xterm", FORCE_COLOR: undefined, NO_COLOR: undefined, HOME: home, XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || join(process.env.HOME, ".cache") },
+    env: { ...process.env, NODE_NO_WARNINGS: "1", TERM: "xterm", FORCE_COLOR: undefined, NO_COLOR: undefined, HOME: home, XDG_DATA_HOME: join(home, ".local/share"), XDG_CONFIG_HOME: join(home, ".config"), XDG_STATE_HOME: join(home, ".local/state"), ZDOTDIR: undefined, XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || join(process.env.HOME, ".cache") },
   })
   assert.equal(result.status, 0, result.stdout)
   const CLEAR = "\r\u001b[2K"

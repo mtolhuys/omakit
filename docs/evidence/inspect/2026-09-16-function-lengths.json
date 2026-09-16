@@ -1,10 +1,11 @@
 {
   "measurement": "M12",
   "date": "2026-09-16",
-  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule, widened from 18 to 50), each fetched read-only at that commit in reviewer mode. A function is a `function name(` or a multi-line `onSomething: {` handler in QML and JavaScript, a `name() {` or `function name` block in shell, a `def` in Python. Lines are first to last line inclusive; depth is the deepest nesting below the body; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same functions, value to count, from which a function's percentile rank is read.",
+  "command": "node tools/inspect/measure-functions.mjs",
+  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule), each fetched read-only at that commit in reviewer mode. A function is a `function name(`, a named arrow function (`const load = (rows) => {`, `this.load = rows => {`), a method shorthand `load(rows) {` inside an object literal or a class, or a multi-line `onSomething: {` handler in QML and JavaScript; a `name() {` or `function name` block in shell; a `def` in Python. Anonymous callbacks are not counted. Lines are first to last line inclusive; depth is the deepest nesting below the body, the body itself at 0 in every language, a brace that opens an object or array literal or an inline arrow body not a level; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). Quantiles are nearest-rank over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same functions, value to count, from which a function's percentile rank is read. Per tree, functionLines is the lines inside every function, heavyLines the lines inside functions over any p90 threshold of this record, and heavyShare their ratio, 0 with no function; the size score of omakit inspect is a tree's position among these 50 heavyShares.",
   "sample": {
     "trees": 50,
-    "functions": 6040,
+    "functions": 6041,
     "fetchFailed": []
   },
   "quantiles": {
@@ -16,8 +17,8 @@
       "max": 495
     },
     "depth": {
-      "p50": 1,
-      "p90": 3,
+      "p50": 0,
+      "p90": 2,
       "max": 18
     },
     "branches": {
@@ -33,7 +34,7 @@
       "3": 682,
       "4": 659,
       "5": 629,
-      "6": 514,
+      "6": 515,
       "7": 420,
       "8": 339,
       "9": 301,
@@ -155,7 +156,7 @@
       "0": 2336,
       "1": 1096,
       "2": 807,
-      "3": 454,
+      "3": 455,
       "4": 339,
       "5": 233,
       "6": 171,
@@ -203,18 +204,18 @@
       "87": 2
     },
     "depth": {
-      "0": 2606,
-      "1": 1938,
-      "2": 859,
-      "3": 327,
-      "4": 133,
-      "5": 71,
-      "6": 60,
-      "7": 26,
-      "8": 8,
-      "9": 6,
-      "10": 2,
-      "13": 2,
+      "0": 3794,
+      "1": 1421,
+      "2": 481,
+      "3": 155,
+      "4": 80,
+      "5": 62,
+      "6": 27,
+      "7": 10,
+      "8": 5,
+      "9": 2,
+      "12": 1,
+      "13": 1,
       "15": 1,
       "18": 1
     }
@@ -222,15 +223,18 @@
   "rows": [
     {
       "row": 1,
-      "functions": 130,
+      "functions": 131,
       "byKind": {
-        "qml": 130,
+        "qml": 131,
         "js": 0,
         "shell": 0,
         "python": 0
       },
       "longest": 81,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 1095,
+      "heavyLines": 461,
+      "heavyShare": 0.421
     },
     {
       "row": 2,
@@ -242,7 +246,10 @@
         "python": 9
       },
       "longest": 101,
-      "medianLines": 4
+      "medianLines": 4,
+      "functionLines": 366,
+      "heavyLines": 123,
+      "heavyShare": 0.3361
     },
     {
       "row": 3,
@@ -254,7 +261,10 @@
         "python": 8
       },
       "longest": 128,
-      "medianLines": 5
+      "medianLines": 4.5,
+      "functionLines": 405,
+      "heavyLines": 164,
+      "heavyShare": 0.4049
     },
     {
       "row": 4,
@@ -266,7 +276,10 @@
         "python": 0
       },
       "longest": 17,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 69,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 5,
@@ -278,7 +291,10 @@
         "python": 13
       },
       "longest": 50,
-      "medianLines": 7
+      "medianLines": 6.5,
+      "functionLines": 339,
+      "heavyLines": 125,
+      "heavyShare": 0.3687
     },
     {
       "row": 6,
@@ -290,7 +306,10 @@
         "python": 19
       },
       "longest": 52,
-      "medianLines": 7
+      "medianLines": 7,
+      "functionLines": 499,
+      "heavyLines": 223,
+      "heavyShare": 0.4469
     },
     {
       "row": 7,
@@ -302,7 +321,10 @@
         "python": 0
       },
       "longest": 23,
-      "medianLines": 6
+      "medianLines": 5,
+      "functionLines": 56,
+      "heavyLines": 23,
+      "heavyShare": 0.4107
     },
     {
       "row": 8,
@@ -314,7 +336,10 @@
         "python": 0
       },
       "longest": 91,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 347,
+      "heavyLines": 214,
+      "heavyShare": 0.6167
     },
     {
       "row": 9,
@@ -326,7 +351,10 @@
         "python": 0
       },
       "longest": 23,
-      "medianLines": 8
+      "medianLines": 8,
+      "functionLines": 167,
+      "heavyLines": 44,
+      "heavyShare": 0.2635
     },
     {
       "row": 10,
@@ -338,7 +366,10 @@
         "python": 0
       },
       "longest": 70,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 83,
+      "heavyLines": 70,
+      "heavyShare": 0.8434
     },
     {
       "row": 11,
@@ -350,7 +381,10 @@
         "python": 0
       },
       "longest": 14,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 119,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 12,
@@ -362,7 +396,10 @@
         "python": 0
       },
       "longest": 4,
-      "medianLines": 4
+      "medianLines": 2.5,
+      "functionLines": 5,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 13,
@@ -374,7 +411,10 @@
         "python": 0
       },
       "longest": 23,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 316,
+      "heavyLines": 61,
+      "heavyShare": 0.193
     },
     {
       "row": 14,
@@ -386,7 +426,10 @@
         "python": 0
       },
       "longest": 63,
-      "medianLines": 13
+      "medianLines": 13,
+      "functionLines": 361,
+      "heavyLines": 254,
+      "heavyShare": 0.7036
     },
     {
       "row": 15,
@@ -398,7 +441,10 @@
         "python": 0
       },
       "longest": 50,
-      "medianLines": 9
+      "medianLines": 9,
+      "functionLines": 1083,
+      "heavyLines": 488,
+      "heavyShare": 0.4506
     },
     {
       "row": 16,
@@ -410,7 +456,10 @@
         "python": 14
       },
       "longest": 108,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 846,
+      "heavyLines": 410,
+      "heavyShare": 0.4846
     },
     {
       "row": 17,
@@ -422,7 +471,10 @@
         "python": 5
       },
       "longest": 55,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 317,
+      "heavyLines": 160,
+      "heavyShare": 0.5047
     },
     {
       "row": 18,
@@ -434,7 +486,10 @@
         "python": 0
       },
       "longest": 71,
-      "medianLines": 9
+      "medianLines": 9,
+      "functionLines": 178,
+      "heavyLines": 95,
+      "heavyShare": 0.5337
     },
     {
       "row": 19,
@@ -446,7 +501,10 @@
         "python": 10
       },
       "longest": 134,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 430,
+      "heavyLines": 156,
+      "heavyShare": 0.3628
     },
     {
       "row": 20,
@@ -458,7 +516,10 @@
         "python": 0
       },
       "longest": 110,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 827,
+      "heavyLines": 564,
+      "heavyShare": 0.682
     },
     {
       "row": 21,
@@ -470,7 +531,10 @@
         "python": 0
       },
       "longest": 19,
-      "medianLines": 6
+      "medianLines": 5.5,
+      "functionLines": 271,
+      "heavyLines": 15,
+      "heavyShare": 0.0554
     },
     {
       "row": 22,
@@ -482,7 +546,10 @@
         "python": 0
       },
       "longest": 495,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 701,
+      "heavyLines": 545,
+      "heavyShare": 0.7775
     },
     {
       "row": 23,
@@ -494,7 +561,10 @@
         "python": 0
       },
       "longest": 35,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 806,
+      "heavyLines": 286,
+      "heavyShare": 0.3548
     },
     {
       "row": 24,
@@ -502,11 +572,14 @@
       "byKind": {
         "qml": 42,
         "js": 0,
-        "shell": 49,
-        "python": 0
+        "shell": 4,
+        "python": 45
       },
       "longest": 65,
-      "medianLines": 7
+      "medianLines": 7,
+      "functionLines": 901,
+      "heavyLines": 320,
+      "heavyShare": 0.3552
     },
     {
       "row": 25,
@@ -518,7 +591,10 @@
         "python": 0
       },
       "longest": 11,
-      "medianLines": 4
+      "medianLines": 4,
+      "functionLines": 42,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 26,
@@ -530,7 +606,10 @@
         "python": 13
       },
       "longest": 72,
-      "medianLines": 7
+      "medianLines": 7,
+      "functionLines": 647,
+      "heavyLines": 464,
+      "heavyShare": 0.7172
     },
     {
       "row": 27,
@@ -542,7 +621,10 @@
         "python": 0
       },
       "longest": 94,
-      "medianLines": 9
+      "medianLines": 9,
+      "functionLines": 6606,
+      "heavyLines": 1679,
+      "heavyShare": 0.2542
     },
     {
       "row": 28,
@@ -550,11 +632,14 @@
       "byKind": {
         "qml": 58,
         "js": 24,
-        "shell": 33,
-        "python": 79
+        "shell": 0,
+        "python": 112
       },
       "longest": 55,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 1500,
+      "heavyLines": 562,
+      "heavyShare": 0.3747
     },
     {
       "row": 29,
@@ -566,7 +651,10 @@
         "python": 0
       },
       "longest": 45,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 807,
+      "heavyLines": 345,
+      "heavyShare": 0.4275
     },
     {
       "row": 30,
@@ -578,7 +666,10 @@
         "python": 0
       },
       "longest": 116,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 722,
+      "heavyLines": 477,
+      "heavyShare": 0.6607
     },
     {
       "row": 31,
@@ -590,7 +681,10 @@
         "python": 0
       },
       "longest": 65,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 1217,
+      "heavyLines": 526,
+      "heavyShare": 0.4322
     },
     {
       "row": 32,
@@ -602,7 +696,10 @@
         "python": 0
       },
       "longest": 365,
-      "medianLines": 10
+      "medianLines": 10,
+      "functionLines": 4707,
+      "heavyLines": 3267,
+      "heavyShare": 0.6941
     },
     {
       "row": 33,
@@ -614,7 +711,10 @@
         "python": 0
       },
       "longest": 41,
-      "medianLines": 3
+      "medianLines": 3,
+      "functionLines": 194,
+      "heavyLines": 63,
+      "heavyShare": 0.3247
     },
     {
       "row": 34,
@@ -622,11 +722,14 @@
       "byKind": {
         "qml": 30,
         "js": 0,
-        "shell": 21,
-        "python": 0
+        "shell": 0,
+        "python": 21
       },
       "longest": 98,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 511,
+      "heavyLines": 267,
+      "heavyShare": 0.5225
     },
     {
       "row": 35,
@@ -638,7 +741,10 @@
         "python": 0
       },
       "longest": 14,
-      "medianLines": 7
+      "medianLines": 6,
+      "functionLines": 55,
+      "heavyLines": 14,
+      "heavyShare": 0.2545
     },
     {
       "row": 36,
@@ -650,7 +756,10 @@
         "python": 0
       },
       "longest": 34,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 301,
+      "heavyLines": 44,
+      "heavyShare": 0.1462
     },
     {
       "row": 37,
@@ -662,7 +771,10 @@
         "python": 0
       },
       "longest": 12,
-      "medianLines": 5
+      "medianLines": 4.5,
+      "functionLines": 70,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 38,
@@ -674,7 +786,10 @@
         "python": 7
       },
       "longest": 41,
-      "medianLines": 8
+      "medianLines": 7.5,
+      "functionLines": 251,
+      "heavyLines": 146,
+      "heavyShare": 0.5817
     },
     {
       "row": 39,
@@ -686,7 +801,10 @@
         "python": 0
       },
       "longest": 44,
-      "medianLines": 6
+      "medianLines": 5.5,
+      "functionLines": 387,
+      "heavyLines": 228,
+      "heavyShare": 0.5891
     },
     {
       "row": 40,
@@ -698,7 +816,10 @@
         "python": 33
       },
       "longest": 90,
-      "medianLines": 11
+      "medianLines": 10.5,
+      "functionLines": 827,
+      "heavyLines": 360,
+      "heavyShare": 0.4353
     },
     {
       "row": 41,
@@ -709,8 +830,11 @@
         "shell": 0,
         "python": 0
       },
-      "longest": null,
-      "medianLines": null
+      "longest": 0,
+      "medianLines": null,
+      "functionLines": 0,
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 42,
@@ -718,11 +842,14 @@
       "byKind": {
         "qml": 419,
         "js": 111,
-        "shell": 129,
-        "python": 471
+        "shell": 0,
+        "python": 600
       },
       "longest": 154,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 9341,
+      "heavyLines": 3250,
+      "heavyShare": 0.3479
     },
     {
       "row": 43,
@@ -734,7 +861,10 @@
         "python": 9
       },
       "longest": 71,
-      "medianLines": 8
+      "medianLines": 8,
+      "functionLines": 311,
+      "heavyLines": 190,
+      "heavyShare": 0.6109
     },
     {
       "row": 44,
@@ -746,7 +876,10 @@
         "python": 133
       },
       "longest": 49,
-      "medianLines": 5
+      "medianLines": 5,
+      "functionLines": 1669,
+      "heavyLines": 494,
+      "heavyShare": 0.296
     },
     {
       "row": 45,
@@ -758,7 +891,10 @@
         "python": 0
       },
       "longest": 120,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 2888,
+      "heavyLines": 1121,
+      "heavyShare": 0.3882
     },
     {
       "row": 46,
@@ -766,11 +902,14 @@
       "byKind": {
         "qml": 177,
         "js": 152,
-        "shell": 60,
-        "python": 701
+        "shell": 0,
+        "python": 761
       },
       "longest": 144,
-      "medianLines": 7
+      "medianLines": 7,
+      "functionLines": 14911,
+      "heavyLines": 8386,
+      "heavyShare": 0.5624
     },
     {
       "row": 47,
@@ -782,7 +921,10 @@
         "python": 0
       },
       "longest": 292,
-      "medianLines": 10
+      "medianLines": 10,
+      "functionLines": 5966,
+      "heavyLines": 4047,
+      "heavyShare": 0.6783
     },
     {
       "row": 48,
@@ -794,7 +936,10 @@
         "python": 0
       },
       "longest": 53,
-      "medianLines": 6
+      "medianLines": 6,
+      "functionLines": 447,
+      "heavyLines": 196,
+      "heavyShare": 0.4385
     },
     {
       "row": 49,
@@ -806,7 +951,10 @@
         "python": 22
       },
       "longest": 110,
-      "medianLines": 9
+      "medianLines": 9,
+      "functionLines": 515,
+      "heavyLines": 313,
+      "heavyShare": 0.6078
     },
     {
       "row": 50,
@@ -818,8 +966,11 @@
         "python": 0
       },
       "longest": 133,
-      "medianLines": 7
+      "medianLines": 7,
+      "functionLines": 1495,
+      "heavyLines": 871,
+      "heavyShare": 0.5826
     }
   ],
-  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. The first measurement, 2026-09-16 over 18 trees, is in this file's history: 715 functions, p90 18 lines, 7 branches, nesting 2."
+  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. Re-measured on 2026-09-16 after three extraction fixes, so the quantiles are not comparable with the 0.4.3 record (this file at commit 6619c26: 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3; and before it 18 trees, 715 functions, p90 18 lines, 7 branches, nesting 2): a Python body now starts at depth 0 the way a brace body does, where it started at 1; a brace that opens an object or array literal is no longer a nesting level; and a named arrow function or a method shorthand is a function, where only `function name(` and `onSomething: {` were."
 }

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.literal-nesting",
+  "name": "Fixture: literal nesting",
+  "version": "0.0.1",
+  "description": "A QML function and a JavaScript function whose bodies hold multi-line object and array literals, which are values and not nesting; one real if inside each.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

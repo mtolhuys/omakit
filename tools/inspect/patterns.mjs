@@ -89,18 +89,22 @@ function secretLogs(files) {
  */
 export const SIZE = Object.freeze({
   measurement: "M12",
-  sample: "50 listed trees, 6040 functions",
+  sample: "50 listed trees, 6041 functions",
   trees: 50,
-  functions: 6040,
+  functions: 6041,
   lines: 22,
   branches: 6,
-  depth: 3,
-  // The histogram of each measure over the 6040 functions, value to count,
-  // from which a function's percentile rank among listed functions is read.
+  depth: 2,
+  // The histogram of each measure over the 6041 functions, value to count,
+  // from which a function's percentile rank among listed functions is read;
+  // and each listed tree's heavyShare, the share of its function lines in
+  // functions over the thresholds, in the record's row order, from which
+  // a tree's position among listed trees is read.
   distribution: Object.freeze({
-    lines: Object.freeze({ 1: 330, 2: 185, 3: 682, 4: 659, 5: 629, 6: 514, 7: 420, 8: 339, 9: 301, 10: 235, 11: 192, 12: 138, 13: 150, 14: 129, 15: 104, 16: 75, 17: 84, 18: 64, 19: 70, 20: 48, 21: 51, 22: 46, 23: 45, 24: 42, 25: 27, 26: 25, 27: 16, 28: 24, 29: 24, 30: 17, 31: 18, 32: 23, 33: 18, 34: 19, 35: 10, 36: 5, 37: 11, 38: 12, 39: 12, 40: 9, 41: 10, 42: 12, 43: 9, 44: 8, 45: 7, 46: 14, 47: 8, 48: 11, 49: 8, 50: 6, 51: 2, 52: 2, 53: 6, 54: 2, 55: 7, 56: 4, 57: 3, 58: 5, 60: 6, 61: 2, 62: 3, 63: 6, 64: 1, 65: 3, 66: 1, 67: 3, 68: 4, 69: 8, 70: 5, 71: 6, 72: 2, 73: 2, 74: 1, 75: 1, 76: 1, 77: 1, 78: 1, 79: 3, 80: 1, 81: 3, 82: 1, 83: 1, 85: 1, 87: 1, 89: 1, 90: 2, 91: 2, 92: 1, 94: 1, 96: 2, 97: 2, 98: 1, 99: 1, 100: 1, 101: 1, 102: 2, 104: 1, 108: 1, 110: 2, 111: 1, 112: 1, 113: 1, 115: 2, 116: 1, 117: 1, 119: 1, 120: 1, 121: 1, 128: 2, 129: 1, 133: 1, 134: 1, 144: 1, 145: 1, 154: 1, 161: 1, 173: 1, 253: 1, 277: 1, 292: 1, 365: 1, 495: 1 }),
-    branches: Object.freeze({ 0: 2336, 1: 1096, 2: 807, 3: 454, 4: 339, 5: 233, 6: 171, 7: 125, 8: 90, 9: 68, 10: 47, 11: 53, 12: 24, 13: 26, 14: 18, 15: 11, 16: 17, 17: 18, 18: 12, 19: 12, 20: 11, 21: 3, 22: 5, 23: 7, 24: 8, 25: 4, 26: 1, 27: 6, 28: 4, 29: 5, 31: 1, 32: 3, 33: 3, 34: 1, 35: 1, 36: 4, 37: 1, 38: 1, 40: 1, 41: 1, 43: 2, 44: 1, 45: 2, 46: 1, 64: 1, 75: 1, 78: 1, 85: 1, 87: 2 }),
-    depth: Object.freeze({ 0: 2606, 1: 1938, 2: 859, 3: 327, 4: 133, 5: 71, 6: 60, 7: 26, 8: 8, 9: 6, 10: 2, 13: 2, 15: 1, 18: 1 }),
+    lines: Object.freeze({ 1: 330, 2: 185, 3: 682, 4: 659, 5: 629, 6: 515, 7: 420, 8: 339, 9: 301, 10: 235, 11: 192, 12: 138, 13: 150, 14: 129, 15: 104, 16: 75, 17: 84, 18: 64, 19: 70, 20: 48, 21: 51, 22: 46, 23: 45, 24: 42, 25: 27, 26: 25, 27: 16, 28: 24, 29: 24, 30: 17, 31: 18, 32: 23, 33: 18, 34: 19, 35: 10, 36: 5, 37: 11, 38: 12, 39: 12, 40: 9, 41: 10, 42: 12, 43: 9, 44: 8, 45: 7, 46: 14, 47: 8, 48: 11, 49: 8, 50: 6, 51: 2, 52: 2, 53: 6, 54: 2, 55: 7, 56: 4, 57: 3, 58: 5, 60: 6, 61: 2, 62: 3, 63: 6, 64: 1, 65: 3, 66: 1, 67: 3, 68: 4, 69: 8, 70: 5, 71: 6, 72: 2, 73: 2, 74: 1, 75: 1, 76: 1, 77: 1, 78: 1, 79: 3, 80: 1, 81: 3, 82: 1, 83: 1, 85: 1, 87: 1, 89: 1, 90: 2, 91: 2, 92: 1, 94: 1, 96: 2, 97: 2, 98: 1, 99: 1, 100: 1, 101: 1, 102: 2, 104: 1, 108: 1, 110: 2, 111: 1, 112: 1, 113: 1, 115: 2, 116: 1, 117: 1, 119: 1, 120: 1, 121: 1, 128: 2, 129: 1, 133: 1, 134: 1, 144: 1, 145: 1, 154: 1, 161: 1, 173: 1, 253: 1, 277: 1, 292: 1, 365: 1, 495: 1 }),
+    branches: Object.freeze({ 0: 2336, 1: 1096, 2: 807, 3: 455, 4: 339, 5: 233, 6: 171, 7: 125, 8: 90, 9: 68, 10: 47, 11: 53, 12: 24, 13: 26, 14: 18, 15: 11, 16: 17, 17: 18, 18: 12, 19: 12, 20: 11, 21: 3, 22: 5, 23: 7, 24: 8, 25: 4, 26: 1, 27: 6, 28: 4, 29: 5, 31: 1, 32: 3, 33: 3, 34: 1, 35: 1, 36: 4, 37: 1, 38: 1, 40: 1, 41: 1, 43: 2, 44: 1, 45: 2, 46: 1, 64: 1, 75: 1, 78: 1, 85: 1, 87: 2 }),
+    depth: Object.freeze({ 0: 3794, 1: 1421, 2: 481, 3: 155, 4: 80, 5: 62, 6: 27, 7: 10, 8: 5, 9: 2, 12: 1, 13: 1, 15: 1, 18: 1 }),
+    heavyShare: Object.freeze([0.421, 0.3361, 0.4049, 0, 0.3687, 0.4469, 0.4107, 0.6167, 0.2635, 0.8434, 0, 0, 0.193, 0.7036, 0.4506, 0.4846, 0.5047, 0.5337, 0.3628, 0.682, 0.0554, 0.7775, 0.3548, 0.3552, 0, 0.7172, 0.2542, 0.3747, 0.4275, 0.6607, 0.4322, 0.6941, 0.3247, 0.5225, 0.2545, 0.1462, 0, 0.5817, 0.5891, 0.4353, 0, 0.3479, 0.6109, 0.296, 0.3882, 0.5624, 0.6783, 0.4385, 0.6078, 0.5826]),
   }),
 })
 
@@ -123,16 +127,41 @@ export function rankOf(entry) {
 }
 
 /**
- * The size score of a tree: 10 minus the mean rank of its functions among
- * the 6040 listed ones, on 0 to 10 with two decimals. A tree of median
- * functions scores 5.00; every function made shorter, flatter or less
- * branched raises it. It says where the tree sits among listed plugins,
- * never whether it is good, and a tree with no function has no score.
+ * The share of a tree's function lines that sit in functions over any of
+ * the M12 thresholds: lines inside `overSize` functions over lines inside
+ * every function, 0 with no function. Line-weighted on purpose: splitting
+ * one long function into short ones moves its lines out of the heavy set,
+ * and padding a tree with small functions barely moves the ratio.
+ */
+export function heavyShare(functions) {
+  const total = functions.reduce((sum, entry) => sum + entry.lines, 0)
+  if (!total) return 0
+  const heavy = overSize(functions).reduce((sum, entry) => sum + entry.lines, 0)
+  return heavy / total
+}
+
+/**
+ * The share of listed trees whose heavyShare is strictly smaller than this
+ * one, as a percentage over the trees of the M12 record: 0 for a tree with
+ * no function over the thresholds, 100 for one heavier than every listed
+ * tree.
+ */
+export function treeRank(share) {
+  const below = SIZE.distribution.heavyShare.filter((listed) => listed < share).length
+  return Math.round((below / SIZE.trees) * 1000) / 10
+}
+
+/**
+ * The size score of a tree: 10 minus its rank among the listed trees
+ * divided by 10, on 0 to 10 with two decimals. A tree with no function
+ * over the thresholds scores 10.00, a tree heavier than every listed tree
+ * 0.00. It says where the tree sits among listed plugins by how much of
+ * its function text is in long functions, never whether it is good, and a
+ * tree with no function has no score.
  */
 export function sizeScore(functions) {
   if (!functions.length) return null
-  const mean = functions.reduce((sum, entry) => sum + rankOf(entry), 0) / functions.length
-  return Math.round((10 - mean / 10) * 100) / 100
+  return Math.round((10 - treeRank(heavyShare(functions)) / 10) * 100) / 100
 }
 
 /** The functions over any of the thresholds, longest first, then most branched. */

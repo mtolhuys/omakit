@@ -1,7 +1,8 @@
-// Function sites: every named function, QML handler, shell function and
-// Python def, with its length in lines, its deepest nesting and its branch
-// count. Size is the one thing a person asks about a tree that regular
-// expressions can answer without a parser: where does the logic pile up.
+// Function sites: every named function (declared, assigned as an arrow, or
+// a method), QML handler, shell function and Python def, with its length
+// in lines, its deepest nesting and its branch count. Size is the one
+// thing a person asks about a tree that regular expressions can answer
+// without a parser: where does the logic pile up.
 // The numbers are counts over the text; the threshold they are compared
 // with is measured over listed trees (M12), never chosen.
 
@@ -13,11 +14,22 @@ const SHELL_CLOSE = /^\s*(?:fi|done|esac)\b/
 const SHELL_BRANCH = /\b(?:if|elif|for|while|until|case)\b|\|\||&&|^\s*[^)]*\)\s*(?!\s*$)/
 const PY_BRANCH = /^\s*(?:if|elif|for|while|except|with)\b|\band\b|\bor\b/
 
-/** Deepest brace nesting inside a body, relative to the body itself. */
+/**
+ * Deepest brace nesting inside a body, relative to the body itself. A `{`
+ * that opens a literal is not a level: an object or array literal spread
+ * over lines (`return {`, `foo({`, `x = {`, `[{`, `? {`, `a || {`) and an
+ * inline arrow body (`=> {`) are values, not control flow. The test is the
+ * last non-space text before the brace, so this is a regular-expression
+ * heuristic, not a parser: it aims at an object literal not counting as
+ * nesting, and a `{` after `)` or `else` or on a line of its own counts.
+ */
+const LITERAL_BEFORE = /(?:[(,:=[?]|\breturn|=>|\|\||&&)\s*$/
+
 function braceDepth(body) {
   let depth = 0
   let deepest = 0
   let quote = null
+  const literal = []
   for (let i = 0; i < body.length; i += 1) {
     const ch = body[i]
     if (quote) {
@@ -27,30 +39,50 @@ function braceDepth(body) {
     }
     if (ch === '"' || ch === "'" || ch === "`") quote = ch
     else if (ch === "{") {
+      const isLiteral = LITERAL_BEFORE.test(body.slice(Math.max(0, i - 12), i))
+      literal.push(isLiteral)
+      if (isLiteral) continue
       depth += 1
       if (depth > deepest) deepest = depth
-    } else if (ch === "}") depth -= 1
+    } else if (ch === "}") {
+      if (!literal.pop()) depth -= 1
+    }
   }
   return deepest
 }
 
+/** Words that stand before `(...) {` without naming a method. */
+const NOT_A_METHOD = new Set(["if", "for", "while", "switch", "catch", "with", "function", "return", "else", "do", "try"])
+
 function jsFunctions(file) {
   const text = blankComments(file.text)
   const rows = []
-  // `function name(` and, in QML, `onSomething: {` handlers with a body block.
-  const pattern = /(?<![\w.])function\s+([A-Za-z_$][\w$]*)\s*\(|(?<![\w.])(on[A-Z]\w*)\s*:\s*(?=\{)/g
+  // Four shapes, each followed by a body block: `function name(`; in QML,
+  // `onSomething: {` handlers; a named arrow function, `const load = (rows)
+  // => {` or `this.load = rows => {` on a property; and method shorthand,
+  // `load(rows) {` at the start of a line inside an object literal or a
+  // class. An anonymous callback (`(x) => {`, `function (x) {`) has no name
+  // and is not counted; the method shape excludes the keywords that stand
+  // before `(...) {` (`if`, `for`, `while`, `switch`, `catch`).
+  const pattern = new RegExp([
+    /(?<![\w.])function\s+([A-Za-z_$][\w$]*)\s*\(/.source,
+    /(?<![\w.])(on[A-Z]\w*)\s*:\s*(?=\{)/.source,
+    /(?<![\w$])([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^()\n]*\)|[A-Za-z_$][\w$]*)\s*=>[ \t]*(?=\{)/.source,
+    /^[ \t]*(?:(?:async|static)\s+)*([A-Za-z_$][\w$]*)[ \t]*\([^()\n]*\)[ \t]*(?=\{)/.source,
+  ].join("|"), "gm")
   for (const match of text.matchAll(pattern)) {
-    const open = text.indexOf("{", match.index + match[0].length - (match[2] ? 0 : 0))
+    if (match[4] && NOT_A_METHOD.has(match[4])) continue
+    const open = text.indexOf("{", match.index + match[0].length)
     if (open < 0) continue
     const end = closingBracket(text, open)
     if (end < 0) continue
     const body = text.slice(open + 1, end)
-    const start = lineOf(text, match.index)
+    const start = lineOf(text, match.index + match[0].length - match[0].trimStart().length)
     rows.push({
       file: file.path,
       line: start,
-      name: match[1] || match[2],
-      kind: match[1] ? "function" : "handler",
+      name: match[1] || match[2] || match[3] || match[4],
+      kind: match[2] ? "handler" : "function",
       lines: lineOf(text, end) - start + 1,
       depth: braceDepth(body),
       branches: (body.match(JS_BRANCH) || []).length,
@@ -102,12 +134,22 @@ function pythonFunctions(file) {
     let end = index
     let deepest = 0
     let branches = 0
+    // Depth is relative to the body, the way it is for a brace block: the
+    // body's own indent is depth 0 and one `if` is depth 1. The unit is
+    // one indentation step, read from the first body line (4 spaces by
+    // PEP 8, 2 in some trees); 4 is assumed when there is no body line.
+    let unit = 4
+    let first = true
     for (let at = index + 1; at < lines.length; at += 1) {
       const line = lines[at]
       if (!line.trim()) continue
       const indent = line.match(/^\s*/)[0].length
       if (indent <= base) break
-      const level = Math.floor((indent - base) / 4)
+      if (first) {
+        unit = indent - base
+        first = false
+      }
+      const level = Math.max(0, Math.floor((indent - base) / unit) - 1)
       if (level > deepest) deepest = level
       if (PY_BRANCH.test(line)) branches += 1
       end = at

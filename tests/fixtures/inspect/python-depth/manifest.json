@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.python-depth",
+  "name": "Fixture: python depth",
+  "version": "0.0.1",
+  "description": "Python functions whose nesting is read relative to the body: a flat body is depth 0, one if is depth 1, a 2-space tree reads the same as a 4-space one.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

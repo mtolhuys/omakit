@@ -125,6 +125,7 @@ export function validateInspectDocument(document, known = {}) {
   const filesRead = subject.filesRead || {}
   for (const kind of FILE_KINDS) if (!isInt(filesRead[kind]) || filesRead[kind] < 0) problems.push(`subject.filesRead.${kind} is not a count`)
   for (const key of Object.keys(filesRead)) if (!FILE_KINDS.includes(key)) problems.push(`subject.filesRead.${key} is not a kind inspect reads`)
+  if (!isInt(subject.uncommittedFiles) || subject.uncommittedFiles < 0) problems.push("subject.uncommittedFiles is not a count")
 
   const observed = document.observed || {}
   for (const [key, check] of [["processes", processRow], ["hosts", host], ["writes", write], ["timers", timer], ["functions", fn]]) {
@@ -166,15 +167,25 @@ export function validateInspectDocument(document, known = {}) {
   else {
     if (!isString(size.measurement) || !/^M\d+$/.test(size.measurement)) problems.push("size.measurement is not a measurement id")
     for (const key of ["lines", "branches", "depth"]) if (!isInt(size.thresholds?.[key]) || size.thresholds[key] < 1) problems.push(`size.thresholds.${key} is not a count`)
-    if (!size.sample || !isInt(size.sample.trees) || !isInt(size.sample.functions)) problems.push("size.sample is not { trees, functions }")
+    const shares = size.sample?.heavyShares
+    if (!size.sample || !isInt(size.sample.trees) || !isInt(size.sample.functions)) problems.push("size.sample is not { trees, functions, heavyShares }")
+    else if (!Array.isArray(shares) || shares.length !== size.sample.trees || !shares.every((share) => typeof share === "number" && share >= 0 && share <= 1)) problems.push("size.sample.heavyShares is not one share from 0 to 1 per listed tree")
     const scorable = Array.isArray(observed.functions) && observed.functions.length > 0
+    if (typeof size.heavyShare !== "number" || size.heavyShare < 0 || size.heavyShare > 1) problems.push("size.heavyShare is not a share from 0 to 1")
+    else if (Array.isArray(observed.functions) && size.thresholds) {
+      const total = observed.functions.reduce((sum, row) => sum + row.lines, 0)
+      const heavy = observed.functions.filter((row) => row.lines > size.thresholds.lines || row.branches > size.thresholds.branches || row.depth > size.thresholds.depth).reduce((sum, row) => sum + row.lines, 0)
+      const expected = total ? heavy / total : 0
+      if (Math.abs(expected - size.heavyShare) > 0.00011) problems.push(`size.heavyShare is ${size.heavyShare}; the function lines over the thresholds say ${expected}`)
+    }
     if (size.score === null) {
       if (scorable) problems.push("size.score is null for a tree with functions")
     } else if (typeof size.score !== "number" || size.score < 0 || size.score > 10 || Math.abs(Math.round(size.score * 100) - size.score * 100) > 1e-6) problems.push("size.score is not a number from 0 to 10 with two decimals")
     else if (!scorable) problems.push("size.score is set for a tree with no function")
-    else {
-      const expected = Math.round((10 - observed.functions.reduce((sum, row) => sum + row.percentile, 0) / observed.functions.length / 10) * 100) / 100
-      if (Math.abs(expected - size.score) > 0.011) problems.push(`size.score is ${size.score}; the mean rank of the functions says ${expected}`)
+    else if (Array.isArray(shares) && shares.length && typeof size.heavyShare === "number") {
+      const rank = (shares.filter((share) => share < size.heavyShare).length / shares.length) * 100
+      const expected = Math.round((10 - rank / 10) * 100) / 100
+      if (Math.abs(expected - size.score) > 0.011) problems.push(`size.score is ${size.score}; the tree's rank among the listed shares says ${expected}`)
     }
     if (!Array.isArray(size.over)) problems.push("size.over is not a list")
     else {

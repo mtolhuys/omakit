@@ -112,8 +112,10 @@ nothing in it says "observed nothing of this kind", and the report ends by
 naming what the method cannot see. No verdict, no `--fix`: it runs
 nothing from the tree, resolves no host and writes nothing into it, and the
 one word it closes on is `INSPECTED`. The report opens with the size score,
-10 minus the mean rank of the plugin's functions among those in listed
-trees, a position to work towards and never a grade; then what needs
+the share of the plugin's function lines that sit in functions over the
+measured size, placed among the listed trees' shares (10.00 when no
+function is over, 0.00 when heavier than every listed tree), a position
+to work towards and never a grade; then what needs
 attention, biggest first: the functions longer, more branched or deeper than 90 of 100
 functions in listed trees ([M12](MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)),
 longest first, then one block per review class the tree shows, ordered by

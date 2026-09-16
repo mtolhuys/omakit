@@ -3,7 +3,8 @@
 // the commit, run the four extractors over every file inspect reads, run
 // the marketplace's own baseline through `verify` for the capabilities,
 // and build the document of docs/INSPECT.md. No verdict, and the one score
-// a position among listed plugins, never a grade: every
+// a position among listed trees by how much of its function text is in
+// long functions, never a grade: every
 // row is a fact the text shows, labelled observed, and the document ends
 // with what the method cannot see.
 //
@@ -23,7 +24,7 @@ import { extractHosts } from "./hosts.mjs"
 import { extractWrites } from "./writes.mjs"
 import { extractTimers } from "./timers.mjs"
 import { extractFunctions } from "./functions.mjs"
-import { evaluatePatterns, overSize, PATTERNS, rankOf, SIZE, sizeScore } from "./patterns.mjs"
+import { evaluatePatterns, heavyShare, overSize, PATTERNS, rankOf, SIZE, sizeScore } from "./patterns.mjs"
 
 export const METHOD = "static extraction, regular expressions over qml and shell; observed, not executed"
 
@@ -62,6 +63,9 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   try {
     subject = resolveSubject(target, { cacheRoot, allowDirty })
   } catch (error) {
+    if (error instanceof SubjectError && error.code === "dirty-worktree") {
+      throw new InspectError(error.code, error.message.replace("read HEAD as committed", "inspect HEAD as committed"), "Commit them, or pass --allow-dirty to inspect HEAD as committed; uncommitted edits are not read.")
+    }
     if (error instanceof SubjectError) throw new InspectError(error.code, error.message)
     throw error
   }
@@ -128,6 +132,10 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
       mode: subject.mode,
       pluginId,
       filesRead: tree.filesRead,
+      // Paths `git status` lists at the checkout, under --allow-dirty: the
+      // tree was read at the commit, so these were not inspected. 0 for a
+      // clean checkout and for a fetched commit.
+      uncommittedFiles: subject.uncommittedFiles,
     },
     observed: { processes, hosts, writes, timers, functions },
     // Size: the functions over the M12 thresholds, longest first. A count of
@@ -135,11 +143,15 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     // 100 functions in listed trees stay under; never a judgement.
     size: {
       measurement: SIZE.measurement,
-      sample: { trees: SIZE.trees, functions: SIZE.functions },
+      // The listed trees' own heavy shares, so the score can be read from
+      // the document alone: `heavyShares[i]` is the i-th listed tree's.
+      sample: { trees: SIZE.trees, functions: SIZE.functions, heavyShares: [...SIZE.distribution.heavyShare] },
       thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth },
-      // 10 minus the mean rank of this tree's functions among the listed
-      // ones: where the tree sits, never whether it is good; null with no
+      // The share of this tree's function lines inside functions over the
+      // thresholds, and 10 minus its rank among the listed trees' shares:
+      // where the tree sits, never whether it is good; null with no
       // function to rank.
+      heavyShare: Math.round(heavyShare(functions) * 10000) / 10000,
       score: sizeScore(functions),
       over: overSize(functions),
     },

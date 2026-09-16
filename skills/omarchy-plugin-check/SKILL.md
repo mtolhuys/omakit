@@ -53,11 +53,17 @@ share of review findings (`share`, from M11 of `docs/MEASUREMENTS.md`).
 `size.over` lists the functions longer, more branched or deeper than 90 of
 100 functions in listed trees (the thresholds are in `size.thresholds`,
 from M12), longest first, each with its `percentile` among them, and
-`size.score` is 10 minus the mean percentile of every function in the
-tree. When the owner asks for simpler code, start with the top of
-`size.over`, and read the score before and after as the measure of the
-change; it is a position among listed plugins, not a grade, so never tell
-the owner a score is good or bad, only that it moved. Read
+`size.heavyShare` is the share of the tree's function lines that sit in
+those functions, and `size.score` is 10 minus the share of listed trees
+with a strictly smaller `heavyShare`, divided by 10: 10.00 when no
+function is over a threshold, 0.00 when the tree is heavier than every
+listed one (`size.sample.heavyShares` holds the listed trees' shares). It
+is line-weighted, so splitting a long function into short ones raises it
+and adding small functions beside a long one barely moves it. When the
+owner asks for simpler code, start with the top of `size.over`, and read
+the score before and after as the measure of the change; it is a position
+among listed plugins, not a grade, so never tell the owner a score is good
+or bad, only that it moved. Read
 the document, not the report: the report a person sees lists at most five
 sites per class and drops classes under five percent, `--full` prints every
 site, and `--json` carries all of it either way.
