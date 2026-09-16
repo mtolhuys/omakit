@@ -153,7 +153,7 @@ test("long functions come first, longest first, over the measured thresholds, an
   assert.match(report, /^ {8}scripts\/helper\.sh:8  decide {4}21 lines, 9 branches, nesting 3, rank \d+$/m)
   assert.match(report, /^ {8}Widget\.qml:12 {8}classify {2}20 lines, 6 branches, nesting 3, rank \d+$/m)
   assert.match(report.replace(/\n {14}/g, " "), /^size score {4}0\.00 of 10; 87% of its function lines sit in functions over the measured size, less than 0 of 49 listed trees \(M12\)$/m)
-  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6041 functions stay under: 22 lines, 6 branches or nesting 2 \(M12\)/)
+  assert.match(report.replace(/\n {8}/g, " "), /long functions  2 functions over what 90 of 100 functions in 50 listed trees, 6041 functions stay under: 25 lines, 7 branches or nesting 2 \(M12\)/)
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /^functions {5}observed 4, 2 over/m)
   assert.match(full.replace(/\n {8}/g, " "), /░ info  scripts\/helper\.sh:8  decide, 21 lines, 9 branches, nesting 3, over [\d.]+ of 100 listed/)
@@ -212,6 +212,50 @@ test("the three extraction fixtures: Python depth is relative to the body at any
     assert.equal(document.size.heavyShare, 0)
     assert.equal(document.size.score, 10)
   }
+})
+
+test("the noise fixtures: a Python continuation is not nesting, heredoc and quoted-program bodies are not shell, and a guard is not a branch", async () => {
+  const python = (await documentFor("python-continuation")).document
+  assert.deepEqual(python.observed.functions.map((entry) => [entry.name, entry.lines, entry.depth, entry.branches]), [["link_unused_name", 13, 2, 2], ["deep", 5, 3, 3]])
+  assert.deepEqual(python.size.over.map((entry) => entry.name), ["deep"], "the real nesting-3 function is over the p90 of 2; the continuation one is not")
+  const heredoc = (await documentFor("shell-heredoc")).document
+  assert.deepEqual(heredoc.observed.functions.map((entry) => [entry.name, entry.lines, entry.depth, entry.branches]), [["read_entry", 12, 0, 0], ["theme_inherits", 12, 0, 0]])
+  const guards = (await documentFor("shell-guards")).document
+  assert.deepEqual(guards.observed.functions.map((entry) => [entry.name, entry.lines, entry.depth, entry.branches]), [["require", 9, 0, 0], ["recover", 9, 0, 5]])
+  for (const document of [heredoc, guards]) assert.equal(document.size.score, 10)
+})
+
+test("the shell scanner's corners: quotes, comments, here-strings and heredoc delimiters, none of which swallows a later function; and the guard rule's edges", () => {
+  // Each of these once opened a string or a heredoc that ran to the end of the file: a `'` inside double quotes, a `#` inside quotes, a `#` after a case pattern's `)`, `$'it\'s'`, a here-string `<<< word`, `<<EOF` inside a string, a delimiter with a `-`, `<<` in arithmetic.
+  const shell = (text) => extractFunctions({ path: "c.sh", kind: "shell", text }).map((entry) => [entry.name, entry.lines, entry.depth, entry.branches])
+  const tail = "  if x; then y; fi\n}\nb() {\n  c\n}\n"
+  assert.deepEqual(shell("a() {\n  [[ $url != *'#'* && $url != *'\\\\'* ]] || return 1\n  fail \"it's broken\" # don't\n" + tail), [["a", 5, 1, 2], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  case $x in\n    y)# don't\n      z ;;\n  esac\n" + tail), [["a", 7, 1, 2], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  printf $'it\\'s\\n'\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  read -r x <<< yes\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  echo \"cat <<EOF\"\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  cat <<'END-HELP'\nif x\nEND-HELP\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  (( x = y << 2 ))\n" + tail), [["a", 4, 1, 1], ["b", 3, 0, 0]])
+  // A heredoc body may hold a `}` at the function's indent; a `<<-` body may be tab-indented, delimiter included.
+  assert.deepEqual(shell("a() {\n  cat <<EOF\n}\nif y\nEOF\n" + tail), [["a", 7, 1, 1], ["b", 3, 0, 0]])
+  assert.deepEqual(shell("a() {\n  cat <<-EOF\n\tif y\n\tEOF\n" + tail), [["a", 6, 1, 1], ["b", 3, 0, 0]])
+  // The opening line of a string that spans lines is data from the quote on.
+  assert.deepEqual(shell("a() {\n  python3 -c 'if x:\n    for y in z: pass'\n  q\n}\n"), [["a", 5, 0, 0]])
+  // A guard is only a guard with nothing else after the flow word; a status may be a number, `$?` or a variable; `;;` may follow; `$(...)` in the test is not a case arm. Four real branches here: `returns`, the braced group, the `&& y`, and the case arm.
+  const tails = extractFunctions({ path: "t.sh", kind: "shell", text: "f() {\n  x || exit 1\n  x || exit $?\n  x || exit \"$code\"\n  x || return ${rc}\n  x && :\n  [[ $(id -u) -eq 0 ]] || return 1\n  y || return 1 ;;\n  x || returns\n  x || { echo no; exit 1; }\n  x || return 1 && y\n  a|b) y ;;\n}\n" })
+  assert.deepEqual(tails.map((entry) => entry.branches), [4])
+})
+
+test("the Python continuation's corners: a bracket in a docstring or a triple-quoted text, a def whose parameters span lines, a backslash, and a bracket never closed; none runs into the next def", () => {
+  const python = (text) => extractFunctions({ path: "p.py", kind: "python", text }).map((entry) => [entry.name, entry.lines, entry.depth, entry.branches])
+  const next = "\n\ndef b():\n    return 2\n"
+  assert.deepEqual(python("def a(c):\n    c.execute(\"\"\"\n        select (1\n    \"\"\")\n    return 1" + next), [["a", 5, 0, 0], ["b", 2, 0, 0]])
+  assert.deepEqual(python("def a(c):\n    c.execute(\"\"\"\nselect 1\n\"\"\")\n    return 1" + next), [["a", 5, 0, 0], ["b", 2, 0, 0]], "a text at column 0 inside the string is still the function's")
+  assert.deepEqual(python("def a():\n    \"\"\"Uses ( a bracket.\n    more\n    \"\"\"\n    if x:\n        y()" + next), [["a", 6, 1, 1], ["b", 2, 0, 0]])
+  assert.deepEqual(python("def a(\n    x,\n    y,\n):\n    if x:\n        for z in y:\n            pass" + next), [["a", 7, 2, 2], ["b", 2, 0, 0]])
+  assert.deepEqual(python("def a(x):\n    if x and \\\n            y:\n        pass\n    return 1" + next), [["a", 5, 1, 1], ["b", 2, 0, 0]])
+  assert.deepEqual(python("def a(x):\n    if (x\n        and y\n        or z):\n        pass" + next), [["a", 5, 1, 3], ["b", 2, 0, 0]], "branches on a continuation line still count")
+  assert.deepEqual(python("def a(x):\n    foo(\n    return 1" + next), [["a", 3, 0, 0], ["b", 2, 0, 0]], "a bracket never closed ends at the next def, not at the end of the file")
 })
 
 test("functions: the extractor counts lines, branches and nesting in QML and JavaScript, shell and Python, and overSize orders longest first", () => {

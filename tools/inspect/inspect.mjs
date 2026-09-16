@@ -143,8 +143,9 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     // 100 functions in listed trees stay under; never a judgement.
     size: {
       measurement: SIZE.measurement,
-      // The listed trees' own heavy shares, so the score can be read from
-      // the document alone: `heavyShares[i]` is the i-th listed tree's.
+      // The listed trees' own heavy shares, in the record's row order and
+      // only for the trees with a function, so the score can be read from
+      // the document alone.
       sample: { trees: SIZE.trees, functions: SIZE.functions, heavyShares: [...SIZE.distribution.heavyShare] },
       thresholds: { lines: SIZE.lines, branches: SIZE.branches, depth: SIZE.depth },
       // The share of this tree's function lines inside functions over the

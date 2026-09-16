@@ -41,7 +41,8 @@ reviewer who is handed the same list reads the tree faster.
 - Not a grader. It prints one number about the plugin, the size score,
   and that number is a position, not a grade: the share of the plugin's
   function lines that sit in functions over the M12 thresholds, placed
-  among the same share in 50 listed trees, so a tree with no function over
+  among the same share in the listed trees that have a function (49 of
+  50), so a tree with no function over
   them scores 10.00, a tree heavier than every listed tree 0.00, and a long
   function split into short ones raises it while small functions added
   beside a long one barely move it. It says where the tree sits among
@@ -120,7 +121,7 @@ interval that is an expression), `▓ note` for a review class row, and
 Two views of the one document. The default is what needs attention,
 biggest first, under the subject, the baseline outcome and the size score.
 First the long functions: every function over what 90 of
-100 functions in 50 listed trees stay under (22 lines, 6 branches or
+100 functions in 50 listed trees stay under (25 lines, 7 branches or
 nesting 2, M12), longest first, up to five, each with its name, its lines,
 its branches and its nesting; that block comes first because length is
 what the person reading asks about first, and the heading names the

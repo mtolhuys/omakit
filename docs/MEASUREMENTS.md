@@ -884,21 +884,28 @@ and JavaScript; a `name() {` or `function name` block in shell; a `def` in
 Python. For each, the length in lines from its first line to its last, the
 deepest nesting below its body, and the branches in it (`if`, `else if`,
 `for`, `while`, `switch`, `case`, `catch`, `&&`, `||`, `?:` and their shell
-and Python equivalents). Three shell and Python shapes are read as what
-they are rather than as control flow: in shell, a `||` or `&&` followed by
-one flow word (`return`, `exit`, `continue`, `break`, `true`, `false`,
-`:`) with an optional status and nothing else on the line is a guard and
-not a branch, so `[[ -f $x ]] || return 1` counts 0; the body of a heredoc
-up to its delimiter, and a quoted string that spans lines (an awk or
-Python program in single quotes), count toward the length and toward
-nothing else; in Python, a line that starts while a bracket is open is a
-continuation of the statement above it and never a nesting level. The
-quantiles are nearest-rank over all 6041 pooled:
+and Python equivalents). Shell and Python shapes that are data or a
+continuation are read as such rather than as control flow. In shell, a
+`||` or `&&` followed by one flow word (`return`, `exit`, `continue`,
+`break`, `true`, `false`, `:`) with an optional status (a number, `$?` or
+a variable) and nothing else on the line but a `;` or the `;;` that ends a
+case arm is a guard and not a branch, so `[[ -f $x ]] || return 1` counts
+0 and `x || returns` counts 1; the body of a heredoc up to its delimiter
+alone on a line, and a quoted string that spans lines (an awk or Python
+program in single quotes, a remote command in double quotes) from its
+opening quote to the line that closes it, count toward the length and
+toward nothing else; a case arm is a `)` with text after it on a line
+with no `(` before it, so `$(...)` in a test is not one. In Python, a line
+that starts while a bracket is open, inside a triple-quoted string, or
+after a line ending in a backslash is a continuation of the statement
+above it, and a def's parameter list spanning lines is a continuation of
+the def: it counts toward the length and the branches and never toward
+nesting. The quantiles are nearest-rank over all 6041 pooled:
 
 | | p50 | p75 | p90 | p95 | max |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| lines | 7 | 12 | 22 | 34 | 495 |
-| branches | 1 | | 6 | | 87 |
+| lines | 7 | 13 | 25 | 40 | 495 |
+| branches | 1 | | 7 | | 85 |
 | nesting | 0 | | 2 | | 7 |
 
 The [record](evidence/inspect/2026-09-16-function-lengths.json) carries,
@@ -911,8 +918,8 @@ there would lift every other tree's rank); the histogram of each measure;
 and the method. Three trees hold nearly half the functions
 (1,130, 1,090 and 619, QML and Python), which the pooling takes as it is: a
 listed function is a listed function whichever tree it is in. Of the 49
-heavy shares, 6 are 0 with functions in the tree and stay, the median is
-0.42 and the largest 0.84.
+heavy shares, 7 are 0 with functions in the tree and stay, the median is
+0.36 and the largest 0.84.
 
 Three earlier records are in the file's history. The 0.5.0 record (commit
 `7df451a`; 6041 functions, the same three p90 values, nesting max 18,
@@ -924,8 +931,15 @@ body is a Python heredoc read as 9 branches and nesting 4 from the
 Python's `if`, `for` and `with` lines, and an awk program in single quotes
 the same way; a 233-line shell function of `|| return 1` guards read as
 131 branches, 19 after the fix; and the tree with no function sat in the
-sample as a share of 0. The fixes moved no p90; the nesting max fell from
-18 to 7 and the branches max from 87 to 85. The 0.4.3 record (commit
+sample as a share of 0. A fifth, found while reviewing the fix: a `def`
+whose parameter list spans lines was read as its signature only, four to
+nine lines at depth 0, so a 217-line `send` in a vendored library counted
+as five. Reading such a def through to its body is what moved the p90s:
+178 Python functions in the sample grew, none shrank and none was lost,
+most of them in the one tree that vendors that library (1,090 functions),
+so the line p90 went from 22 to 25 and the branch p90 from 6 to 7 while
+nesting stayed at 2. The nesting max fell from 18 to 7 and the branches
+max from 87 to 85. The 0.4.3 record (commit
 `6619c26`; 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3)
 was made with three extraction faults, each of which moved a measure
 without the code changing shape, so it was re-measured rather than kept: a
@@ -942,10 +956,13 @@ quantiles did not move. Limits, stated: a function is still what a regular
 expression recognises, so an anonymous callback, a method whose parameter
 list spans lines and a shell function declared on one line are not
 counted; the literal test reads the text before a brace and is not a
-parser; the shell line scanner tracks quotes and a comment start but not
-`$(...)` nesting, so a quote inside a command substitution can open a
-string the scanner then reads to its close; the sample is 50 trees and
-the p90 is one number from them.
+parser; the shell line scanner tracks quotes, a comment start and the
+first heredoc on a line, so a second heredoc on the same line is read as
+shell, and a heredoc whose delimiter never comes (a syntax error in bash)
+runs to the end of the file; a Python continuation cannot run past a
+statement at the def's indent, so a miscounted bracket ends the function
+early rather than late; the sample is 50 trees and the p90 is one number
+from them.
 
 `tools/inspect/patterns.mjs` carries the same three histograms and the 49
 heavy shares as data, held equal to the record by the unit tests, so a
@@ -957,7 +974,7 @@ of listed trees with a share and a strictly smaller one, and the report
 says "of 49 listed trees" for that reason.
 
 Used by: the `long functions` block of `omakit inspect`, which lists a
-function when it is over the p90 of any of the three (22 lines, 6 branches,
+function when it is over the p90 of any of the three (25 lines, 7 branches,
 nesting 2), longest first, each with its rank, and says so in its heading;
 and the size score, 10 minus the tree's rank divided by ten, two decimals,
 printed under the baseline line. The score is line-weighted on purpose. The

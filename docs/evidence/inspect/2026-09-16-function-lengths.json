@@ -2,7 +2,7 @@
   "measurement": "M12",
   "date": "2026-09-16",
   "command": "node tools/inspect/measure-functions.mjs",
-  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule), each fetched read-only at that commit in reviewer mode. A function is a `function name(`, a named arrow function (`const load = (rows) => {`, `this.load = rows => {`), a method shorthand `load(rows) {` inside an object literal or a class, or a multi-line `onSomething: {` handler in QML and JavaScript; a `name() {` or `function name` block in shell; a `def` in Python. Anonymous callbacks are not counted. Lines are first to last line inclusive; depth is the deepest nesting below the body, the body itself at 0 in every language, a brace that opens an object or array literal or an inline arrow body not a level; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). In shell, a ",
+  "method": "extractFunctions from tools/inspect/functions.mjs over the first 50 distinct repositories in the pinned catalog's order whose listing is community, laid out as a root plugin and carrying a validated commit (the 2026-09-15 inspect record's rule), each fetched read-only at that commit in reviewer mode. A function is a `function name(`, a named arrow function (`const load = (rows) => {`, `this.load = rows => {`), a method shorthand `load(rows) {` inside an object literal or a class, or a multi-line `onSomething: {` handler in QML and JavaScript; a `name() {` or `function name` block in shell; a `def` in Python. Anonymous callbacks are not counted. Lines are first to last line inclusive; depth is the deepest nesting below the body, the body itself at 0 in every language, a brace that opens an object or array literal or an inline arrow body not a level; branches count if, else if, for, while, switch, case, catch, &&, || and ?: (their shell and Python equivalents). In shell, a `||` or `&&` followed by one flow word (return, exit, continue, break, true, false, :) with an optional status (a number, `$?` or a variable) and nothing else on the line but a `;` or `;;` is a guard and not a branch; the body of a heredoc up to its delimiter, and a quoted string that spans lines from its opening quote to the line that closes it, count toward the length and toward nothing else; a case arm is a `)` with text after it on a line with no `(` before it. In Python, a line that starts while a bracket is open, inside a triple-quoted string, or after a line ending in a backslash is a continuation of the statement above it, and a def's own parameter list spanning lines is a continuation of the def: it counts toward the length and the branches and never toward nesting. Quantiles are nearest-rank over every function in the sample pooled, not per tree. `distribution` is the histogram of each measure over the same functions, value to count, from which a function's percentile rank is read. Per tree, functionLines is the lines inside every function, heavyLines the lines inside functions over any p90 threshold of this record, and heavyShare their ratio, null with no function; the size score of omakit inspect is a tree's position among the non-null heavyShares.",
   "sample": {
     "trees": 50,
     "functions": 6041,
@@ -11,9 +11,9 @@
   "quantiles": {
     "lines": {
       "p50": 7,
-      "p75": 12,
-      "p90": 22,
-      "p95": 34,
+      "p75": 13,
+      "p90": 25,
+      "p95": 40,
       "max": 495
     },
     "depth": {
@@ -23,191 +23,209 @@
     },
     "branches": {
       "p50": 1,
-      "p90": 6,
+      "p90": 7,
       "max": 85
     }
   },
   "distribution": {
     "lines": {
       "1": 330,
-      "2": 185,
-      "3": 682,
-      "4": 659,
-      "5": 629,
-      "6": 515,
-      "7": 420,
-      "8": 339,
+      "2": 163,
+      "3": 668,
+      "4": 620,
+      "5": 584,
+      "6": 508,
+      "7": 413,
+      "8": 337,
       "9": 301,
-      "10": 235,
-      "11": 192,
+      "10": 238,
+      "11": 195,
       "12": 138,
-      "13": 150,
-      "14": 129,
-      "15": 104,
+      "13": 152,
+      "14": 131,
+      "15": 106,
       "16": 75,
-      "17": 84,
-      "18": 64,
-      "19": 70,
-      "20": 48,
+      "17": 86,
+      "18": 62,
+      "19": 71,
+      "20": 57,
       "21": 51,
-      "22": 46,
-      "23": 45,
-      "24": 42,
-      "25": 27,
-      "26": 25,
-      "27": 16,
-      "28": 24,
-      "29": 24,
+      "22": 56,
+      "23": 47,
+      "24": 44,
+      "25": 33,
+      "26": 28,
+      "27": 24,
+      "28": 26,
+      "29": 27,
       "30": 17,
-      "31": 18,
-      "32": 23,
+      "31": 21,
+      "32": 22,
       "33": 18,
-      "34": 19,
-      "35": 10,
+      "34": 23,
+      "35": 11,
       "36": 5,
-      "37": 11,
-      "38": 12,
-      "39": 12,
+      "37": 16,
+      "38": 13,
+      "39": 13,
       "40": 9,
-      "41": 10,
+      "41": 13,
       "42": 12,
-      "43": 9,
-      "44": 8,
-      "45": 7,
+      "43": 11,
+      "44": 9,
+      "45": 8,
       "46": 14,
       "47": 8,
       "48": 11,
-      "49": 8,
+      "49": 7,
       "50": 6,
-      "51": 2,
+      "51": 1,
       "52": 2,
       "53": 6,
-      "54": 2,
+      "54": 3,
       "55": 7,
       "56": 4,
       "57": 3,
       "58": 5,
-      "60": 6,
-      "61": 2,
+      "59": 3,
+      "60": 8,
+      "61": 5,
       "62": 3,
       "63": 6,
-      "64": 1,
+      "64": 2,
       "65": 3,
       "66": 1,
       "67": 3,
       "68": 4,
-      "69": 8,
-      "70": 5,
-      "71": 6,
-      "72": 2,
-      "73": 2,
-      "74": 1,
+      "69": 9,
+      "70": 7,
+      "71": 7,
+      "72": 3,
+      "73": 3,
+      "74": 3,
       "75": 1,
       "76": 1,
-      "77": 1,
-      "78": 1,
+      "77": 2,
+      "78": 2,
       "79": 3,
-      "80": 1,
-      "81": 3,
-      "82": 1,
+      "80": 3,
+      "81": 4,
+      "82": 3,
       "83": 1,
       "85": 1,
-      "87": 1,
+      "86": 3,
+      "87": 3,
+      "88": 1,
       "89": 1,
-      "90": 2,
+      "90": 3,
       "91": 2,
-      "92": 1,
+      "92": 2,
+      "93": 2,
       "94": 1,
-      "96": 2,
+      "96": 3,
       "97": 2,
       "98": 1,
       "99": 1,
       "100": 1,
+      "101": 3,
       "102": 2,
-      "104": 1,
+      "104": 2,
+      "107": 2,
       "108": 1,
+      "109": 2,
       "110": 2,
-      "111": 1,
-      "112": 1,
-      "113": 1,
-      "115": 2,
+      "111": 2,
+      "112": 2,
+      "113": 2,
+      "115": 3,
       "116": 1,
-      "117": 1,
+      "117": 2,
       "119": 1,
       "120": 1,
       "121": 1,
-      "128": 1,
+      "125": 1,
+      "126": 1,
+      "128": 2,
       "129": 1,
-      "133": 2,
+      "133": 1,
       "134": 1,
+      "142": 1,
       "144": 1,
       "145": 1,
       "154": 1,
-      "161": 1,
-      "162": 1,
+      "155": 1,
+      "161": 2,
       "173": 1,
+      "217": 2,
       "253": 1,
+      "272": 1,
       "277": 1,
+      "290": 1,
       "292": 1,
+      "298": 1,
+      "325": 1,
       "365": 1,
       "495": 1
     },
     "branches": {
-      "0": 2377,
-      "1": 1112,
-      "2": 806,
-      "3": 453,
-      "4": 330,
-      "5": 225,
-      "6": 170,
-      "7": 125,
-      "8": 85,
-      "9": 71,
-      "10": 47,
-      "11": 48,
+      "0": 2217,
+      "1": 1135,
+      "2": 831,
+      "3": 459,
+      "4": 344,
+      "5": 238,
+      "6": 179,
+      "7": 134,
+      "8": 98,
+      "9": 70,
+      "10": 49,
+      "11": 55,
       "12": 25,
-      "13": 24,
-      "14": 15,
-      "15": 9,
-      "16": 16,
-      "17": 13,
-      "18": 11,
-      "19": 11,
-      "20": 12,
+      "13": 33,
+      "14": 19,
+      "15": 11,
+      "16": 20,
+      "17": 17,
+      "18": 13,
+      "19": 13,
+      "20": 11,
       "21": 6,
       "22": 4,
-      "23": 4,
-      "24": 6,
+      "23": 7,
+      "24": 7,
       "25": 2,
       "26": 1,
       "27": 5,
-      "28": 4,
-      "29": 3,
+      "28": 5,
+      "29": 4,
       "31": 1,
-      "32": 3,
-      "33": 2,
-      "35": 1,
+      "32": 2,
+      "33": 3,
+      "35": 2,
       "36": 3,
-      "38": 1,
-      "39": 1,
+      "37": 1,
+      "38": 2,
       "40": 1,
+      "41": 1,
+      "42": 1,
       "43": 1,
-      "45": 1,
-      "48": 1,
-      "58": 1,
+      "44": 1,
+      "45": 2,
+      "48": 3,
+      "49": 1,
       "64": 1,
       "75": 1,
       "78": 1,
       "85": 1
     },
     "depth": {
-      "0": 3969,
-      "1": 1439,
-      "2": 454,
-      "3": 115,
-      "4": 37,
-      "5": 22,
-      "6": 4,
+      "0": 3856,
+      "1": 1478,
+      "2": 483,
+      "3": 141,
+      "4": 49,
+      "5": 28,
+      "6": 5,
       "7": 1
     }
   },
@@ -236,11 +254,11 @@
         "shell": 0,
         "python": 9
       },
-      "longest": 133,
+      "longest": 101,
       "medianLines": 4,
-      "functionLines": 398,
-      "heavyLines": 155,
-      "heavyShare": 0.3894
+      "functionLines": 366,
+      "heavyLines": 123,
+      "heavyShare": 0.3361
     },
     {
       "row": 3,
@@ -251,11 +269,11 @@
         "shell": 0,
         "python": 8
       },
-      "longest": 162,
+      "longest": 128,
       "medianLines": 4.5,
-      "functionLines": 439,
-      "heavyLines": 198,
-      "heavyShare": 0.451
+      "functionLines": 405,
+      "heavyLines": 164,
+      "heavyShare": 0.4049
     },
     {
       "row": 4,
@@ -284,8 +302,8 @@
       "longest": 50,
       "medianLines": 6.5,
       "functionLines": 339,
-      "heavyLines": 125,
-      "heavyShare": 0.3687
+      "heavyLines": 89,
+      "heavyShare": 0.2625
     },
     {
       "row": 6,
@@ -299,8 +317,8 @@
       "longest": 52,
       "medianLines": 7,
       "functionLines": 499,
-      "heavyLines": 206,
-      "heavyShare": 0.4128
+      "heavyLines": 182,
+      "heavyShare": 0.3647
     },
     {
       "row": 7,
@@ -329,8 +347,8 @@
       "longest": 91,
       "medianLines": 6,
       "functionLines": 347,
-      "heavyLines": 214,
-      "heavyShare": 0.6167
+      "heavyLines": 189,
+      "heavyShare": 0.5447
     },
     {
       "row": 9,
@@ -344,8 +362,8 @@
       "longest": 23,
       "medianLines": 8,
       "functionLines": 167,
-      "heavyLines": 44,
-      "heavyShare": 0.2635
+      "heavyLines": 23,
+      "heavyShare": 0.1377
     },
     {
       "row": 10,
@@ -404,8 +422,8 @@
       "longest": 23,
       "medianLines": 5,
       "functionLines": 316,
-      "heavyLines": 61,
-      "heavyShare": 0.193
+      "heavyLines": 0,
+      "heavyShare": 0
     },
     {
       "row": 14,
@@ -419,8 +437,8 @@
       "longest": 63,
       "medianLines": 13,
       "functionLines": 361,
-      "heavyLines": 254,
-      "heavyShare": 0.7036
+      "heavyLines": 215,
+      "heavyShare": 0.5956
     },
     {
       "row": 15,
@@ -434,8 +452,8 @@
       "longest": 50,
       "medianLines": 9,
       "functionLines": 1083,
-      "heavyLines": 488,
-      "heavyShare": 0.4506
+      "heavyLines": 440,
+      "heavyShare": 0.4063
     },
     {
       "row": 16,
@@ -448,9 +466,9 @@
       },
       "longest": 108,
       "medianLines": 6,
-      "functionLines": 846,
-      "heavyLines": 410,
-      "heavyShare": 0.4846
+      "functionLines": 866,
+      "heavyLines": 369,
+      "heavyShare": 0.4261
     },
     {
       "row": 17,
@@ -464,8 +482,8 @@
       "longest": 55,
       "medianLines": 6,
       "functionLines": 317,
-      "heavyLines": 160,
-      "heavyShare": 0.5047
+      "heavyLines": 128,
+      "heavyShare": 0.4038
     },
     {
       "row": 18,
@@ -479,8 +497,8 @@
       "longest": 71,
       "medianLines": 9,
       "functionLines": 178,
-      "heavyLines": 95,
-      "heavyShare": 0.5337
+      "heavyLines": 71,
+      "heavyShare": 0.3989
     },
     {
       "row": 19,
@@ -509,8 +527,8 @@
       "longest": 110,
       "medianLines": 6,
       "functionLines": 827,
-      "heavyLines": 548,
-      "heavyShare": 0.6626
+      "heavyLines": 516,
+      "heavyShare": 0.6239
     },
     {
       "row": 21,
@@ -554,8 +572,8 @@
       "longest": 35,
       "medianLines": 6,
       "functionLines": 806,
-      "heavyLines": 286,
-      "heavyShare": 0.3548
+      "heavyLines": 251,
+      "heavyShare": 0.3114
     },
     {
       "row": 24,
@@ -569,8 +587,8 @@
       "longest": 65,
       "medianLines": 7,
       "functionLines": 901,
-      "heavyLines": 320,
-      "heavyShare": 0.3552
+      "heavyLines": 289,
+      "heavyShare": 0.3208
     },
     {
       "row": 25,
@@ -599,8 +617,8 @@
       "longest": 72,
       "medianLines": 7,
       "functionLines": 647,
-      "heavyLines": 440,
-      "heavyShare": 0.6801
+      "heavyLines": 429,
+      "heavyShare": 0.6631
     },
     {
       "row": 27,
@@ -614,8 +632,8 @@
       "longest": 94,
       "medianLines": 9,
       "functionLines": 6606,
-      "heavyLines": 1679,
-      "heavyShare": 0.2542
+      "heavyLines": 1339,
+      "heavyShare": 0.2027
     },
     {
       "row": 28,
@@ -628,9 +646,9 @@
       },
       "longest": 55,
       "medianLines": 6,
-      "functionLines": 1500,
-      "heavyLines": 486,
-      "heavyShare": 0.324
+      "functionLines": 1524,
+      "heavyLines": 410,
+      "heavyShare": 0.269
     },
     {
       "row": 29,
@@ -644,8 +662,8 @@
       "longest": 45,
       "medianLines": 6,
       "functionLines": 807,
-      "heavyLines": 345,
-      "heavyShare": 0.4275
+      "heavyLines": 269,
+      "heavyShare": 0.3333
     },
     {
       "row": 30,
@@ -659,8 +677,8 @@
       "longest": 116,
       "medianLines": 6,
       "functionLines": 722,
-      "heavyLines": 477,
-      "heavyShare": 0.6607
+      "heavyLines": 400,
+      "heavyShare": 0.554
     },
     {
       "row": 31,
@@ -674,8 +692,8 @@
       "longest": 65,
       "medianLines": 6,
       "functionLines": 1217,
-      "heavyLines": 526,
-      "heavyShare": 0.4322
+      "heavyLines": 423,
+      "heavyShare": 0.3476
     },
     {
       "row": 32,
@@ -689,8 +707,8 @@
       "longest": 365,
       "medianLines": 10,
       "functionLines": 4707,
-      "heavyLines": 3267,
-      "heavyShare": 0.6941
+      "heavyLines": 3123,
+      "heavyShare": 0.6635
     },
     {
       "row": 33,
@@ -719,8 +737,8 @@
       "longest": 98,
       "medianLines": 5,
       "functionLines": 511,
-      "heavyLines": 267,
-      "heavyShare": 0.5225
+      "heavyLines": 254,
+      "heavyShare": 0.4971
     },
     {
       "row": 35,
@@ -749,8 +767,8 @@
       "longest": 34,
       "medianLines": 5,
       "functionLines": 301,
-      "heavyLines": 44,
-      "heavyShare": 0.1462
+      "heavyLines": 34,
+      "heavyShare": 0.113
     },
     {
       "row": 37,
@@ -779,8 +797,8 @@
       "longest": 41,
       "medianLines": 7.5,
       "functionLines": 251,
-      "heavyLines": 146,
-      "heavyShare": 0.5817
+      "heavyLines": 131,
+      "heavyShare": 0.5219
     },
     {
       "row": 39,
@@ -794,8 +812,8 @@
       "longest": 44,
       "medianLines": 5.5,
       "functionLines": 387,
-      "heavyLines": 228,
-      "heavyShare": 0.5891
+      "heavyLines": 186,
+      "heavyShare": 0.4806
     },
     {
       "row": 40,
@@ -807,10 +825,10 @@
         "python": 33
       },
       "longest": 90,
-      "medianLines": 10.5,
-      "functionLines": 827,
-      "heavyLines": 345,
-      "heavyShare": 0.4172
+      "medianLines": 11,
+      "functionLines": 837,
+      "heavyLines": 297,
+      "heavyShare": 0.3548
     },
     {
       "row": 41,
@@ -839,8 +857,8 @@
       "longest": 154,
       "medianLines": 6,
       "functionLines": 9341,
-      "heavyLines": 2634,
-      "heavyShare": 0.282
+      "heavyLines": 2231,
+      "heavyShare": 0.2388
     },
     {
       "row": 43,
@@ -854,8 +872,8 @@
       "longest": 71,
       "medianLines": 8,
       "functionLines": 311,
-      "heavyLines": 175,
-      "heavyShare": 0.5627
+      "heavyLines": 153,
+      "heavyShare": 0.492
     },
     {
       "row": 44,
@@ -869,8 +887,8 @@
       "longest": 49,
       "medianLines": 5,
       "functionLines": 1669,
-      "heavyLines": 494,
-      "heavyShare": 0.296
+      "heavyLines": 377,
+      "heavyShare": 0.2259
     },
     {
       "row": 45,
@@ -884,8 +902,8 @@
       "longest": 120,
       "medianLines": 6,
       "functionLines": 2888,
-      "heavyLines": 1121,
-      "heavyShare": 0.3882
+      "heavyLines": 963,
+      "heavyShare": 0.3334
     },
     {
       "row": 46,
@@ -896,11 +914,11 @@
         "shell": 0,
         "python": 761
       },
-      "longest": 144,
-      "medianLines": 7,
-      "functionLines": 14911,
-      "heavyLines": 8137,
-      "heavyShare": 0.5457
+      "longest": 325,
+      "medianLines": 10,
+      "functionLines": 22569,
+      "heavyLines": 15133,
+      "heavyShare": 0.6705
     },
     {
       "row": 47,
@@ -914,8 +932,8 @@
       "longest": 292,
       "medianLines": 10,
       "functionLines": 5966,
-      "heavyLines": 4035,
-      "heavyShare": 0.6763
+      "heavyLines": 3802,
+      "heavyShare": 0.6373
     },
     {
       "row": 48,
@@ -929,8 +947,8 @@
       "longest": 53,
       "medianLines": 6,
       "functionLines": 447,
-      "heavyLines": 196,
-      "heavyShare": 0.4385
+      "heavyLines": 179,
+      "heavyShare": 0.4004
     },
     {
       "row": 49,
@@ -944,8 +962,8 @@
       "longest": 110,
       "medianLines": 9,
       "functionLines": 515,
-      "heavyLines": 291,
-      "heavyShare": 0.565
+      "heavyLines": 269,
+      "heavyShare": 0.5223
     },
     {
       "row": 50,
@@ -959,9 +977,9 @@
       "longest": 133,
       "medianLines": 7,
       "functionLines": 1495,
-      "heavyLines": 871,
-      "heavyShare": 0.5826
+      "heavyLines": 765,
+      "heavyShare": 0.5117
     }
   ],
-  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. Re-measured on 2026-09-16 after three extraction fixes, so the quantiles are not comparable with the 0.4.3 record (this file at commit 6619c26: 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3; and before it 18 trees, 715 functions, p90 18 lines, 7 branches, nesting 2): a Python body now starts at depth 0 the way a brace body does, where it started at 1; a brace that opens an object or array literal is no longer a nesting level; and a named arrow function or a method shorthand is a function, where only `function name(` and `onSomething: {` were. Re-measured again for 0.5.1 after four more (the 0.5.0 record is this file at commit 7df451a: 6041 functions, p90 22 lines, 6 branches, nesting 2, six heavyShares of 0 among 50): a Python continuation line inside an open bracket no longer counts as nesting; a shell heredoc body and a single-quoted program spanning lines are no longer read as shell; a shell guard (`|| return 1`) is no longer a branch; and a tree with no function carries heavyShare null instead of 0, so it no longer lifts every other tree's rank."
+  "notes": "Rows carry no repository or commit; the selection rule reproduces the set. A function count and a longest length per tree are counts of what the extraction saw, not a judgement of any plugin. Re-measured on 2026-09-16 after three extraction fixes, so the quantiles are not comparable with the 0.4.3 record (this file at commit 6619c26: 50 trees, 6040 functions, p90 22 lines, 6 branches, nesting 3; and before it 18 trees, 715 functions, p90 18 lines, 7 branches, nesting 2): a Python body now starts at depth 0 the way a brace body does, where it started at 1; a brace that opens an object or array literal is no longer a nesting level; and a named arrow function or a method shorthand is a function, where only `function name(` and `onSomething: {` were. Re-measured again for 0.5.1 after four more (the 0.5.0 record is this file at commit 7df451a: 6041 functions, p90 22 lines, 6 branches, nesting 2, six heavyShares of 0 among 50): a Python continuation line inside an open bracket no longer counts as nesting; a shell heredoc body and a quoted program spanning lines are no longer read as shell; a shell guard (`|| return 1`) is no longer a branch; and a tree with no function carries heavyShare null instead of 0, so it no longer lifts every other tree's rank. The first 0.5.1 cut, never released, read a `\"` inside a string and a `\"\"\"` inside a bracket wrongly and stretched two listed Python functions (101 to 133 and 128 to 162 lines); this record is from the corrected scanner."
 }
