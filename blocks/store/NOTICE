@@ -9,4 +9,4 @@ are to be listed here by the plugin's author.
 
 block store 0.1.0, from omakit commit unstamped
   Store.qml  sha256 c71b5646e0b6ccc4b45e5c57a8c7ed08a089319f4ee7d3ce74ef5e28d8af3801
-  store-helper.py  sha256 3ef0c3f5df90ef93d3ff7cdd979159cce590a4a61b3351f42ea5123fa49f0720
+  store-helper.py  sha256 cec3fcc9573ce7c12f1365e106cc65a936e213553bfe4e3128e8a87eea511dc5

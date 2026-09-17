@@ -28,5 +28,11 @@
   "version": "0.1.0",
   "file": "store-helper.py",
   "sha256": "3ef0c3f5df90ef93d3ff7cdd979159cce590a4a61b3351f42ea5123fa49f0720"
+ },
+ {
+  "block": "store",
+  "version": "0.1.0",
+  "file": "store-helper.py",
+  "sha256": "cec3fcc9573ce7c12f1365e106cc65a936e213553bfe4e3128e8a87eea511dc5"
  }
 ]

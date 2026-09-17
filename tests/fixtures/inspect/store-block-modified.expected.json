@@ -258,12 +258,22 @@
       {
         "file": "omakit/store-helper.py",
         "line": 336,
-        "name": "main",
+        "name": "result_of",
         "kind": "function",
-        "lines": 14,
+        "lines": 13,
         "depth": 1,
         "branches": 4,
         "percentile": 78.2
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 351,
+        "name": "main",
+        "kind": "function",
+        "lines": 4,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 19.1
       }
     ]
   },
@@ -382,7 +392,7 @@
     "hosts": 0,
     "writes": 0,
     "timers": 0,
-    "functions": 24,
+    "functions": 25,
     "notResolvable": 0
   },
   "notResolvable": [],

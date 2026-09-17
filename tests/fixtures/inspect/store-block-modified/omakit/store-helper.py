@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Maarten Tolhuijs
 # Source: omakit blocks/store/store-helper.py, commit unstamped
-# Body sha256: 3ef0c3f5df90ef93d3ff7cdd979159cce590a4a61b3351f42ea5123fa49f0720
+# Body sha256: cec3fcc9573ce7c12f1365e106cc65a936e213553bfe4e3128e8a87eea511dc5
 # end of omakit block header
 #
 # The helper behind Store.qml, started through the Run block as
@@ -315,10 +315,10 @@ def remove_file(dir_fd, name):
     return {"state": "ok"}
 
 
-def operate(opts):
+def operate(opts, environ=None):
     check_options(opts)
     schema = json.loads(opts["schema"]) if opts.get("schema") else None
-    fds, path = open_private_directory(opts["kind"], opts["plugin"])
+    fds, path = open_private_directory(opts["kind"], opts["plugin"], environ)
     try:
         if opts["op"] == "read":
             result = read_file(fds[-1], opts["name"], int(opts["max_bytes"]), schema)
@@ -333,10 +333,10 @@ def operate(opts):
     return result
 
 
-def main():
-    opts = parse(sys.argv[1:])
+def result_of(opts, environ=None):
+    """One operation as the result object Store.qml reports: importable by a long-running program that keeps its own state through this file."""
     try:
-        result = operate(opts)
+        result = operate(opts, environ)
     except Refused as why:
         result = {"state": "refused", "reason": str(why)}
     except Invalid as why:
@@ -345,7 +345,12 @@ def main():
         result = {"state": "overflow", "reason": str(why)}
     except (OSError, ValueError) as why:
         result = {"state": "failed", "reason": "%s: %s" % (type(why).__name__, why)}
-    emit(dict(result, ev="result", op=opts["op"]))
+    return dict(result, op=opts["op"])
+
+
+def main():
+    opts = parse(sys.argv[1:])
+    emit(dict(result_of(opts), ev="result"))
     return 0
 
 
