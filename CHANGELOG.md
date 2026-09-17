@@ -2,14 +2,16 @@
 
 ## 0.6.0 (unreleased)
 
-The first block: Run, `blocks/run/`, a `Run.qml` and the supervisor it
-starts through `/usr/bin/python3 -I -S -B`, copied into a plugin with
-`omakit add run`; its contract in `docs/BLOCKS.md` cites, line by line,
-how many review comments in one week asked for it (M13). `omakit inspect`
-recognises an unmodified copy as one row and reads a modified one like any
-other file. The lab suite under `tests/lab/run/` proves it on the desktop
-and on the stock 4.0.3 guest. The sixth skill, `omarchy-plugin-build`.
-Not released; the README still describes 0.5.
+The plumbing plugin reviews block most, built and tested once: the Run
+and Store blocks, `omakit add run` and `omakit add store`, `inspect`
+reading an unmodified block as one row, a Run site as a process with
+its deadline, a Store site as a write at mode 0600, and a Run-started
+helper in the block's closed environment; M13, the 1,001 blocker
+comments the contracts are counted over; the Theme Manager and Sidecar
+ports, neither submitted; the sixth skill; the README, package
+description, tagline and banner rewritten around the blocks. See
+`docs/releases/0.6.0.md`, its limits included. Not released: the
+package stays at 0.5.1 until the release is made.
 
 ## 0.5.1
 
