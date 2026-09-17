@@ -104,7 +104,7 @@ check on parse. Same header, test and recognition rules as Run.
 ### Later, in M13 order, only after the evaluation gate
 
 Pinned artifact installer (336 comments), safe fetch (207), secrets (203),
-plain text (140). Not planned before 2026-10-08.
+plain text (140). Not planned before the evaluation on 2026-10-15.
 
 ## Phases and gates
 
@@ -116,11 +116,11 @@ the date.
 | 0. Direction | 17 Sep | This plan, M13 evidence, branch | Maarten's decisions below |
 | 1. Run spike | 18 to 20 Sep | A throwaway plugin on a real Quattro shell that proves one Run design against five scenarios: a producer writing 1 GB, a descendant holding the pipe open, a program that ignores TERM, a hostile PATH and environment, destroying the component mid-run. Plus: is `/usr/bin/python3` present on a stock 4.0.3 install (lab VM), and does `SplitParser` with an empty marker give byte counts before memory grows | G1: all five scenarios end within deadline plus grace, no orphan survives, no process group signalled after reap; design choice (pure QML with absolute `setsid`/`kill`, or QML plus a Python or bash supervisor) written down with the measurements |
 | 2. Run 0.1 | 21 to 26 Sep | `docs/BLOCKS.md` Run contract with M13 counts, `blocks/run/`, lab tests from the spike made repeatable, `omakit add run [dir]` with `--update`, header and NOTICE, inspect recognition, skill `omarchy-plugin-build` (use Run whenever code starts a process), package ceiling re-measured | G2: lab suite green on the desktop, unit suite green in CI, inspect over a fixture using Run shows no process pattern row at its sites, `add` refuses a modified copy |
-| 3. Proof | 24 Sep to 2 Oct | One of Maarten's own plugins ported to Run on its own branch, checked with verify, submit and inspect before and after, submitted through the normal flow | G3: submitted; the reviewer's outcome is recorded whatever it is, anonymised in evidence. Nobody is asked to look |
-| 4. Store 0.1 | 26 Sep to 4 Oct | Same as phase 2 for Store; Theme Manager, where two of the four blocker comments in the M13 week were file and state, is the proof candidate | G2 for Store |
-| 5. Rebrand release 0.6.0 | when G2 (Run) and G3 hold, target 2 Oct | README, package metadata, docs, skills, banner and GIFs per the section below; release notes; npm and AUR by Maarten | Maarten reads the README and says ship |
+| 3. Proof, Run | 24 Sep to 30 Sep | Theme Manager's 26 QML `Process` blocks ported to Run on its own branch (inspect on 2026-09-17: 23 process-lifecycle sites, 18 unbounded-buffering sites), checked with verify, submit and inspect before and after, submitted through the normal flow | G3: submitted; the reviewer's outcome is recorded whatever it is. Nobody is asked to look |
+| 4. Store 0.1 and its proof | 26 Sep to 6 Oct | Same as phase 2 for Store, then Theme Manager's catalog cache and theme directory writes ported to it (two of its four blocker comments in the M13 week were file and state) | G2 for Store, and the Store port submitted |
+| 5. Rebrand release 0.6.0 | when G2 (Run) and G3 hold, target 1 Oct | README, package metadata, docs, skills, banner and GIFs per the section below; release notes; npm and AUR by Maarten | Maarten reads the README and says ship |
 | 6. Show | from release | One data-led post (M13 aggregate, what Run is, how to add it), reply where builders already talk, the Sunday Space, offer a pointer PR to the skills that carry copy-paste helpers | none |
-| Evaluation | 8 Oct | Three signals: own plugin through review without a process blocker; someone else's plugin using Run; an unprompted outside signal (star, issue, reference, a mention by the maintainer) | Two of three: continue with Store and the next block. None: stop building blocks, offer Run upstream as a pull request instead |
+| Evaluation | 15 Oct | Three signals: Theme Manager's ported commits reviewed without a process or state blocker; someone else's plugin using Run; an unprompted outside signal (star, issue, reference, a mention by the maintainer) | Two of three: continue with Store and the next block. None: stop building blocks, offer Run upstream as a pull request instead |
 
 ## Rebrand
 
@@ -162,11 +162,19 @@ raise it.
 | Scope creep back into seven commands | No new check command until the evaluation |
 | A block encodes a rule that later changes | Blocks are versioned; `omakit add <block> --update` and inspect's version row make an old copy visible |
 
-## Decisions for Maarten
+## Decisions, 2026-09-17
 
-1. Keep the name omakit (recommended), or rename now while the cost is one star.
-2. The line: (a) "Tested building blocks for the plumbing Omarchy plugin reviews block most, and the checks for the rest." (b) "Stop rewriting the plumbing reviewers block." (c) "The review's most common blockers, already handled."
-3. Command shape: `omakit add run` (recommended) or `omakit blocks add run`.
-4. First proof plugin for Run: the one of News Radar, On-Screen Keyboard or Sidecar where `omakit inspect` shows the most process pattern rows.
-5. Sunday Space, 20 Sep: tell the M13 aggregate and ask for three authors with a process blocker to try Run the week after, or keep it to the numbers only.
-6. Release number for the rebrand: 0.6.0 (recommended) or 1.0.0 once Run and Store both hold.
+1. The name stays omakit.
+2. The line, working version until the rebrand release: "The plumbing plugin reviews block most, built and tested once." Candidates still open: "The review's most common blockers, already handled." (reads as a promise that the comment is resolved, which M13 does not support) and "Reviewers keep blocking the same plumbing. Add it tested instead."
+3. The command is `omakit add run`, `omakit add store`, with `--update`.
+4. Theme Manager is the proof plugin for both blocks: the author's most popular plugin, 26 QML `Process` blocks, and an open review with two file-state blockers and one unbounded-fetch blocker in the M13 week. Its supply-chain blocker (mutable catalog entries into theme install) is not a block's job and is fixed on its own.
+5. The Sunday Space of 20 Sep shares the idea and where it is heading, from the M13 aggregate. No request for testers and no dates.
+6. The rebrand ships as 0.6.0. 1.0.0 waits until it holds without exception: Run and Store each through at least three real reviews with no process or state blocker, the lab suite green on two Omarchy releases, no open blocker on any of the author's plugins, and at least one plugin by someone else using a block in the catalog.
+
+## Known limit of the proof plugin
+
+Theme Manager's tree has 469 shell lines that start programs, and Run only
+owns the boundary where QML starts one. Programs a shell helper starts inside
+itself still need absolute paths and a closed environment in that helper.
+The spike records whether Run should offer a small shell prelude for that, or
+leave it to the author with a pointer.
