@@ -263,6 +263,7 @@ export function renderInspect(document, { colour = colourEnabled(), full = false
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}`, c))
   out.push(...uncommittedLine(document, c))
   out.push(...field("baseline", baselineText(document.marketplaceBaseline), c))
+  if (document.blocks.length) out.push(...field("blocks", blocksText(document.blocks), c))
   const score = document.size.score
   out.push(...field("size score", score === null
     ? `none: no function to rank`
@@ -336,6 +337,7 @@ function renderFull(document, { colour }) {
   out.push(...field("subject", `${withHomeAbbreviated(document.subject.dir)} at ${document.subject.commit ? document.subject.commit.slice(0, 8) : "no commit"}, ${plural(total, "file")} read${kinds.length ? ` (${kinds.join(", ")})` : ""}`, c))
   out.push(...uncommittedLine(document, c))
   out.push(...field("method", document.method, c))
+  if (document.blocks.length) out.push(...field("blocks", blocksText(document.blocks), c))
   out.push("")
 
   const sections = [
@@ -370,6 +372,21 @@ function renderFull(document, { colour }) {
 }
 
 /** The process split in words: how many are QML Process sites and how many are shell lines. */
+/**
+ * The omakit blocks in the tree, one clause each: an unmodified block is
+ * its name, version and file count, and its files raised no row; a
+ * modified one names the files whose body is not a shipped one, which
+ * were read like any other file.
+ */
+function blocksText(blocks) {
+  return blocks.map((block) => {
+    const version = block.shippedVersion && block.shippedVersion !== block.version ? `${block.version} (omakit ships ${block.shippedVersion})` : block.version
+    if (block.state === "unmodified") return `${block.name} ${version}, ${plural(block.files.length, "file")}, unmodified${block.complete ? "" : ", incomplete"}: no row of its own`
+    const changed = block.files.filter((file) => file.state === "modified").map((file) => file.path)
+    return `${block.name} ${version}, modified (${changed.join(", ")}): read like any other file`
+  }).join("; ")
+}
+
 function split({ qml, shell }) {
   if (!shell) return qml === 1 ? "in qml" : "all in qml"
   if (!qml) return shell === 1 ? "a shell line" : "all shell lines"

@@ -6,15 +6,15 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-shell-wrapper"
+      "url": "https://github.com/example/omarchy-plugin-fixture-run-block"
     },
     "mode": "author",
-    "pluginId": "fixture.shell-wrapper",
+    "pluginId": "fixture.run-block",
     "filesRead": {
-      "qml": 1,
+      "qml": 2,
       "js": 0,
       "shell": 0,
-      "python": 0,
+      "python": 1,
       "other": 0
     },
     "uncommittedFiles": 0
@@ -23,13 +23,13 @@
     "processes": [
       {
         "file": "Widget.qml",
-        "line": 9,
+        "line": 10,
         "declaredIn": "qml",
-        "id": "notify",
+        "id": "usageRun",
         "argv": [
-          "bash",
-          "-c",
-          "notify-send 'fixture' \"$(date)\""
+          "/usr/bin/df",
+          "-h",
+          "/"
         ],
         "argvForm": "array",
         "expressions": [],
@@ -37,25 +37,58 @@
         "running": true,
         "detached": false,
         "deadline": {
-          "observed": false,
-          "via": null,
-          "ms": null
+          "observed": true,
+          "via": "block-run",
+          "ms": 8000
         },
         "output": {
-          "collector": "none",
-          "capObserved": false,
-          "via": null
+          "collector": "Run",
+          "capObserved": true,
+          "via": "maxBytes"
         },
-        "shellWrapper": true,
-        "pipedFrom": null
+        "shellWrapper": false,
+        "pipedFrom": null,
+        "block": "run"
       }
     ],
     "hosts": [],
     "writes": [],
-    "timers": [],
+    "timers": [
+      {
+        "file": "Widget.qml",
+        "line": 15,
+        "id": "usagePoll",
+        "intervalMs": 30000,
+        "intervalText": null,
+        "repeat": true,
+        "running": true,
+        "triggeredOnStart": true,
+        "startedBy": null
+      }
+    ],
     "functions": []
   },
-  "blocks": [],
+  "blocks": [
+    {
+      "name": "run",
+      "version": "0.1.0",
+      "shippedVersion": "0.1.0",
+      "state": "unmodified",
+      "complete": true,
+      "files": [
+        {
+          "path": "omakit/Run.qml",
+          "state": "unmodified",
+          "version": "0.1.0"
+        },
+        {
+          "path": "omakit/run-supervisor.py",
+          "state": "unmodified",
+          "version": "0.1.0"
+        }
+      ]
+    }
+  ],
   "size": {
     "measurement": "M12",
     "sample": {
@@ -130,44 +163,17 @@
     },
     "hosts": 0,
     "writes": 0,
-    "timers": 0,
+    "timers": 1,
     "functions": 0,
     "notResolvable": 0
   },
   "notResolvable": [],
-  "patterns": [
-    {
-      "id": "process-lifecycle",
-      "observedCount": 1,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 9
-        }
-      ],
-      "observation": "observed 1 process with no deadline (Widget.qml:9)",
-      "summary": "1 process with no deadline",
-      "measurement": "M11",
-      "share": 0.2
-    },
-    {
-      "id": "environment-trust",
-      "observedCount": 1,
-      "sites": [
-        {
-          "file": "Widget.qml",
-          "line": 9
-        }
-      ],
-      "observation": "observed 1 tool resolved from PATH (bash; Widget.qml:9)",
-      "summary": "1 tool resolved from PATH (bash)",
-      "measurement": "M11",
-      "share": 0.07
-    }
-  ],
+  "patterns": [],
   "lookedFor": [
+    "process-lifecycle",
     "unbounded-buffering",
     "file-and-state-boundary",
+    "environment-trust",
     "secrets",
     "supply-chain",
     "network-egress",
@@ -201,8 +207,8 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-shell-wrapper",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-shell-wrapper",
+      "repository": "example/omarchy-plugin-fixture-run-block",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-run-block",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
       "outcome": "passed",

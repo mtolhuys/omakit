@@ -25,6 +25,7 @@ import { extractWrites } from "./writes.mjs"
 import { extractTimers } from "./timers.mjs"
 import { extractFunctions } from "./functions.mjs"
 import { evaluatePatterns, heavyShare, overSize, PATTERNS, rankOf, SIZE, sizeScore } from "./patterns.mjs"
+import { recogniseBlockFile, shippedBlocks } from "../blocks/registry.mjs"
 
 export const METHOD = "static extraction, regular expressions over qml and shell; observed, not executed"
 
@@ -44,6 +45,39 @@ export const NOT_VISIBLE = Object.freeze([
 
 /** The failure codes that mean the target could not be read at all: exit 2, the contract's second status. */
 export const NOT_READABLE = Object.freeze(["subject-not-found", "not-a-git-repository", "commit-not-found", "nothing-to-inspect", "usage"])
+
+/**
+ * The omakit blocks in the tree, read from the files' own headers and
+ * bodies (tools/blocks/registry.mjs): an unmodified copy of a shipped
+ * block is omakit's code, tested in this repository, and its lines are
+ * not extracted, so it raises no row of its own; a copy whose body is not
+ * one omakit shipped is reported as modified and read like any other file.
+ * A block is complete when every file the shipped block has is present.
+ *
+ * @returns {{ blocks: Array<{ name: string, version: string, shippedVersion: string|null, state: "unmodified"|"modified", complete: boolean, files: Array<{ path: string, state: "unmodified"|"modified", version: string }> }>, skip: Set<string> }}
+ */
+export function recogniseBlocks(files) {
+  const shipped = shippedBlocks()
+  const found = new Map()
+  for (const file of files) {
+    const base = file.path.split("/").pop()
+    const seen = recogniseBlockFile(base, file.text, shipped)
+    if (!seen) continue
+    if (!found.has(seen.name)) found.set(seen.name, { name: seen.name, shippedVersion: seen.shippedVersion, files: [] })
+    found.get(seen.name).files.push({ path: file.path, state: seen.state, version: seen.version })
+  }
+  const blocks = []
+  const skip = new Set()
+  for (const entry of [...found.values()].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    const expected = shipped.find((block) => block.name === entry.name)?.files.map((file) => file.file) || []
+    const complete = expected.length > 0 && expected.every((name) => entry.files.some((file) => file.path.split("/").pop() === name))
+    const state = entry.files.every((file) => file.state === "unmodified") ? "unmodified" : "modified"
+    const versions = [...new Set(entry.files.map((file) => file.version))]
+    for (const file of entry.files) if (file.state === "unmodified") skip.add(file.path)
+    blocks.push({ name: entry.name, version: versions.length === 1 ? versions[0] : versions.join(", "), shippedVersion: entry.shippedVersion, state, complete, files: entry.files.sort((a, b) => (a.path < b.path ? -1 : 1)) })
+  }
+  return { blocks, skip }
+}
 
 export class InspectError extends Error {
   constructor(code, message, remedy = null) {
@@ -78,6 +112,10 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   const pluginId = typeof tree.manifest?.id === "string" ? tree.manifest.id.trim() : null
 
   onPhase("reading processes, hosts, writes and timers")
+  const { blocks, skip } = recogniseBlocks(tree.files)
+  // A `Run {` site is a process only where the tree carries the run block
+  // whole and unmodified; otherwise the name is the plugin's own.
+  const runBlock = blocks.some((block) => block.name === "run" && block.state === "unmodified" && block.complete)
   const processes = []
   const hosts = []
   const writes = []
@@ -85,9 +123,10 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   const functions = []
   const notResolvable = []
   for (const file of tree.files) {
+    if (skip.has(file.path)) continue
     // Each function carries its rank among the listed ones (M12).
     functions.push(...extractFunctions(file).map((entry) => ({ ...entry, percentile: rankOf(entry) })))
-    const rows = extractProcesses(file)
+    const rows = extractProcesses(file, { runBlock })
     processes.push(...rows)
     for (const row of rows) {
       if (row.argvForm === "computed") notResolvable.push({ file: row.file, line: row.line, kind: "command", text: `command: ${row.commandText}` })
@@ -138,6 +177,10 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
       uncommittedFiles: subject.uncommittedFiles,
     },
     observed: { processes, hosts, writes, timers, functions },
+    // The omakit blocks in the tree, by their headers and body hashes: an
+    // unmodified block's files were not read for facts (they are omakit's,
+    // tested here), a modified one's were.
+    blocks,
     // Size: the functions over the M12 thresholds, longest first. A count of
     // lines, branches and nesting over the text, compared with what 90 of
     // 100 functions in listed trees stay under; never a judgement.

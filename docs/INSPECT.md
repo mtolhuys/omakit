@@ -312,11 +312,33 @@ expressions       [{ index, text }]   the argv elements that are expressions, no
 commandText       string | null     the expression a computed command was read from
 running           boolean   `running: true`, `<id>.running = true` or `<id>.start()` observed
 detached          boolean   a Quickshell.execDetached call, which has no deadline by design
-deadline          { observed: boolean, via: "timer-kill" | "timeout-argv" | "destruction" | null, ms: number|null }
-output            { collector: "StdioCollector" | "SplitParser" | "none" | "unknown", capObserved: boolean, via: string|null }
+deadline          { observed: boolean, via: "timer-kill" | "timeout-argv" | "destruction" | "block-run" | null, ms: number|null }
+output            { collector: "StdioCollector" | "SplitParser" | "Run" | "none" | "unknown", capObserved: boolean, via: string|null }
 shellWrapper      boolean   true when the tool is sh, bash, zsh, dash, fish or ksh with -c next, or eval
 pipedFrom         { line, argv0 } | null   for a shell site that reads the previous segment's output
+block             "run"     only on a `Run {` site of the omakit run block (BLOCKS.md): its deadline is
+                  the block's (`deadlineMs`, default 10000, via "block-run"), its collector "Run" with the
+                  cap observed via "maxBytes", and a shell string is refused unless `allowShellString: true`
 ```
+
+A `Run {` block is a process site only where the tree carries the omakit
+run block whole and unmodified (`blocks`, below); otherwise the name is the
+plugin's own and the block is not read as a process.
+
+The omakit blocks in the tree (`blocks`, a list, empty when there are none):
+
+```text
+name              the block, from the file headers: "run"
+version           the version the copies name; shippedVersion is the one this omakit ships, or null
+state             "unmodified" when every file's body sha256 is one omakit shipped, else "modified"
+complete          every file the shipped block has is present
+files             [{ path, state, version }]
+```
+
+An unmodified block's files were not read for facts: no process, host,
+write, timer or function row names them, and no pattern row can. A
+modified copy's files are read like any other, and the report says which
+file differs.
 
 A shell script contributes one site per command segment of every line that
 is not a comment, split at `|`, `;`, `&&` and `||`, with a command

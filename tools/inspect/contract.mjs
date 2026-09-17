@@ -11,8 +11,9 @@ import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
 const ARGV_FORMS = new Set(["array", "string", "computed"])
-const DEADLINE_VIA = new Set(["timer-kill", "timeout-argv", "destruction", null])
-const COLLECTORS = new Set(["StdioCollector", "SplitParser", "none", "unknown"])
+const DEADLINE_VIA = new Set(["timer-kill", "timeout-argv", "destruction", "block-run", null])
+const COLLECTORS = new Set(["StdioCollector", "SplitParser", "Run", "none", "unknown"])
+const BLOCK_STATES = new Set(["unmodified", "modified"])
 const CONTROLLED = new Set(["observed", "not-observed", "unknown"])
 const DECLARED_IN = new Set(["qml", "shell"])
 const FILE_KINDS = ["qml", "js", "shell", "python", "other"]
@@ -47,11 +48,12 @@ function processRow(row, at, problems) {
   for (const key of ["running", "detached", "shellWrapper"]) if (!isBool(row[key])) problems.push(`${at}.${key} is not a boolean`)
   const deadline = row.deadline || {}
   if (!isBool(deadline.observed)) problems.push(`${at}.deadline.observed is not a boolean`)
-  if (!DEADLINE_VIA.has(deadline.via)) problems.push(`${at}.deadline.via is not timer-kill, timeout-argv, destruction or null`)
+  if (!DEADLINE_VIA.has(deadline.via)) problems.push(`${at}.deadline.via is not timer-kill, timeout-argv, destruction, block-run or null`)
+  if ((deadline.via === "block-run") !== (row.block === "run")) problems.push(`${at}.deadline.via block-run and block: "run" go together`)
   if (deadline.observed !== (deadline.via !== null)) problems.push(`${at}.deadline.observed disagrees with deadline.via`)
   if (!nullOr(isInt)(deadline.ms)) problems.push(`${at}.deadline.ms is neither an integer nor null`)
   const output = row.output || {}
-  if (!COLLECTORS.has(output.collector)) problems.push(`${at}.output.collector is not StdioCollector, SplitParser, none or unknown`)
+  if (!COLLECTORS.has(output.collector)) problems.push(`${at}.output.collector is not StdioCollector, SplitParser, Run, none or unknown`)
   if (!isBool(output.capObserved)) problems.push(`${at}.output.capObserved is not a boolean`)
   if (!nullOr(isString)(output.via)) problems.push(`${at}.output.via is neither a string nor null`)
   if (output.capObserved !== (output.via !== null)) problems.push(`${at}.output.capObserved disagrees with output.via`)
@@ -199,6 +201,31 @@ export function validateInspectDocument(document, known = {}) {
         for (const row of observed.functions) {
           const over = row.lines > size.thresholds?.lines || row.branches > size.thresholds?.branches || row.depth > size.thresholds?.depth
           if (over && !listed.has(`${row.file}:${row.line}`)) problems.push(`observed.functions at ${row.file}:${row.line} is over a threshold but not under size.over`)
+        }
+      }
+    }
+  }
+  if (!Array.isArray(document.blocks)) problems.push("blocks is not a list")
+  else for (const [index, row] of document.blocks.entries()) {
+    const at = `blocks[${index}]`
+    if (!isString(row.name) || !/^[a-z][a-z0-9-]*$/.test(row.name)) problems.push(`${at}.name is not a block name`)
+    if (!isString(row.version)) problems.push(`${at}.version is not a string`)
+    if (!nullOr(isString)(row.shippedVersion)) problems.push(`${at}.shippedVersion is neither a string nor null`)
+    if (!BLOCK_STATES.has(row.state)) problems.push(`${at}.state is not unmodified or modified`)
+    if (!isBool(row.complete)) problems.push(`${at}.complete is not a boolean`)
+    if (!Array.isArray(row.files) || !row.files.length) problems.push(`${at}.files is not a non-empty list`)
+    else {
+      for (const [fileIndex, file] of row.files.entries()) {
+        if (!isString(file.path)) problems.push(`${at}.files[${fileIndex}].path is not a string`)
+        if (!BLOCK_STATES.has(file.state)) problems.push(`${at}.files[${fileIndex}].state is not unmodified or modified`)
+        if (!isString(file.version)) problems.push(`${at}.files[${fileIndex}].version is not a string`)
+      }
+      if ((row.state === "unmodified") !== row.files.every((file) => file.state === "unmodified")) problems.push(`${at}.state disagrees with its files`)
+      // An unmodified block's files were not read: no row of any kind at them.
+      if (row.state === "unmodified" && observed) {
+        const paths = new Set(row.files.map((file) => file.path))
+        for (const key of ["processes", "hosts", "writes", "timers", "functions"]) {
+          for (const fact of Array.isArray(observed[key]) ? observed[key] : []) if (paths.has(fact.file)) problems.push(`observed.${key} has a row at ${fact.file}:${fact.line}, a file of unmodified block ${row.name}`)
         }
       }
     }

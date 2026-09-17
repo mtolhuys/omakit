@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.run-block",
+  "name": "Fixture: the Run block, unmodified",
+  "version": "0.0.1",
+  "description": "One Run site over an unmodified copy of the omakit run block: the block's files raise no row, and the Run site is a process with its deadline observed through the block.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

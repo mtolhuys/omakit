@@ -1,5 +1,7 @@
 // Process sites: every `Process {` block in QML (its `command:` inside the
-// block or assigned to its id elsewhere in the file), every
+// block or assigned to its id elsewhere in the file), every `Run {` block
+// where the tree carries the omakit run block unmodified (its deadline and
+// caps are the block's, docs/BLOCKS.md), every
 // `Quickshell.execDetached([...])`, and every command line of a shell
 // script. Each row carries the argv the text shows, whether a deadline is
 // observed for it, what collects its output and whether a producer-side
@@ -201,10 +203,35 @@ function detachedRows(file, text) {
   return rows
 }
 
-/** Every `Process {` block and detached exec in a QML file. */
-export function qmlProcesses(file) {
+/**
+ * A `Run {` site of the omakit run block: the deadline is the block's
+ * (`deadlineMs`, default 10000), the caps are the block's (`maxBytes`),
+ * and a shell string is refused unless `allowShellString: true` is on the
+ * block's own line, in which case the wrapper is observed as it would be
+ * on a Process.
+ */
+function runRow(file, text, block) {
+  const inside = propertyValue(block.body, "command")
+  const command = inside && !/^\[\s*\]$/.test(inside.text) ? inside : assignedCommand(text, block.id)
+  const offset = inside && !/^\[\s*\]$/.test(inside.text) ? block.open + 1 + inside.offset : command ? command.offset : null
+  const row = qmlRow(file, text, block, command, offset)
+  const deadline = numeric(propertyValue(block.body, "deadlineMs")?.text)
+  const allowShellString = propertyValue(block.body, "allowShellString")?.text === "true"
+  return {
+    ...row,
+    running: row.running || (block.id ? new RegExp(`(?<![\\w.])${block.id}\\.start\\s*\\(`).test(text) : false),
+    block: "run",
+    deadline: { observed: true, via: "block-run", ms: deadline ?? 10000 },
+    output: { collector: "Run", capObserved: true, via: "maxBytes" },
+    shellWrapper: allowShellString ? row.shellWrapper : false,
+  }
+}
+
+/** Every `Process {` block and detached exec in a QML file; `Run {` blocks too when the tree carries the run block. */
+export function qmlProcesses(file, { runBlock = false } = {}) {
   const text = blankComments(file.text)
   const rows = []
+  if (runBlock) for (const block of blocks(text, "Run")) rows.push(runRow(file, text, block))
   for (const block of blocks(text, "Process")) {
     const inside = propertyValue(block.body, "command")
     // `command: []` is a placeholder for a value set later: the assignment to
@@ -291,8 +318,8 @@ export function shellProcesses(file) {
  * @param {{ path: string, kind: string, text: string }} file
  * @returns {Array} process rows, in file order
  */
-export function extractProcesses(file) {
-  if (file.kind === "qml") return qmlProcesses(file)
+export function extractProcesses(file, options = {}) {
+  if (file.kind === "qml") return qmlProcesses(file, options)
   if (file.kind === "shell") return shellProcesses(file)
   return []
 }

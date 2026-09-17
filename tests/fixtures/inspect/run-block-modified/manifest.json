@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.run-block-modified",
+  "name": "Fixture: the Run block, modified",
+  "version": "0.0.1",
+  "description": "The same widget over a copy of the run block whose Run.qml body was edited: the block is reported modified, its files are read like any other, and the Run site is not a process the extraction knows.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}
