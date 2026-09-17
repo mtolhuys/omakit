@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { changedPinPaths, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
 import { MARKETPLACE_PIN, PIN_PATHS } from "../../tools/marketplace/pin.mjs"
@@ -224,4 +224,25 @@ test("the registry read keeps the failure code for doctor, and upgrade still get
   assert.equal(typeof latestOnRegistry, "function")
   const source = readFileSync(join(REPO_ROOT, "tools/marketplace/upgrade.mjs"), "utf8")
   assert.match(source, /return \(await registryLatest\(name\)\)\.version/, "one read, two callers")
+})
+
+test("blocks.python: the blocks' interpreter is checked at /usr/bin/python3, the absolute path Run.qml starts, as advice when absent", async () => {
+  // Measured: a stock Omarchy 4.0.3 has /usr/bin/python3 as a dependency of
+  // its desktop packages, and Run.qml reports python-missing without it;
+  // nothing omakit itself runs needs it, so an absent one is advice.
+  const report = await doctor({ repoRoot: REPO_ROOT, ...quiet, offline: true })
+  const row = report.checks.find((check) => check.id === "blocks.python")
+  assert.ok(row, "the row is there")
+  const ids = report.checks.map((check) => check.id)
+  assert.ok(ids.indexOf("blocks.python") > ids.indexOf("git"), "after git, before the pin")
+  assert.ok(ids.indexOf("blocks.python") < ids.indexOf("pin.checkout"))
+  if (existsSync("/usr/bin/python3")) {
+    assert.equal(row.state, "ok")
+    assert.match(row.detail, /^Python 3\.\d+\.\d+ at \/usr\/bin\/python3, where the Run and Store blocks start it$/)
+    assert.equal(row.action, null)
+  } else {
+    assert.equal(row.state, "advice")
+    assert.match(row.detail, /python-missing/)
+    assert.match(row.action, /absolute path/)
+  }
 })

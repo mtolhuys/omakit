@@ -53,6 +53,7 @@ omakit setup
 | --- | --- |
 | Node 22 or newer | the tool is plain ESM with no dependencies and no build step. A stock Omarchy has Node and npm through `mise`, along with `git`, `gh` and `ttfx` |
 | `git` | the pin, and reading a subject's tree at an exact commit |
+| `/usr/bin/python3`, on the plugin's machine | the Run and Store blocks a plugin copies start their supervisor and helper there by absolute path; a stock Omarchy 4.0.3 has it, `omakit doctor` reports it as `blocks.python`, and omakit itself does not need it |
 | network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
 | 15 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
 

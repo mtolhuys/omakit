@@ -246,6 +246,16 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
   const git = version("git")
   add("git", git ? "ok" : "problem", git || "git was not found on PATH", git ? null : "Install git.")
 
+  // The blocks start their supervisor and helper through /usr/bin/python3
+  // by absolute path (blocks/run/Run.qml), never through PATH, so this is
+  // the one path that matters; a stock Omarchy 4.0.3 has it as a
+  // dependency of its desktop packages. Advice, not a problem: nothing
+  // omakit runs here needs it, and a plugin without a block never will.
+  const python = version("/usr/bin/python3")
+  add("blocks.python", python ? "ok" : "advice",
+    python ? `${python} at /usr/bin/python3, where the Run and Store blocks start it` : "/usr/bin/python3 was not found; a plugin's Run block reports python-missing here",
+    python ? null : "Install python (the blocks start /usr/bin/python3 by absolute path).")
+
   const dir = marketplacePinDir(repoRoot)
   let identity = null
   try {
