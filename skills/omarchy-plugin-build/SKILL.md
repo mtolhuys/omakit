@@ -1,9 +1,9 @@
 ---
 name: omarchy-plugin-build
-description: Build the process plumbing of an Omarchy Quattro plugin with omakit's Run block instead of a bare QML Process. Use whenever plugin code starts a program (a Process block, execDetached, a helper script, a poll), when inspect shows a process-lifecycle, unbounded-buffering or environment-trust row, or when a review comment names a deadline, an output cap, PATH, the environment or an orphaned process. Adds tested, versioned files the plugin owns; posts nothing.
+description: Build the process and state plumbing of an Omarchy Quattro plugin with omakit's Run and Store blocks instead of a bare QML Process or a FileView write. Use whenever plugin code starts a program (a Process block, execDetached, a helper script, a poll) or keeps a file of its own (state, a cache, remembered choices), when inspect shows a process-lifecycle, unbounded-buffering, environment-trust or file-and-state-boundary row, or when a review comment names a deadline, an output cap, PATH, the environment, an orphaned process, a symlink, /tmp, an atomic write or a permission. Adds tested, versioned files the plugin owns; posts nothing.
 ---
 
-# Building with the Run block
+# Building with the Run and Store blocks
 
 ## Start every process through Run
 
@@ -104,3 +104,58 @@ After adding the block and moving each site to it, run the check loop of
 `Run {` site as a process with its deadline observed through the block,
 and no process-lifecycle or unbounded-buffering row at those sites. A row
 that remains names a site that still uses `Process` directly.
+
+## Keep state through Store
+
+Whenever plugin code keeps a file of its own (remembered choices, a
+cache it parses, anything under `~/.local/state` or `~/.cache`), it goes
+through the Store block, never through a `FileView` write, a shell
+redirect or a helper's own `open()`:
+
+```bash
+omakit add store <path-to-the-plugin-repo>
+```
+
+That writes `omakit/Store.qml` and `omakit/store-helper.py`, and the
+run block if it is not there yet, since Store starts its helper through
+Run. Then, in the QML that keeps the state:
+
+```qml
+import "omakit"
+
+Store {
+    id: memory
+    pluginId: "<the plugin's id>"
+    name: "memory.json"
+    schema: ({ type: "object", required: ["version"], properties: { version: { type: "integer", minimum: 1 } }, additionalProperties: false })
+    onFinished: result => {
+        if (result.op === "read" && result.state === "ok") apply(result.value)
+        else if (result.state !== "missing") status.text = result.state + ": " + result.reason
+    }
+}
+```
+
+`memory.read()`, `memory.write(value)` and `memory.remove()` queue and run
+one at a time; each answers once through `finished` with `op`, `state`
+and, for a read, `value`. The rules Store holds and the review comments
+that asked for each are in `docs/BLOCKS.md`; the ones that shape the call:
+
+- `pluginId` names the private directory, `$XDG_STATE_HOME/<pluginId>`
+  (or the cache base with `kind: "cache"`), created 0700; `name` is one
+  file in it. Nothing else of the plugin's touches that directory.
+- Always give a `schema`. A read that departs from it is `invalid` with
+  the path that departs, and the plugin shows the state word instead of
+  using the value; a write is checked the same way before it starts.
+- A write is one value of at most 64 KiB. A cache a helper downloads is
+  the helper's own transaction (`store-helper.py` is the same code,
+  importable); Store keeps the plugin's state.
+- `result.state` is one of `ok`, `missing`, `invalid`, `refused`,
+  `overflow`, `failed`, `helper-failed`. Treat `missing` as a first run
+  and every other non-`ok` state as "show the reason, keep the defaults".
+- Do not stat, test or read the file by path first; the block never does,
+  and a check before the open is what the review calls check-then-use.
+
+`omakit inspect` lists an unmodified store block as one row and each
+`Store {}` site as a write under a directory the plugin controls at mode
+0600; a `FileView` write or a shell redirect that remains names a site
+that still keeps state on its own.

@@ -32,7 +32,9 @@ import { pathToFileURL } from "node:url"
 // the three block modules under tools/blocks/ and the sixth skill, the
 // package measured 233,533 bytes across 81 files, 22,467 under the unchanged
 // ceiling: the block files are the deliverable a plugin copies, so they
-// ship, and the lab suite and the fixtures that hold them do not.
+// ship, and the lab suite and the fixtures that hold them do not. With the
+// Store block (blocks/store/: Store.qml, store-helper.py, NOTICE) it
+// measured 240,741 bytes across 84 files, 15,259 under the same ceiling.
 export const MAX_PACKED_BYTES = 256_000
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
@@ -43,6 +45,9 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "blocks/run/NOTICE",
   "blocks/run/Run.qml",
   "blocks/run/run-supervisor.py",
+  "blocks/store/NOTICE",
+  "blocks/store/Store.qml",
+  "blocks/store/store-helper.py",
   "package.json",
   "skills/omarchy-plugin-audit/SKILL.md",
   "skills/omarchy-plugin-build/SKILL.md",
