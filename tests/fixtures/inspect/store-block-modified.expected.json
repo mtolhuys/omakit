@@ -100,14 +100,14 @@
         "line": 141,
         "name": "open_private_directory",
         "kind": "function",
-        "lines": 9,
+        "lines": 16,
         "depth": 1,
         "branches": 1,
-        "percentile": 63.9
+        "percentile": 80.8
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 152,
+        "line": 159,
         "name": "read_capped",
         "kind": "function",
         "lines": 10,
@@ -117,7 +117,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 164,
+        "line": 171,
         "name": "schema_problem",
         "kind": "function",
         "lines": 12,
@@ -127,7 +127,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 178,
+        "line": 185,
         "name": "bounds_problem",
         "kind": "function",
         "lines": 13,
@@ -137,7 +137,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 193,
+        "line": 200,
         "name": "members_problem",
         "kind": "function",
         "lines": 6,
@@ -147,7 +147,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 201,
+        "line": 208,
         "name": "object_problem",
         "kind": "function",
         "lines": 12,
@@ -157,7 +157,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 215,
+        "line": 222,
         "name": "array_problem",
         "kind": "function",
         "lines": 6,
@@ -167,7 +167,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 223,
+        "line": 230,
         "name": "parse_value",
         "kind": "function",
         "lines": 9,
@@ -177,7 +177,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 234,
+        "line": 241,
         "name": "read_file",
         "kind": "function",
         "lines": 11,
@@ -187,7 +187,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 247,
+        "line": 254,
         "name": "stale_staging",
         "kind": "function",
         "lines": 9,
@@ -197,7 +197,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 258,
+        "line": 265,
         "name": "unlink_quietly",
         "kind": "function",
         "lines": 5,
@@ -207,7 +207,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 265,
+        "line": 272,
         "name": "sweep_staging",
         "kind": "function",
         "lines": 5,
@@ -217,7 +217,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 272,
+        "line": 279,
         "name": "create_staging",
         "kind": "function",
         "lines": 9,
@@ -227,7 +227,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 283,
+        "line": 290,
         "name": "write_file",
         "kind": "function",
         "lines": 17,
@@ -237,7 +237,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 302,
+        "line": 309,
         "name": "remove_file",
         "kind": "function",
         "lines": 7,
@@ -247,7 +247,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 311,
+        "line": 318,
         "name": "operate",
         "kind": "function",
         "lines": 16,
@@ -257,7 +257,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 329,
+        "line": 336,
         "name": "main",
         "kind": "function",
         "lines": 14,

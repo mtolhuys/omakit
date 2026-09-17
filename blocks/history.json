@@ -21,12 +21,12 @@
   "block": "store",
   "version": "0.1.0",
   "file": "store-helper.py",
-  "sha256": "4c860e361c8d2824ec632888d9f09313a131c3114321ac351249e6a887719c7c"
+  "sha256": "28576b8189c9d2547c11b273243731a6c954644b7135186e57257addc3c99dd9"
  },
  {
   "block": "store",
   "version": "0.1.0",
   "file": "store-helper.py",
-  "sha256": "28576b8189c9d2547c11b273243731a6c954644b7135186e57257addc3c99dd9"
+  "sha256": "3ef0c3f5df90ef93d3ff7cdd979159cce590a4a61b3351f42ea5123fa49f0720"
  }
 ]
