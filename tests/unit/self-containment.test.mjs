@@ -174,15 +174,16 @@ test("the command surface is exactly the documented scope", () => {
 })
 
 test("no lab or conformance scope came along with the harvest", () => {
-  // Two things live under tests/lab/: the scenario the plugin lab runs to
+  // Three things live under tests/lab/: the scenario the plugin lab runs to
   // measure `omakit weigh` against a stock shell, because the weigh command
   // restarts a shell and the desktop is never where that is tested, and the
-  // Run block's suite (tests/lab/run/), which starts its own Quickshell
-  // instances and never touches the shell. Scenarios for one command and
-  // one block, not a conformance suite, and neither is in the package.
+  // Run and Store blocks' suites (tests/lab/run/, tests/lab/store/), which
+  // start their own Quickshell instances and never touch the shell.
+  // Scenarios for one command and two blocks, not a conformance suite, and
+  // none of them is in the package.
   for (const path of files) {
     assert.ok(!/^tools\/lab\//.test(path), `${path} is out of scope`)
-    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh" || path.startsWith("tests/lab/run/"), `${path} is out of scope`)
+    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh" || path.startsWith("tests/lab/run/") || path.startsWith("tests/lab/store/"), `${path} is out of scope`)
   }
 })
 
