@@ -119,8 +119,21 @@ the date.
 | 3. Proof, Run | 24 Sep to 30 Sep | Theme Manager's 26 QML `Process` blocks ported to Run on its own branch (inspect on 2026-09-17: 23 process-lifecycle sites, 18 unbounded-buffering sites), checked with verify, submit and inspect before and after, submitted through the normal flow | G3: submitted; the reviewer's outcome is recorded whatever it is. Nobody is asked to look |
 | 4. Store 0.1 and its proof | 26 Sep to 6 Oct | Same as phase 2 for Store, then Theme Manager's catalog cache and theme directory writes ported to it (two of its four blocker comments in the M13 week were file and state) | G2 for Store, and the Store port submitted |
 | 5. Rebrand release 0.6.0 | when G2 (Run) and G3 hold, target 1 Oct | README, package metadata, docs, skills, banner and GIFs per the section below; release notes; npm and AUR by Maarten | Maarten reads the README and says ship |
-| 6. Show | from release | One data-led post (M13 aggregate, what Run is, how to add it), reply where builders already talk, the Sunday Space, offer a pointer PR to the skills that carry copy-paste helpers | none |
+| 6. Show | from release | One data-led post (M13 aggregate, what Run is, how to add it), reply where builders already talk, the Sunday Space, offer a pointer PR to the skills that carry copy-paste helpers. Optional, about a day: an `action.yml` in this repository (no separate package) that runs `verify`, `inspect` and the block check on push, and in the job summary says when an open marketplace issue validated an older commit than the one pushed | none |
 | Evaluation | 15 Oct | Three signals: Theme Manager's ported commits reviewed without a process or state blocker; someone else's plugin using Run; an unprompted outside signal (star, issue, reference, a mention by the maintainer) | Two of three: continue with Store and the next block. None: stop building blocks, offer Run upstream as a pull request instead |
+
+### GitHub Action, checked 2026-09-17
+
+In a random sample of 60 plugin repositories from the pinned registry (2,964
+repositories), 14 have any workflow in `.github/workflows`. An existing Action,
+`duclucky/omarchy-plugin-ci` (1 star, beta since 2026-08-23), checks manifest,
+QML contract, capabilities and lifecycle; a code search found no workflow
+using it. What an omakit Action would add that it does not: the marketplace's
+own baseline at the pushed commit, the stale-validation notice at the moment a
+push makes it stale (292 maintainer comments in the M13 week), and a check
+that vendored blocks are unmodified and current. It stays read-only: it never
+edits or comments on a marketplace issue, because a re-triggered validation
+lands in the maintainer's queue.
 
 ## Rebrand
 
