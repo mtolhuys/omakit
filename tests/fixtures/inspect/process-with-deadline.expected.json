@@ -47,6 +47,7 @@
           "via": "head -c"
         },
         "shellWrapper": true,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],

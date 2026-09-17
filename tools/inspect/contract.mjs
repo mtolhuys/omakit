@@ -45,7 +45,8 @@ function processRow(row, at, problems) {
   if (row.argvForm === "array" && Array.isArray(row.argv)) {
     for (const entry of row.expressions || []) if (row.argv[entry.index] !== entry.text) problems.push(`${at}.expressions[${entry.index}] does not name the argv element it stands for`)
   }
-  for (const key of ["running", "detached", "shellWrapper"]) if (!isBool(row[key])) problems.push(`${at}.${key} is not a boolean`)
+  for (const key of ["running", "detached", "shellWrapper", "closedEnvironment"]) if (!isBool(row[key])) problems.push(`${at}.${key} is not a boolean`)
+  if (row.closedEnvironment && row.declaredIn !== "shell") problems.push(`${at}.closedEnvironment is set on a site that is not a shell line`)
   const deadline = row.deadline || {}
   if (!isBool(deadline.observed)) problems.push(`${at}.deadline.observed is not a boolean`)
   if (!DEADLINE_VIA.has(deadline.via)) problems.push(`${at}.deadline.via is not timer-kill, timeout-argv, destruction, block-run or null`)

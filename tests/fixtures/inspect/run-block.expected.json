@@ -47,6 +47,7 @@
           "via": "maxBytes"
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null,
         "block": "run"
       }

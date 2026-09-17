@@ -43,6 +43,7 @@
           "via": null
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],

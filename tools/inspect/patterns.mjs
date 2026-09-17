@@ -231,13 +231,19 @@ export const PATTERNS = Object.freeze([
     share: 0.07,
     sample: SAMPLE,
     precondition: ({ processes, hosts }) => {
-      const resolved = processes.map((row) => ({ row, tool: pathResolved(row) })).filter((entry) => entry.tool)
+      // A line of a helper started through Run resolves its tools in the
+      // block's closed PATH (docs/BLOCKS.md); it is counted apart, never as
+      // an ambient lookup.
+      const ambient = processes.filter((row) => !row.closedEnvironment)
+      const resolved = ambient.map((row) => ({ row, tool: pathResolved(row) })).filter((entry) => entry.tool)
+      const closed = processes.filter((row) => row.closedEnvironment && pathResolved(row))
       const curls = hosts.filter((row) => row.tool === "curl" && !hasFlag(row.flags, "q", "--disable"))
       const parts = []
       const names = [...new Set(resolved.map((entry) => entry.tool))]
       const named = names.length > 6 ? `${names.slice(0, 6).join(", ")} and ${names.length - 6} more` : names.join(", ")
       if (resolved.length) parts.push(`${plural(resolved.length, "tool")} resolved from PATH (${named}; ${sites(resolved.map((entry) => entry.row))})`)
       if (curls.length) parts.push(`curl without -q (${sites(curls)})`)
+      if (closed.length) parts.push(`${plural(closed.length, "tool name")} in ${plural(new Set(closed.map((row) => row.file)).size, "helper")} started through Run, resolved in the block's closed PATH and not counted`)
       return { sites: [...resolved.map((entry) => entry.row), ...curls].map(site), observation: `observed ${parts.join("; ")}` }
     },
   },

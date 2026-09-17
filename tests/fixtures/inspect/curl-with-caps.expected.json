@@ -52,6 +52,7 @@
           "via": "--max-filesize"
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],

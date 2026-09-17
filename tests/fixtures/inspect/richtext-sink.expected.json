@@ -48,6 +48,7 @@
           "via": "timeout"
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],

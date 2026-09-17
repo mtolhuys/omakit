@@ -47,6 +47,7 @@
           "via": null
         },
         "shellWrapper": true,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],

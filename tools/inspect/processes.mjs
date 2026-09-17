@@ -169,6 +169,7 @@ function qmlRow(file, text, block, command, commandOffset) {
     deadline: deadlineFor(text, id, resolved.argv),
     output: outputOf(block.body, resolved.argv),
     shellWrapper: isShellWrapper(resolved.argv),
+    closedEnvironment: false,
     pipedFrom: null,
   }
 }
@@ -197,6 +198,7 @@ function detachedRows(file, text) {
       deadline: { observed: false, via: null, ms: null },
       output: { collector: "none", capObserved: false, via: null },
       shellWrapper: isShellWrapper(resolved.argv),
+      closedEnvironment: false,
       pipedFrom: null,
     })
   }
@@ -305,6 +307,7 @@ export function shellProcesses(file) {
         deadline: stripped.some((word) => basename(word) === "timeout") ? { observed: true, via: "timeout-argv", ms: deadlineMs } : { observed: false, via: null, ms: null },
         output: { collector: "none", capObserved: lineCap.observed, via: lineCap.via },
         shellWrapper: isShellWrapper(stripped),
+        closedEnvironment: false,
         pipedFrom: segment.operator === "|" || segment.operator === "|&" ? previous : null,
       }
       rows.push(row)

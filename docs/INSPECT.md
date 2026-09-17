@@ -315,6 +315,11 @@ detached          boolean   a Quickshell.execDetached call, which has no deadlin
 deadline          { observed: boolean, via: "timer-kill" | "timeout-argv" | "destruction" | "block-run" | null, ms: number|null }
 output            { collector: "StdioCollector" | "SplitParser" | "Run" | "none" | "unknown", capObserved: boolean, via: string|null }
 shellWrapper      boolean   true when the tool is sh, bash, zsh, dash, fish or ksh with -c next, or eval
+closedEnvironment boolean   a shell line of a helper the QML starts through the run block (BLOCKS.md): it runs
+                  in the block's closed environment, so its bare tool names are not ambient PATH lookups
+                  and the environment-trust class counts them apart, in words. Read only when every QML
+                  process site of the tree is a Run site; the helper is one whose base name a QML file
+                  names as a string literal. False everywhere else.
 pipedFrom         { line, argv0 } | null   for a shell site that reads the previous segment's output
 block             "run"     only on a `Run {` site of the omakit run block (BLOCKS.md): its deadline is
                   the block's (`deadlineMs`, default 10000, via "block-run"), its collector "Run" with the

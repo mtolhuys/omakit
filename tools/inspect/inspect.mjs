@@ -79,6 +79,24 @@ export function recogniseBlocks(files) {
   return { blocks, skip }
 }
 
+/**
+ * The shell and Python files of the tree that the QML starts through Run,
+ * by base name in a string literal, when the tree has Run sites and no
+ * other QML process site; empty otherwise.
+ *
+ * @returns {Set<string>} paths
+ */
+export function runStartedHelpers(files, processes) {
+  const qml = processes.filter((row) => row.declaredIn === "qml")
+  if (!qml.length || qml.some((row) => row.block !== "run")) return new Set()
+  const helpers = files.filter((file) => file.kind === "shell" || file.kind === "python")
+  const named = new Set()
+  for (const file of files.filter((entry) => entry.kind === "qml")) {
+    for (const match of file.text.matchAll(/["']([\w.-]+\.(?:sh|bash|py))["']/g)) named.add(match[1])
+  }
+  return new Set(helpers.filter((file) => named.has(file.path.split("/").pop())).map((file) => file.path))
+}
+
 export class InspectError extends Error {
   constructor(code, message, remedy = null) {
     super(message)
@@ -140,6 +158,17 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     timers.push(...ticking.timers)
     notResolvable.push(...ticking.notResolvable)
   }
+
+  // A helper the QML starts through Run runs in the block's closed
+  // environment (PATH=/usr/bin and the named variables, docs/BLOCKS.md),
+  // so a bare tool name inside it is not an ambient PATH lookup. Read
+  // conservatively: only when every QML process site of the tree is a Run
+  // site, a shell or Python file whose base name a QML file names as a
+  // string literal counts as started through Run, and its shell lines are
+  // marked closedEnvironment. The hook Omarchy runs, a test script, a
+  // helper no QML names: ambient, as before.
+  const closed = runStartedHelpers(tree.files, processes)
+  for (const row of processes) row.closedEnvironment = row.declaredIn === "shell" && closed.has(row.file)
 
   let marketplaceBaseline
   let blockingRules = []

@@ -54,6 +54,7 @@
           "via": null
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       },
       {
@@ -78,6 +79,7 @@
           "via": null
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       },
       {
@@ -125,6 +127,7 @@
           "via": null
         },
         "shellWrapper": false,
+        "closedEnvironment": false,
         "pipedFrom": null
       }
     ],
