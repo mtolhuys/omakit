@@ -34,7 +34,10 @@ import { pathToFileURL } from "node:url"
 // ceiling: the block files are the deliverable a plugin copies, so they
 // ship, and the lab suite and the fixtures that hold them do not. With the
 // Store block (blocks/store/: Store.qml, store-helper.py, NOTICE) it
-// measured 240,741 bytes across 84 files, 15,259 under the same ceiling.
+// measured 240,741 bytes across 84 files, 15,259 under the same ceiling. At
+// 0.6.0, with the Run-started helper resolver (tools/inspect/helpers.mjs)
+// and the README rewritten around the blocks, 247,435 bytes across 85
+// files, 8,565 under it; the GIFs and captures under docs/media do not ship.
 export const MAX_PACKED_BYTES = 256_000
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
