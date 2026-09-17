@@ -1,0 +1,303 @@
+{
+  "id": "M13",
+  "measured": "2026-09-17",
+  "question": "Which plumbing do the marketplace security review comments block on, and how much of it would a tested, reusable building block handle by construction?",
+  "source": {
+    "repository": "omacom/omarchy-plugin-marketplace",
+    "read": "GitHub REST API, GET only: the latest 6,000 issue comments by creation time, and the issues they belong to",
+    "window": {
+      "from": "2026-09-10T19:49:33Z",
+      "to": "2026-09-17T13:20:22Z"
+    },
+    "comments": 6000,
+    "botComments": 3028,
+    "maintainerComments": 1530,
+    "maintainerAccounts": 1,
+    "authorComments": 1438,
+    "authors": 538,
+    "issues": 1881
+  },
+  "method": "Each maintainer comment and each comment by the issue author was classified by a calibrated classification model that returns a probability per option, with the question texts recorded below. A choice counts at its most probable option; a yes/no question counts as yes at probability 0.5 or higher. Security-blocker comments were then asked one yes/no question per building block. Hand spot checks: the kind and helper judgments held in the sample; process_runner was sometimes generous, so coverage is an upper bound. The working set is not committed: it quotes review text about named plugins.",
+  "questions": {
+    "maintainer": {
+      "kind": {
+        "type": "choice",
+        "instructions": "What does this marketplace maintainer comment on a plugin submission issue mainly do?",
+        "criteria": {
+          "security_blocker": "Names a concrete problem in the plugin code or runtime behaviour that blocks approval for security or safety reasons: process handling, files and state, network, secrets, privileges, untrusted input or display, agent permissions, installers.",
+          "functional_or_quality_blocker": "Names a non-security problem in the plugin that blocks approval: broken feature, UX, performance, packaging, manifest content, screenshots, documentation.",
+          "stale_or_commit_mismatch": "Says the validated or reviewed commit is not the current one, or asks the author to re-validate or point the issue at a newer commit.",
+          "form_or_process": "About the issue form, title, required fields or marketplace procedure, not about the plugin code.",
+          "closed_for_inactivity": "Closes the submission because the author did not respond or deliver a validated fix within the deadline.",
+          "duplicate_or_superseded": "Closes or redirects because another issue or submission covers it.",
+          "policy_or_scope_rejection": "The plugin is not accepted in principle: out of scope, not allowed category, legal or trademark reasons.",
+          "approval_or_progress": "Approves, lists, confirms that fixes are accepted, or reports that nothing blocking remains.",
+          "other": "None of the above."
+        }
+      },
+      "cls": {
+        "type": "choice",
+        "instructions": "Assume the comment names a security blocker in the plugin. Which class of problem is the main blocker (the one described first or at most length)? If the comment names no security blocker, choose none.",
+        "criteria": {
+          "process_lifecycle": "Child processes: deadlines, timeouts, cancel on destruction, process-group cleanup, orphans, watchdogs.",
+          "unbounded_buffering": "Reading process output or responses without byte or line limits.",
+          "file_state_boundary": "State and cache files: private directories, symlink following, no-follow, atomic replace, temp files, /tmp, permissions, check-then-use races.",
+          "environment_trust": "Executables resolved via PATH, inherited environment, bare command names, helper locations.",
+          "secrets": "Tokens, passwords or keys in argv, logs, notifications or unprotected at rest.",
+          "supply_chain": "Unpinned downloads, self-update, missing checksums, bundled binaries without provenance.",
+          "network_egress": "Plain HTTP, private addresses, redirects, remote hosts.",
+          "untrusted_display": "Rendering untrusted text as rich text, control characters, length bounds.",
+          "argument_grammar": "Shell interpolation, command injection, unvalidated values reaching a command line.",
+          "privilege": "sudo, pkexec, root helpers, group membership, system-wide installers, udev or polkit rules.",
+          "agent_permissions": "AI or coding agents started with broad tool permissions or ambient working directories.",
+          "other_security": "A security blocker that fits none of the classes above.",
+          "none": "The comment names no security blocker."
+        }
+      },
+      "static": {
+        "type": "noul",
+        "instructions": "Consider the main problem this maintainer comment raises about the plugin. Could an automated tool that only reads the plugin source files at that commit, without running the plugin, point the author at the specific code site behind that problem?",
+        "criteria": {
+          "true": "Yes: the problem is visible as a code construct, for example a bare executable name in argv, a missing timeout, a write under /tmp, an unbounded output read, an http:// URL, a sudo call.",
+          "false": "No: it needs running the plugin, judging intent or UX, a policy decision, information outside the code, or the comment raises no code problem."
+        }
+      },
+      "helper": {
+        "type": "noul",
+        "instructions": "Consider the main problem this maintainer comment raises. Would that problem most likely not have existed if the author had used a well-reviewed shared building block for that job instead of writing the plumbing themselves? Examples of such building blocks: a bounded process runner with a deadline, output byte cap and process-group cleanup; a private state-file writer with no-follow and atomic replace; an HTTPS-only fetch helper with size cap; a plain-text display sanitizer; a resolver for absolute helper paths.",
+        "criteria": {
+          "true": "Yes: the problem is generic plumbing that such a shared building block would handle correctly by construction.",
+          "false": "No: the problem is specific to what this plugin does (its feature, privileges it needs, policy, UX), or the comment raises no code problem."
+        }
+      },
+      "repeat": {
+        "type": "noul",
+        "instructions": "Does this maintainer comment say that a previously raised problem is still present, only partly fixed, or has come back after an earlier review round?",
+        "criteria": {
+          "true": "Yes, it refers to an earlier round and says something still blocks.",
+          "false": "No, first mention, or nothing remains."
+        }
+      }
+    },
+    "author": {
+      "intent": {
+        "type": "choice",
+        "instructions": "What does this plugin author comment on their own marketplace submission issue mainly do?",
+        "criteria": {
+          "reports_fix": "Reports changes made in response to review feedback, with a commit or a description of the fix.",
+          "asks_for_review_or_status": "Asks the maintainer to review or re-review, or asks when or whether it will be processed, without mainly reporting new changes.",
+          "asks_how_or_clarification": "Asks what exactly is required, how to fix something, or why something was flagged.",
+          "disputes_or_justifies": "Pushes back, argues a finding does not apply, or justifies a design choice instead of changing it.",
+          "commit_update_or_revalidation": "Says the issue now points at a newer commit or asks to validate a newer commit, not mainly describing review-driven fixes.",
+          "withdraws": "Withdraws, closes, or abandons the submission.",
+          "other": "Thanks, unrelated, or none of the above."
+        }
+      },
+      "confused": {
+        "type": "noul",
+        "instructions": "Does the author show confusion or frustration about the review process, about what is required, or about why the submission is not progressing?",
+        "criteria": {
+          "true": "Yes, explicitly or clearly implied.",
+          "false": "No."
+        }
+      },
+      "toolmention": {
+        "type": "noul",
+        "instructions": "Does the comment explicitly mention using an AI assistant, coding agent, or an automated checking tool to produce or verify the changes?",
+        "criteria": {
+          "true": "Yes, explicitly mentioned.",
+          "false": "No explicit mention."
+        }
+      }
+    },
+    "blocks": {
+      "process_runner": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: a bounded process runner for QML and shell helpers: absolute executable path, closed minimal environment, argv only (no shell string), hard deadline, output byte and line caps enforced while reading, process-group termination and reaping on timeout or destruction. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "state_store": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: a private state and cache file store: 0700 directory under XDG paths, descriptor-relative no-follow opens, regular-file and owner checks, size cap on read, 0600 exclusive temp file and atomic replace on write, no /tmp. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "safe_fetch": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: an HTTPS-only fetch helper: refuses plain http and private or local addresses, pins redirect origin, response size and time caps. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "plain_text": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: a display helper that always renders untrusted strings as plain text, strips control characters and bounds length. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "secret_handling": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: a secret helper that reads tokens from a protected store and passes them via stdin or file descriptors, never argv, logs or notifications. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "pinned_artifact": {
+        "type": "noul",
+        "instructions": "This maintainer security review comment blocks a plugin. Suppose the author had used this well-reviewed shared building block from the start: a pinned-download helper that installs third-party binaries or packages only by exact version plus checksum or hash, with no self-update. Would at least one of the blocking problems raised in this comment most likely not have occurred, because the building block handles it correctly by construction?",
+        "criteria": {
+          "true": "Yes, at least one raised blocker is exactly the kind of plumbing this building block handles.",
+          "false": "No, none of the raised blockers is handled by this building block."
+        }
+      },
+      "explicit_helper": {
+        "type": "noul",
+        "instructions": "Does the reviewer explicitly ask the author to use or write a fixed, verified, trusted or shared helper, wrapper or runner for the problem?",
+        "criteria": {
+          "true": "Yes, the comment asks for such a helper or wrapper.",
+          "false": "No."
+        }
+      }
+    }
+  },
+  "results": {
+    "maintainerKind": {
+      "security_blocker": 1001,
+      "stale_or_commit_mismatch": 292,
+      "approval_or_progress": 136,
+      "closed_for_inactivity": 70,
+      "form_or_process": 23,
+      "functional_or_quality_blocker": 7,
+      "duplicate_or_superseded": 1
+    },
+    "securityBlockerClass": {
+      "environment_trust": 254,
+      "file_state_boundary": 240,
+      "unbounded_buffering": 141,
+      "supply_chain": 117,
+      "agent_permissions": 66,
+      "secrets": 50,
+      "argument_grammar": 33,
+      "privilege": 31,
+      "untrusted_display": 29,
+      "network_egress": 17,
+      "process_lifecycle": 15,
+      "other_security": 8
+    },
+    "blockerComments": 1008,
+    "blockerCommentsSayingAnEarlierRoundStillBlocks": 527,
+    "securityBlockerComments": 1001,
+    "perBlock": {
+      "process_runner": 581,
+      "state_store": 474,
+      "safe_fetch": 207,
+      "plain_text": 140,
+      "secret_handling": 203,
+      "pinned_artifact": 336
+    },
+    "reviewerAsksForAFixedHelper": 235,
+    "greedyCoverage": [
+      {
+        "blocks": [
+          "process_runner"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 581
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 777
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store",
+          "pinned_artifact"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 866
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store",
+          "pinned_artifact",
+          "plain_text"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 898
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store",
+          "pinned_artifact",
+          "plain_text",
+          "safe_fetch"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 919
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store",
+          "pinned_artifact",
+          "plain_text",
+          "safe_fetch",
+          "secret_handling"
+        ],
+        "commentsWithAtLeastOneBlockerHandled": 931
+      }
+    ],
+    "issuesWithASecurityBlockerComment": 668,
+    "issueCoverage": [
+      {
+        "blocks": [
+          "process_runner"
+        ],
+        "issuesWhoseEveryBlockerCommentIsHandled": 314
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store"
+        ],
+        "issuesWhoseEveryBlockerCommentIsHandled": 465
+      },
+      {
+        "blocks": [
+          "process_runner",
+          "state_store",
+          "pinned_artifact"
+        ],
+        "issuesWhoseEveryBlockerCommentIsHandled": 540
+      }
+    ],
+    "authorIntent": {
+      "reports_fix": 853,
+      "commit_update_or_revalidation": 416,
+      "disputes_or_justifies": 50,
+      "withdraws": 42,
+      "other": 29,
+      "asks_for_review_or_status": 29,
+      "asks_how_or_clarification": 19
+    },
+    "authorShowsConfusion": 42,
+    "authorMentionsAnAssistantOrTool": 157
+  },
+  "limits": [
+    "One reviewer account and 6.7 days; a policy change moves every share.",
+    "A block \"handles\" a comment when at least one blocker it raises is that block's plumbing, not when the comment is fully resolved.",
+    "Classes are the model's reading of the reviewer's wording, not the marketplace's taxonomy.",
+    "Counts are public aggregates; no plugin, repository, author or issue is named."
+  ]
+}
