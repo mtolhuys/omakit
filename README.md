@@ -1,24 +1,45 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif" alt="omakit" width="440">
+  <img src="https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif" alt="omakit" width="512">
 </p>
 
-The marketplace validates one exact commit of your plugin. Push a fix or comment "fixed", and nothing re-runs ([M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool)). omakit runs the marketplace's own checks locally, watches your submission and posts nothing.
+**The plumbing plugin reviews block most, built and tested once.**
+
+In one week of the Omarchy plugin marketplace, 2026-09-10 to 2026-09-17, one reviewer wrote 1,001 security blocker comments. 587 of them ask for something a bounded process runner does (an absolute path, a closed environment, a deadline, an output cap, a process group ended, argv instead of a shell string), 527 for something a private state file does (no-follow opens, no check-then-use, an atomic replace, owner and mode checks, a size cap, a schema). Read as an upper bound, a runner plus a store handles at least one blocker in 777 of the 1,001 ([M13](docs/MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)): "handles" means the comment raises that plumbing, not that the comment is resolved. omakit ships that plumbing as two blocks a plugin copies into its own tree, and the checks for the rest. No reviewer has seen a ported plugin yet.
 
 [![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
 
-## What it delivers
+## Build
 
 | Command | What you get | Read more |
 | --- | --- | --- |
-| `omakit submit <plugin-repo>` | Run the marketplace's own checks before you open the issue, and get the issue text ready to paste. Nothing is posted for you. | [submit](docs/SUBMIT.md) |
-| `omakit inspect <plugin-dir>` | See what needs attention in your plugin before a reviewer does: the longest functions, and the things reviewers flag most often, each with the file and line. | [inspect](docs/INSPECT.md) |
-| `omakit watch <issue-url>` | Know whether the commit the marketplace checked is still the one you are shipping, and what to do when it is not. | [watch](docs/VALIDATION_WATCH.md) |
-| `omakit audit` | Find installed plugins that are running code the marketplace never checked. | [audit](docs/AUDIT.md) |
-| `omakit weigh <plugin>` | Find out what a plugin costs the shell in memory and CPU. | [weigh](docs/WEIGH.md) |
-| `omakit verify <plugin-repo>` | Get the marketplace's security result for your commit, exactly as it would see it. | [commands](docs/COMMANDS.md) |
-| `omakit doctor`, `omakit setup` | Check what is installed and pinned, or set everything up once, with tab completion. | [install](docs/INSTALL.md) |
+| `omakit add run <plugin-dir>` | `Run.qml` and the supervisor it starts: one program, absolute path, argv only, a closed environment, a hard deadline, byte and line caps while reading, TERM then KILL to the whole group, the leader reaped last, one result object. Two files under `omakit/`, each with its version and its body's sha256 in the header. | [blocks](docs/BLOCKS.md) |
+| `omakit add store <plugin-dir>` | `Store.qml` and its helper: one private file per plugin under the XDG state or cache base, reached by descriptor with no-follow at every step, checked after every open and never before, read under a cap and a schema, written through an exclusive 0600 staging file and a rename. Brings `run`, which it uses. | [blocks](docs/BLOCKS.md) |
 
-Every number a command prints has a measured origin in [MEASUREMENTS.md](docs/MEASUREMENTS.md); nothing is a guess and nothing is a grade.
+A block is a file the plugin owns: added and updated only by `omakit add`, never overwritten once modified, and recognised by `omakit inspect` as one row that raises nothing. Each line of a block's contract cites how many of the 1,001 comments asked for it.
+
+## Check
+
+| Command | What you get | Read more |
+| --- | --- | --- |
+| `omakit inspect <plugin-dir>` | What needs attention before a reviewer looks: the longest functions, then the classes reviewers raise most, each with the file and line; a `Run {` site as a process with its deadline, a `Store {` site as a write under the plugin's own directory, an unmodified block as one row. | [inspect](docs/INSPECT.md) |
+| `omakit verify <plugin-repo>` | The marketplace's security result for your commit, exactly as it would see it. | [commands](docs/COMMANDS.md) |
+| `omakit submit <plugin-repo>` | Every check the marketplace applies, and the issue title and body ready to paste. Nothing is posted for you. | [submit](docs/SUBMIT.md) |
+
+## Track
+
+| Command | What you get | Read more |
+| --- | --- | --- |
+| `omakit watch <issue-url>` | Whether the commit the marketplace checked is still the one you are shipping, and what re-runs validation when it is not. The marketplace validates one exact commit; push a fix or comment "fixed", and nothing re-runs ([M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool)). | [watch](docs/VALIDATION_WATCH.md) |
+
+## More
+
+| Command | What you get | Read more |
+| --- | --- | --- |
+| `omakit audit` | Installed plugins running code the marketplace never checked. | [audit](docs/AUDIT.md) |
+| `omakit weigh <plugin>` | What a plugin costs the shell in memory and CPU, measured by restarting it. | [weigh](docs/WEIGH.md) |
+| `omakit doctor`, `omakit setup` | What is installed and pinned; or set everything up once, with tab completion. | [install](docs/INSTALL.md) |
+
+Every number a command prints has a measured origin in [MEASUREMENTS.md](docs/MEASUREMENTS.md); nothing is a guess and nothing is a grade. Nothing here claims that a plugin gets through review; a block does what its contract says, and what was measured is below.
 
 ## Install
 
@@ -27,9 +48,15 @@ npm i -g omakit && omakit setup
 npx skills add mtolhuys/omakit
 ```
 
-Runs where [Node 22+](package.json) and Git run; `weigh` and `audit` need a running Omarchy shell.
+Runs where [Node 22+](package.json) and Git run; the blocks need `/usr/bin/python3`, which a stock Omarchy 4.0.3 has as a dependency of its desktop packages; `weigh` and `audit` need a running Omarchy shell.
 
 Licence: [MIT](LICENSE).
+
+## `omakit add run`, then `inspect` before and after
+
+![omakit add run into a fixture, then inspect before and after: the process-lifecycle and unbounded-buffering rows are gone](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/add-run.gif)
+
+`inspect` on a fixture with one bare `Process` shows a process with no deadline and a collector with no cap; after `omakit add run` and the one-site port, the same fixture shows the block as one row and the site as a process with its deadline through the block, and no pattern row. The GIF is recorded output ([captures and scenes](docs/media/README.md)).
 
 ## `omakit submit <plugin-repo>`
 
@@ -43,37 +70,37 @@ Checks the exact commit with the marketplace's own baseline and, when ready, pri
 
 Checks your submission commits and names the action that re-runs stale validation: edit the issue body. The GIF shows five CURRENT issues in the counts and the first two issues with a discussion; CURRENT means matching commits, not approval.
 
-## `omakit audit`
-
-![audit keeping drift rows and the DRIFT summary visible together](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
-
-Compares your installed plugin commits with the marketplace's validated commits. The GIF shows drift rows first: on the author's desktop, 9 of 18 audited plugins ran commits the marketplace never validated.
-
 ## `omakit inspect <plugin-dir>`
 
 ![inspect showing a fixture's size score, its two long functions with their ranks, and the one review class it shows](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
 
-Reads a plugin's tree and prints what needs attention, biggest first: a size score (the share of its function lines that sit in functions over the measured size, placed among the listed trees' shares, so a tree with no long function scores 10.00, [M12](docs/MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)), the functions over what 90 of 100 listed functions stay under, then each review class the tree shows with the class's measured share of review findings ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)) and up to five sites. No verdict, nothing run from the tree; `--full` is every site, `--json` the document. Over 18 listed plugins read at their validated commits, the extraction counted 515 process sites (57 QML `Process` blocks, 458 shell lines), 17 hosts, 63 writes and 40 timers, left 15 rows it could not resolve, and printed 73 pattern rows across 17 of the 18 ([record](docs/evidence/inspect/2026-09-15-listed-sample.json)).
+Reads a plugin's tree and prints what needs attention, biggest first: a size score ([M12](docs/MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)), the functions over what 90 of 100 listed functions stay under, then each review class the tree shows with its measured share of review findings ([M11](docs/MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)) and up to five sites. No verdict, nothing run from the tree; `--full` is every site, `--json` the document.
 
-## `omakit weigh <plugin>`
+## `omakit audit` and `omakit weigh <plugin>`
 
-![completed three-run desktop weighing with baseline samples and the noise floor](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif)
+![audit keeping drift rows and the DRIFT summary visible together](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
 
-Measures the shell with and without your plugin, reading Pss and CPU. The GIF shows three completed runs on the author's desktop, with baseline and plugin samples and a 0.33% CPU floor ([method](docs/WEIGH.md)).
+`audit` compares your installed plugin commits with the marketplace's validated commits; on the author's desktop, 9 of 18 audited plugins ran commits the marketplace never validated. `weigh` measures the shell with and without your plugin, reading Pss and CPU, with the baseline's own spread as the noise floor ([method](docs/WEIGH.md), [GIF](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif)).
 
 ## Evidence, not claims
 
 | Measurement | Evidence |
 | --- | --- |
+| Run: the design chosen by measurement | 36 runs, five scenarios, two candidates, on a real Quattro shell: both end every scenario, the supervisor is chosen for reaping last, [spike](docs/BLOCKS_SPIKE.md), 2026-09-17 |
+| Run: lab scenarios | 13 of 13 on the desktop and 13 of 13 on the stock 4.0.3 guest, [desktop](docs/evidence/blocks/2026-09-17-run-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-17-run-lab-guest.json) |
+| Store: lab scenarios | 12 of 12 on the desktop and 12 of 12 on the stock guest with a root-owned file simulated, [desktop](docs/evidence/blocks/2026-09-17-store-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-17-store-lab-guest.json) |
+| Port: Theme Manager through Run | process lifecycle 23 to 0, unbounded buffering 18 to 0, 24 of 24 QML sites with a deadline, 27 of 27 lab steps on the stock guest, [record](docs/evidence/blocks/2026-09-17-theme-manager-port.json); not submitted, no reviewer has seen it |
+| Port: Sidecar through Store | the device state through the block, a planted link refused and moved aside, 71 tests, [record](docs/evidence/blocks/2026-09-17-sidecar-port.json); inspect's counts unchanged, and the record says why |
 | Baseline parity | 30/30 identical results, [recorded corpus](docs/evidence/parity/2026-09-12-local-vs-github-2.json), 2026-09-12 |
 | Stale validated commit | 326/519 readable comparisons stale (62.8%); 64/583 unknown, [2026-09-15 data](docs/evidence/staleness/2026-09-15.json) |
 | Registry churn | 4,201/4,293 registry-only commits in 30 days, 2026-09-13, [M7](docs/MEASUREMENTS.md#m7-the-registry-moves-by-the-hour-the-code-and-the-rules-move-by-the-week) |
-| GIFs are recorded output | 6 GIFs with [captures and scenes](docs/media/README.md) |
+| GIFs are recorded output | 7 GIFs with [captures and scenes](docs/media/README.md) |
 | Posts nothing | 0 marketplace writes, [M10](docs/MEASUREMENTS.md#m10-readme-evidence-and-command-captures) |
 | Zero dependencies | 0 runtime and 0 development dependencies, counted in [package.json](package.json) |
 
 ## Documentation
 
+- Building: [blocks](docs/BLOCKS.md), [the spike behind Run](docs/BLOCKS_SPIKE.md), [what is still open](docs/BLOCKS_PLAN.md).
 - Using: [install](docs/INSTALL.md), [commands](docs/COMMANDS.md), [audience](docs/MARKETPLACE.md).
 - Checks and measurements: [submit](docs/SUBMIT.md), [inspect](docs/INSPECT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
 - Method docs: [how](docs/HOW.md), [weigh](docs/WEIGH.md), [upstream contract](docs/UPSTREAM_CONTRACT.md), [palette](docs/PALETTE.md), [terminal](docs/TUI.md).

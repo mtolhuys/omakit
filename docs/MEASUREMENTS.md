@@ -785,6 +785,22 @@ not an attributed plugin weight; C1 and C2's caveats still apply. The config
 was restored with equal before/after md5, and the shell answered afterwards.
 Full commands, cuts and renderer versions are in [media/README.md](media/README.md#second-pass-final-screens-2026-09-15).
 
+### M10 the blocks rewrite, 2026-09-17
+
+The README at 0.6.0 opens with M13's counts and features 7 GIFs, all
+recorded output: `add-run.gif` is new (38,521 bytes, 29.80 s, 757 × 688,
+three captures on one materialised `process-without-deadline` fixture:
+`inspect` with its two `note` rows, `omakit add run`, and `inspect` again
+after the one site was moved to `Run`, with no pattern row and the same
+one process counted); `banner.gif` was re-recorded with the 0.6.0 tagline
+(16,829 bytes, 5.20 s, 512 × 298, the tagline on the two lines the program
+wraps it to, since it is 60 cells against a 28-cell wordmark). The other
+five are unchanged. Pillow decoded every frame; durations are the sum of
+frame delays. The source check still records 0 marketplace writes, and
+nothing in the README says a plugin passes review: the port rows say what
+was measured and that no reviewer has seen either port. Commands and
+versions are in [media/README.md](media/README.md#the-add-run-capture-2026-09-17).
+
 ## M11. What the human review raises, by class
 
 The automated baseline decides whether a person has to look (M4). This entry
@@ -1030,7 +1046,7 @@ higher. Security blocker comments were then asked one yes/no question per
 candidate building block. Hand spot checks held for the kind and helper
 judgments; the process-runner judgment was sometimes generous, so its
 coverage is an upper bound. The figures the
-[blocks plan](BLOCKS_PLAN.md) rests on: 1,530 maintainer comments in 6.7
+[blocks plan](history/2026-09-17-blocks-plan.md) rests on: 1,530 maintainer comments in 6.7
 days from one account, 1,001 of them a security blocker; classes
 environment trust 254, file and state boundary 240, unbounded buffering
 141; a bounded process runner handles at least one raised blocker in 581 of

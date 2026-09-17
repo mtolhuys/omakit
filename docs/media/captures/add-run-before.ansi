@@ -1,0 +1,15 @@
+[2msubject[0m       /tmp/omakit-fixture-qzjuL3 at 007816f8
+[2mbaseline[0m      passed at pin 38060f89
+[2msize score[0m    none: no function to rank
+
+[2mattention[0m     2 classes reviewers raise, biggest first by share of review
+              findings (M11); up to 5 sites each
+
+[33m▓ note[0m  [1mprocess lifecycle[0m  [2m20 of 100 findings[0m  1 process with no deadline
+        [1mWidget.qml:10[0m  /usr/bin/df -h /
+
+[33m▓ note[0m  [1munbounded buffering[0m  [2m19 of 100 findings[0m  1 collector with no cap
+        [1mWidget.qml:10[0m  /usr/bin/df -h /
+
+[2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers observed; static;
+             --full for every site, --json for the document

@@ -1,6 +1,6 @@
 # The GIFs in the README
 
-The five README GIFs and three retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
+The seven README GIFs and three retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
 reordered or rewritten, and they are reproducible from this repository: rendering
 them again from the committed scenes and captures, with the same Pillow,
 FreeType and ffmpeg, produces byte-identical files. Measured: a different
@@ -15,14 +15,19 @@ n9.0.1) after `identity.available` began naming where its registry came from.
 Measured at that re-recording: the same capture and the same Pillow and
 FreeType, with ffmpeg n9.0.1 instead of 4.4.2, re-rendered the previous
 `submit.gif` to 797,813 bytes against the committed 792,201, so the ffmpeg
-version is part of the record and not decoration. `watch.gif` and `setup.gif`
+version is part of the record and not decoration. `banner` was re-recorded on
+2026-09-17 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg n9.0.1) when the tagline
+became the 0.6.0 line, which is wider than the wordmark and is drawn as the
+two lines the program wraps it to; the scene grew from 28 to 33 columns and
+from 8 to 9 rows to hold them. `watch.gif` and `setup.gif`
 were left alone at that point because nothing they print had changed: `watch`
 does not read the registry, and the `setup` capture was taken with `omakit`
 already on PATH, where no install hint prints.
 
 | GIF | What it is | How it was captured |
 | --- | --- | --- |
-| `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it | a terminal session with timings |
+| `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it, and the 0.6.0 tagline on the two lines it wraps to | a terminal session with timings |
+| `add-run.gif` | `omakit inspect` on a fixture with one bare `Process`, `omakit add run` into it, and `inspect` again after the one site is moved to `Run` | stdout of three runs, revealed line by line |
 | `setup.gif` | `omakit setup` on a machine with no pin yet, the wordmark through `ttfx` first | a terminal session with timings |
 | `submit.gif` | `omakit submit` refusing a plugin with no license, no removal instructions and a reserved id, and warning about its agent-control files | stdout, revealed line by line |
 | `watch.gif` | `omakit watch` on a real open submission whose validated commit has fallen behind | stdout, revealed line by line |
@@ -64,7 +69,7 @@ The two animated ones are recorded with their timings:
 ```bash
 script -q --log-out docs/media/captures/banner.out \
           --log-timing docs/media/captures/banner.tim \
-  -c 'stty rows 12 cols 40; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; await banner({ tagline: \"the safe place to find out\" })"'
+  -c 'stty rows 12 cols 40; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; import { TAGLINE } from \"./tools/marketplace/usage.mjs\"; await banner({ tagline: TAGLINE })"'
 
 rm -rf .cache/marketplace   # so setup has something to do
 which ttfx                  # on PATH, so the wordmark plays its effect first
@@ -326,3 +331,40 @@ another ffmpeg, which is the reason the version is recorded.
 The capture has 27 lines, none wider than 80 columns, and its sha256 and the
 GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
 beside the other GIFs.
+
+## The add-run capture, 2026-09-17
+
+`add-run.gif` is three runs on one fixture, the `process-without-deadline`
+tree from `tests/fixtures/inspect/` materialised into a temporary Git
+repository: `omakit inspect` on it as it is, `omakit add run` into it, and
+`omakit inspect` again after its one `Process` site was rewritten as a `Run`
+site (`command`, `deadlineMs: 8000`, `onFinished`, a `start()` on
+completion) and committed. Three captures, three steps in one scene, and
+the screen accumulates so the before and the after are read together. The
+`add` step prints the omakit commit the block came from, `e1453ff`, which
+is the commit the block files carry in their headers.
+
+```bash
+node --input-type=module -e '
+  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
+  console.log(materialiseInspectFixture("process-without-deadline").dir)
+' > /tmp/subject
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
+  > docs/media/captures/add-run-before.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit add run "$(cat /tmp/subject)" \
+  > docs/media/captures/add-run-add.ansi 2>&1
+# edit Widget.qml: import "omakit", Process { ... StdioCollector } becomes
+# Run { command, deadlineMs, onFinished }; then commit in the fixture
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
+  > docs/media/captures/add-run-after.ansi 2>&1
+python3 docs/media/render.py docs/media/add-run.scene.json docs/media/add-run.gif
+```
+
+Rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1, the scene
+100 columns by 40 rows at font size 12; the widest capture line is 79
+columns and nothing is omitted.
+
+| GIF | Bytes | Duration | Final hold | Final screen |
+| --- | ---: | ---: | ---: | --- |
+| [add-run.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/add-run.gif) | 38,521 | 29.80 s | 9.00 s | the before report with its two `note` rows, the three written files, and the after report with the `blocks` line, `attention nothing`, and INSPECTED counting the same one process |
+| [banner.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 16,829 | 5.20 s | 4.16 s | the finished wordmark, the rule, and the tagline on two lines; `wordmark joins at 30 cell boundaries` |

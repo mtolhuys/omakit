@@ -1,0 +1,11 @@
+[2msubject[0m       /tmp/omakit-fixture-qzjuL3 at a1758c46
+[2mbaseline[0m      passed at pin 38060f89
+[2mblocks[0m        run 0.1.0, 2 files, unmodified: no row of its own
+[2msize score[0m    none: no function to rank
+
+[2mattention[0m     nothing: no function over the size of 50 listed trees, 6034
+              functions (M12), and none of the 10 classes reviewers raise shows
+              in this tree (M11)
+
+[2;1m░ INSPECTED[0m  1 process (in qml), 0 hosts, 0 writes, 0 timers observed; static;
+             --full for every site, --json for the document

@@ -1,0 +1,32 @@
+{
+  "title": "omakit add run",
+  "width": 100,
+  "rows": 40,
+  "fontSize": 12,
+  "steps": [
+    {
+      "command": "omakit inspect /tmp/omakit-fixture-qzjuL3",
+      "capture": "docs/media/captures/add-run-before.ansi",
+      "reveal": 3,
+      "pace": 12,
+      "pauses": [[9, 160], [12, 200]],
+      "hold": 400
+    },
+    {
+      "command": "omakit add run /tmp/omakit-fixture-qzjuL3",
+      "capture": "docs/media/captures/add-run-add.ansi",
+      "reveal": 3,
+      "pace": 12,
+      "pauses": [[8, 160]],
+      "hold": 400
+    },
+    {
+      "command": "omakit inspect /tmp/omakit-fixture-qzjuL3",
+      "capture": "docs/media/captures/add-run-after.ansi",
+      "reveal": 3,
+      "pace": 12,
+      "pauses": [[3, 180], [8, 220]],
+      "hold": 900
+    }
+  ]
+}
