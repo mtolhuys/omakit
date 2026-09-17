@@ -10,5 +10,23 @@
   "version": "0.1.0",
   "file": "run-supervisor.py",
   "sha256": "3a1c8e18c56592e046e1ac1dfe35df5745c39cc60405dfb6d408ee4eb287ef5f"
+ },
+ {
+  "block": "store",
+  "version": "0.1.0",
+  "file": "Store.qml",
+  "sha256": "c71b5646e0b6ccc4b45e5c57a8c7ed08a089319f4ee7d3ce74ef5e28d8af3801"
+ },
+ {
+  "block": "store",
+  "version": "0.1.0",
+  "file": "store-helper.py",
+  "sha256": "4c860e361c8d2824ec632888d9f09313a131c3114321ac351249e6a887719c7c"
+ },
+ {
+  "block": "store",
+  "version": "0.1.0",
+  "file": "store-helper.py",
+  "sha256": "28576b8189c9d2547c11b273243731a6c954644b7135186e57257addc3c99dd9"
  }
 ]

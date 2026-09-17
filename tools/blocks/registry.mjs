@@ -22,6 +22,21 @@ export const BLOCKS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../.
 
 export const HEADER_END = "end of omakit block header"
 
+/**
+ * A block that uses another block's files from the same omakit/ directory:
+ * `omakit add` writes the required block too, and inspect reads the
+ * requirement when it says whether a block is complete.
+ */
+export const REQUIRES = Object.freeze({ store: Object.freeze(["run"]) })
+
+/** The blocks to add for one name: its requirements first, then itself, each once. */
+export function blockClosure(name) {
+  const names = []
+  for (const required of REQUIRES[name] || []) for (const entry of blockClosure(required)) if (!names.includes(entry)) names.push(entry)
+  if (!names.includes(name)) names.push(name)
+  return names
+}
+
 /** The comment prefix a block file's header uses, by extension. */
 export function commentPrefix(path) {
   return path.endsWith(".py") ? "#" : path.endsWith(".qml") || path.endsWith(".js") || path.endsWith(".mjs") ? "//" : null
