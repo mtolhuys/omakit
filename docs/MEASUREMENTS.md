@@ -1013,3 +1013,60 @@ the report names the measurement, not a severity. `--json` carries every
 function under `observed.functions`, the ones over the thresholds under
 `size.over`, the tree's share under `size.heavyShare` and the listed trees'
 shares under `size.sample.heavyShares`.
+
+## M13. What the review blocks on, over one week of comments, and which of it a block can own
+
+Measured 2026-09-17 over the latest 6,000 comments on
+`omacom/omarchy-plugin-marketplace`, 2026-09-10 to 2026-09-17, read once
+through the GitHub API and classified per comment. The
+[record](evidence/blocks/2026-09-17-review-blockers.json) carries the
+window, the counts and the question texts; the working set itself is not
+committed, because it quotes review text about named plugins. Method: each
+maintainer comment and each comment by the issue's author was put to a
+calibrated classification model that returns a probability per option,
+with the question texts recorded in the file; a choice counts at its most
+probable option and a yes/no question counts as yes at probability 0.5 or
+higher. Security blocker comments were then asked one yes/no question per
+candidate building block. Hand spot checks held for the kind and helper
+judgments; the process-runner judgment was sometimes generous, so its
+coverage is an upper bound. The figures the
+[blocks plan](BLOCKS_PLAN.md) rests on: 1,530 maintainer comments in 6.7
+days from one account, 1,001 of them a security blocker; classes
+environment trust 254, file and state boundary 240, unbounded buffering
+141; a bounded process runner handles at least one raised blocker in 581 of
+the 1,001, a runner plus a private state store in 777.
+
+### Run requirements, 2026-09-17
+
+The same 1,001 security blocker comments were asked one yes/no question
+per line of Run's contract ([record](evidence/blocks/2026-09-17-run-requirements.json),
+the requirement texts in it, none of the working set). A comment can raise
+several lines, so the counts overlap: 587 comments raise at least one, and
+the nine counts sum to 1,967.
+
+| Contract line | Comments raising it |
+| --- | ---: |
+| absolute executable path | 366 |
+| closed environment | 351 |
+| output cap while reading | 313 |
+| hard deadline | 291 |
+| untrusted output shown as plain text with a bound | 266 |
+| cancel on destruction, reload or supersession | 130 |
+| group teardown, TERM then KILL to the whole group | 126 |
+| argv, not a shell string | 106 |
+| reap order and pid identity | 18 |
+
+Read as upper bounds: a comment that raises a line is not resolved by a
+block that implements the line; the block handles the plumbing, the review
+decides. `docs/BLOCKS.md` cites these counts line by line, and the
+`tests/unit/blocks.test.mjs` suite holds the document and the record to
+each other.
+
+### Run spike, 2026-09-17
+
+The design decision between pure QML and QML plus a supervisor, measured on
+a real Quattro shell in separate Quickshell instances, 36 runs over five
+scenarios plus a control, is [docs/BLOCKS_SPIKE.md](BLOCKS_SPIKE.md) with
+its [record](evidence/blocks/2026-09-17-run-spike.json). The repeatable
+form of those scenarios is `tests/lab/run/`, and its document is what
+`docs/BLOCKS.md` cites for the block's own numbers.

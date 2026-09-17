@@ -1,0 +1,40 @@
+{
+ "id": "M13",
+ "part": "run-requirements",
+ "measured": "2026-09-17",
+ "question": "Which of Run's contract lines does each security blocker comment raise, over the M13 working set?",
+ "source": {
+  "workingSet": "the 1,001 security blocker comments of docs/evidence/blocks/2026-09-17-review-blockers.json (maintainer comments on omacom/omarchy-plugin-marketplace, 2026-09-10 to 2026-09-17)",
+  "comments": 1001,
+  "errors": 0
+ },
+ "method": "Each security blocker comment was asked one yes/no question per requirement by a calibrated classification model that returns a probability per option; yes at probability 0.5 or higher. The question: Does this comment raise the requirement, as a blocker or required fix, anywhere in it (yes at probability 0.5 or higher). A comment can raise several requirements, so the counts overlap and do not sum to the comment count. The working set and the scripts that ran the questions are not committed: they quote review text about named plugins.",
+ "requirements": {
+  "absolute_executable": "an executable, interpreter or helper is resolved by bare name through PATH, through #!/usr/bin/env, a login shell, or a user-writable fallback location, instead of a fixed absolute path",
+  "closed_environment": "a child process inherits the ambient environment (for example PATH, BASH_ENV, PYTHONPATH, LD_PRELOAD, shell startup files) instead of a cleared, minimal, explicit environment",
+  "argv_not_shell_string": "a command is built as a shell string (bash -c, sh -c, string interpolation into a command line) instead of an argv array of separate arguments",
+  "hard_deadline": "a started process has no absolute deadline or timeout, or a timeout that does not reliably end it",
+  "group_teardown": "terminating a process does not end its descendants or process group (TERM then KILL to the whole group), so children can survive, hold pipes, or keep running",
+  "reap_order_and_pid_identity": "a process is signalled by a stored or reused PID or process-group number, or the leader is reaped before the group cleanup finished, so a signal can hit an unrelated process",
+  "output_cap_while_reading": "stdout, stderr or another stream is collected without a byte or line limit enforced while reading (for example StdioCollector, reading all output, clipping only after exit)",
+  "cancel_on_destruction": "a running process is not cancelled and cleaned up when its component is destroyed, reloaded, or superseded by a newer run",
+  "untrusted_output_display": "process output or error text is shown or notified without being treated as plain text with a length bound"
+ },
+ "counts": {
+  "absolute_executable": 366,
+  "closed_environment": 351,
+  "argv_not_shell_string": 106,
+  "hard_deadline": 291,
+  "group_teardown": 126,
+  "reap_order_and_pid_identity": 18,
+  "output_cap_while_reading": 313,
+  "cancel_on_destruction": 130,
+  "untrusted_output_display": 266
+ },
+ "commentsRaisingAtLeastOne": 587,
+ "limits": [
+  "One reviewer account and 6.7 days; a policy change moves every share.",
+  "A count is the model's reading of the reviewer's wording against the requirement's text, not the marketplace's taxonomy; hand spot checks in the M13 classification found the runner judgment generous, so read each count as an upper bound.",
+  "A comment raising a requirement is not resolved by a block that implements it; the block handles the plumbing, the review decides."
+ ]
+}
