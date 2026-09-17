@@ -34,11 +34,20 @@ function hasFlag(flags, letter, long = null) {
   return flags.some((flag) => flag === `-${letter}` || (long && (flag === long || flag.startsWith(`${long}=`))) || (/^-[A-Za-z]+$/.test(flag) && flag.includes(letter)))
 }
 
-/** The tool a process resolves through PATH: its first non-wrapper word when that word has no slash. */
+/**
+ * The tool a process resolves through PATH: its first non-wrapper word
+ * when that word is a literal with no slash. A word that is an expression
+ * (`[script, name]`, `[root.helperPath("x.sh")]`) is not a name looked up
+ * in PATH; it is a value the text does not show, and the argument-grammar
+ * class already names the site. Measured on the Theme Manager port
+ * (2026-09-17): 12 of its 24 Run sites read as "resolved from PATH" with
+ * the tool `script`, an absolute path at run time.
+ */
 function pathResolved(process) {
   if (!Array.isArray(process.argv) || !process.argv.length) return null
-  const { tool } = toolOf(process.argv)
+  const { tool, index } = toolOf(process.argv)
   if (!tool || tool.includes("/")) return null
+  if ((process.expressions || []).some((entry) => entry.index === index)) return null
   return tool
 }
 
