@@ -1,0 +1,40 @@
+{
+ "id": "M13",
+ "part": "store-requirements",
+ "measured": "2026-09-17",
+ "question": "Which of Store's contract lines does each security blocker comment raise, over the M13 working set?",
+ "source": {
+  "workingSet": "the 1,001 security blocker comments of docs/evidence/blocks/2026-09-17-review-blockers.json (maintainer comments on omacom/omarchy-plugin-marketplace, 2026-09-10 to 2026-09-17)",
+  "comments": 1001,
+  "errors": 0
+ },
+ "method": "Each security blocker comment was asked one yes/no question per requirement by a calibrated classification model that returns a probability per option; yes at probability 0.5 or higher, the same run as the Run requirements. The question: Does this comment raise the requirement, as a blocker or required fix, anywhere in it (yes at probability 0.5 or higher). A comment can raise several requirements, so the counts overlap and do not sum to the comment count. The working set and the scripts that ran the questions are not committed: they quote review text about named plugins.",
+ "requirements": {
+  "private_directory": "state, cache or configuration files are kept outside a private directory created with mode 0700 under the XDG base directories (state, cache or config), for example in a shared, world-readable or predictable location",
+  "descriptor_relative_no_follow": "a state or cache file or directory is opened by path in a way that follows symbolic links (no O_NOFOLLOW, no directory descriptor with openat), so a planted link can redirect the read or the write",
+  "owner_and_regular_file_checks": "a state or cache file is read or replaced without checking that it is a regular file owned by the current user",
+  "refuse_group_world_writable": "a directory or file that is writable by the group or by others is used for state, cache or configuration",
+  "size_cap_on_read": "a state, cache or configuration file is read whole without a size limit",
+  "exclusive_temp_atomic_replace": "a file is written in place, truncated, or written through a predictable temporary name instead of an exclusive 0600 temporary file followed by an atomic rename",
+  "no_tmp": "state, cache or temporary files are placed under /tmp or another shared temporary directory",
+  "schema_check_on_parse": "a state, cache or configuration file is parsed and used without validating its structure, types or bounds",
+  "no_check_then_use": "a path is checked (existence, type, ownership, permissions) and then opened or written in a separate step, leaving a race between the check and the use"
+ },
+ "counts": {
+  "private_directory": 96,
+  "descriptor_relative_no_follow": 392,
+  "owner_and_regular_file_checks": 263,
+  "refuse_group_world_writable": 146,
+  "size_cap_on_read": 190,
+  "exclusive_temp_atomic_replace": 273,
+  "no_tmp": 63,
+  "schema_check_on_parse": 218,
+  "no_check_then_use": 288
+ },
+ "commentsRaisingAtLeastOne": 527,
+ "limits": [
+  "One reviewer account and 6.7 days; a policy change moves every share.",
+  "A count is the model's reading of the reviewer's wording against the requirement's text, not the marketplace's taxonomy; read each as an upper bound.",
+  "A comment raising a requirement is not resolved by a block that implements it; the block handles the plumbing, the review decides."
+ ]
+}

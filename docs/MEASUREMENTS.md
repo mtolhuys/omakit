@@ -1062,6 +1062,24 @@ decides. `docs/BLOCKS.md` cites these counts line by line, and the
 `tests/unit/blocks.test.mjs` suite holds the document and the record to
 each other.
 
+### Store requirements, 2026-09-17
+
+The same 1,001 comments, the same run, one yes/no question per line of
+Store's contract ([record](evidence/blocks/2026-09-17-store-requirements.json)).
+527 comments raise at least one; the nine counts overlap and sum to 1,929.
+
+| Contract line | Comments raising it |
+| --- | ---: |
+| descriptor-relative opens with no-follow | 392 |
+| no check-then-use | 288 |
+| exclusive 0600 temp and atomic replace | 273 |
+| owner and regular-file checks | 263 |
+| schema check on parse | 218 |
+| size cap on read | 190 |
+| refusing a group- or world-writable file or directory | 146 |
+| a private 0700 directory under the XDG base | 96 |
+| no /tmp | 63 |
+
 ### Run spike, 2026-09-17
 
 The design decision between pure QML and QML plus a supervisor, measured on
