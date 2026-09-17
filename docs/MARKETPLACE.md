@@ -33,8 +33,25 @@ which was 19% of the parked sample. That is the honest size of it.
 
 ## Where this tool helps
 
+The measurement that changed the tool's direction on 2026-09-17: over one
+week of review, one reviewer wrote 1,001 security blocker comments, and
+most of them ask for the same plumbing. 587 raise a line of a bounded
+process runner, 527 a line of a private state file, and a runner plus a
+store handles at least one blocker in 777 of the 1,001, an upper bound in
+the sense that "handles" means the comment raises that plumbing, not that
+the comment is resolved
+([M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)).
+So the tool now hands the submitter that plumbing first, as two blocks the
+plugin copies into its own tree (`omakit add run`, `omakit add store`,
+[BLOCKS.md](BLOCKS.md)), and keeps the checks for the rest. The blocks
+implement what the review wording asks for and say so with the count per
+line; they never present themselves as the marketplace's rules, and no
+reviewer has yet looked at a plugin that uses them.
+
 | Pain, measured | What this tool does |
 | --- | --- |
+| 587 of 1,001 security blocker comments in one week raise a process line: an absolute path, a closed environment, a deadline, an output cap, a group ended, argv not a shell string | `omakit add run`: a tested Run block, measured on a real shell and on the stock guest, that does all of it by construction; `inspect` shows each `Run {` site with its deadline |
+| 527 of the same 1,001 raise a state line: no-follow, no check-then-use, an atomic replace, owner and mode checks, a size cap, a schema | `omakit add store`: a Store block carried over from a cache transaction the same review read without a further comment |
 | 39 submissions fell out on the title prefix alone; 11 more are malformed in the body, one by a single word | Generates title and body from the pinned form and has the marketplace's own parser judge them before anything is posted |
 | 1,215 of the 2,916 listings with a recorded baseline needed a human to look because of a capability | Runs the official baseline locally on the exact commit first, and says which capability triggered it |
 | 103 issues mention agent-control files, and no automated check reports them | Names every one in the tree with the remedy, as a warning: the marketplace lists plugins that ship them, so it never refuses on it |

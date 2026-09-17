@@ -7,6 +7,7 @@ two blocks, Run 0.1.0 and Store 0.1.0: what each does, which review
 comments each line answers, the API, what it costs, what it does not do,
 and how it is added, updated and recognised. The reasoning and the measurements behind the
 design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
+[history](history/2026-09-17-blocks-plan.md), what is still open in
 [BLOCKS_PLAN.md](BLOCKS_PLAN.md).
 
 A block is not a marketplace rule and never presents itself as one. It

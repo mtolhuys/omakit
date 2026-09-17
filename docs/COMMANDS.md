@@ -1,12 +1,17 @@
 # The commands
 
 Every command, what it reads, what it prints, and what it will not do. The
-short list is `omakit help`; this page is the rest.
+short list is `omakit help`; this page is the rest. Build first: the two
+blocks are what the review blocks on most, measured ([M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own));
+the checks are the second half.
 
 Agent-first: the expected user is a coding agent submitting a plugin on an
 owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 
 ```bash
+omakit add run <plugin-dir>  # the Run block into the plugin's omakit/ directory; --update moves an unmodified copy
+omakit add store <plugin-dir> # the Store block, with run, which it uses
+omakit inspect <plugin-dir>  # what a plugin tree does, as observations: processes, hosts, writes, timers, the blocks it carries, and the review classes the tree shows
 omakit setup                 # the environment, the pin, tab completion, and what to try first
 omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
 omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
@@ -17,8 +22,6 @@ omakit verify <plugin-repo>  # the official security baseline over the local tra
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
 omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
-omakit inspect <plugin-dir>  # what a plugin tree does, as observations: processes, hosts, writes, timers, the baseline's capabilities, and the review classes the tree shows
-omakit add <block> [<plugin-dir>] # copy the run or store block into the plugin's omakit/ directory; --update moves an unmodified copy
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward

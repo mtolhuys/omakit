@@ -1,6 +1,6 @@
 # Run spike: two designs measured on a real Quattro shell
 
-Status: phase 1 of [the blocks plan](BLOCKS_PLAN.md), done 2026-09-17. This
+Status: phase 1 of [the blocks plan](history/2026-09-17-blocks-plan.md), done 2026-09-17. This
 is a measurement record and a design decision. No omakit source changed, no
 block exists yet, nothing was released or posted. Every figure below says
 how it was measured; the per-run rows are in
