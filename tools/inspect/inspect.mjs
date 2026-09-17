@@ -116,6 +116,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
   // A `Run {` site is a process only where the tree carries the run block
   // whole and unmodified; otherwise the name is the plugin's own.
   const runBlock = blocks.some((block) => block.name === "run" && block.state === "unmodified" && block.complete)
+  const storeBlock = runBlock && blocks.some((block) => block.name === "store" && block.state === "unmodified" && block.complete)
   const processes = []
   const hosts = []
   const writes = []
@@ -134,7 +135,7 @@ export async function inspectPlugin({ repoRoot, target, offline = false, allowDi
     const found = extractHosts(file, rows)
     hosts.push(...found.hosts)
     notResolvable.push(...found.notResolvable)
-    writes.push(...extractWrites(file, { pluginId }))
+    writes.push(...extractWrites(file, { pluginId, storeBlock }))
     const ticking = extractTimers(file)
     timers.push(...ticking.timers)
     notResolvable.push(...ticking.notResolvable)

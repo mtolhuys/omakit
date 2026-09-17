@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.store-block-modified",
+  "name": "Fixture: the Store block, modified",
+  "version": "0.0.1",
+  "description": "The same widget over a copy of the store block whose store-helper.py body was edited: the store block is reported modified, its files are read like any other, and the Store site is not a write the extraction knows.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

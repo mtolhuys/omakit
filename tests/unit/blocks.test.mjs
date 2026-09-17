@@ -1,5 +1,5 @@
-// The Run block (blocks/run/), the registry behind it, `omakit add` and
-// inspect's recognition of a copy. What the lab suite (tests/lab/run/)
+// The Run and Store blocks (blocks/run/, blocks/store/), the registry
+// behind them, `omakit add` and inspect's recognition of a copy. What the lab suite (tests/lab/run/)
 // proves on a real shell is not repeated here; this file holds the parts
 // that need no Quickshell: every header carries its body's digest and the
 // NOTICE is current, no function crosses the M12 thresholds, the
@@ -30,6 +30,7 @@ requirePinForTests()
 const VERSION = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version
 const PYTHON = "/usr/bin/python3"
 const SUPERVISOR = join(REPO_ROOT, "blocks/run/run-supervisor.py")
+const STORE_HELPER = join(REPO_ROOT, "blocks/store/store-helper.py")
 const hasPython = existsSync(PYTHON)
 
 function run(args, options = {}) {
@@ -43,6 +44,13 @@ function supervise(args, options = {}) {
   return { code: result.status, lines, result: lines.find((line) => line.ev === "result"), err: result.stderr }
 }
 
+/** The store helper against a throwaway HOME; the result line parsed. */
+function store(home, args, env = {}) {
+  const result = spawnSync(PYTHON, ["-I", "-S", "-B", STORE_HELPER, ...args], { encoding: "utf8", env: { PATH: "/usr/bin", HOME: home, ...env } })
+  const line = result.stdout.trim().split("\n").pop()
+  return { code: result.status, result: line ? JSON.parse(line) : null, err: result.stderr }
+}
+
 function pluginDir() {
   const dir = mkdtempSync(join(tmpdir(), "omakit-add-"))
   writeFileSync(join(dir, "manifest.json"), `${JSON.stringify({ schemaVersion: 1, id: "fixture.add", name: "add", version: "0.0.1" })}\n`)
@@ -51,30 +59,32 @@ function pluginDir() {
 
 // --- the shipped files -----------------------------------------------------------
 
-test("the run block ships two files with a header each, the header's sha256 is the body's, and NOTICE and history are current", () => {
+test("the two blocks ship two files each with a header, the header's sha256 is the body's, and NOTICE and history are current", () => {
   const blocks = shippedBlocks()
-  const runBlock = blocks.find((block) => block.name === "run")
-  assert.ok(runBlock, "blocks/run/ is a shipped block")
-  assert.deepEqual(runBlock.files.map((entry) => entry.file), ["Run.qml", "run-supervisor.py"])
-  assert.equal(runBlock.version, "0.1.0")
-  for (const entry of runBlock.files) {
-    const text = entry.header.join("\n")
-    assert.match(text, /omakit block: run 0\.1\.0/)
-    assert.match(text, /SPDX-License-Identifier: MIT/)
-    assert.match(text, /Copyright \(c\) 2026 Maarten Tolhuijs/)
-    assert.match(text, new RegExp(`Source: omakit blocks/run/${entry.file.replace(".", "\\.")}, commit unstamped`))
-    assert.equal(entry.headerSha256, entry.sha256, `${entry.file}: the header's sha256 is not the body's; run node tools/blocks/stamp.mjs`)
-    assert.equal(entry.header.length, 6, "six header lines, so `tail -n +7` is the body")
-    assert.equal(bodySha256(entry.text.split("\n").slice(6).join("\n")), entry.sha256)
-    // A person's check: sha256sum over everything after the header line.
-    const bySha = execFileSync("sh", ["-c", `tail -n +7 "${join(runBlock.dir, entry.file)}" | sha256sum`], { encoding: "utf8" }).split(" ")[0]
-    assert.equal(bySha, entry.sha256)
+  assert.deepEqual(blocks.map((block) => [block.name, block.version, block.files.map((entry) => entry.file)]), [
+    ["run", "0.1.0", ["Run.qml", "run-supervisor.py"]],
+    ["store", "0.1.0", ["Store.qml", "store-helper.py"]],
+  ])
+  const history = shippedHistory()
+  for (const block of blocks) {
+    for (const entry of block.files) {
+      const text = entry.header.join("\n")
+      assert.match(text, new RegExp(`omakit block: ${block.name} 0\\.1\\.0`))
+      assert.match(text, /SPDX-License-Identifier: MIT/)
+      assert.match(text, /Copyright \(c\) 2026 Maarten Tolhuijs/)
+      assert.match(text, new RegExp(`Source: omakit blocks/${block.name}/${entry.file.replace(".", "\\.")}, commit unstamped`))
+      assert.equal(entry.headerSha256, entry.sha256, `${entry.file}: the header's sha256 is not the body's; run node tools/blocks/stamp.mjs`)
+      assert.equal(entry.header.length, 6, "six header lines, so `tail -n +7` is the body")
+      assert.equal(bodySha256(entry.text.split("\n").slice(6).join("\n")), entry.sha256)
+      // A person's check: sha256sum over everything after the header line.
+      const bySha = execFileSync("sh", ["-c", `tail -n +7 "${join(block.dir, entry.file)}" | sha256sum`], { encoding: "utf8" }).split(" ")[0]
+      assert.equal(bySha, entry.sha256)
+      assert.ok(history.some((row) => row.block === block.name && row.file === entry.file && row.sha256 === entry.sha256), `${entry.file} is in blocks/history.json`)
+    }
+    assert.equal(block.notice, renderNotice([block], "unstamped"), `blocks/${block.name}/NOTICE is what the registry renders; run node tools/blocks/stamp.mjs`)
   }
-  assert.equal(runBlock.notice, renderNotice([runBlock], "unstamped"), "blocks/run/NOTICE is what the registry renders; run node tools/blocks/stamp.mjs")
   const stamp = spawnSync(process.execPath, [join(REPO_ROOT, "tools/blocks/stamp.mjs"), "--check"], { encoding: "utf8" })
   assert.equal(stamp.status, 0, stamp.stdout)
-  const history = shippedHistory()
-  for (const entry of runBlock.files) assert.ok(history.some((row) => row.block === "run" && row.file === entry.file && row.sha256 === entry.sha256), `${entry.file} is in blocks/history.json`)
 })
 
 test("every block file is ASCII: no control or bidirectional character hides in the code that strips them", () => {
@@ -236,7 +246,7 @@ test("add refuses: a modified copy under --update, an existing differing file wi
   const bare = mkdtempSync(join(tmpdir(), "omakit-add-bare-"))
   assert.throws(() => addBlock({ repoRoot: REPO_ROOT, block: "run", dir: bare }), (error) => error.code === "not-a-plugin")
   assert.deepEqual(readdirSync(bare), [], "nothing was written into a directory that is not a plugin")
-  assert.throws(() => addBlock({ repoRoot: REPO_ROOT, block: "store", dir }), (error) => error.code === "unknown-block")
+  assert.throws(() => addBlock({ repoRoot: REPO_ROOT, block: "fetch", dir }), (error) => error.code === "unknown-block")
   assert.throws(() => addBlock({ repoRoot: REPO_ROOT, block: "run", dir: join(dir, "missing") }), (error) => error.code === "plugin-dir-not-found")
 })
 
@@ -277,7 +287,7 @@ test("the command line: `omakit add run <dir>` prints one line per file, --json 
   assert.equal(cwd.code, 1, "the modified copy is still there, and the current directory is the plugin")
   const add = subcommandsOf().find((command) => command.name === "add")
   assert.equal(add.target, "block")
-  assert.deepEqual(add.blocks, ["run"])
+  assert.deepEqual(add.blocks, ["run", "store"])
   assert.deepEqual(add.flags.map((flag) => flag.flag), ["--update", "--json"])
 })
 
@@ -329,10 +339,135 @@ test("recogniseBlocks and the Run extraction stand on their own: a tree without 
 })
 
 test("the fixture copies are the shipped files, so a block change is a visible fixture change", () => {
+  const same = (fixture, block, name) => assert.equal(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect", fixture, "omakit", name), "utf8"), readFileSync(join(REPO_ROOT, "blocks", block, name), "utf8"), `tests/fixtures/inspect/${fixture}/omakit/${name} is not the shipped file; copy it again`)
   for (const name of ["Run.qml", "run-supervisor.py"]) {
-    const shipped = readFileSync(join(REPO_ROOT, "blocks/run", name), "utf8")
-    assert.equal(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/run-block/omakit", name), "utf8"), shipped, `tests/fixtures/inspect/run-block/omakit/${name} is not the shipped file; copy it again`)
-    if (name === "run-supervisor.py") assert.equal(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/run-block-modified/omakit", name), "utf8"), shipped)
+    same("run-block", "run", name)
+    same("store-block", "run", name)
+    same("store-block-modified", "run", name)
+    if (name === "run-supervisor.py") same("run-block-modified", "run", name)
+  }
+  for (const name of ["Store.qml", "store-helper.py"]) {
+    same("store-block", "store", name)
+    if (name === "Store.qml") same("store-block-modified", "store", name)
   }
   assert.match(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/run-block-modified/omakit/Run.qml"), "utf8"), /\/\/ edited by the plugin author/)
+  assert.match(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/store-block-modified/omakit/store-helper.py"), "utf8"), /# edited by the plugin author/)
+})
+
+// --- the store helper --------------------------------------------------------------
+
+test("the store helper: a private 0700 directory, a 0600 file through a staging rename, a capped read, a schema, and remove", { skip: !hasPython && "no /usr/bin/python3" }, () => {
+  const home = mkdtempSync(join(tmpdir(), "omakit-store-"))
+  const schema = JSON.stringify({ type: "object", required: ["version"], properties: { version: { type: "integer", minimum: 1 } }, additionalProperties: false })
+  const base = ["--kind", "state", "--plugin", "fixture.store", "--name", "memory.json"]
+  assert.equal(store(home, ["read", ...base]).result.state, "missing")
+  const written = store(home, ["write", ...base, "--schema", schema, "--value", JSON.stringify({ version: 2 })]).result
+  assert.equal(written.state, "ok")
+  assert.equal(written.path, join(home, ".local/state/fixture.store/memory.json"))
+  assert.equal((statSync(join(home, ".local/state/fixture.store")).mode & 0o777).toString(8), "700")
+  assert.equal((statSync(written.path).mode & 0o777).toString(8), "600")
+  assert.deepEqual(readdirSync(join(home, ".local/state/fixture.store")), ["memory.json"], "no staging file is left")
+  const read = store(home, ["read", ...base, "--schema", schema]).result
+  assert.equal(read.state, "ok")
+  assert.deepEqual(read.value, { version: 2 })
+  assert.equal(read.bytes, 18, `{\n "version": 2\n}\n`)
+  assert.equal(store(home, ["read", ...base, "--schema", JSON.stringify({ type: "object", required: ["nope"] })]).result.state, "invalid")
+  assert.equal(store(home, ["write", ...base, "--schema", schema, "--value", JSON.stringify({ version: 0 })]).result.state, "invalid")
+  assert.equal(store(home, ["write", ...base, "--schema", schema, "--value", JSON.stringify({ version: 1, extra: true })]).result.state, "invalid")
+  assert.equal(store(home, ["write", ...base, "--value", "not json"]).result.state, "invalid")
+  assert.equal(store(home, ["read", ...base, "--max-bytes", "4"]).result.state, "overflow")
+  assert.equal(store(home, ["write", ...base, "--max-bytes", "4", "--value", "12345"]).result.state, "overflow")
+  assert.equal(store(home, ["remove", ...base]).result.state, "ok")
+  assert.equal(store(home, ["remove", ...base]).result.state, "missing")
+  assert.equal(store(home, ["read", ...base]).result.state, "missing")
+  const cache = store(home, ["write", "--kind", "cache", "--plugin", "fixture.store", "--name", "catalog.json", "--value", "[]"]).result
+  assert.equal(cache.path, join(home, ".cache/fixture.store/catalog.json"))
+  assert.equal(store(home, ["write", ...base, "--value", "1"], { XDG_STATE_HOME: "/tmp" }).result.state, "refused", "a base outside HOME cannot be walked")
+})
+
+test("the store helper refuses a planted link on the directory and on the file, a group-writable file, an unsafe name, and reports an OS error by name", { skip: !hasPython && "no /usr/bin/python3" }, () => {
+  const home = mkdtempSync(join(tmpdir(), "omakit-store-"))
+  const victim = mkdtempSync(join(tmpdir(), "omakit-victim-"))
+  writeFileSync(join(victim, "memory.json"), "untouched\n")
+  const base = ["--kind", "state", "--plugin", "fixture.store", "--name", "memory.json"]
+  execFileSync("mkdir", ["-p", join(home, ".local/state")])
+  execFileSync("ln", ["-s", victim, join(home, ".local/state/fixture.store")])
+  let refused = store(home, ["write", ...base, "--value", "1"]).result
+  assert.equal(refused.state, "refused")
+  assert.match(refused.reason, /symbolic link/)
+  assert.equal(readFileSync(join(victim, "memory.json"), "utf8"), "untouched\n")
+  execFileSync("rm", [join(home, ".local/state/fixture.store")])
+  execFileSync("mkdir", ["-m", "700", join(home, ".local/state/fixture.store")])
+  execFileSync("ln", ["-s", join(victim, "memory.json"), join(home, ".local/state/fixture.store/memory.json")])
+  refused = store(home, ["read", ...base]).result
+  assert.equal(refused.state, "refused")
+  assert.match(refused.reason, /symbolic link/)
+  assert.equal(store(home, ["write", ...base, "--value", "1"]).result.state, "ok", "the write replaces the link with a regular file")
+  assert.equal(readFileSync(join(victim, "memory.json"), "utf8"), "untouched\n")
+  assert.ok(statSync(join(home, ".local/state/fixture.store/memory.json")).isFile())
+  execFileSync("chmod", ["660", join(home, ".local/state/fixture.store/memory.json")])
+  refused = store(home, ["read", ...base]).result
+  assert.equal(refused.state, "refused")
+  assert.match(refused.reason, /writable by the group/)
+  assert.equal(store(home, ["read", "--kind", "state", "--plugin", "../up", "--name", "x"]).result.state, "refused")
+  assert.equal(store(home, ["read", "--kind", "state", "--plugin", "fixture.store", "--name", ".hidden"]).result.state, "refused")
+  assert.equal(store(home, ["read", "--kind", "home", "--plugin", "fixture.store", "--name", "x"]).result.state, "refused")
+  const failed = store(join(home, "does-not-exist"), ["read", ...base]).result
+  assert.equal(failed.state, "failed")
+  assert.match(failed.reason, /FileNotFoundError/)
+})
+
+test("ten store writers at once leave one whole file and no staging file; a stale staging file is swept and a fresh one kept", { skip: !hasPython && "no /usr/bin/python3" }, async () => {
+  const home = mkdtempSync(join(tmpdir(), "omakit-store-"))
+  const base = ["--kind", "state", "--plugin", "fixture.store", "--name", "memory.json"]
+  const { spawn } = await import("node:child_process")
+  const results = await Promise.all(Array.from({ length: 10 }, (_, index) => new Promise((resolve) => {
+    const child = spawn(PYTHON, ["-I", "-S", "-B", STORE_HELPER, "write", ...base, "--value", JSON.stringify({ writer: index })], { env: { PATH: "/usr/bin", HOME: home }, stdio: ["ignore", "pipe", "ignore"] })
+    let out = ""
+    child.stdout.on("data", (chunk) => { out += chunk })
+    child.on("close", () => resolve(JSON.parse(out.trim())))
+  })))
+  assert.deepEqual(results.map((result) => result.state), Array(10).fill("ok"))
+  const dir = join(home, ".local/state/fixture.store")
+  assert.deepEqual(readdirSync(dir), ["memory.json"])
+  const value = JSON.parse(readFileSync(join(dir, "memory.json"), "utf8"))
+  assert.ok(Number.isInteger(value.writer) && value.writer >= 0 && value.writer < 10, "one whole write")
+  writeFileSync(join(dir, ".store-99999-0123456789abcdef.tmp"), "{")
+  execFileSync("touch", ["-d", "-1 hour", join(dir, ".store-99999-0123456789abcdef.tmp")])
+  writeFileSync(join(dir, ".store-99998-fedcba9876543210.tmp"), "{")
+  assert.equal(store(home, ["write", ...base, "--value", "{}"]).result.state, "ok")
+  assert.deepEqual(readdirSync(dir).sort(), [".store-99998-fedcba9876543210.tmp", "memory.json"], "the stale one is swept, the fresh one is a live writer's")
+})
+
+test("add store brings run along, reports each file's block, and add run alone leaves store out", () => {
+  const dir = pluginDir()
+  const result = addBlock({ repoRoot: REPO_ROOT, block: "store", dir })
+  assert.deepEqual(result.requires, ["run 0.1.0"])
+  assert.deepEqual(result.files.map((file) => [file.block, file.path, file.state]), [
+    ["run", "omakit/Run.qml", "written"], ["run", "omakit/run-supervisor.py", "written"],
+    ["store", "omakit/Store.qml", "written"], ["store", "omakit/store-helper.py", "written"],
+  ])
+  assert.match(readFileSync(join(dir, "omakit/NOTICE"), "utf8"), /block run 0\.1\.0[\s\S]*block store 0\.1\.0/)
+  const other = pluginDir()
+  assert.deepEqual(addBlock({ repoRoot: REPO_ROOT, block: "run", dir: other }).files.map((file) => file.block), ["run", "run"])
+  assert.deepEqual(readdirSync(join(other, "omakit")).sort(), ["NOTICE", "Run.qml", "run-supervisor.py"])
+  const cli = run(["add", "store", other])
+  assert.equal(cli.code, 0, cli.err)
+  assert.match(cli.out, /current +omakit\/Run\.qml \(run, which store uses\)/)
+  assert.match(cli.out, /written +omakit\/Store\.qml/)
+  assert.match(cli.out, /block +store 0\.1\.0, with run 0\.1\.0/)
+})
+
+test("inspect: an unmodified store block is one row beside run's, and the Store site is a write under the plugin's own state directory at mode 0600; a modified copy is read like any other file", async () => {
+  const whole = await inspectPlugin({ repoRoot: REPO_ROOT, target: materialiseInspectFixture("store-block").dir, omakitVersion: VERSION, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-blocks-")) })
+  assert.deepEqual(whole.blocks.map((block) => [block.name, block.state, block.complete]), [["run", "unmodified", true], ["store", "unmodified", true]])
+  assert.deepEqual(whole.observed.writes.map((row) => [row.file, row.line, row.via, row.path, row.controlledDirectory, row.controlledBy, row.mode, row.block]), [["Widget.qml", 8, "block-store", "$XDG_STATE_HOME/fixture.store-block/memory.json", "observed", "$XDG_STATE_HOME", "0600", "store"]])
+  assert.deepEqual(whole.patterns, [])
+  const report = renderInspect(whole, { colour: false })
+  assert.match(report.replace(/\n +/g, " "), /blocks +run 0\.1\.0, 2 files, unmodified: no row of its own; store 0\.1\.0, 2 files, unmodified: no row of its own/)
+  assert.match(renderInspect(whole, { colour: false, full: true }).replace(/\n +/g, " "), /Store \$XDG_STATE_HOME\/fixture\.store-block\/memory\.json \(through the store block\)/)
+  const edited = await inspectPlugin({ repoRoot: REPO_ROOT, target: materialiseInspectFixture("store-block-modified").dir, omakitVersion: VERSION, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-blocks-")) })
+  assert.deepEqual(edited.blocks.map((block) => [block.name, block.state]), [["run", "unmodified"], ["store", "modified"]])
+  assert.deepEqual(edited.observed.writes, [], "without the whole store block, Store is not a write the extraction knows")
+  assert.match(renderInspect(edited, { colour: false }).replace(/\n +/g, " "), /store 0\.1\.0, modified \(omakit\/store-helper\.py\): read like any other file/)
 })

@@ -1,0 +1,213 @@
+{
+  "omakit": "<version>",
+  "command": "inspect",
+  "method": "static extraction, regular expressions over qml and shell; observed, not executed",
+  "subject": {
+    "dir": "<dir>",
+    "commit": "<commit>",
+    "repository": {
+      "url": "https://github.com/example/omarchy-plugin-fixture-store-block"
+    },
+    "mode": "author",
+    "pluginId": "fixture.store-block",
+    "filesRead": {
+      "qml": 3,
+      "js": 0,
+      "shell": 0,
+      "python": 2,
+      "other": 0
+    },
+    "uncommittedFiles": 0
+  },
+  "observed": {
+    "processes": [],
+    "hosts": [],
+    "writes": [
+      {
+        "file": "Widget.qml",
+        "line": 8,
+        "path": "$XDG_STATE_HOME/fixture.store-block/memory.json",
+        "canonicalPath": "$XDG_STATE_HOME/fixture.store-block/memory.json",
+        "via": "block-store",
+        "controlledDirectory": "observed",
+        "controlledBy": "$XDG_STATE_HOME",
+        "temp": false,
+        "mode": "0600",
+        "block": "store"
+      }
+    ],
+    "timers": [],
+    "functions": []
+  },
+  "blocks": [
+    {
+      "name": "run",
+      "version": "0.1.0",
+      "shippedVersion": "0.1.0",
+      "state": "unmodified",
+      "complete": true,
+      "files": [
+        {
+          "path": "omakit/Run.qml",
+          "state": "unmodified",
+          "version": "0.1.0"
+        },
+        {
+          "path": "omakit/run-supervisor.py",
+          "state": "unmodified",
+          "version": "0.1.0"
+        }
+      ]
+    },
+    {
+      "name": "store",
+      "version": "0.1.0",
+      "shippedVersion": "0.1.0",
+      "state": "unmodified",
+      "complete": true,
+      "files": [
+        {
+          "path": "omakit/Store.qml",
+          "state": "unmodified",
+          "version": "0.1.0"
+        },
+        {
+          "path": "omakit/store-helper.py",
+          "state": "unmodified",
+          "version": "0.1.0"
+        }
+      ]
+    }
+  ],
+  "size": {
+    "measurement": "M12",
+    "sample": {
+      "trees": 50,
+      "functions": 6034,
+      "heavyShares": [
+        0.421,
+        0.3361,
+        0.4049,
+        0,
+        0.2979,
+        0.3647,
+        0.4107,
+        0.6167,
+        0.2635,
+        0.8434,
+        0,
+        0,
+        0.193,
+        0.6399,
+        0.4063,
+        0.4769,
+        0.4322,
+        0.5337,
+        0.3628,
+        0.6626,
+        0.0554,
+        0.7775,
+        0.3548,
+        0.3285,
+        0,
+        0.6801,
+        0.2222,
+        0.3084,
+        0.3705,
+        0.6468,
+        0.3928,
+        0.6786,
+        0.3247,
+        0.5225,
+        0,
+        0.1462,
+        0,
+        0.5817,
+        0.5891,
+        0.3835,
+        0.2491,
+        0.5627,
+        0.2439,
+        0.3643,
+        0.6719,
+        0.6525,
+        0.4385,
+        0.565,
+        0.5672
+      ]
+    },
+    "thresholds": {
+      "lines": 25,
+      "branches": 6,
+      "depth": 2
+    },
+    "heavyShare": 0,
+    "score": null,
+    "over": []
+  },
+  "counts": {
+    "processes": {
+      "total": 0,
+      "qml": 0,
+      "shell": 0
+    },
+    "hosts": 0,
+    "writes": 1,
+    "timers": 0,
+    "functions": 0,
+    "notResolvable": 0
+  },
+  "notResolvable": [],
+  "patterns": [],
+  "lookedFor": [
+    "process-lifecycle",
+    "unbounded-buffering",
+    "file-and-state-boundary",
+    "environment-trust",
+    "secrets",
+    "supply-chain",
+    "network-egress",
+    "untrusted-text-to-display",
+    "argument-grammar",
+    "privilege-disclosure"
+  ],
+  "notVisible": [
+    "commands built at run time",
+    "hosts and paths from variables, properties, config or the environment",
+    "scripts a command calls that inspect does not follow",
+    "components loaded from outside the tree",
+    "encoded or obfuscated content, and what a sh -c or eval string runs"
+  ],
+  "marketplaceBaseline": {
+    "pin": {
+      "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
+      "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+      "baselineVersion": "3",
+      "enforcementMode": "selective"
+    },
+    "transport": "local-git",
+    "assumedByAdapter": [
+      "repository.private=false",
+      "repository.disabled=false",
+      "repository.archived=false",
+      "tree.truncated=false (the local tree is always complete)"
+    ],
+    "invoked": true,
+    "skipReason": null,
+    "official": {
+      "schemaVersion": 1,
+      "baselineVersion": "3",
+      "repository": "example/omarchy-plugin-fixture-store-block",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-store-block",
+      "commitSha": "<commit>",
+      "checkedAt": "1970-01-01T00:00:00.000Z",
+      "outcome": "passed",
+      "enforcementMode": "selective",
+      "disposition": "clear",
+      "blocksApproval": false,
+      "findings": [],
+      "capabilities": []
+    },
+    "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
+  }
+}

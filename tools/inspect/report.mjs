@@ -106,7 +106,7 @@ function hostRow(host, c) {
 }
 
 function writeRow(write, c) {
-  const what = write.via === "FileView" ? `FileView path: ${write.path}` : `${write.via} ${write.path}`
+  const what = write.via === "FileView" ? `FileView path: ${write.path}` : write.via === "block-store" ? `Store ${write.path} (through the store block)` : `${write.via} ${write.path}`
   const where = write.controlledDirectory === "observed"
     ? `observed (${write.controlledBy})`
     : write.controlledDirectory === "not-observed"

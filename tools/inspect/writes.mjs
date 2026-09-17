@@ -68,9 +68,26 @@ function row(file, line, rawPath, via, pluginId, mode = null) {
   return { file: file.path, line, path: String(rawPath).trim(), canonicalPath: canonical, via, ...classified, mode }
 }
 
-function qmlWrites(file, pluginId) {
+/**
+ * A `Store {` site of the omakit store block: one file under the plugin's
+ * private directory in the XDG state or cache base (docs/BLOCKS.md), so
+ * the path is `$XDG_STATE_HOME/<pluginId>/<name>` or the cache one, a
+ * directory the plugin controls, written at mode 0600 through a staging
+ * file. Read only where the tree carries the store block unmodified.
+ */
+function storeRow(file, text, block, pluginId) {
+  const kind = stringLiteral(propertyValue(block.body, "kind")?.text ?? "") ?? "state"
+  const base = kind === "cache" ? "$XDG_CACHE_HOME" : "$XDG_STATE_HOME"
+  const id = stringLiteral(propertyValue(block.body, "pluginId")?.text ?? "")
+  const name = stringLiteral(propertyValue(block.body, "name")?.text ?? "")
+  const path = `${base}/${id || "<pluginId>"}/${name || "<name>"}`
+  return { ...row(file, lineOf(text, block.start), path, "block-store", pluginId, "0600"), block: "store" }
+}
+
+function qmlWrites(file, pluginId, { storeBlock = false } = {}) {
   const text = blankComments(file.text)
   const rows = []
+  if (storeBlock) for (const block of blocks(text, "Store")) rows.push(storeRow(file, text, block, pluginId))
   for (const block of blocks(text, "FileView")) {
     const path = propertyValue(block.body, "path")
     if (!path) continue
@@ -182,11 +199,12 @@ function shellWrites(file, pluginId) {
 
 /**
  * @param {{ path: string, kind: string, text: string }} file
- * @param {{ pluginId?: string|null }} [context]
+ * @param {{ pluginId?: string|null, storeBlock?: boolean }} [options] storeBlock: the tree carries the store block unmodified, so `Store {` is a write site
  * @returns {Array} write rows, in file order
  */
-export function extractWrites(file, { pluginId = null } = {}) {
-  if (file.kind === "qml") return qmlWrites(file, pluginId)
+export function extractWrites(file, options = {}) {
+  const { pluginId = null } = options
+  if (file.kind === "qml") return qmlWrites(file, pluginId, options)
   if (file.kind === "js") return jsWrites(file, pluginId)
   if (file.kind === "shell") return shellWrites(file, pluginId)
   if (file.kind === "python") return pythonWrites(file, pluginId)

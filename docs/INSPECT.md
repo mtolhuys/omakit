@@ -338,7 +338,11 @@ files             [{ path, state, version }]
 An unmodified block's files were not read for facts: no process, host,
 write, timer or function row names them, and no pattern row can. A
 modified copy's files are read like any other, and the report says which
-file differs.
+file differs. A `Store {` block is a write site only where the tree carries
+the store block and the run block it uses, both whole and unmodified: its
+row has `via: "block-store"`, `block: "store"`, the path
+`$XDG_STATE_HOME/<pluginId>/<name>` (or the cache base) as the block builds
+it, `controlledDirectory: "observed"` and `mode: "0600"`.
 
 A shell script contributes one site per command segment of every line that
 is not a comment, split at `|`, `;`, `&&` and `||`, with a command

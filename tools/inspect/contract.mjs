@@ -85,6 +85,7 @@ function write(row, at, problems) {
   if (row.canonicalPath === null && row.controlledDirectory !== "unknown") problems.push(`${at}.controlledDirectory is decided for a path that could not be read`)
   if (!isBool(row.temp)) problems.push(`${at}.temp is not a boolean`)
   if (!nullOr(isString)(row.mode)) problems.push(`${at}.mode is neither a string nor null`)
+  if ((row.via === "block-store") !== (row.block === "store")) problems.push(`${at}.via block-store and block: "store" go together`)
 }
 
 function fn(row, at, problems) {

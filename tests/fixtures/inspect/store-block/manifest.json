@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.store-block",
+  "name": "Fixture: the Store block, unmodified",
+  "version": "0.0.1",
+  "description": "One Store site over unmodified copies of the omakit store and run blocks: the blocks' files raise no row, and the Store site is a write under the plugin's own state directory at mode 0600.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}
