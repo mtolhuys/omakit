@@ -324,6 +324,37 @@ guest's is beside it.
 - It does not lock. Two writers race by rename; the last whole write wins,
   and no reader ever sees a partial one.
 
+### The first port: Sidecar, 2026-09-17
+
+Sidecar (`github.com/mtolhuys/omarchy-sidecar`, the author's own) keeps
+its device state in a Python daemon, not in QML, so the port is on the
+helper's side: on its `store-port` branch `sidecar/util.py` imports
+`omakit/store-helper.py` and `sidecar/store.py` reads and writes
+`devices.json` through `result_of`, with the walk's `HOME` and
+`XDG_STATE_HOME` passed in by the importer rather than read from the
+process. A read that is not `ok` and not `missing` moves the file aside
+as `devices.corrupt.<hex>.json` and starts the daemon paused
+([record](evidence/blocks/2026-09-17-sidecar-port.json), counts only):
+
+| Measured | Before | After |
+| --- | ---: | ---: |
+| inspect, every count | unchanged | unchanged |
+| `blocks` line | none | store 0.1.0 and run 0.1.0, 4 files, unmodified |
+| the plugin's tests | 71 | 71 |
+| desktop exercise | | `devices.json` 0600 in a 0700 directory; a planted link in the state path refused and moved aside, the daemon paused |
+| guest lifecycle | blocked | blocked, identically |
+
+`inspect` counts are unchanged because the writes were never in QML:
+inspect reads QML and shell, and a Python daemon's `open()` was never a
+row. What the port changes is what the daemon does at the file, and the
+evidence is the exercise, not a count. The guest lifecycle is blocked on
+`main` and on the port alike, before the block runs: the service reads
+`manifest.__sourceDir`, which the shell of the 4.0.3 pin strips, so the
+helper path is `/helper/sidecarctl` and the widget never reaches its
+state. That is Sidecar 0.2.1's own incompatibility with stock 4.0.3,
+reproduced on `main` in the same lab, and the port's guest evidence is
+the Store lab suite. The port is not submitted; no reviewer has seen it.
+
 ## Versioning
 
 A block's version is its own, `0.1.0` for each, independent of omakit's.

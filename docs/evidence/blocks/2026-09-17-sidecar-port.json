@@ -1,0 +1,231 @@
+{
+ "id": "P2",
+ "measured": "2026-09-17",
+ "question": "What changes when Sidecar keeps its device state through the Store block, measured the way the Theme Manager port was?",
+ "plugin": {
+  "id": "io.github.mtolhuys.sidecar",
+  "repository": "https://github.com/mtolhuys/omarchy-sidecar",
+  "version": "0.2.1",
+  "branch": "store-port"
+ },
+ "method": "Three documents on the default branch HEAD (93800d2) and three on store-port, same omakit checkout and pin, counts only. The port: sidecar/util.py imports omakit/store-helper.py once and runs every read and write of $XDG_STATE_HOME/omarchy-sidecar/devices.json through result_of, the walk's HOME and base handed to the block explicitly; DeviceStore.load quarantines any non-ok result by rename inside the directory descriptor. The daemon from the checkout ran in a transient scope (systemd-run --user --scope -p MemoryMax=768M) with an isolated HOME, XDG_STATE_HOME and XDG_RUNTIME_DIR, fake adapters and route, and ports beside the live daemon's, driven by sidecarctl; the plugin's own tests/lab/v1-lifecycle.sh ran in the plugin lab's stock 4.0.3 guest. A Quickshell instance hosting Service.qml on the desktop was not run: Service.qml starts the daemon on the fixed loopback port the live daemon holds.",
+ "before": {
+  "commit": "93800d2c8dbb8771d71b24721765f4c8709f6d55",
+  "omakit": "0.5.1",
+  "patterns": {
+   "process-lifecycle": 5,
+   "unbounded-buffering": 6,
+   "file-and-state-boundary": 4,
+   "environment-trust": 369,
+   "secrets": 11,
+   "network-egress": 53,
+   "argument-grammar": 3,
+   "privilege-disclosure": 2
+  },
+  "processSites": {
+   "total": 377,
+   "qml": 6,
+   "shell": 371
+  },
+  "writes": 14,
+  "blocks": [],
+  "sizeScore": 2.04,
+  "verify": {
+   "outcome": "review-required",
+   "findings": 0,
+   "capabilities": [
+    "privilege"
+   ]
+  },
+  "submit": {
+   "outcome": "listed",
+   "ready": false,
+   "blocking": []
+  }
+ },
+ "after": {
+  "commit": "098fe1d6b1409b359ad00a0e0a578ac3b0463fb1",
+  "omakit": "0.5.1",
+  "patterns": {
+   "process-lifecycle": 5,
+   "unbounded-buffering": 6,
+   "file-and-state-boundary": 4,
+   "environment-trust": 369,
+   "secrets": 11,
+   "network-egress": 53,
+   "argument-grammar": 3,
+   "privilege-disclosure": 2
+  },
+  "processSites": {
+   "total": 377,
+   "qml": 6,
+   "shell": 371
+  },
+  "writes": 14,
+  "blocks": [
+   {
+    "name": "run",
+    "version": "0.1.0",
+    "shippedVersion": "0.1.0",
+    "state": "unmodified",
+    "complete": true,
+    "files": [
+     {
+      "path": "omakit/Run.qml",
+      "state": "unmodified",
+      "version": "0.1.0"
+     },
+     {
+      "path": "omakit/run-supervisor.py",
+      "state": "unmodified",
+      "version": "0.1.0"
+     }
+    ]
+   },
+   {
+    "name": "store",
+    "version": "0.1.0",
+    "shippedVersion": "0.1.0",
+    "state": "unmodified",
+    "complete": true,
+    "files": [
+     {
+      "path": "omakit/Store.qml",
+      "state": "unmodified",
+      "version": "0.1.0"
+     },
+     {
+      "path": "omakit/store-helper.py",
+      "state": "unmodified",
+      "version": "0.1.0"
+     }
+    ]
+   }
+  ],
+  "sizeScore": 2.04,
+  "verify": {
+   "outcome": "review-required",
+   "findings": 0,
+   "capabilities": [
+    "privilege"
+   ]
+  },
+  "submit": {
+   "outcome": "listed",
+   "ready": false,
+   "blocking": []
+  }
+ },
+ "notes": [
+  "inspect's counts are identical before and after, and that is the finding: Sidecar keeps its state in Python, and inspect's Python write extraction sees open() for writing, not os.open, mkstemp or os.replace, so neither the old transaction nor the block's is a write row; and a program that imports the block has no Store { } site for inspect to list. The blocks row is the one visible change: run 0.1.0 and store 0.1.0, unmodified.",
+  "Sidecar's QML still starts its six programs through Process, including the daemon it must keep alive as long as the shell runs. Run's contract ends every program at a deadline; a service plugin's daemon is not a Run program, and porting those sites was not attempted. A block for a long-lived helper is not planned.",
+  "The runtime files (control socket, status.json under $XDG_RUNTIME_DIR) and the inbox keep the daemon's own descriptor code: the block walks from HOME, and the runtime directory is not under it.",
+  "Found and fixed during the port, in the block: open_private_directory reads HOME and the XDG base from the process environment unless the importer passes them, and the daemon's unit tests, which hand DeviceStore a temporary root, wrote into the user's real state directory through the first version; the block gained an environ parameter and result_of, the importable result step. The user's daemon persisted its own memory (no devices, paused) back and the test data was removed."
+ ],
+ "desktopExercise": {
+  "where": "the daemon from store-port in a transient scope, 2026-09-17",
+  "actions": [
+   {
+    "action": "status",
+    "exit": 0,
+    "out": "{\"version\":\"0.2.1\",\"protocol\":1,\"builds\":{\"service\":\"sidecar-service-v1012\",\"hel"
+   },
+   {
+    "action": "pair-open",
+    "exit": 0,
+    "out": "{\"pairUrl\":\"http://127.0.0.1:47993/app/pair#shSNA56rEo1vfVHtus7YzzIPqHus9gaeRMbv"
+   },
+   {
+    "action": "status-after-open",
+    "exit": 0,
+    "out": "{\"version\":\"0.2.1\",\"protocol\":1,\"builds\":{\"service\":\"sidecar-service-v1012\",\"hel"
+   },
+   {
+    "action": "pause-on",
+    "exit": 0,
+    "out": "{\"version\":\"0.2.1\",\"protocol\":1,\"builds\":{\"service\":\"sidecar-service-v1012\",\"hel"
+   },
+   {
+    "action": "pause-off",
+    "exit": 0,
+    "out": "{\"version\":\"0.2.1\",\"protocol\":1,\"builds\":{\"service\":\"sidecar-service-v1012\",\"hel"
+   },
+   {
+    "fact": "after-actions",
+    "entries": [
+     "devices.json"
+    ],
+    "dir_mode": "0o700",
+    "devices_json_is_link": false,
+    "file_mode": "0o600",
+    "content": {
+     "devices": [],
+     "paused": false,
+     "schemaVersion": 2
+    }
+   },
+   {
+    "action": "status-after-link",
+    "exit": 0,
+    "out": "{\"version\":\"0.2.1\",\"protocol\":1,\"builds\":{\"service\":\"sidecar-service-v1012\",\"hel"
+   },
+   {
+    "fact": "after-planted-link",
+    "entries": [
+     "devices.corrupt.8405abe08b42.json",
+     "devices.json"
+    ],
+    "dir_mode": "0o700",
+    "devices_json_is_link": false,
+    "file_mode": "0o600",
+    "content": {
+     "devices": [],
+     "paused": true,
+     "schemaVersion": 2
+    }
+   }
+  ],
+  "outcome": "status, pair-open, pause on and off write devices.json at mode 0600 in a 0700 directory with no staging file left; a link planted as devices.json is refused, moved aside as devices.corrupt.*.json unfollowed, its target untouched, and the daemon starts paused"
+ },
+ "unitTests": {
+  "command": "make test-python",
+  "result": "71 tests OK against temporary roots; the live state file's mtime unchanged"
+ },
+ "guestLifecycle": {
+  "lab": "omarchy plugin lab, stock 4.0.3 guest, tests/lab/v1-lifecycle.sh",
+  "result": "blocked before the block runs, on main and on store-port alike",
+  "storePort": {
+   "branch": "store-port at 098fe1d",
+   "run": "omarchy-iso/test-runs/omarchy-4.0.3/runs/20260917-230553",
+   "ok": 3,
+   "notOk": 1,
+   "failedStep": "service, widget, helper, and web graph v1012 agree",
+   "helperNotFoundWarnings": 30
+  },
+  "main": {
+   "branch": "main at 93800d2",
+   "run": "omarchy-iso/test-runs/omarchy-4.0.3/runs/20260917-231030",
+   "ok": 3,
+   "notOk": 1,
+   "failedStep": "service, widget, helper, and web graph v1012 agree",
+   "helperNotFoundWarnings": 29
+  },
+  "cause": "service/v1012/Service.qml:12 reads manifest.__sourceDir for the plugin root; the shell the 4.0.3 pin runs strips __sourceDir from the manifest it hands a plugin, so the root is empty and the helper path is /helper/sidecarctl, which the shell logs as 'Process failed to start, likely because the binary could not be found' once a second. The Store block never runs in the guest because the service never reaches its state.",
+  "reading": "The failure is Sidecar 0.2.1's on stock 4.0.3 and predates the port; the guest therefore gives no evidence for or against the Store port. The block's own guest evidence is the Store lab suite, 12 of 12 (2026-09-17-store-lab-guest.json)."
+ },
+ "commits": {
+  "plugin": [
+   "f938921 Add omakit's Store block 0.1.0 under omakit/, with the Run block it uses",
+   "098fe1d Keep the device state through the Store block"
+  ],
+  "omakit": [
+   "4188f9f Store helper: the walk reads HOME and the XDG base from an environment the importer passes",
+   "e1453ff Store helper: result_of, the result object as an importable step"
+  ]
+ },
+ "limits": [
+  "One plugin, the author's own; the reviewer has not seen the port.",
+  "Pairing a real phone was not exercised on the desktop; pair-open and the pause toggle were, and the guest lifecycle pairs through the fake route.",
+  "The guest lifecycle is blocked by a pre-existing 4.0.3 incompatibility (manifest.__sourceDir), reproduced on main; the port's guest evidence is therefore the Store lab suite, not Sidecar's own lifecycle."
+ ]
+}
