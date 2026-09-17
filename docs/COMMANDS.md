@@ -18,6 +18,7 @@ omakit parity                # the baseline over GitHub versus the local transpo
 omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
 omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
 omakit inspect <plugin-dir>  # what a plugin tree does, as observations: processes, hosts, writes, timers, the baseline's capabilities, and the review classes the tree shows
+omakit add run [<plugin-dir>] # copy the Run block into the plugin's omakit/ directory; --update moves an unmodified copy
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
@@ -125,6 +126,20 @@ listed; `--full` is every site with every qualifier. `--json` prints the
 document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
 `--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
 when the target could not be read.
+
+`omakit add run [<plugin-dir>]` copies the Run block ([BLOCKS.md](BLOCKS.md))
+into the plugin's `omakit/` directory: `Run.qml`, `run-supervisor.py` and
+`NOTICE`, each with a header naming the block, its version, the MIT
+licence, the copyright, the omakit commit and the body's sha256. It is the
+one command that writes into a plugin tree, and it writes those files and
+nothing else: a file already there is not overwritten without `--update`,
+and with `--update` a copy whose body is not one omakit shipped is refused,
+before anything is written, because a modified block is the author's. The
+report is one line per file, `written`, `updated` or `current`; `--json`
+is the document. The plugin directory defaults to the current one and
+has to carry a `manifest.json`. After it, `omakit inspect` lists the block
+as one row and each `Run {` site as a process whose deadline the block
+holds; a modified copy is reported as modified.
 
 `omakit doctor` names the credential source it found, or that it found none.
 

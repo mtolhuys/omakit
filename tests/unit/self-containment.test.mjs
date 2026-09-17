@@ -1,17 +1,21 @@
 // This repository's own agent and skill files live at the root of the tool and
 // must never travel into a plugin tree.
 //
-// Two things are proven here. First, that no code path in this repository copies
-// anything into a subject or plugin directory: there is no scaffolder, no
-// vendoring, no template writer, so nothing can carry an instruction file along.
-// Second, that if such a path were ever added, the agent-control check would
-// catch this repository's own files immediately: the check is run over this
-// repository's tree and must flag them.
+// Three things are proven here. First, that no copying primitive exists in
+// this repository, and that the one code path that writes into a plugin
+// tree, `omakit add` (tools/blocks/add.mjs), writes only a shipped block's
+// files under omakit/ by names the block registry holds, after checking
+// those names against the agent-control list, so nothing can carry an
+// instruction file along. Second, that the agent-control check would catch
+// this repository's own files immediately: the check is run over this
+// repository's tree and must flag them. Third, that it finds nothing under
+// blocks/, the only files add can ever write.
 import test from "node:test"
 import assert from "node:assert/strict"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 import { findAgentControl, AGENT_CONTROL_FILES } from "../../tools/marketplace/agent-control.mjs"
+import { shippedBlocks } from "../../tools/blocks/registry.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const SKIP = new Set([".git", ".cache", "node_modules"])
@@ -82,12 +86,30 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // A terminal update check stores only installed/latest versions and time
     // under XDG_STATE_HOME/omakit; it never stores code or writes to a subject.
     const updateWrites = path === "tools/marketplace/update-check.mjs" ? /^updateFile,/ : /$^/
+    // `omakit add` writes a shipped block's files and NOTICE under the
+    // plugin's omakit/ directory (blockFile, in add.mjs, from the registry's
+    // names and nowhere else), and the maintainer's stamp tool writes the
+    // same names under this checkout's blocks/ (blockFile, in stamp.mjs).
+    // Both are held to those names and counted below.
+    const blockWrites = path === "tools/blocks/add.mjs" || path === "tools/blocks/stamp.mjs" ? /^blockFile,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, nor one of the three files weigh may write`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, a block file, nor one of the three files weigh may write`,
       )
+    }
+    if (path === "tools/blocks/add.mjs") {
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 2, "add.mjs writes a block file and the NOTICE, nothing else")
+      assert.match(text, /const blockFile = target\n/, "the block file is the registry entry's target under omakit/")
+      assert.match(text, /const blockFile = noticePath\n/, "and the NOTICE is the one beside it")
+      assert.match(text, /findAgentControl\(/, "the names are checked against the agent-control list before a byte is written")
+      assert.ok(text.indexOf("findAgentControl(") < text.indexOf("writeFileSync("), "and that check comes before the first write")
+    } else if (path === "tools/blocks/stamp.mjs") {
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 3, "stamp.mjs writes block files, NOTICE and history.json under blocks/, nothing else")
+      assert.doesNotMatch(text, /process\.argv\[2\]|resolve\(process\.cwd|pluginDir/, "stamp.mjs takes no directory: it writes only under this checkout's blocks/")
+    } else {
+      assert.doesNotMatch(text, /\bblockFile\b/, `${path} writes a block file; only tools/blocks/add.mjs and stamp.mjs may`)
     }
     if (path.startsWith("tools/weigh/")) {
       // Five writes in all, each to one of the names above or to --out, and
@@ -137,7 +159,7 @@ test("the command surface is exactly the documented scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "audit", "weigh", "inspect", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "audit", "weigh", "inspect", "add", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately
@@ -152,14 +174,34 @@ test("the command surface is exactly the documented scope", () => {
 })
 
 test("no lab or conformance scope came along with the harvest", () => {
-  // The one file under tests/lab/ is the scenario the plugin lab runs to
+  // Two things live under tests/lab/: the scenario the plugin lab runs to
   // measure `omakit weigh` against a stock shell, because the weigh command
-  // restarts a shell and the desktop is never where that is tested. It is a
-  // scenario for one command, not a conformance suite, and it is not in the
-  // package.
+  // restarts a shell and the desktop is never where that is tested, and the
+  // Run block's suite (tests/lab/run/), which starts its own Quickshell
+  // instances and never touches the shell. Scenarios for one command and
+  // one block, not a conformance suite, and neither is in the package.
   for (const path of files) {
     assert.ok(!/^tools\/lab\//.test(path), `${path} is out of scope`)
-    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh", `${path} is out of scope`)
+    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh" || path.startsWith("tests/lab/run/"), `${path} is out of scope`)
+  }
+})
+
+test("the block files are the only thing add can write, and none of them is an agent-control file", () => {
+  // AGENTS.md: a code path that writes into a plugin tree comes with the
+  // test that proves no agent-control file can ride along. The names come
+  // from blocks/<name>/ alone; the check runs over them here, and add.mjs
+  // runs it again over the names it is about to write.
+  const blocks = shippedBlocks()
+  assert.ok(blocks.length > 0)
+  const entries = blocks.flatMap((block) => [...block.files.map((entry) => ({ path: `omakit/${entry.file}`, type: "blob", mode: "100644" })), { path: "omakit/NOTICE", type: "blob", mode: "100644" }])
+  assert.deepEqual(findAgentControl(entries), [])
+  const tree = files.filter((path) => path.startsWith("blocks/")).map((path) => ({ path, type: "blob", mode: "100644" }))
+  assert.deepEqual(findAgentControl(tree), [], "nothing under blocks/ is an agent-control file")
+  for (const block of blocks) {
+    for (const entry of block.files) {
+      assert.ok(!AGENT_CONTROL_FILES.some((name) => name.toLowerCase() === entry.file.toLowerCase()), `${entry.file} is an agent-control name`)
+      assert.ok(/\.(?:qml|py)$/.test(entry.file), `${entry.file}: a block file is QML or Python, never prose an agent reads`)
+    }
   }
 })
 
@@ -174,7 +216,7 @@ test("there is no build step and no runtime dependency", () => {
   assert.equal(pkg.license, "MIT")
   assert.equal(pkg.repository.url, "git+https://github.com/mtolhuys/omakit.git")
   assert.deepEqual(pkg.keywords, ["omarchy", "quattro", "plugin", "marketplace", "preflight", "cli", "agent"])
-  assert.deepEqual(pkg.files, ["bin", "tools", "skills", "tests/parity/corpus.mjs", "tests/parity/run.mjs"])
+  assert.deepEqual(pkg.files, ["bin", "tools", "skills", "blocks", "tests/parity/corpus.mjs", "tests/parity/run.mjs"])
   assert.ok(statSync(join(REPO_ROOT, "bin/omakit")).mode & 0o111, "bin/omakit must be executable")
   assert.ok(!files.includes("package-lock.json"))
 })

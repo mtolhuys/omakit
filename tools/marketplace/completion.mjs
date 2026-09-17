@@ -14,6 +14,7 @@ import { basename, dirname, join } from "node:path"
 import { tagSlug } from "./form.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "./usage.mjs"
 import { withHomeAbbreviated } from "./paths.mjs"
+import { shippedBlocks } from "../blocks/registry.mjs"
 
 /**
  * The completion model, read out of the help data. A subcommand is the word
@@ -41,8 +42,10 @@ export function subcommandsOf(commands = COMMANDS) {
     // `<target>` completes as a directory; `<plugin-id-or-dir>` as the ids
     // the running shell has installed, read at TAB time, with a directory
     // as the fallback.
-    const target = /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
-    return { name, description: sentence, flags, target }
+    // `omakit add <block> [<plugin-dir>]`: the block names omakit ships for
+    // the first word, a directory for the second.
+    const target = /^omakit +add\b/.test(signature) ? "block" : /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
+    return { name, description: sentence, flags, target, blocks: target === "block" ? shippedBlocks().map((block) => block.name) : [] }
   })
 }
 
@@ -171,6 +174,12 @@ function bash({ subcommands, categories, tags, pin, version }) {
       lines.push('      COMPREPLY=($(compgen -W "$(_omakit_plugin_ids)" -- "$cur"))')
       lines.push('      if ((${#COMPREPLY[@]} == 0)); then COMPREPLY=($(compgen -d -- "$cur")); compopt -o filenames 2>/dev/null; fi')
       lines.push("    fi")
+    } else if (sub.target === "block") {
+      lines.push('    if ((COMP_CWORD == 2)); then')
+      lines.push(`      COMPREPLY=($(compgen -W ${single(sub.blocks.join(" "))} -- "$cur"))`)
+      lines.push('    elif ((COMP_CWORD == 3)); then')
+      lines.push('      COMPREPLY=($(compgen -d -- "$cur")); compopt -o filenames 2>/dev/null')
+      lines.push("    fi")
     } else if (sub.target) {
       lines.push('    COMPREPLY=($(compgen -d -- "$cur"))')
       lines.push("    compopt -o filenames 2>/dev/null")
@@ -239,6 +248,7 @@ function zsh({ subcommands, categories, tags, pin, version }) {
       return single(flag)
     })
     if (sub.target === "plugin") specs.push(single("1:plugin:_omakit_plugins"))
+    else if (sub.target === "block") specs.push(single(`1:block:(${sub.blocks.join(" ")})`), single("2:plugin directory:_directories"))
     else if (sub.target) specs.push(single("1:target:_directories"))
     if (specs.length) lines.push(`      _arguments ${specs.join(" ")}`)
     lines.push("      ;;")
@@ -281,6 +291,7 @@ function fish({ subcommands, categories, tags, pin, version }) {
   for (const sub of subcommands) {
     const when = `-n ${single(`__fish_seen_subcommand_from ${sub.name}`)}`
     if (sub.target === "plugin") lines.push(`complete -c omakit ${when} -a '(__omakit_plugin_ids)'`)
+    if (sub.target === "block") lines.push(`complete -c omakit ${when} -a ${single(sub.blocks.join(" "))}`)
     if (sub.target) lines.push(`complete -c omakit ${when} -a '(__fish_complete_directories)'`)
     for (const { flag, value } of sub.flags) {
       const long = `-l ${flag.slice(2)}`

@@ -34,6 +34,7 @@
     "bin",
     "tools",
     "skills",
+    "blocks",
     "tests/parity/corpus.mjs",
     "tests/parity/run.mjs"
   ]

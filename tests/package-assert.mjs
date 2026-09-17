@@ -27,15 +27,25 @@ import { pathToFileURL } from "node:url"
 // the 50 listed heavy shares as data and the re-measured record's history in
 // the docs, it measured 209,579 bytes across 73 files, 4,779 over it, so the
 // ceiling is now 256,000 bytes: 46,421 bytes of room, still a sixtieth of an
-// accidental tree with the 15 MB marketplace pin in it.
+// accidental tree with the 15 MB marketplace pin in it. With the Run block
+// (blocks/run/: Run.qml, run-supervisor.py, NOTICE, and blocks/history.json),
+// the three block modules under tools/blocks/ and the sixth skill, the
+// package measured 233,533 bytes across 81 files, 22,467 under the unchanged
+// ceiling: the block files are the deliverable a plugin copies, so they
+// ship, and the lab suite and the fixtures that hold them do not.
 export const MAX_PACKED_BYTES = 256_000
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
   "README.md",
   "bin/omakit",
+  "blocks/history.json",
+  "blocks/run/NOTICE",
+  "blocks/run/Run.qml",
+  "blocks/run/run-supervisor.py",
   "package.json",
   "skills/omarchy-plugin-audit/SKILL.md",
+  "skills/omarchy-plugin-build/SKILL.md",
   "skills/omarchy-plugin-check/SKILL.md",
   "skills/omarchy-plugin-weigh/SKILL.md",
   "skills/omarchy-plugin-submit/SKILL.md",
@@ -45,6 +55,9 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/audit/audit.mjs",
   "tools/audit/git.mjs",
   "tools/audit/report.mjs",
+  "tools/blocks/add.mjs",
+  "tools/blocks/registry.mjs",
+  "tools/blocks/stamp.mjs",
   "tools/inspect/contract.mjs",
   "tools/inspect/functions.mjs",
   "tools/inspect/hosts.mjs",

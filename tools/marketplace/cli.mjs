@@ -8,12 +8,15 @@
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
 //   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
 //   omakit inspect <plugin-dir>      what a plugin tree does, as observations; decides nothing
+//   omakit add run [plugin-dir]      copy the Run block into the plugin's omakit/ directory
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
 // proves it. `weigh` is the one command that changes the user's own machine,
 // their shell and its configuration for the duration of a measurement, and
 // it confirms first; docs/WEIGH.md says what it writes and how it restores.
+// `add` is the one command that writes into a plugin tree: the block's own
+// files under omakit/, never over a modified copy; docs/BLOCKS.md says what.
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
@@ -45,6 +48,7 @@ import { auditInstalled } from "../audit/audit.mjs"
 import { renderAudit } from "../audit/report.mjs"
 import { inspectPlugin, NOT_READABLE } from "../inspect/inspect.mjs"
 import { renderInspect } from "../inspect/report.mjs"
+import { addBlock } from "../blocks/add.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -69,6 +73,11 @@ const REMEDY = Object.freeze({
   "login-required": "gh auth login",
   "not-confirmed": "Run it again and answer y, or pass --yes when the person whose shell it is has agreed.",
   "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
+  "exists": "omakit add run [<plugin-dir>] --update",
+  "modified": "Keep your copy, or move it aside and run add again; omakit/NOTICE is where modifications are listed.",
+  "not-a-plugin": "Pass the plugin's directory, the one with its manifest.json.",
+  "plugin-dir-not-found": "Pass the plugin's directory, the one with its manifest.json.",
+  "unknown-block": "omakit add run [<plugin-dir>]",
 })
 
 /*
@@ -433,6 +442,40 @@ async function cmdInspect(args) {
 }
 
 /**
+ * `omakit add <block> [plugin-dir]`: the one command that writes into a
+ * plugin tree, and only the block's files under omakit/. Every refusal is
+ * a failure state before anything is written; the report is one line per
+ * file with what happened to it, or the document under --json.
+ */
+async function cmdAdd(args) {
+  const parsed = checkArgs(args, ACCEPTED.add)
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("add")}.`, 2, "omakit add run [<plugin-dir>] [--update] [--json]")
+  const [block, dir] = parsed.positionals
+  if (!block) fail("usage", "add needs a block: `omakit add run [<plugin-dir>]`", 2, "omakit add run [<plugin-dir>] [--update] [--json]")
+  let result
+  try {
+    result = addBlock({ repoRoot: ROOT, block, dir: dir || ".", update: parsed.options.has("--update") })
+  } catch (error) {
+    failFrom(error)
+  }
+  if (parsed.options.has("--json")) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return
+  }
+  const c = styler(colourEnabled())
+  const lines = []
+  for (const file of [...result.files, result.notice]) {
+    const state = file.state === "current" ? "info" : "pass"
+    const from = file.from ? ` (from ${result.block} ${file.from})` : ""
+    lines.push(`${mark(state, c)}${c("label", file.state.padEnd(8))} ${file.path}${from}`)
+  }
+  lines.push(...labelled("block", `${result.block} ${result.version}, from omakit commit ${result.commit}`, c))
+  lines.push(...labelled("into", withHomeAbbreviated(result.dir), c))
+  if (result.files.some((file) => file.state !== "current")) lines.push(...action("import \"omakit\" in the QML that starts a process, and use Run { } there; docs/BLOCKS.md is the contract", c))
+  process.stdout.write(`${lines.join("\n")}\n`)
+}
+
+/**
  * Every way `weigh` stops without weighing, in one register: the closing
  * word a report would have ended with, negated, then the sentence naming
  * what is missing, then the one thing to do. Exit 2 for a usage error and
@@ -610,6 +653,8 @@ if (command === "setup") {
   await cmdWeigh(rest)
 } else if (command === "inspect") {
   await cmdInspect(rest)
+} else if (command === "add") {
+  await cmdAdd(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install

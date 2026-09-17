@@ -114,6 +114,19 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
+    signature: "omakit add run [<plugin-dir>] [--update] [--json]",
+    lines: [
+      "Copy the Run block into the plugin's omakit/ directory: Run.qml, the",
+      "supervisor it starts by absolute path, and NOTICE, each with a header",
+      "naming the block, its version, the licence, the omakit commit and the",
+      "body's sha256. Writes those files and nothing else, never over a file",
+      "that is already there without --update, and never over a copy whose",
+      "body is not one omakit shipped: a modified block is the author's, and",
+      "the command says so and stops. docs/BLOCKS.md is the contract; each of",
+      "its lines cites how many review comments in one week asked for it (M13).",
+    ],
+  },
+  {
     signature: "omakit help --agent",
     lines: [
       "The operating instructions for a coding agent, printed from skills/, so an",

@@ -28,9 +28,10 @@ test("every option a command accepts is in its signature, and every option in it
     for (const { flag, value } of signatures[name].flags) {
       assert.equal(Boolean(value), spec.valued.includes(flag), `${name} ${flag}: ${value ? "takes a value in the signature" : "takes none in the signature"} but the parser ${spec.valued.includes(flag) ? "wants one" : "takes none"}`)
     }
-    // A positional in the signature (`<target>`, `<issue-url>`) is one the parser takes, and none otherwise.
+    // A positional in the signature (`<target>`, `<issue-url>`, or a bare
+    // word such as `add run`) is one the parser takes, and none otherwise.
     const signature = [].concat(COMMANDS.find((command) => [].concat(command.signature)[0].startsWith(`omakit ${name}`)).signature).join(" ")
-    assert.equal(spec.positionals > 0, /^omakit \w+ <[^>]+>/.test(signature), `${name}: positionals`)
+    assert.equal(spec.positionals > 0, /^omakit \w+ (?:<[^>]+>|[a-z][a-z-]*(?: |$))/.test(signature), `${name}: positionals`)
   }
 })
 
