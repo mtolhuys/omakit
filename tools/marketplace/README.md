@@ -127,3 +127,15 @@ beyond fetching a reviewer-mode subject, and `tests/parity/offline.mjs` proves
 it.
 
 `watch --list` discovers the signed-in account's open marketplace issues through `github.mjs`; `--user` bypasses the account lookup. `watch --all` runs the existing single-issue watch with four workers and shared repository HEAD promises, preserving each read failure. A bare terminal invocation uses `ask.mjs` to choose one or several issues. `report.mjs` composes the list and batch views; all options remain in `options.mjs` and `usage.mjs`, which also generate completion. The batch JSON retains complete single-issue reports; `current` compares commits and never substitutes for review or publication.
+
+## tools/blocks/
+
+`tools/blocks/` is the Run block's plumbing on omakit's side: the block
+itself is `blocks/run/`, files a plugin copies (docs/BLOCKS.md).
+
+| Module | What it does |
+| --- | --- |
+| `blocks/registry.mjs` | The shipped blocks read from `blocks/<name>/`: each file's header (block, version, licence, source, body sha256) and body hash; `recogniseBlockFile` for inspect and `add`; `blocks/history.json` for every hash ever shipped; the NOTICE renderer. |
+| `blocks/add.mjs` | `omakit add <block> [plugin-dir]`: the one code path that writes into a plugin tree, held to the registry's names under `omakit/`, checked against the agent-control list first, never over a file without `--update`, never over a modified copy. |
+| `blocks/stamp.mjs` | Maintainer's tool after editing a block: rewrites each header's sha256 to its body's, regenerates NOTICE and appends to history.json, under this checkout's `blocks/` only. |
+

@@ -1,8 +1,15 @@
 # Changelog
 
-## 0.5.2 (unreleased)
+## 0.6.0 (unreleased)
 
-Nothing yet. The 0.5.1 notes are in `docs/releases/0.5.1.md`.
+The first block: Run, `blocks/run/`, a `Run.qml` and the supervisor it
+starts through `/usr/bin/python3 -I -S -B`, copied into a plugin with
+`omakit add run`; its contract in `docs/BLOCKS.md` cites, line by line,
+how many review comments in one week asked for it (M13). `omakit inspect`
+recognises an unmodified copy as one row and reads a modified one like any
+other file. The lab suite under `tests/lab/run/` proves it on the desktop
+and on the stock 4.0.3 guest. The sixth skill, `omarchy-plugin-build`.
+Not released; the README still describes 0.5.
 
 ## 0.5.1
 

@@ -4,8 +4,9 @@ You are the primary user of this tool. It exists because a coding agent is
 usually the thing submitting a plugin on an owner's behalf, and an agent needs
 the refusals up front, in one pass, with the reason attached.
 
-Five skills cover the five jobs:
+Six skills cover the six jobs:
 
+- `skills/omarchy-plugin-build/SKILL.md`: building a plugin's process plumbing with the Run block.
 - `skills/omarchy-plugin-check/SKILL.md`: checking a plugin while it is being built.
 - `skills/omarchy-plugin-weigh/SKILL.md`: weighing a plugin on the shell.
 - `skills/omarchy-plugin-submit/SKILL.md`: submitting a plugin.
@@ -29,7 +30,12 @@ read from `$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace`
 at the pinned commit. If you find yourself typing
 a category name, a checklist sentence, a rule id or an outcome name into a source
 file, stop: read it from the pin instead. A constant here is a constant that
-drifts, and drift is the failure this repository was built to remove.
+drifts, and drift is the failure this repository was built to remove. A block
+(`blocks/`, `docs/BLOCKS.md`) is the one place that encodes behaviour of its
+own: it implements what public review comments asked for, measured (M13), and
+says so line by line with the count; it never presents itself as the
+marketplace's rules, never uses the marketplace's outcome words, and the
+marketplace's facts are still read from the pin.
 
 **3. Every check carries a number.** A check without a measured reason behind it
 does not ship, and `tests/unit/submit.test.mjs` fails if one appears. Put the
@@ -60,8 +66,8 @@ stamp. No code, credential or subject data is stored; no update is applied.
 `docs/INSTALL.md` describes the throttle, timeout, skipped modes and opt-out.
 
 Apart from that notification metadata, every command is read-only against the
-user's own machine, with two
-exceptions, and both say so before they act. `omakit setup` writes the
+user's own machine, with three
+exceptions, and each says so before or as it acts. `omakit setup` writes the
 completion script where the shell in `$SHELL` loads it from, and edits an rc
 file in exactly one case: when a new shell has no completion loader, it asks
 once and, after an explicit yes (`--yes` for an agent), appends one marked
@@ -80,16 +86,24 @@ md5 before and after. It never touches the marketplace, never posts, and
 never writes into a plugin tree; `docs/WEIGH.md` says exactly what it writes.
 `tests/unit/read-only.test.mjs` holds `tools/weigh/` to a frozen list of
 Omarchy commands, and `tests/unit/self-containment.test.mjs` to the files it
-may write.
+may write. The third is `omakit add`, the one command that writes into a
+plugin tree: a shipped block's files and `omakit/NOTICE` under the plugin's
+`omakit/` directory, by names the block registry holds and checked against
+the agent-control list first, never over a file that is there without
+`--update`, and never over a copy whose body is not one omakit shipped.
+`tests/unit/self-containment.test.mjs` counts its writes and proves no
+agent-control file can ride along; `docs/BLOCKS.md` says exactly what it
+writes.
 
 ## This repository's own agent files must never travel
 
 `AGENTS.md` and `skills/` at the root of this tool are a deliberate deliverable.
 They are also exactly what `tree.agent-control` warns about inside a plugin, and
-`tests/unit/self-containment.test.mjs` proves the check would catch them. If you
-ever add a code path that writes into a plugin tree, you have to add the test that
-proves no agent-control file can ride along with it, before the code path, not
-after.
+`tests/unit/self-containment.test.mjs` proves the check would catch them. `omakit add`
+is that code path, and `tests/unit/self-containment.test.mjs` carries the
+test that proves no agent-control file can ride along with it: the names come
+from `blocks/` alone and are checked before a byte is written. A second such
+path needs the same test before the code, not after.
 
 ## Before you commit
 
@@ -117,6 +131,7 @@ else.
 | Document | For |
 | --- | --- |
 | `README.md` | one command and its output |
+| `docs/BLOCKS.md` | the Run block: its contract line by line with the M13 count, the API, `omakit add` and how inspect recognises a copy |
 | `docs/SUBMIT.md` | every check and what it decides |
 | `docs/AUDIT.md` | installed commit states, the read-only boundary and the verification route |
 | `docs/WEIGH.md` | what `weigh` measures, how, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
