@@ -300,12 +300,14 @@
  ],
  "closedEnvironmentReading": {
   "measured": "2026-09-17",
-  "omakitCommit": "f03b78d",
-  "rule": "When every QML process site of the tree is a Run site, a shell or Python file whose base name a QML file names as a string literal is a helper started through Run; its shell lines carry closedEnvironment: true and the environment-trust class counts their tool names apart, in words, never as ambient PATH lookups. A tree with any other QML process site marks nothing.",
+  "omakitCommit": "phase 5, the corrected rule",
+  "rule": "A helper is a file of the tree that a Run site's argv[0] resolves to through the text: a literal or + chain, Qt.resolvedUrl and Quickshell.env, an identifier through its nearest assignment before the site or its property binding, a parent file's binding on the component, a same-file function through its return expression with the arguments in place. An argv[0] the text does not show (an array from a JavaScript module, a ternary of arrays, a function returning the array) resolves to nothing and marks nothing; a path under $OMARCHY_PATH is not the tree's. When every QML process site of the tree is a Run site, the shell lines of the resolved helpers carry closedEnvironment: true and the environment-trust class counts their tool names apart, in words. A line starting with exec is a process site.",
   "before": {
-   "environmentTrustSites": 473,
+   "environmentTrustSites": 475,
    "closedRows": 0,
    "closedHelpers": [],
+   "runSitesResolved": 0,
+   "runSitesUnresolvedOrOutsideTree": 0,
    "ambientShellFiles": [
     "catalog.sh",
     "hooks/theme-set.d/50-theme-manager-memory",
@@ -326,30 +328,38 @@
     "process-lifecycle": 23,
     "unbounded-buffering": 18,
     "file-and-state-boundary": 7,
-    "environment-trust": 473,
+    "environment-trust": 475,
     "network-egress": 1,
     "argument-grammar": 17
+   },
+   "processSites": {
+    "total": 497,
+    "qml": 26,
+    "shell": 471
    }
   },
   "after": {
-   "environmentTrustSites": 298,
-   "closedRows": 192,
+   "environmentTrustSites": 434,
+   "closedRows": 50,
    "closedHelpers": [
     "apply-icons.sh",
     "catalog.sh",
-    "icons-browse.sh",
     "icons-inventory.sh",
     "install-hook.sh",
-    "install-wallpaper.sh",
-    "list.sh",
+    "probe-theme-lock.sh",
     "remove-wallpaper.sh",
-    "reset-icons.sh",
     "reset-wallpaper.sh",
     "theme-inventory.sh",
     "verify-wallpaper.sh"
    ],
+   "runSitesResolved": 11,
+   "runSitesUnresolvedOrOutsideTree": 13,
    "ambientShellFiles": [
     "hooks/theme-set.d/50-theme-manager-memory",
+    "icons-browse.sh",
+    "install-wallpaper.sh",
+    "list.sh",
+    "reset-icons.sh",
     "tests/lab/acceptance.sh",
     "tests/lab/marketing-preview.sh",
     "tests/lab/performance.sh",
@@ -358,11 +368,38 @@
    ],
    "patterns": {
     "file-and-state-boundary": 7,
-    "environment-trust": 298,
+    "environment-trust": 434,
     "network-egress": 3,
     "argument-grammar": 17
+   },
+   "processSites": {
+    "total": 517,
+    "qml": 24,
+    "shell": 493
    }
   },
-  "note": "Before the port nothing is marked: main has no Run site. After it, 183 tool names in 12 helpers are counted apart and 298 ambient sites remain: the hook under hooks/theme-set.d/, which Omarchy runs in its own environment (the prelude decision, docs/BLOCKS_SPIKE.md), and the five lab scripts under tests/lab/, which nothing in the plugin starts. probe-theme-lock.sh is not among the twelve: its one line is `exec flock ...`, and the shell extractor reads a line whose first word is exec as a builtin and not as a process site, a pre-existing limit of inspect."
+  "superseded": {
+   "rule": "by base name in any QML string literal (phase 4)",
+   "after": {
+    "environmentTrustSites": 298,
+    "closedRows": 192,
+    "closedHelpers": [
+     "apply-icons.sh",
+     "catalog.sh",
+     "icons-browse.sh",
+     "icons-inventory.sh",
+     "install-hook.sh",
+     "install-wallpaper.sh",
+     "list.sh",
+     "remove-wallpaper.sh",
+     "reset-icons.sh",
+     "reset-wallpaper.sh",
+     "theme-inventory.sh",
+     "verify-wallpaper.sh"
+    ]
+   },
+   "why": "it matched the plugin's own copy of list.sh, which the QML starts from Omarchy's tree, and every helper whose name appeared anywhere, whether or not a Run site reached it"
+  },
+  "note": "After the port, 12 of 24 Run sites resolve to a file of the tree, 9 distinct helpers, 50 tool names counted apart; 12 sites do not: 7 name programs outside the tree (/usr/bin/gsettings, /usr/bin/magick, /usr/bin/xdg-open, Omarchy's commands under omarchyBin, Omarchy's list.sh under $OMARCHY_PATH) and 5 carry an argv the text does not show (the two icons-browse.sh sites and the two aether sites from JavaScript model functions, install-wallpaper.sh from a function returning the array, reset-icons.sh from a ternary of arrays), so icons-browse.sh, install-wallpaper.sh and reset-icons.sh stay ambient although Run starts them. The two exec lines (catalog.sh, probe-theme-lock.sh) are sites now, on both sides."
  }
 }

@@ -317,9 +317,13 @@ output            { collector: "StdioCollector" | "SplitParser" | "Run" | "none"
 shellWrapper      boolean   true when the tool is sh, bash, zsh, dash, fish or ksh with -c next, or eval
 closedEnvironment boolean   a shell line of a helper the QML starts through the run block (BLOCKS.md): it runs
                   in the block's closed environment, so its bare tool names are not ambient PATH lookups
-                  and the environment-trust class counts them apart, in words. Read only when every QML
-                  process site of the tree is a Run site; the helper is one whose base name a QML file
-                  names as a string literal. False everywhere else.
+                  and the environment-trust class counts them apart, in words. A helper is a file of the
+                  tree that a Run site's argv[0] resolves to through the text (a literal or `+` chain,
+                  `Qt.resolvedUrl`, `Quickshell.env`, an identifier through its nearest assignment or
+                  property binding, a parent file's binding, a same-file function through its return
+                  expression); an argv[0] the text does not show resolves to nothing and marks nothing.
+                  Marked only when every QML process site of the tree is a Run site. False everywhere else.
+helper            string | null   on a Run site: the tree file its argv[0] resolved to, or null
 pipedFrom         { line, argv0 } | null   for a shell site that reads the previous segment's output
 block             "run"     only on a `Run {` site of the omakit run block (BLOCKS.md): its deadline is
                   the block's (`deadlineMs`, default 10000, via "block-run"), its collector "Run" with the

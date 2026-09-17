@@ -187,7 +187,7 @@ the commit the marketplace validated) and after
 | QML sites with a deadline observed | 0 of 26 | 24 of 24 |
 | QML sites that are a shell string | 6 | 0 |
 | environment trust, QML sites | 13 | 0 |
-| environment trust, shell lines | 460 | 481; 298 once the 183 names in the 12 helpers Run starts are counted apart |
+| environment trust, shell lines | 462 | 484; 434 once the 50 names in the 9 helpers a Run site resolves to are counted apart |
 | file and state boundary rows | 7 | 7 |
 | blocks row | none | `run 0.1.0, 2 files, unmodified` |
 | verify | review-required, installer | the same |
@@ -196,12 +196,17 @@ the commit the marketplace validated) and after
 The shell lines rose by the five new helpers' bare `mkdir`, `cmp`, `cp`,
 `stat`, `readlink`, `flock`, `tr` and `gsettings`, which run under Run's
 closed environment (the prelude decision, [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md)).
-Since phase 4 inspect says so: where every QML process site of a tree is
-a Run site, a helper the QML names by file name is started through Run,
-its shell lines carry `closedEnvironment: true`, and the environment-trust
-row counts their tool names apart, in words. On the port that leaves 298
-ambient sites: the hook Omarchy runs and the five lab scripts nothing in
-the plugin starts ([record](evidence/blocks/2026-09-17-theme-manager-port.json),
+Since phase 5 inspect says so: where every QML process site of a tree is
+a Run site, a helper a Run site's `argv[0]` resolves to through the text
+is started through Run, its shell lines carry `closedEnvironment: true`,
+and the environment-trust row counts their tool names apart, in words. On
+the port 12 of the 24 sites resolve to 9 helpers of the tree; 434 ambient
+sites remain: the hook Omarchy runs, the five lab scripts nothing in the
+plugin starts, and three helpers Run does start but whose argv the text
+does not show (`icons-browse.sh` and `install-wallpaper.sh` from a
+function that returns the array, `reset-icons.sh` from a ternary of
+arrays), which inspect leaves ambient rather than guess
+([record](evidence/blocks/2026-09-17-theme-manager-port.json),
 `closedEnvironmentReading`).
 What the port ran: the ported controllers and the picker's Run sites in a
 separate Quickshell instance under `systemd-run --user --scope -p

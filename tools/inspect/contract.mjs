@@ -51,6 +51,8 @@ function processRow(row, at, problems) {
   if (!isBool(deadline.observed)) problems.push(`${at}.deadline.observed is not a boolean`)
   if (!DEADLINE_VIA.has(deadline.via)) problems.push(`${at}.deadline.via is not timer-kill, timeout-argv, destruction, block-run or null`)
   if ((deadline.via === "block-run") !== (row.block === "run")) problems.push(`${at}.deadline.via block-run and block: "run" go together`)
+  if (row.block === "run" && !nullOr(isString)(row.helper)) problems.push(`${at}.helper is neither a tree path nor null`)
+  if (row.block !== "run" && row.helper !== undefined) problems.push(`${at}.helper is only for a Run site`)
   if (deadline.observed !== (deadline.via !== null)) problems.push(`${at}.deadline.observed disagrees with deadline.via`)
   if (!nullOr(isInt)(deadline.ms)) problems.push(`${at}.deadline.ms is neither an integer nor null`)
   const output = row.output || {}

@@ -65,6 +65,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/blocks/stamp.mjs",
   "tools/inspect/contract.mjs",
   "tools/inspect/functions.mjs",
+  "tools/inspect/helpers.mjs",
   "tools/inspect/hosts.mjs",
   "tools/inspect/inspect.mjs",
   "tools/inspect/measure-functions.mjs",

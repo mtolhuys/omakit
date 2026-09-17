@@ -20,6 +20,7 @@ import { extractFunctions } from "../../tools/inspect/functions.mjs"
 import { overSize } from "../../tools/inspect/patterns.mjs"
 import { extractProcesses } from "../../tools/inspect/processes.mjs"
 import { inspectPlugin, recogniseBlocks } from "../../tools/inspect/inspect.mjs"
+import { runStartedHelpers } from "../../tools/inspect/helpers.mjs"
 import { renderInspect } from "../../tools/inspect/report.mjs"
 import { subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { materialiseInspectFixture } from "../fixtures/inspect.mjs"
@@ -470,4 +471,58 @@ test("inspect: an unmodified store block is one row beside run's, and the Store 
   assert.deepEqual(edited.blocks.map((block) => [block.name, block.state]), [["run", "unmodified"], ["store", "modified"]])
   assert.deepEqual(edited.observed.writes, [], "without the whole store block, Store is not a write the extraction knows")
   assert.match(renderInspect(edited, { colour: false }).replace(/\n +/g, " "), /store 0\.1\.0, modified \(omakit\/store-helper\.py\): read like any other file/)
+})
+
+// --- helpers a Run site resolves to -------------------------------------------------
+
+test("a Run-started helper is the file a site's argv[0] resolves to through the text, never a base name; exec is a process site", () => {
+  const picker = {
+    path: "v0200/Picker.qml", kind: "qml", text: `import QtQuick
+import "../omakit"
+Item {
+  id: root
+  property string omarchyPath: Quickshell.env("OMARCHY_PATH")
+  function localPath(url) {
+    var value = String(url || "")
+    if (value.indexOf("file://") === 0) value = value.substring(7)
+    try { return decodeURIComponent(value) } catch (e) { return value }
+  }
+  function pluginScriptPath(name) {
+    // the host's directory is private, so resolve from this file
+    const dir = localPath(Qt.resolvedUrl("../")).replace(/\\/$/, "")
+    return dir ? dir + "/" + name : ""
+  }
+  function scriptPath(name) { return omarchyPath + "/shell/plugins/image-picker/" + name }
+  function first() { const script = pluginScriptPath("a.sh"); one.command = [script, "x"]; one.start() }
+  function second() { const script = pluginScriptPath("b.sh"); two.command = [script]; two.start() }
+  function third() { three.command = [root.scriptPath("list.sh")]; three.start() }
+  function fourth() { four.command = Model.arguments(pluginScriptPath("c.sh")); four.start() }
+  Run { id: one }
+  Run { id: two }
+  Run { id: three }
+  Run { id: four }
+  Run { id: five; command: [root.pluginScriptPath("d.sh")] }
+  Child { id: child; helperPath: root.pluginScriptPath("e.sh") }
+}
+` }
+  const child = { path: "v0200/Child.qml", kind: "qml", text: `import QtQuick
+import "../omakit"
+Item {
+  property string helperPath: ""
+  Run { id: run; command: [helperPath, "--go"] }
+}
+` }
+  const files = [picker, child, ...["a.sh", "b.sh", "c.sh", "d.sh", "e.sh", "list.sh"].map((path) => ({ path, kind: "shell", text: "#!/usr/bin/bash\nexec /usr/bin/true\n" }))]
+  const processes = files.filter((file) => file.kind === "qml").flatMap((file) => extractProcesses(file, { runBlock: true }))
+  const { helpers, resolved } = runStartedHelpers(files, processes)
+  assert.deepEqual([...helpers].sort(), ["a.sh", "b.sh", "d.sh", "e.sh"])
+  const at = (file, line) => resolved.get(`${file}:${line}`)
+  assert.equal(at("v0200/Picker.qml", 17), "@/a.sh", "the nearest assignment before the site, not the file's first")
+  assert.equal(at("v0200/Picker.qml", 18), "@/b.sh")
+  assert.equal(at("v0200/Picker.qml", 19), "$OMARCHY_PATH/shell/plugins/image-picker/list.sh", "Omarchy's tree, not this one")
+  assert.equal(at("v0200/Picker.qml", 20), null, "an array from a JavaScript module is computed, not resolved")
+  assert.equal(at("v0200/Picker.qml", 25), "@/d.sh", "a call to a same-file function through its return expression")
+  assert.equal(at("v0200/Child.qml", 5), "@/e.sh", "a property the parent file binds on the component")
+  const shell = extractProcesses({ path: "a.sh", kind: "shell", text: "#!/usr/bin/bash\nexec /usr/bin/flock -n lock true\nexec 3>&1\nexec\n" })
+  assert.deepEqual(shell.map((row) => row.argv), [["/usr/bin/flock", "-n", "lock", "true"]], "exec cmd is a process site; exec alone or with a redirection is not")
 })

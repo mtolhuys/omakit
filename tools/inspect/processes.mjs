@@ -264,6 +264,9 @@ function commandWords(segment) {
     if (words[0] === "for" || words[0] === "case" || words[0] === "select" || words[0] === "function") return null
     words = words.slice(1)
   }
+  // `exec cmd` replaces the shell with cmd: a process site, the wrapper
+  // dropped; `exec` alone or with only redirections runs nothing.
+  while (words.length > 1 && words[0] === "exec" && !/^[<>&\d]/.test(words[1])) words = words.slice(1)
   if (!words.length) return null
   if (/^[A-Za-z_]\w*\(\)$/.test(words[0])) return null
   if (BUILTINS.has(basename(words[0])) && basename(words[0]) !== "eval") return null
