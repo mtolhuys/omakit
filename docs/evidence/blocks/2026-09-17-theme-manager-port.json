@@ -1,0 +1,301 @@
+{
+ "id": "P1",
+ "measured": "2026-09-17",
+ "question": "What do omakit inspect, verify and submit say about Theme Manager before and after every QML process site goes through the Run block, and does the ported plugin still do what it did?",
+ "plugin": {
+  "id": "io.github.mtolhuys.theme-manager",
+  "repository": "https://github.com/mtolhuys/omarchy-theme-manager",
+  "version": "0.6.8",
+  "branch": "run-port"
+ },
+ "method": "Three documents on the default branch HEAD (7239ae8, the commit the marketplace validated) and three on the run-port branch, with the same omakit checkout and pin; inspect after 6fd7154, which stopped counting an expression at argv[0] as a tool resolved from PATH (both sides re-measured with it). Counts only: no site list, since the plugin is a named repository. The desktop harness ran the ported controllers and the picker's Run sites in a separate quickshell instance under systemd-run --user --scope -p MemoryMax=768M, every action that does not change the desktop once, against temporary paths where a write was involved; the plugin's own tests/lab/acceptance.sh ran in the plugin lab's stock 4.0.3 guest at commit d9f6093 for the flows that change a desktop.",
+ "before": {
+  "commit": "7239ae8264997b8170a2cc5cf3cfc15cd9670114",
+  "omakit": "0.5.1",
+  "patterns": {
+   "process-lifecycle": 23,
+   "unbounded-buffering": 18,
+   "file-and-state-boundary": 7,
+   "environment-trust": 473,
+   "network-egress": 1,
+   "argument-grammar": 17
+  },
+  "processSites": {
+   "total": 495,
+   "qml": 26,
+   "shell": 469
+  },
+  "qmlSites": {
+   "total": 26,
+   "withDeadline": 0,
+   "throughRunBlock": 0,
+   "shellWrapper": 6,
+   "detached": 3,
+   "collectorWithoutCap": 18
+  },
+  "blocks": [],
+  "sizeScore": 7.14,
+  "functionsOverSize": 50,
+  "filesRead": {
+   "qml": 12,
+   "js": 23,
+   "shell": 14,
+   "python": 4,
+   "other": 0
+  },
+  "verify": {
+   "outcome": "review-required",
+   "findings": 0,
+   "capabilities": [
+    "installer"
+   ]
+  },
+  "submit": {
+   "outcome": "listed",
+   "ready": false,
+   "blocking": []
+  }
+ },
+ "after": {
+  "commit": "28d8ce80908d08598ef1820433148db40f973a02",
+  "omakit": "0.5.1",
+  "patterns": {
+   "file-and-state-boundary": 7,
+   "environment-trust": 481,
+   "network-egress": 3,
+   "argument-grammar": 17
+  },
+  "processSites": {
+   "total": 514,
+   "qml": 24,
+   "shell": 490
+  },
+  "qmlSites": {
+   "total": 24,
+   "withDeadline": 24,
+   "throughRunBlock": 24,
+   "shellWrapper": 0,
+   "detached": 0,
+   "collectorWithoutCap": 0
+  },
+  "blocks": [
+   {
+    "name": "run",
+    "version": "0.1.0",
+    "shippedVersion": "0.1.0",
+    "state": "unmodified",
+    "complete": true,
+    "files": [
+     {
+      "path": "omakit/Run.qml",
+      "state": "unmodified",
+      "version": "0.1.0"
+     },
+     {
+      "path": "omakit/run-supervisor.py",
+      "state": "unmodified",
+      "version": "0.1.0"
+     }
+    ]
+   }
+  ],
+  "sizeScore": 7.14,
+  "functionsOverSize": 49,
+  "filesRead": {
+   "qml": 13,
+   "js": 23,
+   "shell": 19,
+   "python": 6,
+   "other": 0
+  },
+  "verify": {
+   "outcome": "review-required",
+   "findings": 0,
+   "capabilities": [
+    "installer"
+   ]
+  },
+  "submit": {
+   "outcome": "listed",
+   "ready": false,
+   "blocking": []
+  }
+ },
+ "delta": {
+  "argument-grammar": 0,
+  "environment-trust": 8,
+  "file-and-state-boundary": 0,
+  "network-egress": 2,
+  "process-lifecycle": -23,
+  "unbounded-buffering": -18
+ },
+ "notes": [
+  "process-lifecycle 23 and unbounded-buffering 18 are gone: every one of the 24 QML sites carries a deadline through the block and no collector without a cap remains.",
+  "The two file writes that were bash -c strings (the selection and done files) are FileView writes from the process itself, not Run sites: the done mark must survive the picker's destruction, and Run ends its group on destruction. The 26 sites inspect counted (23 Process, 3 execDetached) plus one Util.execArgv it did not see became 24 Run sites and 2 in-process writes.",
+  "environment-trust rose by 8 shell lines: the five new helpers name mkdir, cmp, cp, chmod, stat, readlink, flock, tr and gsettings bare, under Run's closed environment (docs/BLOCKS_SPIKE.md, the prelude decision); its QML part went from 13 sites to 0.",
+  "network-egress rose by 2: the hostile-fetch test's local http://127.0.0.1 server, in tests/.",
+  "file-and-state-boundary is unchanged at 7; the three new helpers create their one directory with mode 0700.",
+  "verify and submit are unchanged: review-required on the installer capability, listed.",
+  "The marketplace blocker at cc6486a (partial-clone git cat-file -s before the size check, unbounded tree and pack fetch) was replaced on main at e306998 by a bounded archive download; the port adds tests/theme-install-hostile.py, real repositories served over a local socket: an oversized blob refused after the inventory pass with nothing extracted, an oversized pack refused before a byte of body with a declared length and at the cap plus one 64 KiB read without one, a trickle stopped by the deadline with under 64 bytes landed."
+ ],
+ "desktopHarness": {
+  "instance": "quickshell -p <harness> under systemd-run --user --scope -p MemoryMax=768M, 2026-09-17",
+  "actions": [
+   {
+    "action": "small-file-writes"
+   },
+   {
+    "action": "shell-string-refused",
+    "state": "spawn-failed",
+    "ms": 26,
+    "reason": "command is a shell string (bash -c); pass argv, or set allowShellString: true"
+   },
+   {
+    "action": "install-hook.sh",
+    "state": "ok",
+    "ms": 58,
+    "exitCode": 0,
+    "outBytes": 0,
+    "reason": ""
+   },
+   {
+    "action": "verify-wallpaper.sh",
+    "state": "ok",
+    "ms": 59,
+    "exitCode": 0,
+    "outBytes": 3,
+    "reason": ""
+   },
+   {
+    "action": "gsettings-get",
+    "state": "ok",
+    "ms": 59,
+    "exitCode": 0,
+    "outBytes": 11,
+    "reason": ""
+   },
+   {
+    "action": "probe-theme-lock.sh",
+    "state": "ok",
+    "ms": 59,
+    "exitCode": 0,
+    "outBytes": 0,
+    "reason": ""
+   },
+   {
+    "action": "reset-icons.sh",
+    "state": "ok",
+    "ms": 65,
+    "exitCode": 0,
+    "outBytes": 9,
+    "reason": ""
+   },
+   {
+    "action": "apply-icons.sh",
+    "state": "ok",
+    "ms": 68,
+    "exitCode": 0,
+    "outBytes": 0,
+    "reason": ""
+   },
+   {
+    "action": "list.sh",
+    "state": "ok",
+    "ms": 98,
+    "exitCode": 0,
+    "outBytes": 651,
+    "reason": ""
+   },
+   {
+    "action": "catalog",
+    "rows": 326
+   },
+   {
+    "action": "inventory"
+   },
+   {
+    "action": "magick",
+    "state": "ok",
+    "ms": 216,
+    "exitCode": 0,
+    "outBytes": 651,
+    "reason": ""
+   },
+   {
+    "action": "icons-search",
+    "rows": 24
+   },
+   {
+    "action": "wallhaven-search",
+    "rows": 48
+   },
+   {
+    "action": "icons-inventory.sh",
+    "state": "ok",
+    "ms": 1527,
+    "exitCode": 0,
+    "outBytes": 5714,
+    "reason": ""
+   },
+   {
+    "action": "wallhaven-download"
+   }
+  ],
+  "notExercisedThere": [
+   "theme install and uninstall",
+   "wallpaper install, remove and reset with omarchy-theme-bg-set",
+   "reset-icons.sh against the real state file",
+   "the two switchers",
+   "xdg-open"
+  ],
+  "whyNot": "each changes the desktop or opens a menu on it; the guest acceptance covers theme install, wallpaper install and bg-set, and the hook at its real path; uninstall, wallpaper remove and reset, the switchers and xdg-open ran nowhere but as their helper scripts against temporary paths, or not at all"
+ },
+ "guestAcceptance": {
+  "lab": "omarchy plugin lab, stock 4.0.3 guest, run 20260917-194044, plugin at d9f6093",
+  "ok": [
+   "linked graphical session stops",
+   "notification service is ready",
+   "startup notifications are dismissed",
+   "Theme Manager 0.6.8 is installed",
+   "Theme Manager 0.6.8 is loaded",
+   "the Theme Manager hook is installed",
+   "the native theme shortcut opens Theme Manager's theme mode",
+   "Ctrl+B opens the bounded theme catalog",
+   "Return opens the safe theme installation confirmation",
+   "confirming installs and applies only a sanitized exact snapshot",
+   "the background shortcut opens wallpaper mode, not theme mode",
+   "Ctrl+D persists the selected wallpaper as a favorite",
+   "the wallpaper picker closes with its favorite persisted",
+   "the favorite survives a real picker reopen",
+   "Ctrl+Shift+D enables favorites-only mode",
+   "the favorite can be removed without leaving hidden state",
+   "Ctrl+B enters the Aether-backed Wallhaven browser",
+   "typing performs a real Wallhaven name search",
+   "near-end navigation automatically loads another Aether batch",
+   "the staged filter sheet opens without leaving Wallhaven",
+   "applying staged blue-palette filters starts one fresh Aether search",
+   "the selected full wallpaper is installed into the current theme and applied",
+   "a planted wallpaper symlink cannot redirect publication",
+   "disabling Theme Manager restores the native picker",
+   "Theme Manager can be enabled again with the same runtime",
+   "removal restores the native picker and keeps the wallpaper",
+   "favorites, live palette, theme catalog, Aether browsing, and plugin lifecycle completed"
+  ]
+ },
+ "commits": {
+  "omakit": [
+   "6fd7154 inspect: an argv word that is an expression is not a tool resolved from PATH"
+  ],
+  "plugin": [
+   "7ac5a0c Add omakit's Run block 0.1.0 under omakit/",
+   "f1f8511 Start every program through Run: 27 sites ported, seven shell strings gone",
+   "d9f6093 Prove the bounded fetch against hostile repositories over a real socket",
+   "28d8ce8 Helpers: create their one directory with mode 0700"
+  ]
+ },
+ "limits": [
+  "One plugin, the author's own; the reviewer has not seen the port.",
+  "inspect's shell counts include the plugin's tests/ and lab scripts, which ship in the tree.",
+  "Time to end per site was not measured here; the lab suite's figures for the block itself are in 2026-09-17-run-lab-*.json."
+ ]
+}

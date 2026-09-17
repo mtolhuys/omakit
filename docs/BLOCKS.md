@@ -167,6 +167,53 @@ deadline observed through the block. A file with a block header whose body
 is not a shipped one is reported as `modified`, and its lines are read like
 any other file.
 
+## The first port: Theme Manager, 2026-09-17
+
+Theme Manager (`io.github.mtolhuys.theme-manager`, 0.6.8, the author's
+own) is the proof plugin. On its `run-port` branch every QML process site
+goes through Run: 23 `Process` blocks, 3 `execDetached` calls and one
+`Util.execArgv` became 24 Run sites and 2 in-process `FileView` writes
+(the selection and done files a waiting `omarchy-menu-images` reads must
+survive the picker's destruction, and Run ends its group on destruction).
+Seven `bash -c` strings are gone: five became argv helpers, two the
+writes. Measured with the same omakit checkout and pin before (`7239ae8`,
+the commit the marketplace validated) and after
+([record](evidence/blocks/2026-09-17-theme-manager-port.json), counts only):
+
+| inspect | Before | After |
+| --- | ---: | ---: |
+| process lifecycle rows | 23 | 0 |
+| unbounded buffering rows | 18 | 0 |
+| QML sites with a deadline observed | 0 of 26 | 24 of 24 |
+| QML sites that are a shell string | 6 | 0 |
+| environment trust, QML sites | 13 | 0 |
+| environment trust, shell lines | 460 | 481 |
+| file and state boundary rows | 7 | 7 |
+| blocks row | none | `run 0.1.0, 2 files, unmodified` |
+| verify | review-required, installer | the same |
+| submit | listed | the same |
+
+The shell lines rose by the five new helpers' bare `mkdir`, `cmp`, `cp`,
+`stat`, `readlink`, `flock`, `tr` and `gsettings`, which run under Run's
+closed environment (the prelude decision, [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md)).
+What the port ran: the ported controllers and the picker's Run sites in a
+separate Quickshell instance under `systemd-run --user --scope -p
+MemoryMax=768M`, 16 actions as expected, the desktop's icon theme and
+background untouched; and the plugin's own lab acceptance on the stock
+4.0.3 guest, 27 of 27, including a theme install and apply, a wallpaper
+install with `omarchy-theme-bg-set`, and the hook at its real path.
+
+The review's open blocker on the plugin (at `cc6486a`: a partial clone's
+`git cat-file -s` before the size check, an unbounded tree and pack fetch)
+had been replaced on main by a bounded archive download; the port adds
+the proof against real hostile repositories served over a local socket
+(`tests/theme-install-hostile.py`): an oversized blob refused after the
+inventory pass with nothing extracted, an oversized pack refused before a
+byte of body when its length is declared and at the cap plus one 64 KiB
+read when it is not, a trickle stopped by the deadline. Git is not started
+from QML anywhere in the plugin. The port is not submitted; the plan says
+when.
+
 ## Versioning
 
 The block version is its own, `0.1.0`, independent of omakit's. A change
