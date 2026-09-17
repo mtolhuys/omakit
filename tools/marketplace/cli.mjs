@@ -8,7 +8,7 @@
 //   omakit parity [--count n]        prove the local transport equals the GitHub transport
 //   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
 //   omakit inspect <plugin-dir>      what a plugin tree does, as observations; decides nothing
-//   omakit add run [plugin-dir]      copy the Run block into the plugin's omakit/ directory
+//   omakit add run|store [dir]       copy a block into the plugin's omakit/ directory
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
@@ -77,7 +77,7 @@ const REMEDY = Object.freeze({
   "modified": "Keep your copy, or move it aside and run add again; omakit/NOTICE is where modifications are listed.",
   "not-a-plugin": "Pass the plugin's directory, the one with its manifest.json.",
   "plugin-dir-not-found": "Pass the plugin's directory, the one with its manifest.json.",
-  "unknown-block": "omakit add run [<plugin-dir>]",
+  "unknown-block": "omakit add run [<plugin-dir>], or omakit add store [<plugin-dir>]",
 })
 
 /*
@@ -449,9 +449,9 @@ async function cmdInspect(args) {
  */
 async function cmdAdd(args) {
   const parsed = checkArgs(args, ACCEPTED.add)
-  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("add")}.`, 2, "omakit add run [<plugin-dir>] [--update] [--json]")
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("add")}.`, 2, "omakit add <block> [<plugin-dir>] [--update] [--json]")
   const [block, dir] = parsed.positionals
-  if (!block) fail("usage", "add needs a block: `omakit add run [<plugin-dir>]`", 2, "omakit add run [<plugin-dir>] [--update] [--json]")
+  if (!block) fail("usage", "add needs a block: `omakit add run [<plugin-dir>]` or `omakit add store [<plugin-dir>]`", 2, "omakit add <block> [<plugin-dir>] [--update] [--json]")
   let result
   try {
     result = addBlock({ repoRoot: ROOT, block, dir: dir || ".", update: parsed.options.has("--update") })
@@ -466,12 +466,13 @@ async function cmdAdd(args) {
   const lines = []
   for (const file of [...result.files, result.notice]) {
     const state = file.state === "current" ? "info" : "pass"
-    const from = file.from ? ` (from ${result.block} ${file.from})` : ""
-    lines.push(`${mark(state, c)}${c("label", file.state.padEnd(8))} ${file.path}${from}`)
+    const from = file.from ? ` (from ${file.block} ${file.from})` : ""
+    const other = file.block && file.block !== result.block ? ` (${file.block}, which ${result.block} uses)` : ""
+    lines.push(`${mark(state, c)}${c("label", file.state.padEnd(8))} ${file.path}${from}${other}`)
   }
-  lines.push(...labelled("block", `${result.block} ${result.version}, from omakit commit ${result.commit}`, c))
+  lines.push(...labelled("block", `${result.block} ${result.version}${result.requires.length ? `, with ${result.requires.join(", ")}` : ""}, from omakit commit ${result.commit}`, c))
   lines.push(...labelled("into", withHomeAbbreviated(result.dir), c))
-  if (result.files.some((file) => file.state !== "current")) lines.push(...action("import \"omakit\" in the QML that starts a process, and use Run { } there; docs/BLOCKS.md is the contract", c))
+  if (result.files.some((file) => file.state !== "current")) lines.push(...action(result.block === "store" ? "import \"omakit\" in the QML that keeps state, and use Store { } there; docs/BLOCKS.md is the contract" : "import \"omakit\" in the QML that starts a process, and use Run { } there; docs/BLOCKS.md is the contract", c))
   process.stdout.write(`${lines.join("\n")}\n`)
 }
 

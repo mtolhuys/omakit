@@ -1,11 +1,11 @@
-# Blocks: the Run contract
+# Blocks: the Run and Store contracts
 
 A block is a small set of files a plugin copies into its own tree with
 `omakit add`, that does one piece of the plumbing the marketplace's review
 blocks on most, built and tested once. This page is the contract of the
-first block, Run 0.1.0: what it does, which review comments each line
-answers, the API, what it costs, what it does not do, and how it is added,
-updated and recognised. The reasoning and the measurements behind the
+two blocks, Run 0.1.0 and Store 0.1.0: what each does, which review
+comments each line answers, the API, what it costs, what it does not do,
+and how it is added, updated and recognised. The reasoning and the measurements behind the
 design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
 [BLOCKS_PLAN.md](BLOCKS_PLAN.md).
 
@@ -214,13 +214,111 @@ read when it is not, a trickle stopped by the deadline. Git is not started
 from QML anywhere in the plugin. The port is not submitted; the plan says
 when.
 
+## Store
+
+Store keeps one private file for a plugin: read, write and remove, the
+way the review asks for. Two files under `omakit/`, beside Run's, which
+Store uses to start its helper (`omakit add store` writes both blocks):
+
+| File | What it is |
+| --- | --- |
+| `omakit/Store.qml` | The QML object: `pluginId`, `name`, `kind`, `maxBytes`, `schema`; `read()`, `write(value)`, `remove()`; `finished(result)`; operations queue and run one at a time. |
+| `omakit/store-helper.py` | The helper Store starts through Run: the descriptor walk from HOME, the checks on every descriptor, the capped read, the schema check, the exclusive staging file and the rename. One JSON line is the result. |
+
+The code is the catalog cache transaction of `omarchy-theme-manager`
+0.5.15 (`catalog-cache.py`, commit `dbd70be`, 2026-09-12), which the
+marketplace review read without a further file or state comment, carried
+over function by function and split under the M12 size.
+
+### The contract, line by line
+
+Each line cites how many of the 1,001 security blocker comments in the M13
+week raise it ([record](evidence/blocks/2026-09-17-store-requirements.json),
+the same run as Run's; 527 comments raise at least one, the counts overlap).
+
+| Line | Comments | What Store does |
+| --- | ---: | --- |
+| Descriptor-relative opens, no-follow | 392 | Every directory on the way from HOME to the plugin's directory is opened with `O_DIRECTORY | O_NOFOLLOW` relative to the descriptor before it, and the file relative to the last one with `O_NOFOLLOW`; a planted link anywhere is `refused` with the reason `... is a symbolic link` (`ELOOP`, or `ENOTDIR` where a directory was demanded). Measured: a link on the plugin directory, on its parent and on the file itself, 0 bytes reach the target. |
+| No check-then-use | 288 | Nothing is checked by path. Every check is `fstat` on the descriptor that was just opened, and the write is a rename over whatever is there. Measured: a neighbour swapping the file between a regular file and a link 40 operations long; every read `ok`, `missing` or `refused`, the target untouched. |
+| Exclusive 0600 temp, atomic replace | 273 | A write goes to `.store-<pid>-<16 hex>.tmp` opened `O_CREAT | O_EXCL` at mode 0600 in the plugin's directory, is `fsync`ed, renamed over the name, and the directory is `fsync`ed; a staging file a crashed writer left is swept once it is older than ten minutes, never sooner. Measured: ten writers at once, the file is one whole write and no staging file is left; a stale staging file is swept and a fresh one kept. |
+| Owner and regular-file checks | 263 | After every open: a directory is a directory, a file is a regular file, and both are owned by this user; anything else is `refused` by name. Measured on the stock guest with `chown root`: `refused`, `not owned by this user`. |
+| Schema check on parse | 218 | A read is parsed as JSON without `NaN` or `Infinity` and checked against `schema`, a subset: `type`, `properties`, `required`, `additionalProperties: false`, `items`, `enum`, `maxLength`, `maxItems`, `maxProperties`, `minimum`, `maximum`, `pattern`; a departure is `invalid` with the path that departs. A write is checked the same way before anything is written. |
+| Size cap on read | 190 | `maxBytes` (default 1 MiB), enforced while reading: one byte over is `overflow`, and the rest is not read. A write over `maxBytes`, or over 64 KiB (one argument to the helper), is `overflow` before it starts. |
+| Refuse group- or world-writable | 146 | Every directory and file on the way with `mode & 022` is `refused`, `writable by the group or by others`; what Store creates is 0700 and 0600. |
+| A private 0700 directory under the XDG base | 96 | `$XDG_STATE_HOME/<pluginId>` (default `~/.local/state`) or `$XDG_CACHE_HOME/<pluginId>` (`~/.cache`), created with mode 0700 where missing, one directory per plugin id; the base has to be inside HOME, or the walk cannot vouch for it and the operation is `refused`. |
+| No /tmp | 63 | There is no path but the one above; the staging file lives in the plugin's own directory. |
+
+### The API
+
+```qml
+import "omakit"
+
+Store {
+    id: memory
+    pluginId: "io.github.me.plugin"                  // the private directory's name
+    name: "memory.json"                              // the file in it
+    kind: "state"                                    // or "cache"
+    maxBytes: 1048576
+    schema: ({ type: "object", required: ["version"], properties: { version: { type: "integer", minimum: 1 } }, additionalProperties: false })
+    onFinished: result => {
+        if (result.op === "read" && result.state === "ok") apply(result.value)
+        else if (result.state !== "missing") status.text = result.state + ": " + result.reason
+    }
+}
+
+memory.read()
+memory.write({ version: 1, themes: {} })
+memory.remove()
+memory.busy
+```
+
+`finished(result)` delivers one object per operation, in the order the
+operations were called:
+
+| Field | Value |
+| --- | --- |
+| `op` | `read`, `write` or `remove` |
+| `state` | one of `ok`, `missing`, `invalid`, `refused`, `overflow`, `failed`, `helper-failed`; nothing else |
+| `value` | the parsed JSON, on an `ok` read |
+| `bytes`, `mtime` | the file's size and modification time, on an `ok` read; the bytes written, on an `ok` write |
+| `path` | the file's path, whenever the directory was reached |
+| `reason` | one sentence, for every state but `ok` and `missing` |
+
+`refused` names a check that failed on a descriptor; `invalid` a parse or
+schema departure; `overflow` a size over the cap; `failed` an operating
+system error by name; `helper-failed` a helper that ended other than `ok`
+under Run, with Run's state in the reason.
+
+### What it costs
+
+From `tests/lab/store/` on the desktop, 2026-09-17: a read or a write is
+one helper run under Run, 82 to 102 ms from the call to the result across
+the twelve scenarios' first operation; ten writers started at once all
+finished within 91 ms. Measured by the harness's clock
+(`Date.now()` at the call and at the result), in
+[the record](evidence/blocks/2026-09-17-store-lab-desktop.json); the stock
+guest's is beside it.
+
+### What Store does not do
+
+- It does not keep a cache a helper downloads: a write is one argument to
+  the helper, capped at 64 KiB. A helper that fetches a catalog keeps the
+  transaction on its own side; `store-helper.py` is importable for that
+  and Theme Manager's `catalog-cache.py` is the same code.
+- It does not walk outside HOME. An `XDG_STATE_HOME` or `XDG_CACHE_HOME`
+  elsewhere is `refused`, because the walk cannot vouch for a directory it
+  cannot check owner by owner.
+- It does not lock. Two writers race by rename; the last whole write wins,
+  and no reader ever sees a partial one.
+
 ## Versioning
 
-The block version is its own, `0.1.0`, independent of omakit's. A change
-to either file's body is a new block version; `omakit add run --update`
-moves an unmodified copy to it, and `inspect` names the version a copy
-carries beside the one omakit ships. `blocks/run/NOTICE` in the omakit
-tree and `omakit/NOTICE` in a plugin list the same per file.
+A block's version is its own, `0.1.0` for each, independent of omakit's.
+A change to a file's body is a new block version; `omakit add <block>
+--update` moves an unmodified copy to it, and `inspect` names the version
+a copy carries beside the one omakit ships. `blocks/<name>/NOTICE` in the
+omakit tree and `omakit/NOTICE` in a plugin list the same per file, every
+block present in one NOTICE.
 
 ## What this page does not say
 

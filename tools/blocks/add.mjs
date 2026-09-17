@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { execFileSync } from "node:child_process"
 import { join, resolve } from "node:path"
 import { findAgentControl } from "../marketplace/agent-control.mjs"
-import { bodySha256, parseHeader, renderNotice, shippedBlock, shippedBlocks, shippedHistory, withBodySha256, withSourceCommit } from "./registry.mjs"
+import { blockClosure, bodySha256, parseHeader, renderNotice, shippedBlock, shippedBlocks, shippedHistory, withBodySha256, withSourceCommit } from "./registry.mjs"
 
 export class AddError extends Error {
   constructor(code, message, remedy = null) {
@@ -80,17 +80,20 @@ function decide(target, entry, { update }) {
  */
 export function addBlock({ repoRoot, block, dir = ".", update = false, cwd = process.cwd() }) {
   const shipped = shippedBlock(block)
-  if (!shipped) throw new AddError("unknown-block", `${block} is not a block omakit ships; it ships ${shippedBlocks().map((entry) => entry.name).join(", ")}`, "omakit add run [plugin-dir]")
+  if (!shipped) throw new AddError("unknown-block", `${block} is not a block omakit ships; it ships ${shippedBlocks().map((entry) => entry.name).join(", ")}`, "omakit add run [plugin-dir], or omakit add store [plugin-dir]")
+  // A block that uses another one (store uses run) brings it along: the
+  // required block's files first, then its own, one decision list.
+  const closure = blockClosure(block).map((name) => shippedBlock(name))
   const pluginDir = resolve(cwd, dir)
   if (!existsSync(pluginDir) || !statSync(pluginDir).isDirectory()) throw new AddError("plugin-dir-not-found", `${pluginDir} is not a directory`, "Pass the plugin's directory, the one with its manifest.json.")
   if (!existsSync(join(pluginDir, "manifest.json"))) throw new AddError("not-a-plugin", `${pluginDir} has no manifest.json, so it is not a plugin directory`, "Pass the plugin's directory, the one with its manifest.json.")
   // The names that will be written, checked against the agent-control list
   // before any decision: a block can never carry an instruction file along.
-  const control = findAgentControl([...shipped.files, { file: "NOTICE" }].map((entry) => ({ path: `${BLOCK_DIR}/${entry.file}`, type: "blob" })))
+  const control = findAgentControl([...closure.flatMap((entry) => entry.files), { file: "NOTICE" }].map((entry) => ({ path: `${BLOCK_DIR}/${entry.file}`, type: "blob" })))
   if (control.length) throw new AddError("agent-control", `${control.map((entry) => entry.path).join(", ")}: an agent-control file is never written into a plugin`)
   const blockDir = join(pluginDir, BLOCK_DIR)
   // Every decision first; the first refusal stops everything, unwritten.
-  const decisions = shipped.files.map((entry) => ({ entry, target: join(blockDir, entry.file), ...decide(join(blockDir, entry.file), { ...entry, block: shipped.name }, { update }) }))
+  const decisions = closure.flatMap((one) => one.files.map((entry) => ({ entry: { ...entry, block: one.name }, target: join(blockDir, entry.file), ...decide(join(blockDir, entry.file), { ...entry, block: one.name }, { update }) })))
   const commit = sourceCommit(repoRoot)
   mkdirSync(blockDir, { recursive: true })
   const files = []
@@ -99,7 +102,7 @@ export function addBlock({ repoRoot, block, dir = ".", update = false, cwd = pro
       const blockFile = target
       writeFileSync(blockFile, stampedText(entry, commit))
     }
-    files.push({ path: join(BLOCK_DIR, entry.file), state: state === "write" ? "written" : state === "update" ? "updated" : "current", sha256: entry.sha256, from: version && version !== shipped.version ? version : null })
+    files.push({ path: join(BLOCK_DIR, entry.file), block: entry.block, state: state === "write" ? "written" : state === "update" ? "updated" : "current", sha256: entry.sha256, from: version && version !== shippedBlock(entry.block).version ? version : null })
   }
   // NOTICE lists every block present in omakit/ after the write, recognised
   // by the headers of the files that are there.
@@ -116,5 +119,5 @@ export function addBlock({ repoRoot, block, dir = ".", update = false, cwd = pro
     writeFileSync(blockFile, noticeText)
     noticeState = noticeBefore === null ? "written" : "updated"
   }
-  return { block: shipped.name, version: shipped.version, dir: pluginDir, commit, files, notice: { path: join(BLOCK_DIR, "NOTICE"), state: noticeState } }
+  return { block: shipped.name, version: shipped.version, requires: closure.filter((one) => one.name !== shipped.name).map((one) => `${one.name} ${one.version}`), dir: pluginDir, commit, files, notice: { path: join(BLOCK_DIR, "NOTICE"), state: noticeState } }
 }
