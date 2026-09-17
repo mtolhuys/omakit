@@ -1,7 +1,7 @@
 {
   "name": "omakit",
   "version": "0.5.1",
-  "description": "The safe place to find out: everything knowable about an Omarchy Quattro plugin submission before you post it, on your own machine. Agent-first, read-only against the marketplace, posts nothing, zero dependencies.",
+  "description": "The plumbing Omarchy plugin reviews block most, built and tested once: a Run block and a Store block a plugin copies into its own tree, and the marketplace's own checks run locally. Every line measured against one week of review comments; posts nothing; zero dependencies.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
   "keywords": [
@@ -9,6 +9,9 @@
     "quattro",
     "plugin",
     "marketplace",
+    "building-blocks",
+    "qml",
+    "quickshell",
     "preflight",
     "cli",
     "agent"

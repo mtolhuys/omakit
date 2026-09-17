@@ -195,6 +195,25 @@ export function frame(layout, band, revealed = band, { colour = true } = {}) {
 }
 
 /**
+ * The tagline as the lines drawn under the wordmark: one when it fits the
+ * wordmark's width, else the narrowest wrap that takes two lines, and the
+ * text on one line when no width under its own length does.
+ *
+ * @param {string} text
+ * @param {number} width the wordmark's width in cells
+ * @returns {string[]}
+ */
+export function taglineLines(text, width) {
+  const plain = String(text)
+  if ([...plain].length <= width) return [plain]
+  for (let columns = width; columns < [...plain].length; columns += 1) {
+    const lines = wrap(plain, { width: columns })
+    if (lines.length <= 2) return lines
+  }
+  return [plain]
+}
+
+/**
  * @param {{ word?: string, tagline?: string, stream?: NodeJS.WriteStream,
  *           enabled?: boolean, animate?: boolean, shines?: number,
  *           effect?: boolean, env?: NodeJS.ProcessEnv }} [options]
@@ -217,9 +236,11 @@ export async function banner(options = {}) {
   // The tagline is centred under the wordmark, not set flush left: the rule
   // is exactly as wide as the letters, so a shorter line starting at column
   // 0 reads as slid to the left. The padding is spaces, no escape, so the
-  // line is centred under NO_COLOR and in a pipe alike.
+  // line is centred under NO_COLOR and in a pipe alike. A tagline wider
+  // than the wordmark is wrapped as narrow as two lines allow, so it sits
+  // under the letters instead of running past them.
   const tagline = options.tagline
-    ? " ".repeat(Math.max(0, Math.floor((width - [...String(options.tagline)].length) / 2))) + c(code("prose"), options.tagline)
+    ? taglineLines(options.tagline, width).map((line) => " ".repeat(Math.max(0, Math.floor((width - [...line].length) / 2))) + c(code("prose"), line)).join("\n")
     : null
 
   // Nothing at all when it is not a terminal. There is no plain-text substitute

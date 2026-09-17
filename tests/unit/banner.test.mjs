@@ -171,3 +171,18 @@ test("a short terminal gets the finished wordmark and no cursor-up at all", asyn
   assert.doesNotMatch(all, /\u001b\[\d+A/, "no frame is redrawn, so nothing can be stranded")
   assert.match(all, /\u2588/, "the wordmark is still drawn")
 })
+
+test("a tagline wider than the wordmark is wrapped as narrow as two lines allow, under the letters", async () => {
+  // Measured: the 0.6.0 tagline is 60 cells and the wordmark 28, so on one
+  // line it ran 32 cells past the rule, wider than the README's banner.
+  const { taglineLines } = await import("../../tools/marketplace/banner.mjs")
+  assert.deepEqual(taglineLines("the safe place to find out", 28), ["the safe place to find out"])
+  const lines = taglineLines("the plumbing plugin reviews block most, built and tested once", 28)
+  assert.equal(lines.length, 2)
+  assert.deepEqual(lines, ["the plumbing plugin reviews block", "most, built and tested once"])
+  assert.ok(lines.every((line) => line.length <= 33), "no line wider than the narrowest two-line wrap")
+  const written = []
+  await banner({ stream: { isTTY: true, rows: 40, columns: 80, write: (s) => written.push(s) }, enabled: true, colour: false, animate: false, tagline: lines.join(" ") })
+  const tail = written.join("").split("\n").filter((line) => /plumbing|tested once/.test(line))
+  assert.deepEqual(tail, lines, "both lines are drawn under the wordmark, neither padded past column 0")
+})
