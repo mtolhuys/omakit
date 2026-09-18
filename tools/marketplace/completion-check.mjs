@@ -22,7 +22,7 @@
 import { spawnSync } from "node:child_process"
 import { appendFileSync, closeSync, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
-import { completionInstall, parseCompletionHeader, subcommandsOf } from "./completion.mjs"
+import { completionInstall, parseCompletionHeader } from "./completion.mjs"
 import { COMMANDS } from "./usage.mjs"
 import { omakitStateDir } from "./paths.mjs"
 
@@ -175,7 +175,11 @@ export function installedCompletion(env = process.env) {
  */
 /** The subcommands of COMMANDS a script text does not name as a word; a script from another surface lacks some. */
 export function subcommandsMissingFrom(text, commands = COMMANDS) {
-  return subcommandsOf(commands).map((sub) => sub.name).filter((name) => !new RegExp(`(?<![A-Za-z0-9_-])${name}(?![A-Za-z0-9_-])`).test(text))
+  // The names from the signatures alone: subcommandsOf() also lists the
+  // shipped blocks for `add`, which reads blocks/, and doctor may run from
+  // a tree without it (tests copy bin, tools and package.json alone).
+  const names = commands.map((command) => [].concat(command.signature)[0].match(/^omakit +([a-z][a-z-]*)/)?.[1]).filter(Boolean)
+  return names.filter((name) => !new RegExp(`(?<![A-Za-z0-9_-])${name}(?![A-Za-z0-9_-])`).test(text))
 }
 
 function readScript(path) {
