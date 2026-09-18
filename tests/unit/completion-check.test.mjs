@@ -20,6 +20,7 @@ import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { completionStep } from "../../tools/marketplace/setup.mjs"
 import { ARROW, DENSITY, plain } from "../../tools/marketplace/style.mjs"
+import { COMMANDS } from "../../tools/marketplace/usage.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 requirePinForTests()
@@ -215,7 +216,20 @@ test("doctor's omakit.completion: script, version and pin, loader and spec, and 
   const good = completionStatus({ version: VERSION, pin, env: m.env })
   assert.equal(good.state, "ok")
   assert.match(good.detail, new RegExp(`omakit ${VERSION.replace(/\\./g, "\\\\.")}, pin ${pin.slice(0, 7)}; loader active, \`complete -p omakit\` seen in a new bash after the loader was asked`))
-  assert.deepEqual(good.evidence, { shell: "bash", path: m.script, present: true, version: VERSION, pin, loader: true, spec: "lazy" })
+  assert.deepEqual(good.evidence, { shell: "bash", path: m.script, present: true, version: VERSION, pin, loader: true, spec: "lazy", missingSubcommands: [] })
+  // The same version and pin in the header over a script that knows fewer
+  // commands (finding 8 of the first-user test: a setup that could not
+  // replace the script left one without add and lab, and doctor called it
+  // healthy): the content is held to the command surface, not the header.
+  const fewer = COMMANDS.filter((command) => !/^omakit (?:add|lab)\b/.test([].concat(command.signature)[0]))
+  writeFileSync(m.script, renderCompletion("bash", { contract, pin, version: VERSION, commands: fewer }))
+  const partial = completionStatus({ version: VERSION, pin, env: m.env })
+  assert.equal(partial.state, "advice")
+  assert.match(partial.detail, /the script does not complete add, lab, so it is from another command surface/)
+  assert.deepEqual(partial.evidence.missingSubcommands, ["add", "lab"])
+  assert.equal(partial.action, "omakit setup")
+  installCompletion({ contract, pin, version: VERSION, env: m.env })
+  assert.equal(completionStatus({ version: VERSION, pin, env: m.env }).state, "ok")
   m.set("no")
   const dead = completionStatus({ version: VERSION, pin, env: m.env })
   assert.equal(dead.state, "advice")
@@ -243,4 +257,32 @@ test("a script from another omakit is noticed once a day, at startup, from one l
   writeFileSync(m.script, renderCompletion("bash", { contract, pin, version: VERSION }))
   assert.equal(staleCompletionNotice({ version: VERSION, env: m.env, today: "2026-09-18" }), null, "current: nothing to say, and no stamp written")
   assert.equal(readFileSync(join(m.env.XDG_STATE_HOME, "omakit/completion-noticed"), "utf8"), "2026-09-17\n")
+})
+
+test("a completion script that cannot be written is a failure in the step and in setup's verdict, with the path to fix", async () => {
+  // Finding 8 of the first-user test: EROFS on the completion directory
+  // printed as info, setup ended READY, and the stale script stayed.
+  const m = machine({ loader: "yes" })
+  const dir = join(m.env.HOME, ".local/share/bash-completion/completions")
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, "omakit"), "# an older script\n")
+  // A read-only script in a read-only directory: the shape of a
+  // package-managed or mounted completion tree (the tester's EROFS).
+  chmodSync(join(dir, "omakit"), 0o444)
+  chmodSync(dir, 0o500)
+  try {
+    const out = collect()
+    const result = await completionStep({ repoRoot: REPO_ROOT, pin, version: VERSION, stream: out.stream, env: m.env, yes: true, askRc: false })
+    assert.equal(result.state, "error")
+    assert.match(result.error, /EACCES|EPERM/)
+    assert.match(out.text(), /FAIL\s+tab completion was not installed: .*\((EACCES|EPERM)\)/)
+    assert.match(out.text(), /Make ~\/\.local\/share\/bash-completion\/completions\/omakit writable/)
+    assert.match(out.text(), /omakit setup --completion/)
+    // And the old script left behind reads as stale to doctor, by its content.
+    const status = completionStatus({ version: VERSION, pin, env: m.env })
+    assert.equal(status.state, "advice")
+  } finally {
+    chmodSync(dir, 0o700)
+    chmodSync(join(dir, "omakit"), 0o644)
+  }
 })

@@ -39,7 +39,7 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinShape, requirePin } from "./pin.mjs"
 import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
@@ -265,9 +265,9 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     identity = requirePin(repoRoot).identity
     add("pin.checkout", "ok",
       `${identity.commit} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}`)
-    const sparse = pinIsSparse(dir)
-    add("pin.size", sparse ? "ok" : "advice", `${pinDiskUsage(dir)}${sparse ? ", sparse" : ", full checkout"}`,
-      sparse ? null : `This checkout predates the sparse fetch and is far larger than it needs to be. Remove ${dir} and run \`omakit pin\` to refetch only what omakit reads.`)
+    const shape = pinShape(dir)
+    add("pin.size", shape.sparse ? "ok" : "advice", `${pinDiskUsage(dir)}${shape.sparse ? ", sparse: the pinned paths and nothing else" : `, a full checkout: ${shape.extra.length} entr${shape.extra.length === 1 ? "y" : "ies"} beyond the pinned paths (${shape.extra.slice(0, 5).join(", ")}${shape.extra.length > 5 ? ", ..." : ""})`}`,
+      shape.sparse ? null : `This checkout carries more than the four paths omakit reads. Remove ${dir} and run \`omakit pin\` to refetch only those.`, { sparse: shape.sparse, extra: shape.extra, sparseCheckoutConfig: shape.sparseCheckoutConfig })
   } catch (error) {
     add("pin.checkout", "problem", error.message, error.remedy || "omakit pin")
   }

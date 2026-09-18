@@ -17,9 +17,9 @@ import { version } from "./doctor.mjs"
 import { credential, UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
-import { action, colourEnabled, GUTTER, mark, styler, wrap } from "./style.mjs"
+import { action, colourEnabled, GUTTER, mark, styler, verdict, wrap } from "./style.mjs"
 import { TAGLINE } from "./usage.mjs"
-import { installCompletion } from "./completion.mjs"
+import { completionInstall, installCompletion } from "./completion.mjs"
 import { appendLoaderBlock, completionWorks, loaderBlock, loaderBlockPresent, verifyCompletion } from "./completion-check.mjs"
 import { submissionContract } from "./form.mjs"
 import { pathHint } from "./path-hint.mjs"
@@ -51,8 +51,13 @@ export async function completionStep({ repoRoot, pin, version, stream = process.
     const contract = await submissionContract({ repoRoot })
     completion = installCompletion({ contract, pin, version, env })
   } catch (error) {
-    step("info", `tab completion was not installed: ${error.message}`)
-    return { state: "error", shell: null, rcAppended: false }
+    // A failed install is a failure, in setup's own verdict and in doctor's
+    // (measured on 2026-09-19: an EROFS here printed as `info`, setup ended
+    // READY, and doctor called the old script healthy; finding 8).
+    const target = completionInstall(env)
+    step("fail", `tab completion was not installed: ${error.message}${error.code ? ` (${error.code})` : ""}`)
+    if (target) fix(`Make ${target.display} writable (or remove the file there), then run \`omakit setup --completion\`; until then \`omakit doctor\` reports the script as stale.`)
+    return { state: "error", shell: target?.shell || null, rcAppended: false, error: error.message }
   }
   if (completion.state === "unsupported") {
     step("info", completion.shell
@@ -183,7 +188,7 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout, env
 
   // Tab completion, installed for the shell in $SHELL where that shell loads
   // it from, and then proven in a new shell (completionStep).
-  await completionStep({ repoRoot, pin: identity.commit, version: tool(repoRoot).version, stream, env, yes, askRc: true, input, verify })
+  const completion = await completionStep({ repoRoot, pin: identity.commit, version: tool(repoRoot).version, stream, env, yes, askRc: true, input, verify })
   out()
 
   out("Try it on a plugin you have checked out:")
@@ -191,5 +196,10 @@ export async function setup({ repoRoot, entryPoint, stream = process.stdout, env
   fix("omakit submit <plugin-repo> --category Widgets --tags bar,quickshell", 0)
   out()
   for (const line of wrap("It prints the issue title and body. It never posts anything.", {}, c)) out(line)
+  if (completion.state === "error") {
+    out()
+    for (const line of verdict("fail", "NOT READY", `tab completion was not installed (${completion.error}); everything else is in place.`, c)) out(line)
+    return { ok: false }
+  }
   return { ok: true }
 }

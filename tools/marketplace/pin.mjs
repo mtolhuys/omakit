@@ -10,7 +10,7 @@
 // path outside it, because on a partial clone such a read would quietly reach
 // for the network instead of failing.
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, readdirSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { omakitCacheDir } from "./paths.mjs"
 
@@ -201,11 +201,37 @@ export function pinDiskUsage(dir, env = process.env) {
 }
 
 /** True when the checkout was fetched with only PIN_PATHS, as a fresh one is. */
-export function pinIsSparse(dir) {
+/**
+ * Whether the checkout is the sparse one `omakit pin` fetches: judged by
+ * what is on disk, the top-level entries being the pinned paths and
+ * nothing else, not by a git setting. Measured on 2026-09-19 by a first
+ * user whose freshly fetched pin was told it "predates the sparse fetch"
+ * and should be removed, because the answer came from `git config
+ * core.sparseCheckout` and that read failed on their machine while the
+ * tree itself was exactly the four pinned paths (docs/evidence/ux/
+ * 2026-09-19-first-user-test.json, finding 9). Returns the entries beyond
+ * the pin too, so doctor can name what a full checkout carries.
+ *
+ * @returns {{ sparse: boolean, extra: string[], sparseCheckoutConfig: boolean|null }}
+ */
+export function pinShape(dir) {
+  const pinned = new Set(PIN_PATHS.map((pattern) => pattern.replace(/^\//, "").split("/")[0]))
+  let entries = []
   try {
-    const enabled = execFileSync("git", ["-C", dir, "config", "--get", "core.sparseCheckout"], { timeout: 60_000, encoding: "utf8" }).trim()
-    return enabled === "true"
+    entries = readdirSync(dir).filter((name) => name !== ".git")
   } catch {
-    return false
+    return { sparse: false, extra: [], sparseCheckoutConfig: null }
   }
+  const extra = entries.filter((name) => !pinned.has(name)).sort()
+  let sparseCheckoutConfig = null
+  try {
+    sparseCheckoutConfig = execFileSync("git", ["-C", dir, "config", "--get", "core.sparseCheckout"], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() === "true"
+  } catch {
+    sparseCheckoutConfig = null
+  }
+  return { sparse: entries.length > 0 && extra.length === 0, extra, sparseCheckoutConfig }
+}
+
+export function pinIsSparse(dir) {
+  return pinShape(dir).sparse
 }

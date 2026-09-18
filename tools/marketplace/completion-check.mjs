@@ -22,7 +22,8 @@
 import { spawnSync } from "node:child_process"
 import { appendFileSync, closeSync, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
-import { completionInstall, parseCompletionHeader } from "./completion.mjs"
+import { completionInstall, parseCompletionHeader, subcommandsOf } from "./completion.mjs"
+import { COMMANDS } from "./usage.mjs"
 import { omakitStateDir } from "./paths.mjs"
 
 /** Milliseconds an interactive shell may take to answer a probe; a hung rc file is reported, not waited for. */
@@ -172,7 +173,20 @@ export function installedCompletion(env = process.env) {
  *
  * @param {{ version: string, pin: string, env?: NodeJS.ProcessEnv }} options
  */
-export function completionStatus({ version, pin, env = process.env }) {
+/** The subcommands of COMMANDS a script text does not name as a word; a script from another surface lacks some. */
+export function subcommandsMissingFrom(text, commands = COMMANDS) {
+  return subcommandsOf(commands).map((sub) => sub.name).filter((name) => !new RegExp(`(?<![A-Za-z0-9_-])${name}(?![A-Za-z0-9_-])`).test(text))
+}
+
+function readScript(path) {
+  try {
+    return readFileSync(path, "utf8")
+  } catch {
+    return ""
+  }
+}
+
+export function completionStatus({ version, pin, env = process.env, commands = COMMANDS }) {
   const shell = basename(env.SHELL || "")
   const target = completionInstall(env)
   if (!target) return { state: "info", shell: shell || null, detail: shell ? `no completion script for ${shell}; there is one for bash, zsh and fish` : "$SHELL is not set, so no completion script is installed", action: null, evidence: { shell: shell || null } }
@@ -186,6 +200,14 @@ export function completionStatus({ version, pin, env = process.env }) {
   if (installed.version !== version || installed.pin !== pin) {
     return { state: "advice", shell: target.shell, detail: `${identity}; this omakit is ${version} at pin ${pin.slice(0, 7)}, so the script is stale`, action: "omakit setup", evidence }
   }
+  // The script's content against the current command surface, not its
+  // header alone: measured on 2026-09-19 by a first user whose installed
+  // script named this version and pin and lacked `add` and `lab`, after a
+  // setup that could not replace it (EROFS); doctor called it healthy
+  // (docs/evidence/ux/2026-09-19-first-user-test.json, finding 8).
+  const missing = subcommandsMissingFrom(readScript(target.path), commands)
+  evidence.missingSubcommands = missing
+  if (missing.length) return { state: "advice", shell: target.shell, detail: `${identity}; the script does not complete ${missing.join(", ")}, so it is from another command surface`, action: "omakit setup", evidence }
   if (!probe.ran) return { state: "unknown", shell: target.shell, detail: `${identity}; a new ${target.shell} could not be asked: ${probe.reason}`, action: null, evidence }
   if (!probe.loader) return { state: "advice", shell: target.shell, detail: `${identity}; a new ${target.shell} has no completion loader, so the script is never read`, action: "omakit setup", evidence }
   if (probe.spec === "none") return { state: "advice", shell: target.shell, detail: `${identity}; the loader is there but a new ${target.shell} does not load the script`, action: "omakit setup", evidence }

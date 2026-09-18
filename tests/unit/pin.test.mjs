@@ -8,10 +8,10 @@
 // fails this test.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join, relative } from "node:path"
-import { ensurePin, PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { dirname, join, relative } from "node:path"
+import { ensurePin, PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
@@ -67,6 +67,37 @@ test("a freshly fetched pin is sparse, and the pin identity still reads", () => 
   assert.equal(typeof pinIsSparse(dir), "boolean")
   assert.equal(marketplacePinDir(REPO_ROOT), dir)
   assert.match(MARKETPLACE_PIN.commit, /^[0-9a-f]{40}$/)
+})
+
+test("sparse is judged by the tree, the pinned paths and nothing else, never by a git setting alone", () => {
+  // Finding 9 of the first-user test: a fresh pin was told it predates the
+  // sparse fetch because `git config core.sparseCheckout` could not be
+  // read on that machine, while the tree was exactly the four pinned paths.
+  const root = mkdtempSync(join(tmpdir(), "omakit-pin-shape-"))
+  try {
+    const sparse = join(root, "sparse")
+    for (const path of ["scripts/x.mjs", "site/catalog.json", ".github/ISSUE_TEMPLATE/a.yml"]) {
+      mkdirSync(dirname(join(sparse, path)), { recursive: true })
+      writeFileSync(join(sparse, path), "")
+    }
+    writeFileSync(join(sparse, "registry.json"), "{}")
+    mkdirSync(join(sparse, ".git"))
+    const shape = pinShape(sparse)
+    assert.equal(shape.sparse, true, "no git config at all, and still sparse: the tree says so")
+    assert.deepEqual(shape.extra, [])
+    assert.equal(shape.sparseCheckoutConfig, null)
+    const full = join(root, "full")
+    for (const path of ["scripts/x.mjs", "registry.json", "README.md", "plugins/one/manifest.json", "package.json"]) {
+      mkdirSync(dirname(join(full, path)), { recursive: true })
+      writeFileSync(join(full, path), "")
+    }
+    const fullShape = pinShape(full)
+    assert.equal(fullShape.sparse, false)
+    assert.deepEqual(fullShape.extra, ["README.md", "package.json", "plugins"])
+    assert.equal(pinShape(join(root, "nowhere")).sparse, false)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })
 
 test("the pin follows XDG and falls back to ~/.cache; omakit has no variable of its own", () => {
