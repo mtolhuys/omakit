@@ -200,7 +200,10 @@ run the same afternoon, whose document the gate then miscounted,
 allocated 440,602,624 B); the base and the template were unchanged. The
 Store suite, the same afternoon: 1m 48.5s, a 417,075,200 B overlay, 15 of
 15 with the foreign owner simulated
-([evidence/lab/20260918-161230-store/](evidence/lab/20260918-161230-store/)). The guest takes 5120 MiB while it runs.
+([evidence/lab/20260918-161230-store/](evidence/lab/20260918-161230-store/));
+the weigh smoke: 1m 47.0s, a 461,180,928 B overlay, three real restarts,
+the restore and the interrupt
+([evidence/lab/20260918-161929-weigh/](evidence/lab/20260918-161929-weigh/)). The guest takes 5120 MiB while it runs.
 The old harness retained a 1.01 GB overlay per run (M7); this one keeps
 none.
 
