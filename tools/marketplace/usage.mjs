@@ -1,4 +1,7 @@
-// The help text, as data rather than one painted string.
+// The help text, as data rather than one painted string, in the order the
+// README tells it: build (add), check (inspect, verify, submit), track
+// (watch), prove (lab), then the rest; completion and COMMANDS.md follow
+// the same list.
 //
 // Kept as structure so it can be coloured without pattern-matching a paragraph,
 // and so the same words serve a terminal and a pipe. A signature is coloured by
@@ -23,32 +26,47 @@ export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])
 
 export const COMMANDS = Object.freeze([
   {
-    signature: "omakit setup [--yes] [--completion]",
+    signature: "omakit add <block> [<plugin-dir>] [--update] [--json]",
     lines: [
-      "First run, in one command: check the environment, fetch the pinned",
-      "marketplace checkout, install tab completion and prove it in a new shell,",
-      "and say what to try first. Idempotent. When a new shell has no completion",
-      "loader it asks once before adding one guarded block to the rc file; --yes",
-      "answers for an agent. --completion is that step alone, never the question.",
-    ],
-  },
-  {
-    signature: "omakit pin",
-    lines: [
-      "Fetch or verify the pinned marketplace checkout in the user cache:",
-      "$XDG_CACHE_HOME/omakit/marketplace, or ~/.cache/omakit/marketplace.",
-      `Read-only, exact commit ${MARKETPLACE_PIN.commit}.`,
+      "Copy a block into the plugin's omakit/ directory: `run` (Run.qml and the",
+      "supervisor it starts by absolute path) or `store` (Store.qml and its",
+      "helper, with run, which it uses), and NOTICE, each file with a header",
+      "naming the block, its version, the licence, the omakit commit and the",
+      "body's sha256. Writes those files and nothing else, never over a file",
+      "that is already there without --update, and never over a copy whose",
+      "body is not one omakit shipped: a modified block is the author's, and",
+      "the command says so and stops. docs/BLOCKS.md is the contract; each of",
+      "its lines cites how many review comments in one week asked for it (M13).",
     ],
   },
   {
     signature: [
-      "omakit audit <plugin-id-or-dir> [--drift] [--json] [--out <file>] [--offline]",
-      "omakit audit [--drift] [--json] [--out <file>] [--offline]",
+      "omakit inspect <target> [--full] [--json] [--out <file>] [--offline]",
+      "                        [--allow-dirty]",
     ],
     lines: [
-      "Compare every installed third-party plugin's running commit with the",
-      "exact commits the marketplace records as validated. Read-only. --drift",
-      "shows only rows that are not validated; --offline reads the pin.",
+      "What a plugin tree does, as observations: every process with its argv,",
+      "every host with its timeout and size-cap flags, every write with whether",
+      "it falls under a directory the plugin controls, every timer with its",
+      "interval, and the capabilities the marketplace baseline records. Below",
+      "the facts, the review classes the marketplace's human review raised,",
+      "each with its measured share, only where the tree shows the class.",
+      "Regular expressions over QML and shell, labelled observed; runs nothing",
+      "from the tree, decides nothing, exits 0 with a report and 2 when the",
+      "target cannot be read. The report opens with a size score, the share",
+      "of the tree's function lines in functions over the measured size,",
+      "placed among the listed trees' shares, 10.00 with no long function;",
+      "then what needs attention: functions over the measured size, longest",
+      "first, then the review classes by measured share, five sites each;",
+      "--full is every site with every qualifier; --json prints the document.",
+    ],
+  },
+  {
+    signature: "omakit verify <target> [--allow-dirty] [--json] [--out <file>]",
+    lines: [
+      "The official marketplace security baseline over the local Git transport,",
+      "reported verbatim beside the pin identity. A report for a person; --json",
+      "prints the document itself, and --out writes it to a file.",
     ],
   },
   {
@@ -85,50 +103,6 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit verify <target> [--allow-dirty] [--json] [--out <file>]",
-    lines: [
-      "The official marketplace security baseline over the local Git transport,",
-      "reported verbatim beside the pin identity. A report for a person; --json",
-      "prints the document itself, and --out writes it to a file.",
-    ],
-  },
-  {
-    signature: [
-      "omakit inspect <target> [--full] [--json] [--out <file>] [--offline]",
-      "                        [--allow-dirty]",
-    ],
-    lines: [
-      "What a plugin tree does, as observations: every process with its argv,",
-      "every host with its timeout and size-cap flags, every write with whether",
-      "it falls under a directory the plugin controls, every timer with its",
-      "interval, and the capabilities the marketplace baseline records. Below",
-      "the facts, the review classes the marketplace's human review raised,",
-      "each with its measured share, only where the tree shows the class.",
-      "Regular expressions over QML and shell, labelled observed; runs nothing",
-      "from the tree, decides nothing, exits 0 with a report and 2 when the",
-      "target cannot be read. The report opens with a size score, the share",
-      "of the tree's function lines in functions over the measured size,",
-      "placed among the listed trees' shares, 10.00 with no long function;",
-      "then what needs attention: functions over the measured size, longest",
-      "first, then the review classes by measured share, five sites each;",
-      "--full is every site with every qualifier; --json prints the document.",
-    ],
-  },
-  {
-    signature: "omakit add <block> [<plugin-dir>] [--update] [--json]",
-    lines: [
-      "Copy a block into the plugin's omakit/ directory: `run` (Run.qml and the",
-      "supervisor it starts by absolute path) or `store` (Store.qml and its",
-      "helper, with run, which it uses), and NOTICE, each file with a header",
-      "naming the block, its version, the licence, the omakit commit and the",
-      "body's sha256. Writes those files and nothing else, never over a file",
-      "that is already there without --update, and never over a copy whose",
-      "body is not one omakit shipped: a modified block is the author's, and",
-      "the command says so and stops. docs/BLOCKS.md is the contract; each of",
-      "its lines cites how many review comments in one week asked for it (M13).",
-    ],
-  },
-  {
     signature: [
       "omakit lab run <suite> [--runs <n>] [--json] [--out <file>]",
       "omakit lab inspect [--verify] [--json] [--out <file>]",
@@ -155,34 +129,14 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
-    signature: "omakit help --agent",
-    lines: [
-      "The operating instructions for a coding agent, printed from skills/, so an",
-      "agent can read the contract out of the tool instead of the repository.",
+    signature: [
+      "omakit audit <plugin-id-or-dir> [--drift] [--json] [--out <file>] [--offline]",
+      "omakit audit [--drift] [--json] [--out <file>] [--offline]",
     ],
-  },
-  {
-    signature: "omakit upgrade [--dry-run]",
     lines: [
-      "Update omakit through the installer that made it: npm, at the exact",
-      "version the registry names, or a fast-forward of a clone. Refuses",
-      "anything else, and never moves the marketplace pin.",
-    ],
-  },
-  {
-    signature: "omakit doctor [--offline] [--json] [--out <file>]",
-    lines: [
-      "What is installed, what is pinned, and what has moved since. Reads and",
-      "prints; it installs nothing and never moves the pin.",
-      "Checks the newest npm release explicitly. Normal terminal use also",
-      "checks at most once daily; DISABLE_UPDATE_NOTIFIER=1 disables notices.",
-    ],
-  },
-  {
-    signature: "omakit parity [--count <n>] [--offset <n>] [--out <file>]",
-    lines: [
-      "The official baseline over GitHub versus the local transport on real",
-      "listed repositories; a packaged install requires --out for evidence.",
+      "Compare every installed third-party plugin's running commit with the",
+      "exact commits the marketplace records as validated. Read-only. --drift",
+      "shows only rows that are not validated; --offline reads the pin.",
     ],
   },
   {
@@ -206,6 +160,55 @@ export const COMMANDS = Object.freeze([
       "$XDG_STATE_HOME/omakit/weigh/<date>.json, and ends with the sentence",
       "for the plugin's README. --list is read-only: every installed plugin",
       "and when it was last weighed, unweighed enabled plugins first.",
+    ],
+  },
+  {
+    signature: "omakit doctor [--offline] [--json] [--out <file>]",
+    lines: [
+      "What is installed, what is pinned, and what has moved since. Reads and",
+      "prints; it installs nothing and never moves the pin.",
+      "Checks the newest npm release explicitly. Normal terminal use also",
+      "checks at most once daily; DISABLE_UPDATE_NOTIFIER=1 disables notices.",
+    ],
+  },
+  {
+    signature: "omakit setup [--yes] [--completion]",
+    lines: [
+      "First run, in one command: check the environment, fetch the pinned",
+      "marketplace checkout, install tab completion and prove it in a new shell,",
+      "and say what to try first. Idempotent. When a new shell has no completion",
+      "loader it asks once before adding one guarded block to the rc file; --yes",
+      "answers for an agent. --completion is that step alone, never the question.",
+    ],
+  },
+  {
+    signature: "omakit pin",
+    lines: [
+      "Fetch or verify the pinned marketplace checkout in the user cache:",
+      "$XDG_CACHE_HOME/omakit/marketplace, or ~/.cache/omakit/marketplace.",
+      `Read-only, exact commit ${MARKETPLACE_PIN.commit}.`,
+    ],
+  },
+  {
+    signature: "omakit upgrade [--dry-run]",
+    lines: [
+      "Update omakit through the installer that made it: npm, at the exact",
+      "version the registry names, or a fast-forward of a clone. Refuses",
+      "anything else, and never moves the marketplace pin.",
+    ],
+  },
+  {
+    signature: "omakit parity [--count <n>] [--offset <n>] [--out <file>]",
+    lines: [
+      "The official baseline over GitHub versus the local transport on real",
+      "listed repositories; a packaged install requires --out for evidence.",
+    ],
+  },
+  {
+    signature: "omakit help --agent",
+    lines: [
+      "The operating instructions for a coding agent, printed from skills/, so an",
+      "agent can read the contract out of the tool instead of the repository.",
     ],
   },
 ])

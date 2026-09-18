@@ -1,4 +1,8 @@
 import { action, AUDIT_VERDICTS, colourEnabled, field, GUTTER, mark, styler, verdict, wrap } from "../marketplace/style.mjs"
+import { withHomeAbbreviated } from "../marketplace/paths.mjs"
+
+/** The checkout directory as a shell takes it: `~/...` when it has no whitespace, quoted and absolute otherwise, the way every other command prints a path under the home directory. */
+const shellPath = (dir) => (/\s/.test(dir) ? JSON.stringify(dir) : withHomeAbbreviated(dir))
 
 const short = (value) => value ? String(value).slice(0, 8) : "unrecorded"
 const flagText = (flags) => flags.length ? `; ${flags.join(", ")}` : ""
@@ -35,7 +39,7 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
     out.push(`${mark(markFor(row), c)}${c("name", row.id)}`)
     out.push(...wrap(detail, { indent: GUTTER }, c))
     if ((row.state === "ahead" || row.state === "diverged") && validated) {
-      out.push(...action(`git -C ${JSON.stringify(row.sourceDir)} checkout ${validated}`, c))
+      out.push(...action(`git -C ${shellPath(row.sourceDir)} checkout ${validated}`, c))
     }
     out.push("")
   }

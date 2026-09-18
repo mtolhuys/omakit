@@ -9,7 +9,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { banner, frame, GLYPH_ROWS, schedule, wordmarkLayout } from "../../tools/marketplace/banner.mjs"
 import { effectAvailable, playEffect, TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
-import { code, MOTION, plain } from "../../tools/marketplace/style.mjs"
+import { code, MOTION } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT } from "./helpers.mjs"
 
 const ESC = "\u001b["

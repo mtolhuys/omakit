@@ -20,7 +20,6 @@
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
 import { PATTERNS, SIZE } from "./patterns.mjs"
-import { toolOf } from "./processes.mjs"
 
 const NOTHING = "observed nothing of this kind"
 

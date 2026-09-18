@@ -9,7 +9,7 @@
 // startup plus a pin read is not something to put behind a TAB. The script says
 // in its own header which pin it came from and how to regenerate it.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { tagSlug } from "./form.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "./usage.mjs"

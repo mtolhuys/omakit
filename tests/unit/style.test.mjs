@@ -4,7 +4,7 @@
 // is typed anywhere else, and they render every report and measure it.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import {
   ARROW, COLUMNS, DENSITY, GUTTER, LABEL, MARK_WIDTH, MOTION, PALETTE, ROLES, STATUS, STEP,
@@ -12,25 +12,15 @@ import {
 } from "../../tools/marketplace/style.mjs"
 import { renderDoctor, renderSubmit, renderWatch } from "../../tools/marketplace/report.mjs"
 import { renderSummary, renderUsage } from "../../tools/marketplace/usage.mjs"
-import { REPO_ROOT } from "./helpers.mjs"
+import { REPO_ROOT, repositoryFiles } from "./helpers.mjs"
 
-const SKIP = new Set([".git", ".cache", "node_modules"])
-
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) walk(path, out)
-    else if (entry.name.endsWith(".mjs")) out.push(path)
-  }
-  return out
-}
 
 const STYLE = "tools/marketplace/style.mjs"
 /** Comments stripped: a comment may name a glyph to explain it; only code may draw one. */
 const uncommented = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
-const sources = walk(join(REPO_ROOT, "tools"))
-  .map((path) => ({ path: relative(REPO_ROOT, path), text: readFileSync(path, "utf8") }))
+const sources = repositoryFiles()
+  .filter((path) => path.startsWith("tools/") && path.endsWith(".mjs"))
+  .map((path) => ({ path, text: readFileSync(join(REPO_ROOT, path), "utf8") }))
 
 /** The tool's own lines: the marketplace's verbatim report is somebody else's text and is exempt from the width. */
 function ownLines(text, exempt = "") {
@@ -405,8 +395,8 @@ test("nothing anywhere pins an actual colour", () => {
   // is an ANSI palette index and the theme decides what it looks like. A
   // truecolor or 256-colour escape would look identical on every theme, which
   // means looking wrong on most of them.
-  for (const path of walk(REPO_ROOT)) {
-    const text = readFileSync(path, "utf8")
+  for (const path of repositoryFiles().filter((file) => file.endsWith(".mjs"))) {
+    const text = readFileSync(join(REPO_ROOT, path), "utf8")
     assert.doesNotMatch(text, /\u001b\[38;[25];|\\u001b\[38;[25];|\\x1b\[38;[25];/, `${path} uses a truecolor or 256-colour escape`)
     assert.doesNotMatch(text, /\u001b\[48;|\\u001b\[48;|\\x1b\[48;/, `${path} sets a background colour`)
   }
@@ -447,15 +437,10 @@ test("the word pin has one owner: the marketplace checkout the rules are read fr
     /\breview is (now )?pinned\b/i,
     /\bstale pin\b/i,
   ]
-  const prose = []
-  ;(function walkAll(dir) {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (SKIP.has(entry.name) || entry.name === ".tmp" || entry.name.endsWith(".tim")) continue
-      const path = join(dir, entry.name)
-      if (entry.isDirectory()) walkAll(path)
-      else if (/\.(mjs|md|json|ansi|out)$/.test(entry.name) || entry.name === "omakit") prose.push(path)
-    }
-  })(REPO_ROOT)
+  const prose = repositoryFiles()
+    .filter((path) => !path.split("/").some((part) => part === ".tmp" || part.endsWith(".tim")))
+    .filter((path) => /\.(mjs|md|json|ansi|out)$/.test(path) || path.endsWith("/omakit"))
+    .map((path) => join(REPO_ROOT, path))
   assert.ok(prose.length > 40, `walked ${prose.length} files`)
   for (const path of prose) {
     if (relative(REPO_ROOT, path) === "tests/unit/style.test.mjs") continue

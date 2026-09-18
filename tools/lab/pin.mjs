@@ -43,6 +43,12 @@ export function bytesBoth(bytes) {
   return `${n.toLocaleString("en-US")} B (${gb} GB / ${gib} GiB)`
 }
 
+/** The two units without the byte count, for a breakdown whose total already printed it: `6.261 GB / 5.831 GiB`. */
+export function gbBoth(bytes) {
+  const n = Number(bytes)
+  return `${(n / 1e9).toFixed(3)} GB / ${(n / 2 ** 30).toFixed(3)} GiB`
+}
+
 /** `4m 49.5s` from milliseconds, the way a person reads a build time. */
 export function durationWords(ms) {
   const seconds = Math.round(ms / 100) / 10

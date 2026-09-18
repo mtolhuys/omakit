@@ -37,11 +37,6 @@ export function blockClosure(name) {
   return names
 }
 
-/** The comment prefix a block file's header uses, by extension. */
-export function commentPrefix(path) {
-  return path.endsWith(".py") ? "#" : path.endsWith(".qml") || path.endsWith(".js") || path.endsWith(".mjs") ? "//" : null
-}
-
 /**
  * Split a block file's text into its header lines and its body. Null when
  * the text has no block header, which is how a plugin's own file reads.

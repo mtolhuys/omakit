@@ -45,17 +45,17 @@ import { allocatedBytes, inLab, labDir, labLayout, readJson, removeFromLab, stam
 import { freeBytesAt, guestCpus, probeRunHost } from "./host.mjs"
 import { BASE_FILES, inspectBase, inspectLock } from "./inspect.mjs"
 import { press, qemuArgs, qmpExecute, startQemu, typeText } from "./qemu.mjs"
-import { clearStartupNotifications, establishSession, guestIdentity, SESSION_PREAMBLE, sshGuest, waitForSsh } from "./guest.mjs"
+import { clearStartupNotifications, establishSession, guestIdentity, SESSION_PREAMBLE, sleep, sshGuest, waitForSsh } from "./guest.mjs"
 import { SUITES, suitePreflight } from "./suites.mjs"
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export class LabError extends Error {
   constructor(code, message, { remedy = null, missing = [] } = {}) {
     super(message)
     this.name = "LabError"
     this.code = code
-    this.remedy = remedy
+    // An interrupt's one action is the lab's, not weigh's (whose
+    // `interrupted` remedy in cli.mjs speaks of shell.json).
+    this.remedy = remedy || (code === "interrupted" ? "the guest was ended and its overlay removed; run it again when you are ready" : null)
     this.missing = missing
   }
 }

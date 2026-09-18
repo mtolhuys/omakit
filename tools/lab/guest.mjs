@@ -9,7 +9,7 @@
 // user's file (the guest's host key is new with every base and the
 // connection is to a port QEMU forwards on the loopback interface).
 
-import { spawn, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 
 export const GUEST_HOST = "127.0.0.1"
 
@@ -61,12 +61,8 @@ export function sshSession(guest, command, options) {
   return sshGuest(guest, `${SESSION_PREAMBLE}; ${command}`, options)
 }
 
-/** An ssh child with stdin open, for piping a tar stream into the guest. */
-export function sshPipe(guest, command) {
-  return spawn("ssh", [...sshArgs(guest), command], { stdio: ["pipe", "pipe", "pipe"] })
-}
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+/** One wait, shared by every lab module that polls. */
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Wait until `ssh true` answers, polling every 5 s like the toolchain; `alive()` says whether the VM is still there. */
 export async function waitForSsh(guest, { timeoutSeconds, alive, onPhase = () => {} }) {

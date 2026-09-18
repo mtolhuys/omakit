@@ -6,35 +6,23 @@
 // pull request. `submit` prints a body; a person posts it.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync } from "node:fs"
-import { join, relative } from "node:path"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { CREDENTIAL_HOST, GH_ARGS, getJson } from "../../tools/marketplace/github.mjs"
 import { COMPLETION_REFRESH_ARGS, NPM_PREFIX_ARGS, NPM_UPGRADE_ARGS } from "../../tools/marketplace/upgrade.mjs"
 import { PROBES } from "../../tools/marketplace/completion-check.mjs"
 import { TTFX_ARGS, TTFX_PROBE } from "../../tools/marketplace/effect.mjs"
 import { MOTION } from "../../tools/marketplace/style.mjs"
-import { REPO_ROOT } from "./helpers.mjs"
+import { REPO_ROOT, repositoryFiles } from "./helpers.mjs"
 
-// The filesystem, not `git ls-files`: an untracked file in the working tree can
-// still be executed, so it is held to the same rule.
-const SKIP = new Set([".git", ".cache", "node_modules"])
-
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) walk(path, out)
-    else if (/\.(?:mjs|js|cjs|sh)$/.test(entry.name) || entry.name === "omakit") out.push(path)
-  }
-  return out
-}
 
 // This file necessarily contains the patterns it forbids, so it excludes itself
 // and is instead held to the rule by review.
 const SELF = "tests/unit/read-only.test.mjs"
 
-const sources = walk(REPO_ROOT)
-  .map((path) => ({ path: relative(REPO_ROOT, path), text: readFileSync(path, "utf8") }))
+const sources = repositoryFiles()
+  .filter((path) => /\.(?:mjs|js|cjs|sh)$/.test(path) || path.endsWith("/omakit"))
+  .map((path) => ({ path, text: readFileSync(join(REPO_ROOT, path), "utf8") }))
   .filter((source) => source.path !== SELF)
 
 test("the repository has source files to check", () => {

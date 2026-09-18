@@ -17,24 +17,13 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join, relative } from "node:path"
-import { REPO_ROOT } from "./helpers.mjs"
+import { join } from "node:path"
+import { REPO_ROOT, repositoryFiles } from "./helpers.mjs"
 
-const SKIP = new Set([".git", ".cache", "node_modules"])
 
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) walk(path, out)
-    else out.push(relative(REPO_ROOT, path))
-  }
-  return out
-}
-
-const files = walk(REPO_ROOT)
+const files = repositoryFiles()
 
 // The repository's own dot entries, and no other. `.cache` is the local cache
 // this repository's own .gitignore names; `.git` is git's.

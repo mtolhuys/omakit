@@ -12,25 +12,13 @@
 // blocks/, the only files add can ever write.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync, statSync } from "node:fs"
-import { join, relative } from "node:path"
+import { readFileSync, statSync } from "node:fs"
+import { join } from "node:path"
 import { findAgentControl, AGENT_CONTROL_FILES } from "../../tools/marketplace/agent-control.mjs"
 import { shippedBlocks } from "../../tools/blocks/registry.mjs"
-import { REPO_ROOT } from "./helpers.mjs"
+import { REPO_ROOT, repositoryFiles } from "./helpers.mjs"
 
-const SKIP = new Set([".git", ".cache", "node_modules"])
-
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) walk(path, out)
-    else out.push(path)
-  }
-  return out
-}
-
-const files = walk(REPO_ROOT).map((path) => relative(REPO_ROOT, path))
+const files = repositoryFiles()
 const sources = files
   .filter((path) => /\.mjs$/.test(path) && !path.startsWith("tests/"))
   .map((path) => ({ path, text: readFileSync(join(REPO_ROOT, path), "utf8") }))

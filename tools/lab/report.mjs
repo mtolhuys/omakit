@@ -5,7 +5,7 @@
 
 import { action, colourEnabled, field, GUTTER, labelled, mark, section, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
-import { bytesBoth, durationWords, shortId } from "./pin.mjs"
+import { bytesBoth, durationWords, gbBoth, shortId } from "./pin.mjs"
 import { disclosureLines } from "./setup.mjs"
 
 const state = (ok) => (ok ? "pass" : "advisory")
@@ -30,14 +30,14 @@ export function labDoctorChecks(lab) {
   // To a tenth of a GiB: the exact figure moves with every write on the
   // filesystem, and doctor's two consecutive runs are held to the same bytes.
   add("lab.disk", enough, `${(lab.free.bytes / 2 ** 30).toFixed(1)} GiB free on the lab cache's filesystem; a prepared lab measured ${bytesBoth(lab.pin.measured.preparedLabBytes)} (M6)`, enough ? null : "omakit lab prune, or free the difference")
-  add("lab.iso", lab.download.verified, `${lab.pin.release.name}: ${lab.download.reason}`, lab.download.verified ? null : "omakit lab setup", { sha256: lab.pin.release.sha256, present: lab.download.present, verified: lab.download.verified })
+  add("lab.iso", lab.download.verified, `${lab.pin.release.name}, ${lab.download.reason}`, lab.download.verified ? null : "omakit lab setup", { sha256: lab.pin.release.sha256, present: lab.download.present, verified: lab.download.verified })
   add("lab.base", lab.base.state === "ready", `${lab.base.state}: ${lab.base.reason}`, lab.base.state === "ready" ? null : "omakit lab setup", { state: lab.base.state, release: lab.base.manifest?.release?.name ?? null, guestVersion: lab.base.manifest?.guest?.version ?? null, diskSha256: lab.base.manifest?.disk?.sha256 ?? null, allocatedBytes: lab.base.allocatedBytes, lockHeld: lab.lock.held, lockAlive: lab.lock.alive })
   if (lab.lock.held) add("lab.lock", !lab.lock.alive, lab.lock.alive ? `held by run ${lab.lock.record?.runId || "unknown"} (pid ${lab.lock.record?.pid || "?"})` : `a stale lock from ${lab.lock.record?.runId || "an unknown run"}`, lab.lock.alive ? "wait for the run" : "omakit lab prune")
   return checks
 }
 
 /** `omakit lab inspect`. */
-export function renderInspect(lab, { colour = colourEnabled(), env = process.env } = {}) {
+export function renderLab(lab, { colour = colourEnabled(), env = process.env } = {}) {
   const c = styler(colour)
   const home = (text) => withHomeAbbreviated(text, env)
   const out = []
@@ -55,7 +55,7 @@ export function renderInspect(lab, { colour = colourEnabled(), env = process.env
   out.push(...wrap(home(`${lab.download.present ? `${bytesBoth(lab.download.bytes)} at ${lab.download.iso}: ` : ""}${lab.download.reason}`), { indent: GUTTER }, c))
   out.push(`${mark(state(lab.base.state === "ready"), c)}${c("name", `base (${lab.base.state})`)}`)
   out.push(...wrap(home(lab.base.reason), { indent: GUTTER }, c))
-  if (lab.base.manifest) out.push(...labelled("disk sha256", lab.base.manifest.disk.sha256, c), ...labelled("origin", lab.base.manifest.build?.origin || "unknown", c))
+  if (lab.base.manifest) out.push(...labelled("disk sha256", lab.base.manifest.disk.sha256, c), ...labelled("origin", home(lab.base.manifest.build?.origin || "unknown"), c))
   out.push(`${mark(state(lab.toolchain.state === "ready"), c)}${c("name", `toolchain (${lab.toolchain.state})`)}`)
   out.push(...wrap(home(lab.toolchain.reason), { indent: GUTTER }, c))
   if (lab.staging.length) {
@@ -66,7 +66,7 @@ export function renderInspect(lab, { colour = colourEnabled(), env = process.env
     out.push(`${mark(lab.lock.alive ? "info" : "advisory", c)}${c("name", "lock")}`)
     out.push(...wrap(lab.lock.alive ? `held by run ${lab.lock.record?.runId || "unknown"} (pid ${lab.lock.record?.pid || "?"})` : `stale, from ${lab.lock.record?.runId || "an unknown run"}`, { indent: GUTTER }, c))
   }
-  out.push(...field("lab cache", `${bytesBoth(lab.totals.cacheBytes)} at ${home(lab.layout.cache)} (downloads ${bytesBoth(lab.totals.downloadsBytes)}, base ${bytesBoth(lab.totals.baseBytes)}, staging ${bytesBoth(lab.totals.stagingBytes)}, plugins ${bytesBoth(lab.totals.pluginsBytes)})`, c))
+  out.push(...field("lab cache", `${bytesBoth(lab.totals.cacheBytes)} at ${home(lab.layout.cache)}: downloads ${gbBoth(lab.totals.downloadsBytes)}, base ${gbBoth(lab.totals.baseBytes)}, staging ${gbBoth(lab.totals.stagingBytes)}, plugins ${gbBoth(lab.totals.pluginsBytes)}`, c))
   out.push(...field("runs", `${lab.runs.length} record${lab.runs.length === 1 ? "" : "s"}, ${bytesBoth(lab.totals.runsBytes)} at ${home(lab.layout.runs)}${lab.runs.length ? `; newest ${lab.runs.at(-1)}` : ""}`, c))
   out.push(...field("free", `${bytesBoth(lab.free.bytes)} at ${home(lab.free.path)}`, c))
   out.push("")

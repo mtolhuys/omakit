@@ -41,7 +41,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinIsSparse, requirePin } from "./pin.mjs"
 import { LIVE_PATHS } from "./registry.mjs"
-import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubError } from "./github.mjs"
+import { credential, defaultBranchHead, getJson, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
 import { completionStatus } from "./completion-check.mjs"
@@ -64,7 +64,8 @@ export function tool(repoRoot) {
   }
 }
 
-function version(command, args = ["--version"]) {
+/** The first line a command prints for `--version`, or null when it is not there; shared with `setup`. */
+export function version(command, args = ["--version"]) {
   try {
     return execFileSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n")[0]
   } catch {

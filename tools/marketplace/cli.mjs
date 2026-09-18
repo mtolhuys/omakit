@@ -22,7 +22,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { ensurePin, MARKETPLACE_PIN, requirePin } from "./pin.mjs"
+import { ensurePin, requirePin } from "./pin.mjs"
 import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
@@ -38,7 +38,7 @@ import { upgrade } from "./upgrade.mjs"
 import { updateCheckEnabled, updateNotice } from "./update-check.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
-import { COMMANDS, renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
+import { renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
 import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, outputColumns, styler, verdict, withOutputStream, wrap } from "./style.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
@@ -54,7 +54,7 @@ import { inspectLab } from "../lab/inspect.mjs"
 import { runSuite } from "../lab/run.mjs"
 import { CONSENT_QUESTION, planSetup, recordToolchain, setupLab } from "../lab/setup.mjs"
 import { planPrune, prune } from "../lab/prune.mjs"
-import { renderInspect as renderLabInspect, renderPrunePlan, renderPruneResult, renderRunIdentity, renderRunResult, renderSetupPlan, renderSetupResult } from "../lab/report.mjs"
+import { renderLab, renderPrunePlan, renderPruneResult, renderRunIdentity, renderRunResult, renderSetupPlan, renderSetupResult } from "../lab/report.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -87,6 +87,21 @@ const REMEDY = Object.freeze({
   "lab-not-ready": "omakit lab inspect",
   "lab-busy": "omakit lab inspect",
   "iso-mismatch": "omakit lab prune, then omakit lab setup",
+  "size-mismatch": "The object at the pinned URL is not the pinned release; a pin update is a reviewed change, and docs/LAB.md says how.",
+  "sidecar-mismatch": "The published checksum is not the pin's; a pin update is a reviewed change, and docs/LAB.md says how.",
+  "key-mismatch": "The packaged signing key is not the one the pin names: reinstall omakit from the registry (`omakit upgrade`).",
+  "toolchain-missing": "omakit lab inspect prints the one command that prepares the toolchain.",
+  "toolchain-mismatch": "omakit lab inspect prints the one command that prepares the toolchain.",
+  "guest-mismatch": "omakit lab prune removes the staged base; a pin update is a reviewed change, and docs/LAB.md says how.",
+  "build-failed": "Read build.log under the lab's staging directory, then omakit lab prune and omakit lab setup again.",
+  "qemu-failed": "Read qemu.log in the run directory; omakit lab inspect names what the host lacks.",
+  "overlay-failed": "omakit lab inspect: the base must be ready and the disk must have room for one overlay.",
+  "no-port": "Free a port between 2222 and 2271 on 127.0.0.1, or wait for the run that holds one.",
+  "guest-exited": "Read qemu.log and serial.log in the run directory, then run it again.",
+  "guest-timeout": "Read qemu.log and serial.log in the run directory, then run it again.",
+  "session-timeout": "Read qemu.log in the run directory and the screenshots beside it, then run it again.",
+  "plugin-fetch-failed": "Connect to the network, then omakit lab setup --plugins again.",
+  "prune-refused": "Remove the symbolic link by hand; the lab wrote none and follows none.",
 })
 
 /*
@@ -115,9 +130,22 @@ function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => []) {
   process.exit(exit)
 }
 
-/** A thrown error becomes a failure state when it carries a code; anything else is a bug and keeps its stack. */
+/**
+ * A thrown error becomes a failure state when it carries a code; anything
+ * else is a bug and keeps its stack. The exit status follows the code the
+ * same way for every command: 2 for a usage error and for a question a
+ * pipe could not answer, 130 for an interrupt, 1 for the rest. An error
+ * that names what is missing (`missing`: what, what it costs, the one
+ * command) lists it between the sentence and the arrow.
+ */
 function failFrom(error) {
-  if (error?.code && typeof error.code === "string") fail(error.code, error.message, error.code === "usage" ? 2 : 1, error.remedy || REMEDY[error.code])
+  if (error?.code && typeof error.code === "string") {
+    const exit = error.code === "usage" || error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? 130 : 1
+    const body = error.missing?.length
+      ? (c) => error.missing.flatMap((item) => [`${" ".repeat(GUTTER)}${c("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), c), ...(item.command ? action(withHomeAbbreviated(item.command), c) : [])])
+      : () => []
+    fail(error.code, error.message, exit, error.remedy || REMEDY[error.code], body)
+  }
   throw error
 }
 
@@ -609,13 +637,6 @@ async function cmdLab(args) {
   const c = styler(colourEnabled(json ? process.stderr : process.stdout))
   const narrate = json ? process.stderr : process.stdout
   const say = (line) => narrate.write(`${line.state === "prose" ? " ".repeat(GUTTER) : mark(line.state, c)}${withHomeAbbreviated(line.text)}\n`)
-  const missingBody = (missing) => (cc) => missing.flatMap((item) => [`${" ".repeat(GUTTER)}${cc("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), cc), ...(item.command ? action(withHomeAbbreviated(item.command), cc) : [])])
-  const failLab = (error) => {
-    if (error?.code && typeof error.code === "string") {
-      fail(error.code, error.message, error.code === "usage" ? 2 : error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? 130 : 1, error.remedy || REMEDY[error.code], error.missing?.length ? missingBody(error.missing) : () => [])
-    }
-    throw error
-  }
   const spinner = spinnerFor(args)
   const controller = new AbortController()
   const interrupt = () => {
@@ -631,10 +652,10 @@ async function cmdLab(args) {
       lab = await inspectLab({ verify: parsed.options.has("--verify") })
     } catch (error) {
       spinner.done()
-      failLab(error)
+      failFrom(error)
     }
     spinner.done()
-    emit(args, json ? `${JSON.stringify(lab, null, 2)}\n` : reportText(args, renderLabInspect, lab))
+    emit(args, json ? `${JSON.stringify(lab, null, 2)}\n` : reportText(args, renderLab, lab))
     process.exitCode = lab.missing.length ? 1 : 0
     return
   }
@@ -666,7 +687,7 @@ async function cmdLab(args) {
       })
     } catch (error) {
       spinner.done()
-      failLab(error)
+      failFrom(error)
     } finally {
       process.off("SIGINT", interrupt)
       process.off("SIGTERM", interrupt)
@@ -690,13 +711,13 @@ async function cmdLab(args) {
         narrate.write(`${mark("pass", c)}toolchain recorded: ${withHomeAbbreviated(recorded.dir)} (harness sha256 ${recorded.sha256.slice(0, 12)}, the pinned patched one)\n`)
       }
     } catch (error) {
-      failLab(error)
+      failFrom(error)
     }
     let plan
     try {
       plan = planSetup({ from: parsed.options.get("--from") || null, plugins: parsed.options.has("--plugins"), repoRoot: ROOT })
     } catch (error) {
-      failLab(error)
+      failFrom(error)
     }
     narrate.write(`${withOutputStream(narrate, () => renderSetupPlan(plan, { colour: colourEnabled(narrate) }))}\n`)
     if (plan.blockers.length) {
@@ -709,10 +730,10 @@ async function cmdLab(args) {
     }
     let consented = parsed.options.has("--yes")
     if (!consented) {
-      if (!interactive) failLab(Object.assign(new Error("not confirmed: a pipe, an agent or --json cannot answer for the person whose disk this is; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
+      if (!interactive) failFrom(Object.assign(new Error("not confirmed: a pipe, an agent or --json cannot answer for the person whose disk this is; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
       narrate.write("\n")
       consented = await askYes({ question: CONSENT_QUESTION })
-      if (!consented) failLab(Object.assign(new Error("not confirmed; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
+      if (!consented) failFrom(Object.assign(new Error("not confirmed; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
     }
     narrate.write("\n")
     process.on("SIGINT", interrupt)
@@ -736,7 +757,7 @@ async function cmdLab(args) {
       })
     } catch (error) {
       spinner.done()
-      failLab(error)
+      failFrom(error)
     } finally {
       process.off("SIGINT", interrupt)
       process.off("SIGTERM", interrupt)
@@ -753,7 +774,7 @@ async function cmdLab(args) {
   try {
     plan = await planPrune({ keepIso: parsed.options.has("--keep-iso"), runs: parsed.options.has("--records") })
   } catch (error) {
-    failLab(error)
+    failFrom(error)
   }
   narrate.write(`${withOutputStream(narrate, () => renderPrunePlan(plan, { colour: colourEnabled(narrate) }))}\n`)
   if (plan.blockers.length) {
@@ -766,16 +787,16 @@ async function cmdLab(args) {
   }
   let consented = parsed.options.has("--yes")
   if (!consented) {
-    if (!interactive) failLab(Object.assign(new Error(`not confirmed: ${plan.targets.length} target${plan.targets.length === 1 ? "" : "s"}, ${plan.total.toLocaleString("en-US")} B, and a pipe cannot answer for the person whose disk this is; nothing was removed`), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
+    if (!interactive) failFrom(Object.assign(new Error(`not confirmed: ${plan.targets.length} target${plan.targets.length === 1 ? "" : "s"}, ${plan.total.toLocaleString("en-US")} B, and a pipe cannot answer for the person whose disk this is; nothing was removed`), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
     narrate.write("\n")
     consented = await askYes({ question: `Remove these ${plan.targets.length} lab-owned target${plan.targets.length === 1 ? "" : "s"}?` })
-    if (!consented) failLab(Object.assign(new Error("not confirmed; nothing was removed"), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
+    if (!consented) failFrom(Object.assign(new Error("not confirmed; nothing was removed"), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
   }
   let result
   try {
     result = prune(plan)
   } catch (error) {
-    failLab(error)
+    failFrom(error)
   }
   narrate.write("\n")
   emit(args, json ? `${JSON.stringify({ removed: result.removed, recovered: result.recovered, remaining: result.remaining }, null, 2)}\n` : reportText(args, renderPruneResult, result))

@@ -10,7 +10,6 @@ import { completionInstall, installCompletion, PLUGIN_IDS_COMMAND, PLUGIN_IDS_JQ
 import { submissionContract, tagSlug } from "../../tools/marketplace/form.mjs"
 import { requirePin } from "../../tools/marketplace/pin.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "../../tools/marketplace/usage.mjs"
-import { DENSITY, plain } from "../../tools/marketplace/style.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 requirePinForTests()

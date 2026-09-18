@@ -31,7 +31,7 @@
 // harness against the pin.
 
 import { spawn, spawnSync } from "node:child_process"
-import { chmodSync, closeSync, createWriteStream, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { chmodSync, closeSync, createWriteStream, existsSync, fsyncSync, openSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { getStream, GitHubError } from "../marketplace/github.mjs"
 import { LAB_DIR, bytesBoth, durationWords, labPin } from "./pin.mjs"
@@ -155,8 +155,6 @@ export function disclosureLines(plan) {
 
 /** The one question. */
 export const CONSENT_QUESTION = "Acquire and build this verified base now?"
-
-const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms))
 
 /**
  * A resumable literal GET of the pinned object to `<to>.part`. The byte
@@ -288,7 +286,7 @@ async function buildBase({ pin, layout, toolchainHarness, iso, onPhase, onLine, 
   // The measured duration travels with the staged base, so a promotion
   // after an interrupted setup still records it.
   writeJson(layout.cache, `staging/${baseId}/build/lab-build.json`, { buildMilliseconds, harnessSha256: sha256, iso, builtAt: new Date().toISOString() })
-  return { staged, baseId, buildMilliseconds, harnessSha256: sha256, origin: `built ${new Date().toISOString()} by the pinned toolchain harness ${sha256.slice(0, 12)} from ${iso}` }
+  return { staged, baseId, buildMilliseconds, harnessSha256: sha256, origin: `built ${new Date().toISOString()} by the pinned toolchain harness ${sha256.slice(0, 12)} from the verified ISO` }
 }
 
 /** Boot the staged base once, read the installed package, hash, seal, manifest, promote. */
@@ -417,7 +415,7 @@ export async function setupLab({ plan, consented, onPhase = () => {}, onLine = (
       } else if (step.kind === "promote") {
         const baseId = step.staged.split("/").at(-1)
         const buildRecord = readJson(join(step.staged, "build", "lab-build.json"))
-        const promoted = await verifyAndPromoteBase({ staged: step.staged, baseId, pin, layout, buildMilliseconds: buildRecord?.buildMilliseconds ?? null, origin: `built ${buildRecord?.builtAt || "earlier"} by the pinned toolchain harness ${(buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256).slice(0, 12)} from ${buildRecord?.iso || target}, promoted ${new Date().toISOString()} after a verification boot`, harnessSha256: buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256, iso: target, onPhase, signal })
+        const promoted = await verifyAndPromoteBase({ staged: step.staged, baseId, pin, layout, buildMilliseconds: buildRecord?.buildMilliseconds ?? null, origin: `built ${buildRecord?.builtAt || "earlier"} by the pinned toolchain harness ${(buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256).slice(0, 12)} from the verified ISO, promoted ${new Date().toISOString()} after a verification boot`, harnessSha256: buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256, iso: target, onPhase, signal })
         done.push({ kind: "build", milliseconds: buildRecord?.buildMilliseconds ?? 0, dir: promoted.dir, guest: promoted.manifest.guest, diskSha256: promoted.manifest.disk.sha256, allocatedBytes: promoted.manifest.disk.allocatedBytes })
         onLine({ state: "pass", text: `promoted ${promoted.dir}: guest omarchy ${promoted.manifest.guest.version}, disk sha256 ${promoted.manifest.disk.sha256}` })
       } else if (step.kind === "plugins") {

@@ -12,8 +12,8 @@
 // makes completions load, when a new shell has no loader. Everywhere else a
 // step that is the user's to take is printed as the command, and stops.
 
-import { execFileSync } from "node:child_process"
 import { banner } from "./banner.mjs"
+import { version } from "./doctor.mjs"
 import { credential, UNAUTHENTICATED_LIMIT } from "./github.mjs"
 import { ensurePin, marketplacePinDir, pinDiskUsage } from "./pin.mjs"
 import { progress } from "./progress.mjs"
@@ -101,15 +101,6 @@ export async function completionStep({ repoRoot, pin, version, stream = process.
   return { state: "note", shell: completion.shell, rcAppended }
 }
 
-function version(command) {
-  try {
-    return execFileSync(command, ["--version"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
-      .trim()
-      .split("\n")[0]
-  } catch {
-    return null
-  }
-}
 
 /**
  * @param {{ repoRoot: string, entryPoint: string, stream?: NodeJS.WriteStream, env?: object, yes?: boolean,
