@@ -5,110 +5,215 @@
  "method": "An adversarial review of blocks/run/run-supervisor.py, blocks/run/Run.qml, blocks/store/store-helper.py and blocks/store/Store.qml at f9fee98 against docs/BLOCKS.md, assuming a same-uid attacker on the machine and a hostile program on the other end of the pipe. Three claims were checked by experiment on the development desktop before the fix (a same-uid child writes into its parent's stdout pipe through /proc/<ppid>/fd/1 under Yama ptrace_scope 1; bash -o pipefail -c, bash +x -c and python3 -W ignore -c run; SIGPIPE and SIGXFSZ arrive ignored through python3 -I -S -B and execv). Every blocking finding got a lab scenario written to fail on the 0.1.0 files and pass on 0.2.0; both runs are recorded below from the same suite on the same desktop, the 0.1.0 files taken from f9fee98 (RUNLAB_BLOCKS). The desktop and stock-guest documents for 0.2.0 are the 2026-09-18 lab records beside this file.",
  "reviewed": {
   "commit": "f9fee981af356ff08500c06bdf8fdc914dfb4f0d",
-  "files": ["blocks/run/run-supervisor.py", "blocks/run/Run.qml", "blocks/store/store-helper.py", "blocks/store/Store.qml"],
+  "files": [
+   "blocks/run/run-supervisor.py",
+   "blocks/run/Run.qml",
+   "blocks/store/store-helper.py",
+   "blocks/store/Store.qml"
+  ],
   "resolvedIn": "b77dace (the blocks), b6ab5e1 and 3e2dc70 (the lab scenarios), f41b867 (docs/BLOCKS.md)"
  },
  "findings": [
   {
-   "id": "R1", "severity": "high", "block": "run", "blocking": true,
+   "id": "R1",
+   "severity": "high",
+   "block": "run",
+   "blocking": true,
    "finding": "The supervisor's stdout is writable by the program (same uid, /proc/<ppid>/fd/1) and Run.qml trusted every line on it: a forged leader line set _pgid to any number the reaper and the backstop then signalled, a forged result was delivered when the supervisor exited without its own, and a partial line without a newline grew in the shell process without bound.",
    "change": "Run.qml writes 128 random bits per run to the supervisor's stdin, never argv or the environment; the supervisor consumes them before the fork and prefixes every protocol line with them; Run.qml drops a line without the token, takes the first leader and the first result only, accepts state only from the closed set, strips control characters from every text it delivers, and bounds the unfinished line at 6 x keepBytes + 64 KiB (SplitParser with an empty marker, the lines cut in QML).",
-   "scenario": "tests/lab/run: forge", "on_0_1_0": "state ok with the forged stdout, pgid 4194303, 2 survivors", "on_0_2_0": "state supervisor-lost, the real pgid, no forged text, 0 survivors",
+   "scenario": "tests/lab/run: forge",
+   "on_0_1_0": "state ok with the forged stdout, pgid 4194303, 2 survivors",
+   "on_0_2_0": "state supervisor-lost, the real pgid, no forged text, 0 survivors",
    "unit": "tests/unit/blocks.test.mjs: the protocol"
   },
   {
-   "id": "R2", "severity": "high", "block": "run", "blocking": true,
+   "id": "R2",
+   "severity": "high",
+   "block": "run",
+   "blocking": true,
    "finding": "kill -9 of the supervisor by the program (same uid) ended the run as supervisor-lost with nothing sent to the group; the program and its tree survived with running false and no reaper on destruction.",
    "change": "On a supervisor exit or death without a valid result, Run.qml starts the detached reaper (--kill-group) for the group it learned and reports supervisor-lost with what it did in reason.",
-   "scenario": "tests/lab/run: orphan", "on_0_1_0": "supervisor-lost, 6 survivors", "on_0_2_0": "supervisor-lost naming the reaper, 0 survivors"
+   "scenario": "tests/lab/run: orphan",
+   "on_0_1_0": "supervisor-lost, 6 survivors",
+   "on_0_2_0": "supervisor-lost naming the reaper, 0 survivors"
   },
   {
-   "id": "R3", "severity": "medium", "block": "run", "blocking": false,
+   "id": "R3",
+   "severity": "medium",
+   "block": "run",
+   "blocking": false,
    "finding": "start() called from _finish after the backstop, while the SIGKILLed QProcess was still alive, reported the new run supervisor-lost before it started and then started it unsupervised.",
    "change": "start() while the last supervisor is still being reaped sets _pending and returns; the pending start follows on runningChanged once the process is gone.",
-   "scenario": "tests/lab/run: stalled-supersede", "on_0_1_0": "states [supervisor-lost, supervisor-lost]", "on_0_2_0": "states [supervisor-lost, ok]"
+   "scenario": "tests/lab/run: stalled-supersede",
+   "on_0_1_0": "states [supervisor-lost, supervisor-lost]",
+   "on_0_2_0": "states [supervisor-lost, ok]"
   },
   {
-   "id": "R4", "severity": "medium", "block": "run", "blocking": false,
+   "id": "R4",
+   "severity": "medium",
+   "block": "run",
+   "blocking": false,
    "finding": "A Run destroyed before it had read the leader line (_pgid 0) started no reaper; the Process destructor killed the supervisor and the forked program ran on in its own session.",
    "change": "The child forks, setsid()s and waits for one byte on a gate pipe before exec; the supervisor writes the byte when Run.qml acknowledges the leader line over stdin; a supervisor that dies first closes the gate and the child exits unrun.",
-   "scenario": "tests/lab/run: destroy-early", "on_0_1_0": "4 survivors after the destroy", "on_0_2_0": "0 survivors, the destroy event at pgid 0"
+   "scenario": "tests/lab/run: destroy-early",
+   "on_0_1_0": "4 survivors after the destroy",
+   "on_0_2_0": "0 survivors, the destroy event at pgid 0"
   },
   {
-   "id": "R5", "severity": "medium", "block": "run", "blocking": true,
+   "id": "R5",
+   "severity": "medium",
+   "block": "run",
+   "blocking": true,
    "finding": "The shell-string refusal stopped at the first non-option (bash -o pipefail -c passed), treated +x as a non-option, knew -c only (perl -e, ruby -e, php -r, lua -e, node -e/-p passed), missed rbash, ash, mksh and busybox, and saw no wrapper (env bash -c passed).",
    "change": "Refuse every listed form: the flag in any option position, clustered or behind an option that takes a value (per interpreter), -e/-E/-r/-p and the long forms, the four extra shells, flock -c, and the wrappers env, nice, timeout, setsid, flock, xargs, sudo, doas, nohup, stdbuf, ionice, chrt, unbuffer and busybox up to eight deep; the contract lists exactly that and says best effort, not a sandbox.",
-   "scenario": "tests/lab/run: shell-string-option, shell-string-wrapper", "on_0_1_0": "state ok (the string ran)", "on_0_2_0": "spawn-failed, shell string",
+   "scenario": "tests/lab/run: shell-string-option, shell-string-wrapper",
+   "on_0_1_0": "state ok (the string ran)",
+   "on_0_2_0": "spawn-failed, shell string",
    "unit": "tests/unit/blocks.test.mjs: 35 refused forms, 9 that are not shell strings"
   },
   {
-   "id": "R6", "severity": "low", "block": "run", "blocking": false,
+   "id": "R6",
+   "severity": "low",
+   "block": "run",
+   "blocking": false,
    "finding": "The reaper and the backstop signal the group by number while the supervisor that held the leader unreaped is being killed; during the grace the number is free.",
-   "change": "Recorded under what Run does not do, with the condition: a pid wrap within the grace (4,194,304 pids on the stock kernel).", "scenario": null
+   "change": "Recorded under what Run does not do, with the condition: a pid wrap within the grace (4,194,304 pids on the stock kernel).",
+   "scenario": null
   },
   {
-   "id": "R7", "severity": "low", "block": "run", "blocking": false,
+   "id": "R7",
+   "severity": "low",
+   "block": "run",
+   "blocking": false,
    "finding": "done() gives up relative to the deadline, not to KILL, and never while the leader lives: a KILL survivor makes cancel() take the whole deadline.",
-   "change": "Recorded under what Run does not do, with the condition: a process that survives SIGKILL.", "scenario": null
+   "change": "Recorded under what Run does not do, with the condition: a process that survives SIGKILL.",
+   "scenario": null
   },
   {
-   "id": "R8", "severity": "low", "block": "run", "blocking": false,
+   "id": "R8",
+   "severity": "low",
+   "block": "run",
+   "blocking": false,
    "finding": "The program inherits SIGPIPE and SIGXFSZ ignored through Python and execv.",
-   "change": "Recorded under what Run does not do; a helper that needs the defaults resets them in a language that can.", "scenario": null
+   "change": "Recorded under what Run does not do; a helper that needs the defaults resets them in a language that can.",
+   "scenario": null
   },
   {
-   "id": "S1", "severity": "medium", "block": "store", "blocking": true,
+   "id": "S1",
+   "severity": "medium",
+   "block": "store",
+   "blocking": true,
    "finding": "read_file opened with O_RDONLY | O_NOFOLLOW; a FIFO at the name blocked the open until Run's deadline, so every read was helper-failed: timeout, never refused.",
    "change": "The file is opened with O_NONBLOCK too, fstat'ed, refused by name unless a regular file that is ours, and only then made blocking.",
-   "scenario": "tests/lab/store: fifo", "on_0_1_0": "helper-failed after 10 s", "on_0_2_0": "refused, not a regular file, in a quarter second; the write renames over it"
+   "scenario": "tests/lab/store: fifo",
+   "on_0_1_0": "helper-failed after 10 s",
+   "on_0_2_0": "refused, not a regular file, in a quarter second; the write renames over it"
   },
   {
-   "id": "S2", "severity": "medium", "block": "store", "blocking": true,
+   "id": "S2",
+   "severity": "medium",
+   "block": "store",
+   "blocking": true,
    "finding": "os.write's return was discarded: a short write (RLIMIT_FSIZE, a quota, a full disk) left a truncated staging file that was fsynced and renamed into place as ok.",
    "change": "The write loops until every byte is written; a short write, ENOSPC, a quota or RLIMIT_FSIZE raises, the staging file is unlinked and the write is failed with the error by name; the old file is untouched.",
-   "scenario": "tests/lab/store: short-write", "on_0_1_0": "write ok, the next read invalid (truncated)", "on_0_2_0": "write failed: File too large, the old file whole, nothing staged"
+   "scenario": "tests/lab/store: short-write",
+   "on_0_1_0": "write ok, the next read invalid (truncated)",
+   "on_0_2_0": "write failed: File too large, the old file whole, nothing staged"
   },
   {
-   "id": "S3", "severity": "medium", "block": "store", "blocking": false,
+   "id": "S3",
+   "severity": "medium",
+   "block": "store",
+   "blocking": false,
    "finding": "The helper's result line was ensure_ascii, up to three times the file's bytes for non-ASCII content, so a file within maxBytes overflowed Run's cap of maxBytes + 64 KiB and the read was helper-failed.",
    "change": "The result line is UTF-8.",
-   "scenario": "tests/lab/store: non-ascii", "on_0_1_0": "helper-failed", "on_0_2_0": "ok, 792,011 bytes"
+   "scenario": "tests/lab/store: non-ascii",
+   "on_0_1_0": "helper-failed",
+   "on_0_2_0": "ok, 792,011 bytes"
   },
   {
-   "id": "S4", "severity": "low", "block": "store", "blocking": false,
+   "id": "S4",
+   "severity": "low",
+   "block": "store",
+   "blocking": false,
    "finding": "The write cap compared UTF-16 code units with a byte limit; 44k to 65k characters of three-byte text passed the check and failed at execve with E2BIG, reported as python-missing. The schema argument had no cap.",
    "change": "Store.qml counts UTF-8 bytes (encodeURIComponent), refuses a lone surrogate as invalid, and refuses a schema that is not a JSON object under 64 KiB before starting the helper; the helper refuses a schema over 64 KiB too.",
-   "scenario": null, "unit": "tests/unit/blocks.test.mjs: the schema cap"
+   "scenario": null,
+   "unit": "tests/unit/blocks.test.mjs: the schema cap"
   },
   {
-   "id": "S5", "severity": "low", "block": "store", "blocking": false,
+   "id": "S5",
+   "severity": "low",
+   "block": "store",
+   "blocking": false,
    "finding": "open_private_directory leaked the descriptors it had opened when a later step refused, one to three per refused operation in a long-running importer.",
    "change": "A refusal partway through the walk closes every descriptor opened so far.",
-   "scenario": null, "unit": "tests/unit/blocks.test.mjs: 50 refused operations through result_of, 0 descriptors gained"
+   "scenario": null,
+   "unit": "tests/unit/blocks.test.mjs: 50 refused operations through result_of, 0 descriptors gained"
   },
   {
-   "id": "S6", "severity": "low", "block": "store", "blocking": false,
+   "id": "S6",
+   "severity": "low",
+   "block": "store",
+   "blocking": false,
    "finding": "type as a list, a non-numeric minimum, a non-dict items, and a value nested past Python's recursion limit escaped the except and ended as a traceback, reported helper-failed.",
    "change": "The schema is checked keyword by keyword against the subset's shapes before anything is read and refused by name; a value nested past 64 levels, or past the parser, is invalid.",
-   "scenario": null, "unit": "tests/unit/blocks.test.mjs: five schema shapes, two nestings"
+   "scenario": null,
+   "unit": "tests/unit/blocks.test.mjs: five schema shapes, two nestings"
   },
   {
-   "id": "S7", "severity": "info", "block": "store", "blocking": false,
+   "id": "S7",
+   "severity": "info",
+   "block": "store",
+   "blocking": false,
    "finding": "A HOME that is itself a symbolic link and an XDG base at 0775 are refused.",
-   "change": "Recorded under what Store does not do, with the deployment each needs.", "scenario": null
+   "change": "Recorded under what Store does not do, with the deployment each needs.",
+   "scenario": null
   }
  ],
  "soundAsReviewed": {
-  "run": ["byte and line caps counted per read while the group lives", "the errno pipe close-on-exec and exit 127 told apart", "the child's descriptor table", "setsid before exec", "the closed environment and -I -S", "TERM, grace, KILL sequencing and begin_end's idempotence", "waitid WNOWAIT then waitpid last inside the supervisor", "/proc/<pid>/stat parsed with rfind", "cancel through the wake fd", "supersession on the ordinary exit path", "Process.signal cannot reach a reused pid"],
-  "store": ["the descriptor walk, openat with O_DIRECTORY | O_NOFOLLOW at every step", "no pathname checked and then reopened", "the base normpath'ed and commonpath'ed inside HOME", "SAFE_NAME and the staging pattern disjoint", "type, owner and mode on the descriptor after every open", "hardlinks: a write replaces the entry, a remove unlinks the entry", "the size cap during read_capped", "exclusive 0600 staging with 64 random bits", "fsync, rename, fsync order", "concurrent writers cannot sweep each other", "NaN and Infinity rejected"]
+  "run": [
+   "byte and line caps counted per read while the group lives",
+   "the errno pipe close-on-exec and exit 127 told apart",
+   "the child's descriptor table",
+   "setsid before exec",
+   "the closed environment and -I -S",
+   "TERM, grace, KILL sequencing and begin_end's idempotence",
+   "waitid WNOWAIT then waitpid last inside the supervisor",
+   "/proc/<pid>/stat parsed with rfind",
+   "cancel through the wake fd",
+   "supersession on the ordinary exit path",
+   "Process.signal cannot reach a reused pid"
+  ],
+  "store": [
+   "the descriptor walk, openat with O_DIRECTORY | O_NOFOLLOW at every step",
+   "no pathname checked and then reopened",
+   "the base normpath'ed and commonpath'ed inside HOME",
+   "SAFE_NAME and the staging pattern disjoint",
+   "type, owner and mode on the descriptor after every open",
+   "hardlinks: a write replaces the entry, a remove unlinks the entry",
+   "the size cap during read_capped",
+   "exclusive 0600 staging with 64 random bits",
+   "fsync, rename, fsync order",
+   "concurrent writers cannot sweep each other",
+   "NaN and Infinity rejected"
+  ]
  },
  "labRuns": {
-  "run": {"suite": "tests/lab/run/suite.sh, 19 scenarios", "on_0_1_0": "13 of 19: forge, orphan, stalled-supersede, destroy-early, shell-string-option and shell-string-wrapper fail", "on_0_2_0": "19 of 19 on the desktop and on the stock 4.0.3 guest (2026-09-18-run-lab-desktop.json, -guest.json)"},
-  "store": {"suite": "tests/lab/store/suite.sh, 15 scenarios", "on_0_1_0": "12 of 15: fifo, short-write and non-ascii fail", "on_0_2_0": "15 of 15 on the desktop and on the stock 4.0.3 guest (2026-09-18-store-lab-desktop.json, -guest.json)"}
+  "run": {
+   "suite": "tests/lab/run/suite.sh, 19 scenarios",
+   "on_0_1_0": "13 of 19: forge, orphan, stalled-supersede, destroy-early, shell-string-option and shell-string-wrapper fail",
+   "on_0_2_0": "19 of 19 on the desktop and on the stock 4.0.3 guest (2026-09-18-run-lab-desktop.json, -guest.json)"
+  },
+  "store": {
+   "suite": "tests/lab/store/suite.sh, 15 scenarios",
+   "on_0_1_0": "12 of 15: fifo, short-write and non-ascii fail",
+   "on_0_2_0": "15 of 15 on the desktop and on the stock 4.0.3 guest (2026-09-18-store-lab-desktop.json, -guest.json)"
+  }
  },
  "ports": {
-  "themeManager": "run-port: omakit add run --update from 0.1.0 to 0.2.0, both files unmodified; 93 unit tests; the lab acceptance on the stock guest re-run (the commit on run-port names the count)",
-  "sidecar": "store-port: omakit add store --update, four files unmodified; 71 tests and the web suite unchanged; the guest lifecycle stays blocked on the pin as recorded on 2026-09-17"
+  "themeManager": "run-port 8a7e671: omakit add run --update from 0.1.0 to 0.2.0, both files unmodified, no site changed; 93 unit tests; the lab acceptance on the stock 4.0.3 guest 27 of 27 (plugin lab run 20260918-150906)",
+  "sidecar": "store-port 0d10bf1: omakit add store --update, four files unmodified; 71 tests and the web suite unchanged; the guest lifecycle stays blocked on the pin as recorded on 2026-09-17"
  },
  "notUsed": "The words passes review, approved, safe, secure, certified and official do not describe a block; this record says what was found and what changed."
 }
