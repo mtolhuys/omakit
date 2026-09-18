@@ -44,9 +44,10 @@ import { pathToFileURL } from "node:url"
 // under the same ceiling. With `omakit lab` (twenty files under
 // tools/lab/: the release pin, the 632-byte armoured Omarchy signing key,
 // the 351-line toolchain patch, one harness and three suites in bash, and
-// the modules, and the README's fourth job) the package measured 308,856
-// bytes across 105 files, over that ceiling by 52,856, so the ceiling is
-// now 358,400 bytes: 49,544 bytes of room, still a fortieth of an accidental tree with the 15 MB
+// the modules, and the README's fourth job) the package measured 309,687
+// bytes across 105 files at the release round's end (308,856 before its
+// polish), over that ceiling by 53,687, so the ceiling is now
+// 358,400 bytes: 48,713 bytes of room, still a fortieth of an accidental tree with the 15 MB
 // marketplace pin in it, and a two-thousandth of the 6.26 GB ISO the lab
 // never ships (tests/unit/self-containment.test.mjs sniffs every file for
 // an image or archive signature).

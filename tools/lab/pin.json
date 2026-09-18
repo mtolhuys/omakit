@@ -35,7 +35,7 @@
     "baseAllocatedBytes": 6181490688,
     "baseDirectoryBytes": 6182264832,
     "preparedLabBytes": 12442931200,
-    "overlayAfterRunBytes": 461180928,
+    "overlayAfterRunBytes": 610734080,
     "pluginsBytes": 6836224,
     "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host; packaging/LAB_PLAN.md M4 to M7 are the 2026-09-10 to 2026-09-13 observations it re-measured"
   }

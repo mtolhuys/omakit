@@ -28,7 +28,7 @@ form of one; `tests/unit/self-containment.test.mjs` sniffs every file in
 the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash. What ships is measured: 20 files, 163,753 bytes unpacked, in a
-package that packs to 308,856 bytes (`tests/package-assert.mjs`).
+package that packs to 309,687 bytes (`tests/package-assert.mjs`).
 
 Nothing is fetched implicitly. `run`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after
@@ -125,7 +125,7 @@ recorded one; it will not be booted), `missing`.
 1. Preflight, reading only: the base is ready and the pin's; KVM, QEMU,
    `qemu-img`, `ssh` and the OVMF firmware are there; the host has one and
    a half times the guest's 5120 MiB; the suite's files are in the
-   checkout; the disk has room for one overlay (461,180,928 B, the largest
+   checkout; the disk has room for one overlay (610,734,080 B, the largest
    of the 2026-09-18 runs, M14). What
    is missing is printed with what it takes and the one command, exit 1.
 2. The lock: `lab.lock/`, made atomically; a QEMU answering on the recorded
@@ -211,7 +211,11 @@ Store suite, the same afternoon: 1m 48.5s, a 417,075,200 B overlay, 15 of
 ([evidence/lab/20260918-161230-store/](evidence/lab/20260918-161230-store/));
 the weigh smoke: 1m 47.0s, a 461,180,928 B overlay, three real restarts,
 the restore and the interrupt
-([evidence/lab/20260918-161929-weigh/](evidence/lab/20260918-161929-weigh/)). The guest takes 5120 MiB while it runs.
+([evidence/lab/20260918-161929-weigh/](evidence/lab/20260918-161929-weigh/));
+the weigh evidence gate: 32m 20.9s, a 610,734,080 B overlay, forty real
+restarts, C1b in [MEASUREMENTS.md](MEASUREMENTS.md)
+([evidence/lab/20260918-162602-weigh-evidence/](evidence/lab/20260918-162602-weigh-evidence/)).
+The guest takes 5120 MiB while it runs.
 The old harness retained a 1.01 GB overlay per run (packaging/LAB_PLAN.md
 M7); this one keeps
 none.

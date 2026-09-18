@@ -521,7 +521,7 @@ records' `shell` field says `4.0.0.alpha` at
 (docs/history/2026-09-18-lab-inventory.md, P8). The floors and deltas
 below are that checkout's shell's; each record says so in place
 (`provenance`). The same gate on the unlinked guest, through `omakit lab
-run weigh-evidence`, is recorded as C1b below when it exists.
+run weigh-evidence`, is C1b below.
 
 | Run | Settle | Baseline memory spread, 5 runs | CPU spread |
 | --- | --- | --- | --- |
@@ -617,6 +617,36 @@ over 47 enabled plugins.
 
 Used by: `omakit weigh`, its confirmation, and `docs/WEIGH.md`. Not by any
 `submit` check.
+
+### C1b. The same gate on the unlinked guest, 2026-09-18
+
+`omakit lab run weigh-evidence` on the guest whose installed package the
+run read (`omarchy 4.0.3-1`, session not linked, `skew: false`), the same
+four fixtures, three listed plugins (`io.github.calebhat.weather`,
+`omaplug`, `io.github.pablo-merino.altswitch`, at the commits the pinned
+catalog records as validated) and five runs, 40 restarts at the shipped
+30 s settle and 15 s window; `shell.json` md5
+`1a2e5f889a13b732ab4bff849c14d27d` before and after, no backup left, the
+document valid against `tools/weigh/contract.mjs`. The document is
+[`lab-2026-09-18-stock-guest.json`](evidence/weigh/lab-2026-09-18-stock-guest.json),
+with its run record under
+[`evidence/lab/20260918-162602-weigh-evidence/`](evidence/lab/20260918-162602-weigh-evidence/):
+32m 20.9s from the lock to the record, a 610,734,080 B overlay removed.
+
+| Floor, 5 baseline runs | Stock guest, 2026-09-18 | Linked checkout, run 3 of 2026-09-14 |
+| --- | --- | --- |
+| `Pss` at the end of the window | 26.00 MB | 31.99 MB |
+| `VmRSS` at the end of the window | 26.66 MB | 32.00 MB |
+| `Pss` at the settle | 8.92 MB | 7.27 MB |
+| CPU over the window | 0.133% | 0.133% |
+
+The verdicts are the same as on 2026-09-14: the 180 ms timer fixture is
+above noise on CPU (2.865% median over 5 runs) and every other plugin is
+within noise on both, said in words. The listed set differs from
+2026-09-14 in one plugin (`altswitch` for `bjarneo.workspace-layout`),
+because the gate now takes its three ids from `tools/lab/suites.mjs`
+and their commits from the pinned catalog. One host, one day, one
+observation per floor; the two floors are not a trend.
 
 ## C2. The shell's memory after a restart has two levels and two events
 
@@ -1137,8 +1167,9 @@ a file time, and the method is named beside it.
 | The guest | `omarchy 4.0.3-1`, kernel 7.2.3-arch1-3, hostname `omarchy-test`, session from the installed package, skew false | `pacman -Q omarchy`, `uname -r`, `/etc/hostname`, `/etc/omarchy.conf` over SSH, in every run's identity block. |
 | One Run-suite run | 173,358 ms (2m 53.4s) from the lock to the record; 35 s to SSH, 11 s to the session; overlay 413,470,720 B (0.413 GB / 0.385 GiB) allocated and removed; base and template unchanged by size, mtime and inode; 19 of 19 scenarios | `evidence/lab/20260918-160936-run/run.json` and `runlab.json`. A first run twenty minutes earlier allocated 440,602,624 B and took 173,491 ms with the same result; the gate miscounted its keyed summary and it is not the evidence. |
 | One Store-suite run | 108,465 ms (1m 48.5s); 36 s to SSH, 11 s to the session; overlay 417,075,200 B (0.417 GB / 0.388 GiB) allocated and removed; base and template unchanged; 15 of 15 scenarios, the foreign owner simulated with `chown root` through a sudoers drop-in in the overlay | `evidence/lab/20260918-161230-store/run.json` and `storelab.json`. |
+| One weigh-evidence run | 1,940,927 ms (32m 20.9s); 36 s to SSH, 11 s to the session; overlay 610,734,080 B (0.611 GB / 0.569 GiB) allocated and removed, the largest of the day's five runs; base and template unchanged; 40 restarts, the document under C1b | `evidence/lab/20260918-162602-weigh-evidence/run.json`, `evidence/weigh/lab-2026-09-18-stock-guest.json`. |
 | One weigh-smoke run | 106,980 ms (1m 47.0s); 46 s to SSH, 11 s to the session; overlay 461,180,928 B (0.461 GB / 0.430 GiB) allocated and removed; base and template unchanged; three measured restarts, the refused plan, the restore, the interrupt at exit 130; the weigh document itself stays with the run record, not under docs/evidence/weigh/, because a smoke is not the evidence gate | `evidence/lab/20260918-161929-weigh/run.json` and `host.log`. |
-| The lab in the package | 20 files, 163,753 bytes unpacked; the package packs to 308,856 bytes across 105 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
+| The lab in the package | 20 files, 163,753 bytes unpacked; the package packs to 309,687 bytes across 105 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
 | The listed plugins for `weigh-evidence` | 6,836,224 B allocated for three shallow checkouts under `plugins/`, fetched by `omakit lab setup --plugins` in one consent | `allocatedBytes` over the directory, 2026-09-18. The three checkouts the 0.5 weigh gate had left at the lab root (the same 6,836,224 B) were removed by hand the same day. |
 | The toolchain from the printed command | 1,132 ms, a 3.1 MB clone, the harness hashing to the pinned `8637e8cc...` | The one command `omakit lab inspect` prints, timed with `date +%s%N` around it on 2026-09-18. |
 | Self-supply, from nothing to a green guest run | 4 commands; 10m 12s on this host without the ISO download: toolchain 1.1 s, a local ISO copied and verified in 17.7 s, the base built in 5m 57.8s, the verification boot and promotion in 63 s, the Run suite in 2m 53.4s | `npm i -g omakit && omakit setup`; the toolchain line; `omakit lab setup --from <iso> --yes`; `omakit lab run run`. Each duration is the one measured above; the sum is arithmetic. The ISO download itself was not measured over the network on this host: 6,260,654,080 B at 100 Mbit/s is 8m 21s of arithmetic, not a measurement. |

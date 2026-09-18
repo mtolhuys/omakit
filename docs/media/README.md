@@ -194,7 +194,8 @@ The other two refreshed scenes omit no lines.
 The historical [single-issue stale GIF](watch.gif) is linked from
 [VALIDATION_WATCH.md](../VALIDATION_WATCH.md), keeping the README to one GIF
 per command. [setup.gif](setup.gif) remains in the installation documentation.
-The README uses absolute raw-main URLs for all five GIFs. The existing live
+The README uses absolute raw-main URLs for its GIFs (seven at 0.6.0: the
+banner, add-run, inspect, submit, watch-all, audit and weigh). The existing live
 badge row is unchanged, including the version and CI badges, to keep it current.
 
 Word-count method: exclude fenced code, images, badge markup and URLs; include

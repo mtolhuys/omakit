@@ -43,7 +43,12 @@ not apply to it.
   site, borrows only `gh auth token --hostname github.com`, and has no path that
   writes to the marketplace. Workflow YAML may write only to this repository.
 - `tests/unit/self-containment.test.mjs` holds the project to plain ESM, zero
-  runtime dependencies, no build, and no writes into a plugin tree.
+  runtime dependencies, no build, no writes into a plugin tree, and no
+  disk image or archive anywhere in the tree: the lab ships the ability to
+  acquire a lab, never an ISO or a base.
+- `tests/unit/lab.test.mjs` holds `tools/lab/` to the guest: the argument
+  lists QEMU and SSH are started with, the binaries that may be spawned,
+  and no word that reaches the host's own session outside an ssh command.
 - `tests/unit/submit.test.mjs` requires every verdict to carry its source and a
   measured reason recorded in `docs/MEASUREMENTS.md`.
 - `tests/unit/style.test.mjs` and `tests/unit/cli.test.mjs` protect stdout as an

@@ -115,7 +115,10 @@ window that opened 8 s after `listPlugins` answered, and measured a
 baseline memory spread of 15.54 MB over three runs in the plugin lab guest
 (whose session, like every guest run before 2026-09-18, was dev-linked to
 the omarchy checkout at `b5589fa`, so the shell restarted was that
-checkout's; C1 in [MEASUREMENTS.md](MEASUREMENTS.md) says so).
+checkout's; C1 in [MEASUREMENTS.md](MEASUREMENTS.md) says so). On the
+unlinked guest, through `omakit lab run weigh-evidence` on 2026-09-18,
+the shipped method's floor read 26.00 MB `Pss` at the end of the window
+and 0.133% CPU (C1b), with the same verdicts.
 The first port took the memory sample at that 8 s settle instead, a fixed
 event rather than a wall-clock offset; over five baseline runs the `Pss`
 there was 526, 596, 586, 582 and 593 MB, a 70.3 MB spread. A trace of `Pss`

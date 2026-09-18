@@ -1,0 +1,66 @@
+==> Checking that the guest has node
+v26.8.1
+==> Staging omakit, the 4 fixtures and 3 listed plugins in the guest
+==> io.github.calebhat.weather at 986604e0a7275f7060ac18adec7493393c55906f, the commit the pinned catalog lists as validated
+==> omaplug at c8c53ecb1cc8afa39e6698b6ae7e6f780183630f, the commit the pinned catalog lists as validated
+==> io.github.pablo-merino.altswitch at b99a58ca94e7ffcb6785d009a2e88f9e68599642, the commit the pinned catalog lists as validated
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.3464'...
+done.
+Added fixture.clean into /home/omarchy/.config/omarchy/plugins/fixture.clean
+Enabled fixture.clean
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.4002'...
+done.
+Added fixture.timer-180ms into /home/omarchy/.config/omarchy/plugins/fixture.timer-180ms
+Enabled fixture.timer-180ms
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.4716'...
+done.
+Added fixture.poller into /home/omarchy/.config/omarchy/plugins/fixture.poller
+Enabled fixture.poller
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.5414'...
+done.
+Added fixture.idle-panel into /home/omarchy/.config/omarchy/plugins/fixture.idle-panel
+Enabled fixture.idle-panel
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.6126'...
+done.
+Added io.github.calebhat.weather into /home/omarchy/.config/omarchy/plugins/io.github.calebhat.weather
+Enabled io.github.calebhat.weather
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.6899'...
+done.
+Added omaplug into /home/omarchy/.config/omarchy/plugins/omaplug
+Enabled omaplug
+Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.7584'...
+done.
+Added io.github.pablo-merino.altswitch into /home/omarchy/.config/omarchy/plugins/io.github.pablo-merino.altswitch
+Enabled io.github.pablo-merino.altswitch
+ok - the 7 plugins are installed and enabled
+==> shell.json before: 1a2e5f889a13b732ab4bff849c14d27d  -
+weighing      io.github.pablo-merino.altswitch, io.github.calebhat.weather,
+              fixture.timer-180ms, fixture.clean, fixture.idle-panel,
+              fixture.poller, omaplug
+shell         4.0.0.alpha at /usr/share/omarchy
+restarts      40: (1 baseline + 7 plugins) × 5 runs
+estimate      about 34 minutes, 50 s per restart: 5 s for the shell to come back
+              (before any run on this machine; the lab measured 1 s), then the
+              30 s settle and the 15 s window
+shell.json    backed up beside itself and restored on every exit path; the md5
+              is printed before and after
+writes        ~/.local/state/omakit/weigh/2026-09-18T142708Z.json
+█ NOT WEIGHED  this restarts the shell 40 times and edits shell.json for the
+               duration; a pipe, an agent or --json cannot answer for the person
+               whose shell it is.
+→ Run it again and answer y, or pass --yes when the person whose shell it is has
+  agreed.
+==> Running omakit weigh --all --runs 5 in the guest (40 restarts, the default 30 s settle and 15 s window)
+ok - the weigh-evidence job finished
+==> shell.json after the measurement: 1a2e5f889a13b732ab4bff849c14d27d  -
+ok: the document follows the contract in docs/WEIGH.md
+true
+noise floor: Pss 25.998046875 MB and VmRSS 26.6640625 MB at the end of the window, Pss 8.923828125 MB at the settle, CPU 0.13327114013460387%
+fixture.clean	16.93	42.68	0	0.13	0	0.07	0	no measurable CPU
+io.github.calebhat.weather	14.46	35.05	0.07	0.13	0	0	0	no measurable CPU
+fixture.idle-panel	13.22	24.32	0	0.2	0	0	0	no measurable CPU
+omaplug	11.1	30.57	0	0.13	0	0.07	0	no measurable CPU
+fixture.poller	2.23	39.74	0.07	0.27	4.09	0	1	no measurable CPU
+io.github.pablo-merino.altswitch	0.3	30.49	0.07	0.13	0	0	0	no measurable CPU
+fixture.timer-180ms	-2.37	39.62	2.86	0.47	0	0	0	above noise on CPU
+ok - omakit weigh measured 7 plugins over 5 runs each, told the 180 ms timer from the clean fixture, said within noise in words, restored shell.json byte for byte, and the document follows docs/WEIGH.md
