@@ -513,7 +513,11 @@ test("the suites are data: each names its host file, its document, its files, an
   try {
     assert.deepEqual(suitePreflight(SUITES.run, { repoRoot: REPO_ROOT, layout }), [], "the Run suite's files are in this checkout")
     const missing = suitePreflight(SUITES.run, { repoRoot: join(env.HOME, "nowhere"), layout })
-    assert.ok(missing.length === SUITES.run.needs.length && missing.every((item) => /do not ship in the package/.test(item.cost)))
+    assert.ok(missing.length === SUITES.run.needs.length && missing.every((item) => /the tree is incomplete/.test(item.cost) && item.command === "npm i -g omakit, then run it again"))
+    // A checkout's remedy names the checkout's own entry point, never a global package (finding 5).
+    const checkoutMissing = suitePreflight({ ...SUITES.run, needs: ["tests/lab/run/nothing-here"] }, { repoRoot: REPO_ROOT, layout })
+    assert.equal(checkoutMissing.length, 1)
+    assert.ok(checkoutMissing[0].command.startsWith(`git -C ${REPO_ROOT} checkout -- tests/lab/run/nothing-here && ${join(REPO_ROOT, "bin/omakit")} lab prove run`))
     const evidence = suitePreflight(SUITES["weigh-evidence"], { repoRoot: REPO_ROOT, layout, pinDir: join(env.HOME, "nopin") })
     assert.ok(evidence.some((item) => /in the pinned catalog/.test(item.what) && item.command === "omakit pin"))
   } finally {

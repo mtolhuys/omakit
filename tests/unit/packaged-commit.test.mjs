@@ -17,6 +17,8 @@ import { join } from "node:path"
 import { REPO_ROOT } from "./helpers.mjs"
 import { COMMIT_FILE, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
 import { sourceCommit } from "../../tools/blocks/add.mjs"
+import { SUITES, suitePreflight } from "../../tools/lab/suites.mjs"
+import { labLayout } from "../../tools/lab/paths.mjs"
 
 const HEAD = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8" }).trim()
 
@@ -39,6 +41,11 @@ test("an installed tarball with the record stamps the commit into the header, th
     assert.equal(spawnSync("tar", ["-xzf", tarball, "-C", dir], { timeout: 120_000 }).status, 0)
     const installed = join(dir, "package")
     assert.ok(!readdirSync(installed).includes(".git"), "an installed package has no checkout")
+    // The lab's suite inputs ship: an installed omakit's preflight finds every file each suite stages (finding 5).
+    for (const suite of Object.values(SUITES)) {
+      const missing = suitePreflight({ ...suite, plugins: undefined }, { repoRoot: installed, layout: labLayout({ HOME: dir, XDG_CACHE_HOME: join(dir, "cache"), XDG_STATE_HOME: join(dir, "state") }) })
+      assert.deepEqual(missing, [], `${suite.name}: every file ships`)
+    }
     const plugin = join(dir, "plugin")
     mkdirSync(plugin)
     writeFileSync(join(plugin, "manifest.json"), `${JSON.stringify({ schemaVersion: 1, id: "fixture.packaged", name: "packaged", version: "0.0.1" })}\n`)

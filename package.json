@@ -39,6 +39,8 @@
     "skills",
     "blocks",
     "tests/parity/corpus.mjs",
-    "tests/parity/run.mjs"
+    "tests/parity/run.mjs",
+    "tests/lab",
+    "tests/fixtures/weigh"
   ]
 }

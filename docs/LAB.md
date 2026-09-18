@@ -188,9 +188,11 @@ The closing word is `PROVED` or `NOT PROVED`, with the suite's own reason.
 | `weigh` | `bin/`, `tools/`, two fixtures | `omakit weigh` against a real shell: the smoke check ([WEIGH.md](WEIGH.md), the lab gate) | `omakit-weigh.json` |
 | `weigh-evidence` | four fixtures and three listed plugins from `plugins/` | The five-run gate `docs/evidence/weigh/` carries; `--runs` shortens it | `omakit-weigh.json` |
 
-The in-guest content lives with the tests and does not ship in the
-package; a packaged omakit running `lab prove` names the files it is
-missing and the clone that has them. `weigh-evidence` needs the three
+The in-guest content lives with the tests, under `tests/lab/` and
+`tests/fixtures/weigh/`, and ships in the package too, so an installed
+omakit proves a suite without a checkout; a tree that lacks one of those
+files is named as incomplete, with the tree's own entry point in the
+remedy. `weigh-evidence` needs the three
 listed plugins in the lab's plugin cache at the commits the pinned
 catalog records as validated; `omakit lab setup --plugins` fetches them,
 once, after the same consent (three shallow fetches, 6,836,224 B

@@ -4,8 +4,14 @@
 // tools/lab/suites/, run through tools/lab/harness.sh; the in-guest
 // content (a suite that also runs on the desktop, its reader, its harness
 // QML, the weigh fixtures) lives with the tests, under tests/lab/ and
-// tests/fixtures/, and ships with the repository, not the package. A suite
-// whose content is missing is named, not guessed at.
+// tests/fixtures/weigh/, and ships in the package too (package.json
+// `files`), so an installed omakit proves a suite without a checkout.
+// Measured on 2026-09-19 by a first user: the packaged `lab prove` refused
+// for files that were repository-only, with a remedy that cloned the
+// repository and then ran the global package again (docs/evidence/ux/
+// 2026-09-19-first-user-test.json, finding 5). A suite whose content is
+// missing is still named, not guessed at, and the remedy names the tree's
+// own entry point.
 
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -91,7 +97,7 @@ export function suiteNames() {
 export function suitePreflight(suite, { repoRoot, layout, pinDir = marketplacePinDir(repoRoot) }) {
   const missing = []
   for (const relative of suite.needs) {
-    if (!existsSync(join(repoRoot, relative))) missing.push({ what: relative, cost: "a file of this repository's checkout; the suites do not ship in the package", command: `git clone https://github.com/mtolhuys/omakit && cd omakit && omakit lab prove ${suite.name}` })
+    if (!existsSync(join(repoRoot, relative))) missing.push({ what: relative, cost: `a file this omakit ships (${repoRoot}) and does not have; the tree is incomplete`, command: existsSync(join(repoRoot, ".git")) ? `git -C ${repoRoot} checkout -- ${relative} && ${join(repoRoot, "bin/omakit")} lab prove ${suite.name}` : "npm i -g omakit, then run it again" })
   }
   if (suite.plugins) {
     for (const id of suite.plugins) {

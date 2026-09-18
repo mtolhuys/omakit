@@ -259,7 +259,9 @@ test("there is no build step and no runtime dependency", () => {
   assert.equal(pkg.license, "MIT")
   assert.equal(pkg.repository.url, "git+https://github.com/mtolhuys/omakit.git")
   assert.deepEqual(pkg.keywords, ["omarchy", "quattro", "plugin", "marketplace", "building-blocks", "qml", "quickshell", "preflight", "cli", "agent"])
-  assert.deepEqual(pkg.files, ["bin", "tools", "skills", "blocks", "tests/parity/corpus.mjs", "tests/parity/run.mjs"])
+  // The lab's suite inputs ship (tests/lab, the weigh fixtures): an installed
+  // omakit proves a suite without a checkout (finding 5 of the first-user test).
+  assert.deepEqual(pkg.files, ["bin", "tools", "skills", "blocks", "tests/parity/corpus.mjs", "tests/parity/run.mjs", "tests/lab", "tests/fixtures/weigh"])
   assert.ok(statSync(join(REPO_ROOT, "bin/omakit")).mode & 0o111, "bin/omakit must be executable")
   assert.ok(!files.includes("package-lock.json"))
 })
