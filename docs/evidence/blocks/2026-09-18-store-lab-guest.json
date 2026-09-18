@@ -929,5 +929,10 @@
   }
  ],
  "ok": true,
- "where": "the stock 4.0.3 guest of the Omarchy plugin lab, run 20260918-150608, chown allowed for the foreign-owner scenario"
+ "where": "the Omarchy plugin lab guest of 2026-09-18, run 20260918-150608, chown allowed for the foreign-owner scenario: installed omarchy 4.0.3-1, the session dev-linked to omarchy b5589fa (see provenance)",
+ "provenance": {
+  "session": "The plugin-lab harness of that day passed --sync-all and --dev-link, so the guest's session ran from the omarchy checkout at b5589faaf80c6f87c07d4560fca37c4a81722f28 (the v4.0.3 tag plus merge #11263; 352 files differ from the tag, 70 of them under bin/, shell/ and config/) linked over the installed package, and the record did not know it (docs/history/2026-09-18-lab-inventory.md, P8). The installed packages were the 4.0.3 ISO's (omarchy 4.0.3-1 in the base's pacman.log of 2026-09-10; python 3.14.7, quickshell 0.3.1 read by the suite), and no run read the package version. Annotated 2026-09-18.",
+  "whatHolds": "Every scenario starts its own quickshell instance in a throwaway HOME and never uses the session's shell; the 15 results stand as the 0.2.0 block's on that guest.",
+  "supersededBy": "docs/evidence/lab/20260918-161230-store/storelab.json, the same 15 scenarios the same afternoon through omakit lab on the unlinked guest (skew false), which is what docs/BLOCKS.md now cites."
+ }
 }

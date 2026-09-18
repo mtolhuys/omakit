@@ -603,5 +603,10 @@
   }
  },
  "ok": true,
- "where": "the stock 4.0.3 guest of the Omarchy plugin lab, run 20260917-181125"
+ "where": "the Omarchy plugin lab guest of 2026-09-17, run 20260917-181125: installed omarchy 4.0.3-1, the session dev-linked to omarchy b5589fa (see provenance)",
+ "provenance": {
+  "session": "The plugin-lab harness of that day passed --sync-all and --dev-link, so the guest's session ran from the omarchy checkout at b5589faaf80c6f87c07d4560fca37c4a81722f28 (the v4.0.3 tag plus merge #11263; 352 files differ from the tag, 70 of them under bin/, shell/ and config/) linked over the installed package, and the record did not know it (docs/history/2026-09-18-lab-inventory.md, P8). The installed packages were the 4.0.3 ISO's (omarchy 4.0.3-1 in the base's pacman.log of 2026-09-10; python 3.14.7, quickshell 0.3.1 read by the suite), and no run read the package version. Annotated 2026-09-18.",
+  "whatHolds": "Every scenario starts its own quickshell instance with the block files and never uses the session's shell; /usr/bin/python3, /usr/bin/quickshell, setsid and kill are the installed packages' and were checked as such. The rows are the 0.1.0 block's on that guest.",
+  "supersededBy": "docs/evidence/lab/20260918-160936-run/runlab.json: the 0.2.0 block on a guest whose installed package (omarchy 4.0.3-1) was read by the run and whose session was not linked (skew false)."
+ }
 }

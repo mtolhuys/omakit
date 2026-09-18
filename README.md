@@ -94,10 +94,10 @@ Reads a plugin's tree and prints what needs attention, biggest first: a size sco
 | Measurement | Evidence |
 | --- | --- |
 | Run: the design chosen by measurement | 36 runs, five scenarios, two candidates, on a real Quattro shell: both end every scenario, the supervisor is chosen for reaping last, [spike](docs/BLOCKS_SPIKE.md), 2026-09-17 |
-| Run: lab scenarios | 19 of 19 on the desktop and 19 of 19 on the stock 4.0.3 guest, six of them written to fail on 0.1.0 after the review of 2026-09-18, [desktop](docs/evidence/blocks/2026-09-18-run-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-run-lab-guest.json), [review](docs/evidence/blocks/2026-09-18-review.json) |
-| The lab: one run, identified | 19 of 19 by `omakit lab run run` on guest `omarchy 4.0.3-1`, skew false, 2m 53.4s, a 413,470,720 B overlay removed, the base unchanged, [record](docs/evidence/lab/20260918-160936-run/run.json), [M14](docs/MEASUREMENTS.md#m14-what-one-lab-run-costs-and-what-the-lab-is-pinned-to) |
-| Store: lab scenarios | 15 of 15 on the desktop and 15 of 15 on the stock guest with a root-owned file simulated, three of them written to fail on 0.1.0, [desktop](docs/evidence/blocks/2026-09-18-store-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-store-lab-guest.json) |
-| Port: Theme Manager through Run | process lifecycle 23 to 0, unbounded buffering 18 to 0, 24 of 24 QML sites with a deadline, 27 of 27 lab steps on the stock guest, [record](docs/evidence/blocks/2026-09-17-theme-manager-port.json); not submitted, no reviewer has seen it |
+| Run: lab scenarios | 19 of 19 on the desktop and 19 of 19 on the stock 4.0.3 guest (installed `omarchy 4.0.3-1`, read by the run), six of them written to fail on 0.1.0 after the review of 2026-09-18, [desktop](docs/evidence/blocks/2026-09-18-run-lab-desktop.json), [guest](docs/evidence/lab/20260918-160936-run/runlab.json), [review](docs/evidence/blocks/2026-09-18-review.json) |
+| The lab: one run, identified | that guest run through `omakit lab run run`: skew false, 2m 53.4s, a 413,470,720 B overlay removed, the base unchanged, [record](docs/evidence/lab/20260918-160936-run/run.json), [M14](docs/MEASUREMENTS.md#m14-what-one-lab-run-costs-and-what-the-lab-is-pinned-to) |
+| Store: lab scenarios | 15 of 15 on the desktop and 15 of 15 on the stock guest with a root-owned file simulated, three of them written to fail on 0.1.0, [desktop](docs/evidence/blocks/2026-09-18-store-lab-desktop.json), [guest](docs/evidence/lab/20260918-161230-store/storelab.json) |
+| Port: Theme Manager through Run | process lifecycle 23 to 0, unbounded buffering 18 to 0, 24 of 24 QML sites with a deadline, 27 of 27 lab steps in a guest whose session was dev-linked to omarchy `b5589fa` (not the installed package; the record says so), [record](docs/evidence/blocks/2026-09-17-theme-manager-port.json); not submitted, no reviewer has seen it |
 | Port: Sidecar through Store | the device state through the block, a planted link refused and moved aside, 71 tests, [record](docs/evidence/blocks/2026-09-17-sidecar-port.json); inspect's counts unchanged, and the record says why |
 | Baseline parity | 30/30 identical results, [recorded corpus](docs/evidence/parity/2026-09-12-local-vs-github-2.json), 2026-09-12 |
 | Stale validated commit | 326/519 readable comparisons stale (62.8%); 64/583 unknown, [2026-09-15 data](docs/evidence/staleness/2026-09-15.json) |
@@ -110,7 +110,7 @@ Reads a plugin's tree and prints what needs attention, biggest first: a size sco
 
 - Building: [blocks](docs/BLOCKS.md), [the spike behind Run](docs/BLOCKS_SPIKE.md), [what is still open](docs/BLOCKS_PLAN.md).
 - Using: [install](docs/INSTALL.md), [commands](docs/COMMANDS.md), [audience](docs/MARKETPLACE.md).
-- Checks and measurements: [submit](docs/SUBMIT.md), [inspect](docs/INSPECT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
+- Checks and measurements: [submit](docs/SUBMIT.md), [inspect](docs/INSPECT.md) and [its design note](docs/INSPECT_DESIGN.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
 - Proving: [the lab](docs/LAB.md), [its inventory](docs/history/2026-09-18-lab-inventory.md), [its plan](packaging/LAB_PLAN.md).
 - Method docs: [how](docs/HOW.md), [weigh](docs/WEIGH.md), [upstream contract](docs/UPSTREAM_CONTRACT.md), [palette](docs/PALETTE.md), [terminal](docs/TUI.md).
 - Contributing: [repository rules](AGENTS.md), [releasing](docs/RELEASING.md), [media](docs/media/README.md).

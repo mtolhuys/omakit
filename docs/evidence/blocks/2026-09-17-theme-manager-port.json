@@ -251,7 +251,7 @@
   "whyNot": "each changes the desktop or opens a menu on it; the guest acceptance covers theme install, wallpaper install and bg-set, and the hook at its real path; uninstall, wallpaper remove and reset, the switchers and xdg-open ran nowhere but as their helper scripts against temporary paths, or not at all"
  },
  "guestAcceptance": {
-  "lab": "omarchy plugin lab, stock 4.0.3 guest, run 20260917-194044, plugin at d9f6093",
+  "lab": "omarchy plugin lab guest, run 20260917-194044, plugin at d9f6093: installed omarchy 4.0.3-1, the session dev-linked to omarchy b5589fa (see provenance)",
   "ok": [
    "linked graphical session stops",
    "notification service is ready",
@@ -401,5 +401,9 @@
    "why": "it matched the plugin's own copy of list.sh, which the QML starts from Omarchy's tree, and every helper whose name appeared anywhere, whether or not a Run site reached it"
   },
   "note": "After the port, 12 of 24 Run sites resolve to a file of the tree, 9 distinct helpers, 50 tool names counted apart; 12 sites do not: 7 name programs outside the tree (/usr/bin/gsettings, /usr/bin/magick, /usr/bin/xdg-open, Omarchy's commands under omarchyBin, Omarchy's list.sh under $OMARCHY_PATH) and 5 carry an argv the text does not show (the two icons-browse.sh sites and the two aether sites from JavaScript model functions, install-wallpaper.sh from a function returning the array, reset-icons.sh from a ternary of arrays), so icons-browse.sh, install-wallpaper.sh and reset-icons.sh stay ambient although Run starts them. The two exec lines (catalog.sh, probe-theme-lock.sh) are sites now, on both sides."
+ },
+ "provenance": {
+  "session": "The plugin-lab harness of that day passed --sync-all and --dev-link, so the guest's session ran from the omarchy checkout at b5589faaf80c6f87c07d4560fca37c4a81722f28 (the v4.0.3 tag plus merge #11263; 352 files differ from the tag, 70 of them under bin/, shell/ and config/) linked over the installed package, and the record did not know it (docs/history/2026-09-18-lab-inventory.md, P8). The installed packages were the 4.0.3 ISO's (omarchy 4.0.3-1 in the base's pacman.log of 2026-09-10; python 3.14.7, quickshell 0.3.1 read by the suite), and no run read the package version. Annotated 2026-09-18.",
+  "whatItMeans": "The 27 acceptance steps exercised the session's shell (plugin add, the shortcuts, the theme and wallpaper apply), so they ran against the shell of checkout b5589fa, not the shell of the installed 4.0.3-1 package. They are evidence for the port on that checkout's shell; the claim 'on the stock guest' is withdrawn. Not re-measured: omakit lab runs this repository's suites and does not run a plugin's own acceptance (docs/LAB.md, what the lab does not do)."
  }
 }

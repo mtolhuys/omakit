@@ -112,7 +112,10 @@ recorded as a hypothesis (C2). A sentence that said "under N MB" or
 The floor was measured before this command shipped, and two ideas did not
 survive it. The audit it was ported from read `VmRSS` at the end of a
 window that opened 8 s after `listPlugins` answered, and measured a
-baseline memory spread of 15.54 MB over three runs in the plugin lab guest.
+baseline memory spread of 15.54 MB over three runs in the plugin lab guest
+(whose session, like every guest run before 2026-09-18, was dev-linked to
+the omarchy checkout at `b5589fa`, so the shell restarted was that
+checkout's; C1 in [MEASUREMENTS.md](MEASUREMENTS.md) says so).
 The first port took the memory sample at that 8 s settle instead, a fixed
 event rather than a wall-clock offset; over five baseline runs the `Pss`
 there was 526, 596, 586, 582 and 593 MB, a 70.3 MB spread. A trace of `Pss`

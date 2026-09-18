@@ -29,12 +29,15 @@ Run starts one program for a plugin and always ends it. Two files under
 | `omakit/NOTICE` | The listing: block, version, licence, copyright, source commit and body sha256 per file. |
 
 Stock Omarchy 4.0.3 has `/usr/bin/python3` (3.14.7) as a dependency of
-its desktop packages, not as an Omarchy choice: on the stock guest
+its desktop packages, not as an Omarchy choice: in the 4.0.3 guest
 `pacman -Qi python` lists `uwsm`, the session manager, `ufw`, `udiskie`
-and `python-gobject` among what requires it ([record](evidence/blocks/2026-09-17-run-lab-guest.json),
-the lab run of 2026-09-17). `Run.qml` reports `python-missing` when it
-cannot be started, and the lab gate runs on the stock guest to see it is
-there.
+and `python-gobject` among what requires it (`guest-plumbing.txt` in
+[the lab run of 2026-09-18](evidence/lab/20260918-160936-run/), read
+from the installed packages; the same reading of 2026-09-17 is in
+[that record](evidence/blocks/2026-09-17-run-lab-guest.json), whose
+session was dev-linked and says so). `Run.qml` reports
+`python-missing` when it cannot be started, and the lab suite runs on the
+guest to see it is there.
 
 ## The contract, line by line
 
@@ -117,10 +120,17 @@ from `Quickshell.env("HOME") + "/.config/omarchy/plugins/<id>/"`.
 ## What it costs
 
 From `tests/lab/run/` on the desktop (Quickshell 0.3.1-1, python 3.14.7-1,
-2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json));
-the stock 4.0.3 guest, same day, same 19 scenarios, all ok
-([record](evidence/blocks/2026-09-18-run-lab-guest.json)), 1 GiB in 865 ms
-there and every other row within 20 ms of the desktop's:
+2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json)).
+The same 19 scenarios ran the same afternoon on the stock 4.0.3 guest
+through `omakit lab run run`, all ok, the guest's installed package
+`omarchy 4.0.3-1` read by the run and its session not linked
+([record](evidence/lab/20260918-160936-run/runlab.json)): there the
+first row took 157 ms, 1 GiB streamed through in 1,469 ms, and the other
+three rows below were within 20 ms of the desktop's; one run each, so no
+spread is known, and the desktop's rows are the ones in the table. An
+earlier guest run that day ([record](evidence/blocks/2026-09-18-run-lab-guest.json),
+1 GiB in 865 ms) had its session dev-linked to a source checkout and is
+superseded; it says so in place.
 
 | Scenario | Time to end | Quickshell Pss after minus before |
 | --- | ---: | ---: |
@@ -129,6 +139,19 @@ there and every other row within 20 ms of the desktop's:
 | a leader that exits while a descendant holds the pipe | 58 ms | +289 kB |
 | a program that ignores TERM, deadline 2 s, grace 1 s | 3,061 ms | +309 kB |
 | ten runs started at once, 1 MiB each | 68 ms to the last result | +676 kB |
+
+One cost is not in the table and is the marketplace's: a plugin that
+carries Run 0.2.0 shows the `privilege` capability in the marketplace
+security baseline, and is `review-required` for that alone. Measured
+2026-09-18 on a throwaway plugin with nothing but a manifest, a README, a
+licence and `omakit add run` ([record](evidence/blocks/2026-09-18-run-block-baseline.json)):
+`privilege` at `omakit/run-supervisor.py` (line 57, the line where the
+supervisor's wrapper list names `sudo` and `doas` so that `sudo sh -c`
+is refused as a shell string, R5). The baseline is a source scan and
+reads the word. Not changed in the release round: dropping the two words
+narrows a contract line that answers 106 comments, and that is a block
+change with its own review; the release notes list it. Theme Manager was
+review-required already, for `installer`.
 
 About 60 ms and one helper process (5.7 MB Pss while it waits) per run,
 of which 8 ms is the interpreter (`python3 -I -S -B -c pass`, median of
@@ -231,7 +254,7 @@ the commit the marketplace validated) and after
 | environment trust, shell lines | 462 | 484; 434 once the 50 names in the 9 helpers a Run site resolves to are counted apart |
 | file and state boundary rows | 7 | 7 |
 | blocks row | none | `run 0.1.0, 2 files, unmodified` |
-| verify | review-required, installer | the same |
+| verify | review-required, installer | the same at 0.1.0; at 0.2.0, review-required, installer and privilege (below) |
 | submit | listed | the same |
 
 The shell lines rose by the five new helpers' bare `mkdir`, `cmp`, `cp`,
@@ -252,9 +275,15 @@ arrays), which inspect leaves ambient rather than guess
 What the port ran: the ported controllers and the picker's Run sites in a
 separate Quickshell instance under `systemd-run --user --scope -p
 MemoryMax=768M`, 16 actions as expected, the desktop's icon theme and
-background untouched; and the plugin's own lab acceptance on the stock
-4.0.3 guest, 27 of 27, including a theme install and apply, a wallpaper
-install with `omarchy-theme-bg-set`, and the hook at its real path.
+background untouched; and the plugin's own lab acceptance in the plugin
+lab guest, 27 of 27, including a theme install and apply, a wallpaper
+install with `omarchy-theme-bg-set`, and the hook at its real path. That
+guest's session was dev-linked to the omarchy checkout at `b5589fa` (the
+v4.0.3 tag plus one merge), so the 27 steps exercised that checkout's
+shell and not the installed 4.0.3-1 package; the record says so, and
+"on the stock guest" is withdrawn. It has not been re-run: `omakit lab`
+runs this repository's suites, not a plugin's acceptance
+([LAB.md](LAB.md), what the lab does not do).
 
 The review's open blocker on the plugin (at `cc6486a`: a partial clone's
 `git cat-file -s` before the size check, an unbounded tree and pack fetch)
@@ -294,7 +323,7 @@ the same run as Run's; 527 comments raise at least one, the counts overlap).
 | Descriptor-relative opens, no-follow | 392 | Every directory on the way from HOME to the plugin's directory is opened with `O_DIRECTORY | O_NOFOLLOW` relative to the descriptor before it, and the file relative to the last one with `O_NOFOLLOW | O_NONBLOCK`, so a FIFO planted at the file's name opens at once instead of waiting for a writer and is `refused` as `not a regular file` (S1); `O_NONBLOCK` is cleared only after that check. A planted link anywhere is `refused` with the reason `... is a symbolic link` (`ELOOP`, or `ENOTDIR` where a directory was demanded). Measured: a link on the plugin directory, on its parent and on the file itself, 0 bytes reach the target; a FIFO, refused in under a second. A refusal partway through the walk closes the descriptors it opened, so an importer that keeps calling never runs out (S5). |
 | No check-then-use | 288 | Nothing is checked by path. Every check is `fstat` on the descriptor that was just opened, and the write is a rename over whatever is there. Measured: a neighbour swapping the file between a regular file and a link 40 operations long; every read `ok`, `missing` or `refused`, the target untouched. |
 | Exclusive 0600 temp, atomic replace | 273 | A write goes to `.store-<pid>-<16 hex>.tmp` opened `O_CREAT | O_EXCL` at mode 0600 in the plugin's directory, written in a loop until every byte is there, `fsync`ed, renamed over the name, and the directory is `fsync`ed; a short write, `ENOSPC`, a quota or `RLIMIT_FSIZE` unlinks the staging file and the write is `failed`, the old file untouched (S2). A staging file a crashed writer left is swept once it is older than ten minutes, never sooner. Measured: ten writers at once, the file is one whole write and no staging file is left; a stale staging file is swept and a fresh one kept; a write cut short by `RLIMIT_FSIZE` leaves the old file whole and nothing staged. |
-| Owner and regular-file checks | 263 | After every open: a directory is a directory, a file is a regular file, and both are owned by this user; anything else is `refused` by name. Measured on the stock guest with `chown root`: `refused`, `not owned by this user`. |
+| Owner and regular-file checks | 263 | After every open: a directory is a directory, a file is a regular file, and both are owned by this user; anything else is `refused` by name. Measured in the 4.0.3 guest with `chown root` ([record](evidence/lab/20260918-161230-store/storelab.json), `foreign-owner`): `refused`, `not owned by this user`. |
 | Schema check on parse | 218 | A read is parsed as JSON without `NaN` or `Infinity`, nested at most 64 levels deep, and checked against `schema`, a subset: `type` (one name, not a list), `properties`, `required`, `additionalProperties: false`, `items`, `enum`, `maxLength`, `maxItems`, `maxProperties`, `minimum`, `maximum`, `pattern`; a departure is `invalid` with the path that departs. A write is checked the same way before anything is written. A schema outside that subset in shape, or over 64 KiB, is `refused` by keyword before anything is read (S6). |
 | Size cap on read | 190 | `maxBytes` (default 1 MiB), enforced while reading: one byte over is `overflow`, and the rest is not read. The result line carries the value as UTF-8, not `\u`-escaped, so a file within the cap is within the helper's output cap whatever script it is in (S3). A write over `maxBytes`, or over 64 KiB of UTF-8 (one argument to the helper, counted in bytes, not characters), is `overflow` before it starts (S4). |
 | Refuse group- or world-writable | 146 | Every directory and file on the way with `mode & 022` is `refused`, `writable by the group or by others`; what Store creates is 0700 and 0600. |
@@ -351,7 +380,12 @@ non-ASCII read and 3 ms for a write refused in QML for its size; ten
 writers started at once all finished within 87 ms. Measured by the
 harness's clock (`Date.now()` at the call and at the result), in
 [the record](evidence/blocks/2026-09-18-store-lab-desktop.json); the stock
-guest's is beside it.
+guest's, 15 of 15 through `omakit lab run store` with the installed
+package read and the session not linked, is
+[the lab record](evidence/lab/20260918-161230-store/storelab.json). The
+earlier guest run of that day
+([record](evidence/blocks/2026-09-18-store-lab-guest.json)) had its
+session dev-linked and is superseded; it says so in place.
 
 ### What Store does not do
 
@@ -399,11 +433,15 @@ inspect reads QML and shell, and a Python daemon's `open()` was never a
 row. What the port changes is what the daemon does at the file, and the
 evidence is the exercise, not a count. The guest lifecycle is blocked on
 `main` and on the port alike, before the block runs: the service reads
-`manifest.__sourceDir`, which the shell of the 4.0.3 pin strips, so the
-helper path is `/helper/sidecarctl` and the widget never reaches its
-state. That is Sidecar 0.2.1's own incompatibility with stock 4.0.3,
-reproduced on `main` in the same lab, and the port's guest evidence is
-the Store lab suite. The port is not submitted; no reviewer has seen it.
+`manifest.__sourceDir`, which the shell of the omarchy checkout at
+`b5589fa` strips, so the helper path is `/helper/sidecarctl` and the
+widget never reaches its state. That is Sidecar 0.2.1's own
+incompatibility with that shell, reproduced on `main` in the same lab
+guest, whose session was dev-linked to that checkout (the record says
+so); whether the installed 4.0.3-1 shell strips it too was not tested.
+The port's guest evidence is the Store lab suite on the unlinked guest
+([record](evidence/lab/20260918-161230-store/storelab.json)). The port
+is not submitted; no reviewer has seen it.
 
 ## Versioning
 

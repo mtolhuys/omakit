@@ -502,8 +502,8 @@ The figures behind `omakit weigh` are the measurements themselves and their
 noise floor, not a population statistic, so this entry is a different kind
 of evidence from M2 to M7: three runs of the weigh lab gate (then
 `tests/lab/weigh.sh`, now `omakit lab run weigh-evidence`) in the Omarchy
-plugin lab guest (stock pin `b5589fa`, shell `4.0.0.alpha`, one 1280x800
-screen, software rendering) on 14 September 2026, each `omakit weigh --all
+plugin lab guest (one 1280x800 screen, software rendering) on 14
+September 2026, each `omakit weigh --all
 --runs 5 --yes` over the four fixtures under `tests/fixtures/weigh/` and three
 listed plugins (`bjarneo.workspace-layout`, `omaplug`,
 `io.github.calebhat.weather`), 40 restarts per run, `shell.json` md5
@@ -512,6 +512,16 @@ left behind, every document valid against `tools/weigh/contract.mjs`. The
 documents are under `docs/evidence/weigh/`, with the earlier bash audit's run
 of the same day (`rent-audit-lab-2026-09-14.json`: 24 restarts, 3 runs,
 `VmRSS` at the end of the window).
+
+The shell those runs restarted was not the installed package's. The
+plugin-lab harness of that day dev-linked the guest's session to the
+omarchy checkout at `b5589fa` (the v4.0.3 tag plus one merge; the
+records' `shell` field says `4.0.0.alpha` at
+`~/.local/share/omarchy`), over the installed `omarchy 4.0.3-1`
+(docs/history/2026-09-18-lab-inventory.md, P8). The floors and deltas
+below are that checkout's shell's; each record says so in place
+(`provenance`). The same gate on the unlinked guest, through `omakit lab
+run weigh-evidence`, is recorded as C1b below when it exists.
 
 | Run | Settle | Baseline memory spread, 5 runs | CPU spread |
 | --- | --- | --- | --- |
@@ -1129,7 +1139,9 @@ a file time, and the method is named beside it.
 | One Store-suite run | 108,465 ms (1m 48.5s); 36 s to SSH, 11 s to the session; overlay 417,075,200 B (0.417 GB / 0.388 GiB) allocated and removed; base and template unchanged; 15 of 15 scenarios, the foreign owner simulated with `chown root` through a sudoers drop-in in the overlay | `evidence/lab/20260918-161230-store/run.json` and `storelab.json`. |
 | One weigh-smoke run | 106,980 ms (1m 47.0s); 46 s to SSH, 11 s to the session; overlay 461,180,928 B (0.461 GB / 0.430 GiB) allocated and removed; base and template unchanged; three measured restarts, the refused plan, the restore, the interrupt at exit 130; the weigh document itself stays with the run record, not under docs/evidence/weigh/, because a smoke is not the evidence gate | `evidence/lab/20260918-161929-weigh/run.json` and `host.log`. |
 | The lab in the package | 20 files, 163,753 bytes unpacked; the package packs to 308,856 bytes across 105 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
-| The plugin checkouts the 0.5 weigh gate left | 6.6 MB (632 K + 572 K + 5.4 M) at `~/.cache/omakit/lab/<id>/` | `du -sh`; named under what the lab does not do. |
+| The listed plugins for `weigh-evidence` | 6,836,224 B allocated for three shallow checkouts under `plugins/`, fetched by `omakit lab setup --plugins` in one consent | `allocatedBytes` over the directory, 2026-09-18. The three checkouts the 0.5 weigh gate had left at the lab root (the same 6,836,224 B) were removed by hand the same day. |
+| The toolchain from the printed command | 1,132 ms, a 3.1 MB clone, the harness hashing to the pinned `8637e8cc...` | The one command `omakit lab inspect` prints, timed with `date +%s%N` around it on 2026-09-18. |
+| Self-supply, from nothing to a green guest run | 4 commands; 10m 12s on this host without the ISO download: toolchain 1.1 s, a local ISO copied and verified in 17.7 s, the base built in 5m 57.8s, the verification boot and promotion in 63 s, the Run suite in 2m 53.4s | `npm i -g omakit && omakit setup`; the toolchain line; `omakit lab setup --from <iso> --yes`; `omakit lab run run`. Each duration is the one measured above; the sum is arithmetic. The ISO download itself was not measured over the network on this host: 6,260,654,080 B at 100 Mbit/s is 8m 21s of arithmetic, not a measurement. |
 
 Limits, stated. One host, one day: the build and run times are one
 observation each and no spread is known. The guest gets every logical

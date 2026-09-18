@@ -192,7 +192,7 @@
   "result": "71 tests OK against temporary roots; the live state file's mtime unchanged"
  },
  "guestLifecycle": {
-  "lab": "omarchy plugin lab, stock 4.0.3 guest, tests/lab/v1-lifecycle.sh",
+  "lab": "omarchy plugin lab guest, tests/lab/v1-lifecycle.sh: installed omarchy 4.0.3-1, the session dev-linked to omarchy b5589fa (see provenance)",
   "result": "blocked before the block runs, on main and on store-port alike",
   "storePort": {
    "branch": "store-port at 098fe1d",
@@ -211,7 +211,7 @@
    "helperNotFoundWarnings": 29
   },
   "cause": "service/v1012/Service.qml:12 reads manifest.__sourceDir for the plugin root; the shell the 4.0.3 pin runs strips __sourceDir from the manifest it hands a plugin, so the root is empty and the helper path is /helper/sidecarctl, which the shell logs as 'Process failed to start, likely because the binary could not be found' once a second. The Store block never runs in the guest because the service never reaches its state.",
-  "reading": "The failure is Sidecar 0.2.1's on stock 4.0.3 and predates the port; the guest therefore gives no evidence for or against the Store port. The block's own guest evidence is the Store lab suite, 12 of 12 (2026-09-17-store-lab-guest.json)."
+  "reading": "The failure is Sidecar 0.2.1's on the shell of checkout b5589fa (whether the installed 4.0.3-1 shell strips __sourceDir too was not tested) and predates the port; the guest therefore gives no evidence for or against the Store port. The block's own guest evidence is the Store lab suite, 12 of 12 (2026-09-17-store-lab-guest.json)."
  },
  "commits": {
   "plugin": [
@@ -227,5 +227,9 @@
   "One plugin, the author's own; the reviewer has not seen the port.",
   "Pairing a real phone was not exercised on the desktop; pair-open and the pause toggle were, and the guest lifecycle pairs through the fake route.",
   "The guest lifecycle is blocked by a pre-existing 4.0.3 incompatibility (manifest.__sourceDir), reproduced on main; the port's guest evidence is therefore the Store lab suite, not Sidecar's own lifecycle."
- ]
+ ],
+ "provenance": {
+  "session": "The plugin-lab harness of that day passed --sync-all and --dev-link, so the guest's session ran from the omarchy checkout at b5589faaf80c6f87c07d4560fca37c4a81722f28 (the v4.0.3 tag plus merge #11263; 352 files differ from the tag, 70 of them under bin/, shell/ and config/) linked over the installed package, and the record did not know it (docs/history/2026-09-18-lab-inventory.md, P8). The installed packages were the 4.0.3 ISO's (omarchy 4.0.3-1 in the base's pacman.log of 2026-09-10; python 3.14.7, quickshell 0.3.1 read by the suite), and no run read the package version. Annotated 2026-09-18.",
+  "whatItMeans": "The lifecycle ran through the session's shell, so 'stock 4.0.3' in this record meant the shell of checkout b5589fa. The Store lab suite it points to as the block's guest evidence is superseded by docs/evidence/lab/20260918-161230-store/storelab.json, measured on the unlinked guest."
+ }
 }
