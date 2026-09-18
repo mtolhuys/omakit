@@ -22,7 +22,7 @@ const pinDir = requirePinForTests()
 const ESCAPE = /\u001b/
 
 function run(args, env = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
   })

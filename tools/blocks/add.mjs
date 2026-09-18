@@ -36,7 +36,7 @@ export const BLOCK_DIR = "omakit"
 export function sourceCommit(repoRoot) {
   if (existsSync(join(repoRoot, ".git"))) {
     try {
-      return execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
+      return execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
     } catch {
       // fall through to the package's record
     }

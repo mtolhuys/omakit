@@ -174,6 +174,23 @@ git, into the cache). omakit reads no environment variable of its own; the
 cache and the state follow XDG, and colour follows `NO_COLOR`, `FORCE_COLOR`
 and `TERM`, which are everybody's.
 
+Under `--json`, every command's every outcome is a document on stdout, a
+failure included: `{ "command": "<name>", "ok": false, "error": { "code",
+"message", "remedy" } }`, the `message` being the sentence a person reads
+on stderr, and for a refusal that lists what is missing (`lab prove`) an
+`error.missing` array with each item's `what`, `cost` and `command`. The
+exit code is the same as without `--json`. A parser therefore always has
+a document to read; `tests/unit/json-outcomes.test.mjs` holds this for
+`audit`, `watch`, `lab prove` and `weigh`, and the failure helper in
+`tools/marketplace/cli.mjs` emits it for every command.
+
+Every command's failure also leaves the same way: the sentence and the
+one action are written to stderr, both streams are drained, and only then
+does the process exit. Nothing waits without a bound: every request
+carries a deadline (`GET_DEADLINE_MS`, 20 s to the first byte), every
+child process a `timeout`, and the test runner a per-test bound
+(`tests/unit/deadlines.test.mjs`).
+
 Every colour omakit prints is an ANSI palette index, so your Omarchy theme
 decides what it looks like, and nothing is said by colour alone. What the
 terminal shows and why is [TUI.md](TUI.md); which index each role

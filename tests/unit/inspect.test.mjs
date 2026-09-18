@@ -33,7 +33,7 @@ const VERSION = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")
 const KNOWN = { patternIds: PATTERNS.map((pattern) => pattern.id), notVisible: [...NOT_VISIBLE] }
 
 function run(args, env = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
   })
@@ -462,7 +462,7 @@ test("reviewer mode is unaffected: a <url>@<sha> subject is read at its root, fr
   const cacheRoot = mkdtempSync(join(tmpdir(), "omakit-inspect-reviewer-"))
   const cached = join(cacheRoot, "subjects", "example__omarchy-plugin-fixture-example")
   mkdirSync(cached, { recursive: true })
-  const git = (...args) => execFileSync("git", ["-C", cached, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  const git = (...args) => execFileSync("git", ["-C", cached, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   git("init", "-q")
   git("remote", "add", "origin", fixture.origin)
   git("fetch", "-q", fixture.dir, fixture.commit)
@@ -575,7 +575,7 @@ test("exit 2 when the target cannot be read: no directory, no Git checkout, no m
   const noManifest = mkdtempSync(join(tmpdir(), "omakit-inspect-nomanifest-"))
   mkdirSync(join(noManifest, "src"))
   writeFileSync(join(noManifest, "src", "Widget.qml"), "import QtQuick\nItem { }\n")
-  const git = (...args) => spawnSync("git", ["-C", noManifest, ...args], { encoding: "utf8" })
+  const git = (...args) => spawnSync("git", ["-C", noManifest, ...args], { timeout: 120_000, encoding: "utf8" })
   git("init", "-q", "-b", "main")
   git("-c", "user.name=Omakit tests", "-c", "user.email=tests@example.invalid", "-c", "commit.gpgsign=false", "add", "-A")
   git("-c", "user.name=Omakit tests", "-c", "user.email=tests@example.invalid", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "fixture")

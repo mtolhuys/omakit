@@ -167,9 +167,11 @@ test("batch and list reports share colour/plain output, wrap titles, and keep is
 test("ambiguous watch modes and noninteractive pickers fail before any network access", () => {
   for (const args of [["--all", "--list"], [`${MARKETPLACE_PIN.repository}/issues/1`, "--all"],
     [`${MARKETPLACE_PIN.repository}/issues/1`, "--user", "author"], ["--json"], ["--out", "/tmp/unused-watch-result"]]) {
-    const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "watch", ...args], { encoding: "utf8" })
+    const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "watch", ...args], { timeout: 120_000, encoding: "utf8" })
     assert.equal(result.status, 2)
     assert.match(result.stderr, /usage/)
-    assert.equal(result.stdout, "")
+    // Under --json the refusal is a document on stdout too (docs/COMMANDS.md); otherwise stdout stays empty.
+    if (args.includes("--json")) assert.deepEqual(Object.keys(JSON.parse(result.stdout)), ["command", "ok", "error"])
+    else assert.equal(result.stdout, "")
   }
 })

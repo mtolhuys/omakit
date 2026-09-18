@@ -24,8 +24,8 @@ if (!target || !/^https:\/\/github\.com\/.+@[0-9a-f]{40}$/.test(target)) {
   process.exit(2)
 }
 
-const commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
-const dirty = execFileSync("git", ["-C", ROOT, "status", "--porcelain"], { encoding: "utf8" }).trim().length > 0
+const commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { timeout: 120_000, encoding: "utf8" }).trim()
+const dirty = execFileSync("git", ["-C", ROOT, "status", "--porcelain"], { timeout: 120_000, encoding: "utf8" }).trim().length > 0
 
 const checks = []
 const record = (id, ok, detail) => {
@@ -39,7 +39,7 @@ const record = (id, ok, detail) => {
 const probe = spawnSync("unshare", [
   "-rn", "sh", "-c",
   "awk -F: 'NR>2 { gsub(/ /, \"\", $1); print $1 }' /proc/self/net/dev | paste -sd,; curl -s --max-time 3 https://api.github.com/ >/dev/null 2>&1; echo curl=$?",
-], { encoding: "utf8" })
+], { timeout: 120_000, encoding: "utf8" })
 const interfaces = probe.stdout.split("\n")[0] || ""
 record(
   "namespace.no-network",
@@ -48,7 +48,7 @@ record(
 )
 
 // 2. verify, inside that namespace.
-const run = spawnSync("unshare", ["-rn", join(ROOT, "bin/omakit"), "verify", target], { encoding: "utf8", cwd: ROOT })
+const run = spawnSync("unshare", ["-rn", join(ROOT, "bin/omakit"), "verify", target], { timeout: 120_000, encoding: "utf8", cwd: ROOT })
 let document = null
 try {
   document = JSON.parse(run.stdout)

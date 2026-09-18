@@ -201,12 +201,12 @@ test("an unreadable verification form does not erase a completed audit", async (
 
 test("the CLI refuses unknown options and reports an unanswered shell", () => {
   const entry = join(REPO_ROOT, "bin/omakit")
-  const unknown = spawnSync(process.execPath, [entry, "audit", "--wat"], { encoding: "utf8", env: { ...process.env, TERM: "dumb" } })
+  const unknown = spawnSync(process.execPath, [entry, "audit", "--wat"], { timeout: 120_000, encoding: "utf8", env: { ...process.env, TERM: "dumb" } })
   assert.equal(unknown.status, 2)
   assert.match(unknown.stderr, /--wat is not an option this command knows/)
   assert.equal(unknown.stdout, "")
 
-  const shell = spawnSync(process.execPath, [entry, "audit", "--offline"], { encoding: "utf8", env: { ...process.env, PATH: "/nonexistent", TERM: "dumb" } })
+  const shell = spawnSync(process.execPath, [entry, "audit", "--offline"], { timeout: 120_000, encoding: "utf8", env: { ...process.env, PATH: "/nonexistent", TERM: "dumb" } })
   assert.equal(shell.status, 1)
   assert.match(shell.stderr, /NOT AUDITED/)
   assert.equal(shell.stdout, "")
@@ -218,14 +218,14 @@ test("the CLI JSON, output file, drift view and exit codes use stubbed shell and
   const bin = join(root, "bin")
   const sourceDir = join(root, "plugin")
   writeFileSync(join(root, "keep"), "")
-  const makeDir = spawnSync("mkdir", ["-p", bin, sourceDir])
+  const makeDir = spawnSync("mkdir", ["-p", bin, sourceDir], { timeout: 120_000 })
   assert.equal(makeDir.status, 0)
 
   const pinDir = requirePinForTests()
   const catalog = JSON.parse(readFileSync(join(pinDir, "site/catalog.json"), "utf8"))
   const entry = catalog.plugins.find((plugin) => plugin.sourceType !== "builtin" && (plugin.upstreamValidatedCommit || plugin.listingValidatedCommit))
   const validated = (entry.upstreamValidatedCommit || entry.listingValidatedCommit).toLowerCase()
-  const realGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim()
+  const realGit = spawnSync("sh", ["-c", "command -v git"], { timeout: 120_000, encoding: "utf8" }).stdout.trim()
 
   const script = (name, text) => {
     const file = join(bin, name)
@@ -260,7 +260,7 @@ test("the CLI JSON, output file, drift view and exit codes use stubbed shell and
     AUDIT_REPOSITORY: entry.repo,
     AUDIT_REAL_GIT: realGit,
   }
-  const run = (args, head) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "audit", ...args], { encoding: "utf8", env: { ...env, AUDIT_HEAD: head } })
+  const run = (args, head) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "audit", ...args], { timeout: 120_000, encoding: "utf8", env: { ...env, AUDIT_HEAD: head } })
 
   const clean = run(["--offline", "--json"], validated)
   assert.equal(clean.status, 0)
@@ -288,7 +288,7 @@ test("a missing validated object is diverged in full and shallow local clones", 
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const source = join(root, "source")
   const git = (...args) => {
-    const result = spawnSync("git", args, { encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "test@example.test", GIT_COMMITTER_NAME: "Test", GIT_COMMITTER_EMAIL: "test@example.test" } })
+    const result = spawnSync("git", args, { timeout: 120_000, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "Test", GIT_AUTHOR_EMAIL: "test@example.test", GIT_COMMITTER_NAME: "Test", GIT_COMMITTER_EMAIL: "test@example.test" } })
     assert.equal(result.status, 0, result.stderr)
     return result.stdout.trim()
   }

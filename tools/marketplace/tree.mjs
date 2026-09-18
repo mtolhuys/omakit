@@ -7,7 +7,7 @@
 import { execFileSync } from "node:child_process"
 
 function git(dir, args, encoding = "utf8") {
-  return execFileSync("git", ["-C", dir, ...args], {
+  return execFileSync("git", ["-C", dir, ...args], { timeout: 60_000,
     encoding,
     maxBuffer: 256 * 1024 * 1024,
     stdio: ["ignore", "pipe", "pipe"],

@@ -80,7 +80,7 @@ test("a terminal narrower than the artwork gets a compact banner without cursor 
 })
 
 test("the actual help command respects a real pseudo-terminal's narrow and wide sizes", (t) => {
-  const probe = spawnSync("script", ["--version"], { encoding: "utf8" })
+  const probe = spawnSync("script", ["--version"], { timeout: 120_000, encoding: "utf8" })
   if (!probe.stdout?.includes("util-linux")) return t.skip("util-linux script(1) is not installed here")
   const state = mkdtempSync(join(tmpdir(), "omakit-responsive-pty-"))
   const quote = (value) => `'${value.replace(/'/g, `'\\''`)}'`
@@ -98,7 +98,7 @@ test("the actual help command respects a real pseudo-terminal's narrow and wide 
 })
 
 test("text file output from a wide terminal matches the stable plain pipe layout", (t) => {
-  const probe = spawnSync("script", ["--version"], { encoding: "utf8" })
+  const probe = spawnSync("script", ["--version"], { timeout: 120_000, encoding: "utf8" })
   if (!probe.stdout?.includes("util-linux")) return t.skip("util-linux script(1) is not installed here")
   const state = mkdtempSync(join(tmpdir(), "omakit-responsive-file-"))
   const quote = (value) => `'${value.replace(/'/g, `'\\''`)}'`

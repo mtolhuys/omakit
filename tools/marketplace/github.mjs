@@ -109,6 +109,16 @@ export function token() {
 /** The one host the borrowed gh credential may be sent to. */
 export const CREDENTIAL_HOST = "api.github.com"
 
+/**
+ * Every request has a deadline. Measured on 2026-09-19 by a first user on
+ * a host whose network dropped packets instead of refusing them: a fetch
+ * with no signal waited on the kernel's own timeout, minutes, and
+ * `npm test` hung with it. A caller's signal wins; without one, the
+ * response has to start within GET_DEADLINE_MS (the body of a large
+ * object, the ISO, streams on past it under its own progress).
+ */
+export const GET_DEADLINE_MS = 20_000
+
 async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
   const { host } = new URL(url)
   // The credential is GitHub's and goes to GitHub's API and nowhere else.
@@ -129,12 +139,12 @@ async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
   if (rangeFrom > 0) headers.range = `bytes=${rangeFrom}-`
   let response
   try {
-    response = await fetch(url, { method: "GET", headers, redirect: "follow", ...(signal ? { signal } : {}) })
+    response = await fetch(url, { method: "GET", headers, redirect: "follow", signal: signal || AbortSignal.timeout(GET_DEADLINE_MS) })
   } catch (error) {
     // Node reports every transport failure as "fetch failed" with the real
     // reason in `cause`. A person needs the reason, and the CLI keys its
     // remedy on the code, so both are carried out of here.
-    const cause = error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"
+    const cause = error?.name === "TimeoutError" ? `no answer within ${GET_DEADLINE_MS / 1000} s` : error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"
     const { host, pathname } = new URL(url)
     throw new GitHubError("network-unavailable", `${host} did not answer (${cause}) while reading ${pathname}`)
   }

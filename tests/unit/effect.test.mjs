@@ -120,7 +120,7 @@ test("with the real ttfx, the pinned effect finishes inside its stated budget", 
     t.skip("ttfx is not installed here")
     return
   }
-  const version = spawnSync("ttfx", [...TTFX_PROBE], { encoding: "utf8" }).stdout.trim()
+  const version = spawnSync("ttfx", [...TTFX_PROBE], { timeout: 120_000, encoding: "utf8" }).stdout.trim()
   const stream = capture()
   const started = Date.now()
   const outcome = await playEffect(rows, stream)

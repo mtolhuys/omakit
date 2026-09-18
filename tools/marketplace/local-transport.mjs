@@ -25,7 +25,7 @@ export const ASSUMED_BY_ADAPTER = Object.freeze([
 ])
 
 function git(repoDir, args, encoding = "utf8") {
-  return execFileSync("git", ["-C", repoDir, ...args], {
+  return execFileSync("git", ["-C", repoDir, ...args], { timeout: 60_000,
     encoding,
     maxBuffer: 512 * 1024 * 1024,
     stdio: ["ignore", "pipe", "pipe"],

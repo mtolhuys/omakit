@@ -303,7 +303,7 @@ async function verifyAndPromoteBase({ staged, baseId, pin, layout, buildMillisec
   const vars = join(staged, BASE_FILES.vars)
   const diskHash = sha256File(disk)
   const varsHash = sha256File(vars)
-  const info = spawnSync("qemu-img", ["info", "--output=json", disk], { encoding: "utf8" })
+  const info = spawnSync("qemu-img", ["info", "--output=json", disk], { timeout: 60_000, encoding: "utf8" })
   const qemuInfo = info.status === 0 ? JSON.parse(info.stdout) : null
   chmodSync(disk, 0o444)
   chmodSync(vars, 0o444)
@@ -318,7 +318,7 @@ async function verifyAndPromoteBase({ staged, baseId, pin, layout, buildMillisec
     key: { file: BASE_FILES.key },
     build: { milliseconds: buildMilliseconds, harnessSha256, toolchainCommit: pin.toolchain.commit, origin, verificationBoot: booted.session },
     createdAt: new Date().toISOString(),
-    createdBy: { omakit: readJson(join(LAB_DIR, "../../package.json"))?.version || null, kernel: spawnSync("uname", ["-r"], { encoding: "utf8" }).stdout?.trim() || null, qemu: spawnSync("qemu-system-x86_64", ["--version"], { encoding: "utf8" }).stdout?.split("\n")[0] || null },
+    createdBy: { omakit: readJson(join(LAB_DIR, "../../package.json"))?.version || null, kernel: spawnSync("uname", ["-r"], { timeout: 60_000, encoding: "utf8" }).stdout?.trim() || null, qemu: spawnSync("qemu-system-x86_64", ["--version"], { timeout: 60_000, encoding: "utf8" }).stdout?.split("\n")[0] || null },
   }
   writeJson(layout.cache, `staging/${baseId}/${BASE_FILES.manifest}`, manifest)
   const fd = openSync(staged, "r")
@@ -340,8 +340,8 @@ function fetchPlugins({ plugins, layout, onPhase }) {
   const fetched = []
   for (const plugin of plugins) {
     const dir = join(layout.plugins, plugin.id)
-    const head = existsSync(join(dir, ".git")) ? spawnSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim() : null
-    const clean = head === plugin.commit && spawnSync("git", ["-C", dir, "status", "--porcelain"], { encoding: "utf8" }).stdout.trim() === ""
+    const head = existsSync(join(dir, ".git")) ? spawnSync("git", ["-C", dir, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8" }).stdout.trim() : null
+    const clean = head === plugin.commit && spawnSync("git", ["-C", dir, "status", "--porcelain"], { timeout: 60_000, encoding: "utf8" }).stdout.trim() === ""
     if (clean) {
       fetched.push({ id: plugin.id, commit: plugin.commit, state: "present" })
       continue
@@ -351,7 +351,7 @@ function fetchPlugins({ plugins, layout, onPhase }) {
     labDir(layout.cache, "plugins", plugin.id)
     const steps = [["init", "-q", dir], ["-C", dir, "remote", "add", "origin", plugin.repo], ["-C", dir, "fetch", "-q", "--depth", "1", "origin", plugin.commit], ["-C", dir, "checkout", "-q", "--detach", plugin.commit]]
     for (const args of steps) {
-      const result = spawnSync("git", args, { encoding: "utf8" })
+      const result = spawnSync("git", args, { timeout: 300_000, encoding: "utf8" })
       if (result.status !== 0) throw new LabError("plugin-fetch-failed", `could not fetch ${plugin.id} at ${plugin.commit} from ${plugin.repo}: ${(result.stderr || "").trim()}`)
     }
     fetched.push({ id: plugin.id, commit: plugin.commit, state: "fetched", bytes: allocatedBytes(dir) })

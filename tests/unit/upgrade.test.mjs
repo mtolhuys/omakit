@@ -12,7 +12,7 @@ import { REPO_ROOT } from "./helpers.mjs"
 
 function repo(remote = REPOSITORY) {
   const dir = mkdtempSync(join(tmpdir(), "omakit-upgrade-"))
-  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   git("init", "-q", "-b", "main")
   git("config", "user.name", "t")
   git("config", "user.email", "t@example.invalid")
@@ -222,11 +222,11 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
   // checkout and known to it at the same time while this command is the newest
   // thing in it.
   const origin = mkdtempSync(join(tmpdir(), "omakit-origin-"))
-  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin])
+  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin], { timeout: 120_000 })
 
   const author = mkdtempSync(join(tmpdir(), "omakit-author-"))
-  const write = (...args) => execFileSync("git", ["-C", author, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
-  execFileSync("git", ["clone", "-q", origin, author])
+  const write = (...args) => execFileSync("git", ["-C", author, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  execFileSync("git", ["clone", "-q", origin, author], { timeout: 120_000 })
   write("config", "user.name", "t")
   write("config", "user.email", "t@example.invalid")
   writeFileSync(join(author, "f"), "one\n")
@@ -235,8 +235,8 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
   write("push", "-q", "origin", "main")
 
   const clone = mkdtempSync(join(tmpdir(), "omakit-clone-"))
-  execFileSync("git", ["clone", "-q", origin, clone])
-  const behind = execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+  execFileSync("git", ["clone", "-q", origin, clone], { timeout: 120_000 })
+  const behind = execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { timeout: 120_000, encoding: "utf8" }).trim()
 
   writeFileSync(join(author, "f"), "two\n")
   write("commit", "-q", "-am", "two")
@@ -255,7 +255,7 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
   assert.equal(preview.changed, false)
   assert.equal(preview.available, 2)
   assert.match(dry.text(), /not applied \(--dry-run\)/)
-  assert.equal(execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(), behind,
+  assert.equal(execFileSync("git", ["-C", clone, "rev-parse", "HEAD"], { timeout: 120_000, encoding: "utf8" }).trim(), behind,
     "a dry run must not move anything")
 
   const io = collect()
@@ -281,16 +281,16 @@ test("the successful path: it fast-forwards, reports, and is idempotent", async 
 
 test("it refuses a checkout that has diverged rather than merging it", async () => {
   const origin = mkdtempSync(join(tmpdir(), "omakit-origin2-"))
-  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin])
+  execFileSync("git", ["init", "-q", "--bare", "-b", "main", origin], { timeout: 120_000 })
   const author = mkdtempSync(join(tmpdir(), "omakit-author2-"))
-  execFileSync("git", ["clone", "-q", origin, author])
-  const write = (...args) => execFileSync("git", ["-C", author, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  execFileSync("git", ["clone", "-q", origin, author], { timeout: 120_000 })
+  const write = (...args) => execFileSync("git", ["-C", author, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   write("config", "user.name", "t"); write("config", "user.email", "t@example.invalid")
   writeFileSync(join(author, "f"), "one\n"); write("add", "-A"); write("commit", "-q", "-m", "one"); write("push", "-q", "origin", "main")
 
   const clone = mkdtempSync(join(tmpdir(), "omakit-clone2-"))
-  execFileSync("git", ["clone", "-q", origin, clone])
-  const local = (...args) => execFileSync("git", ["-C", clone, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  execFileSync("git", ["clone", "-q", origin, clone], { timeout: 120_000 })
+  const local = (...args) => execFileSync("git", ["-C", clone, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   local("config", "user.name", "t"); local("config", "user.email", "t@example.invalid")
   writeFileSync(join(clone, "g"), "mine\n"); local("add", "-A"); local("commit", "-q", "-m", "mine")
 

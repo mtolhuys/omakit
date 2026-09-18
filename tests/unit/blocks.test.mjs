@@ -36,14 +36,14 @@ const STORE_HELPER = join(REPO_ROOT, "blocks/store/store-helper.py")
 const hasPython = existsSync(PYTHON)
 
 function run(args, options = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1", NO_COLOR: "1" }, ...options })
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1", NO_COLOR: "1" }, ...options })
   return { code: result.status, out: result.stdout, err: result.stderr }
 }
 
 /** The supervisor as Run.qml drives it: the token on stdin, the acknowledgement behind it, every protocol line read by its token. */
 function supervise(args, options = {}) {
   const token = randomBytes(16).toString("hex")
-  const result = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, ...args], { encoding: "utf8", env: { PATH: "/usr/bin" }, input: `${token}\ngo\n`, ...options })
+  const result = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, ...args], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin" }, input: `${token}\ngo\n`, ...options })
   const lines = result.stdout.split("\n").filter((line) => line.startsWith(`${token} `)).map((line) => JSON.parse(line.slice(token.length + 1)))
   const junk = result.stdout.split("\n").filter((line) => line && !line.startsWith(`${token} `))
   return { code: result.status, lines, junk, result: lines.find((line) => line.ev === "result"), err: result.stderr }
@@ -51,7 +51,7 @@ function supervise(args, options = {}) {
 
 /** The store helper against a throwaway HOME; the result line parsed. */
 function store(home, args, env = {}) {
-  const result = spawnSync(PYTHON, ["-I", "-S", "-B", STORE_HELPER, ...args], { encoding: "utf8", env: { PATH: "/usr/bin", HOME: home, ...env } })
+  const result = spawnSync(PYTHON, ["-I", "-S", "-B", STORE_HELPER, ...args], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin", HOME: home, ...env } })
   const line = result.stdout.trim().split("\n").pop()
   return { code: result.status, result: line ? JSON.parse(line) : null, err: result.stderr }
 }
@@ -82,13 +82,13 @@ test("the two blocks ship two files each with a header, the header's sha256 is t
       assert.equal(entry.header.length, 6, "six header lines, so `tail -n +7` is the body")
       assert.equal(bodySha256(entry.text.split("\n").slice(6).join("\n")), entry.sha256)
       // A person's check: sha256sum over everything after the header line.
-      const bySha = execFileSync("sh", ["-c", `tail -n +7 "${join(block.dir, entry.file)}" | sha256sum`], { encoding: "utf8" }).split(" ")[0]
+      const bySha = execFileSync("sh", ["-c", `tail -n +7 "${join(block.dir, entry.file)}" | sha256sum`], { timeout: 120_000, encoding: "utf8" }).split(" ")[0]
       assert.equal(bySha, entry.sha256)
       assert.ok(history.some((row) => row.block === block.name && row.file === entry.file && row.sha256 === entry.sha256), `${entry.file} is in blocks/history.json`)
     }
     assert.equal(block.notice, renderNotice([block], "unstamped"), `blocks/${block.name}/NOTICE is what the registry renders; run node tools/blocks/stamp.mjs`)
   }
-  const stamp = spawnSync(process.execPath, [join(REPO_ROOT, "tools/blocks/stamp.mjs"), "--check"], { encoding: "utf8" })
+  const stamp = spawnSync(process.execPath, [join(REPO_ROOT, "tools/blocks/stamp.mjs"), "--check"], { timeout: 120_000, encoding: "utf8" })
   assert.equal(stamp.status, 0, stamp.stdout)
 })
 
@@ -182,17 +182,17 @@ test("the protocol: every supervisor line carries the token, a line the program 
   writeFileSync(join(dir, "forge.sh"), "#!/usr/bin/bash\nprintf '{\"ev\":\"result\",\"state\":\"ok\"}\\n' > /proc/$PPID/fd/1\necho real\n")
   // Node's child stdio is a socketpair, which /proc/<pid>/fd cannot reopen; a
   // pipe, which is what QProcess gives the supervisor, is made here by Python.
-  const piped = spawnSync(PYTHON, ["-c", "import subprocess,sys; p=subprocess.run(sys.argv[1:], input=sys.stdin.buffer.read(), stdout=subprocess.PIPE, env={'PATH':'/usr/bin'}); sys.stdout.buffer.write(p.stdout)", PYTHON, "-I", "-S", "-B", SUPERVISOR, "--", "/usr/bin/bash", join(dir, "forge.sh")], { encoding: "utf8", input: `${"ab".repeat(16)}\ngo\n` })
+  const piped = spawnSync(PYTHON, ["-c", "import subprocess,sys; p=subprocess.run(sys.argv[1:], input=sys.stdin.buffer.read(), stdout=subprocess.PIPE, env={'PATH':'/usr/bin'}); sys.stdout.buffer.write(p.stdout)", PYTHON, "-I", "-S", "-B", SUPERVISOR, "--", "/usr/bin/bash", join(dir, "forge.sh")], { timeout: 120_000, encoding: "utf8", input: `${"ab".repeat(16)}\ngo\n` })
   const forgedLines = piped.stdout.split("\n").filter(Boolean)
   assert.ok(forgedLines.includes('{"ev":"result","state":"ok"}'), `the forged line is on the pipe without the token: ${piped.stdout}`)
   const withToken = forgedLines.filter((line) => line.startsWith(`${"ab".repeat(16)} `)).map((line) => JSON.parse(line.slice(33)))
   assert.equal(withToken.filter((line) => line.ev === "result").length, 1)
   assert.equal(withToken.find((line) => line.ev === "result").stdout, "real\n")
-  const untoken = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, "--", "/usr/bin/true"], { encoding: "utf8", env: { PATH: "/usr/bin" }, input: "not a token\n" })
+  const untoken = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, "--", "/usr/bin/true"], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin" }, input: "not a token\n" })
   assert.notEqual(untoken.status, 0)
   assert.match(untoken.stderr, /no token on stdin/)
   const marker = join(dir, "ran")
-  const unacked = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, "--deadline-ms", "1500", "--", "/usr/bin/touch", marker], { encoding: "utf8", env: { PATH: "/usr/bin" }, input: `${randomBytes(16).toString("hex")}\n` })
+  const unacked = spawnSync(PYTHON, ["-I", "-S", "-B", SUPERVISOR, "--deadline-ms", "1500", "--", "/usr/bin/touch", marker], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin" }, input: `${randomBytes(16).toString("hex")}\n` })
   assert.equal(unacked.status, 0)
   assert.ok(!existsSync(marker), "stdin closed without go: the gate closed and the program never ran")
   assert.match(unacked.stdout, /"state": "cancelled"/)
@@ -461,22 +461,22 @@ test("the store helper refuses a planted link on the directory and on the file, 
   const victim = mkdtempSync(join(tmpdir(), "omakit-victim-"))
   writeFileSync(join(victim, "memory.json"), "untouched\n")
   const base = ["--kind", "state", "--plugin", "fixture.store", "--name", "memory.json"]
-  execFileSync("mkdir", ["-p", join(home, ".local/state")])
-  execFileSync("ln", ["-s", victim, join(home, ".local/state/fixture.store")])
+  execFileSync("mkdir", ["-p", join(home, ".local/state")], { timeout: 120_000 })
+  execFileSync("ln", ["-s", victim, join(home, ".local/state/fixture.store")], { timeout: 120_000 })
   let refused = store(home, ["write", ...base, "--value", "1"]).result
   assert.equal(refused.state, "refused")
   assert.match(refused.reason, /symbolic link/)
   assert.equal(readFileSync(join(victim, "memory.json"), "utf8"), "untouched\n")
-  execFileSync("rm", [join(home, ".local/state/fixture.store")])
-  execFileSync("mkdir", ["-m", "700", join(home, ".local/state/fixture.store")])
-  execFileSync("ln", ["-s", join(victim, "memory.json"), join(home, ".local/state/fixture.store/memory.json")])
+  execFileSync("rm", [join(home, ".local/state/fixture.store")], { timeout: 120_000 })
+  execFileSync("mkdir", ["-m", "700", join(home, ".local/state/fixture.store")], { timeout: 120_000 })
+  execFileSync("ln", ["-s", join(victim, "memory.json"), join(home, ".local/state/fixture.store/memory.json")], { timeout: 120_000 })
   refused = store(home, ["read", ...base]).result
   assert.equal(refused.state, "refused")
   assert.match(refused.reason, /symbolic link/)
   assert.equal(store(home, ["write", ...base, "--value", "1"]).result.state, "ok", "the write replaces the link with a regular file")
   assert.equal(readFileSync(join(victim, "memory.json"), "utf8"), "untouched\n")
   assert.ok(statSync(join(home, ".local/state/fixture.store/memory.json")).isFile())
-  execFileSync("chmod", ["660", join(home, ".local/state/fixture.store/memory.json")])
+  execFileSync("chmod", ["660", join(home, ".local/state/fixture.store/memory.json")], { timeout: 120_000 })
   refused = store(home, ["read", ...base]).result
   assert.equal(refused.state, "refused")
   assert.match(refused.reason, /writable by the group/)
@@ -504,7 +504,7 @@ test("ten store writers at once leave one whole file and no staging file; a stal
   const value = JSON.parse(readFileSync(join(dir, "memory.json"), "utf8"))
   assert.ok(Number.isInteger(value.writer) && value.writer >= 0 && value.writer < 10, "one whole write")
   writeFileSync(join(dir, ".store-99999-0123456789abcdef.tmp"), "{")
-  execFileSync("touch", ["-d", "-1 hour", join(dir, ".store-99999-0123456789abcdef.tmp")])
+  execFileSync("touch", ["-d", "-1 hour", join(dir, ".store-99999-0123456789abcdef.tmp")], { timeout: 120_000 })
   writeFileSync(join(dir, ".store-99998-fedcba9876543210.tmp"), "{")
   assert.equal(store(home, ["write", ...base, "--value", "{}"]).result.state, "ok")
   assert.deepEqual(readdirSync(dir).sort(), [".store-99998-fedcba9876543210.tmp", "memory.json"], "the stale one is swept, the fresh one is a live writer's")
@@ -515,8 +515,8 @@ test("the store helper refuses a FIFO by name without waiting on it, fails a wri
   const home = mkdtempSync(join(tmpdir(), "omakit-store-"))
   const base = ["--kind", "state", "--plugin", "fixture.store", "--name", "memory.json"]
   const dir = join(home, ".local/state/fixture.store")
-  execFileSync("mkdir", ["-p", "-m", "700", dir])
-  execFileSync("mkfifo", ["-m", "600", join(dir, "memory.json")])
+  execFileSync("mkdir", ["-p", "-m", "700", dir], { timeout: 120_000 })
+  execFileSync("mkfifo", ["-m", "600", join(dir, "memory.json")], { timeout: 120_000 })
   const started = Date.now()
   const fifo = store(home, ["read", ...base]).result
   assert.equal(fifo.state, "refused")
@@ -526,7 +526,7 @@ test("the store helper refuses a FIFO by name without waiting on it, fails a wri
   assert.ok(statSync(join(dir, "memory.json")).isFile())
   // RLIMIT_FSIZE on the helper: the first write is short, the next raises; nothing partial is renamed.
   const big = JSON.stringify({ version: 2, big: "x".repeat(9000) })
-  const limited = spawnSync("/usr/bin/prlimit", ["--fsize=4096", PYTHON, "-I", "-S", "-B", STORE_HELPER, "write", ...base, "--value", big], { encoding: "utf8", env: { PATH: "/usr/bin", HOME: home } })
+  const limited = spawnSync("/usr/bin/prlimit", ["--fsize=4096", PYTHON, "-I", "-S", "-B", STORE_HELPER, "write", ...base, "--value", big], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin", HOME: home } })
   const short = JSON.parse(limited.stdout.trim().split("\n").pop())
   assert.equal(short.state, "failed", limited.stderr)
   assert.match(short.reason, /File too large|No space left/)
@@ -534,7 +534,7 @@ test("the store helper refuses a FIFO by name without waiting on it, fails a wri
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "memory.json"), "utf8")), { version: 1 }, "the old file is whole")
   const text = "\u00e9\u20ac\u{1F600}".repeat(5000)
   assert.equal(store(home, ["write", ...base, "--value", JSON.stringify({ text })]).result.state, "ok")
-  const raw = spawnSync(PYTHON, ["-I", "-S", "-B", STORE_HELPER, "read", ...base], { env: { PATH: "/usr/bin", HOME: home } })
+  const raw = spawnSync(PYTHON, ["-I", "-S", "-B", STORE_HELPER, "read", ...base], { timeout: 120_000, env: { PATH: "/usr/bin", HOME: home } })
   assert.ok(raw.stdout.length < 2 * statSync(join(dir, "memory.json")).size, "the result line is about the file's size, not its escaped size")
   assert.deepEqual(JSON.parse(raw.stdout.toString("utf8").trim()).value, { text })
 })
@@ -564,8 +564,8 @@ test("the store helper: a schema outside the subset, a schema over 64 KiB and a 
   assert.equal(deeper.result.state, "invalid", deeper.err)
   assert.equal(deeper.err, "", "no traceback")
   // The importer: a refusal on the walk must not leave a descriptor open per operation.
-  execFileSync("mkdir", ["-p", join(home, ".local/state")])
-  execFileSync("ln", ["-s", "/tmp", join(home, ".local/state/fixture.linked")])
+  execFileSync("mkdir", ["-p", join(home, ".local/state")], { timeout: 120_000 })
+  execFileSync("ln", ["-s", "/tmp", join(home, ".local/state/fixture.linked")], { timeout: 120_000 })
   const probe = spawnSync(PYTHON, ["-I", "-S", "-B", "-c", `
 import importlib.util, os, sys
 spec = importlib.util.spec_from_file_location("store_helper", sys.argv[1]); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
@@ -573,7 +573,7 @@ opts = {"op": "read", "kind": "state", "plugin": "fixture.linked", "name": "memo
 before = len(os.listdir("/proc/self/fd"))
 states = [mod.result_of(opts, {"HOME": sys.argv[2]})["state"] for _ in range(50)]
 print(states[0], len(os.listdir("/proc/self/fd")) - before)
-`, STORE_HELPER, home], { encoding: "utf8", env: { PATH: "/usr/bin" } })
+`, STORE_HELPER, home], { timeout: 120_000, encoding: "utf8", env: { PATH: "/usr/bin" } })
   assert.equal(probe.stdout.trim(), "refused 0", probe.stderr)
 })
 

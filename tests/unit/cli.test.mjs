@@ -19,7 +19,7 @@ import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 requirePinForTests()
 
 function run(args, env = {}, root = REPO_ROOT) {
-  const result = spawnSync(process.execPath, [join(root, "bin/omakit"), ...args], {
+  const result = spawnSync(process.execPath, [join(root, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
   })
@@ -110,7 +110,7 @@ test("under a pseudo-terminal, a successful doctor writes nothing but its progre
   // what reached it: clear-line sequences, the track, a label, and nothing
   // else. util-linux script only; a BSD script has other flags, and a
   // machine without one skips, as the ttfx test does.
-  const probe = spawnSync("script", ["--version"], { encoding: "utf8" })
+  const probe = spawnSync("script", ["--version"], { timeout: 120_000, encoding: "utf8" })
   if (probe.status !== 0 || !/util-linux/.test(probe.stdout)) {
     t.skip("util-linux script(1) is not installed here")
     return
@@ -125,7 +125,7 @@ test("under a pseudo-terminal, a successful doctor writes nothing but its progre
   // go with it. The pin is still read from the real cache.
   const home = mkdtempSync(join(tmpdir(), "omakit-pty-home-"))
   const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} doctor --offline >/dev/null`
-  const result = spawnSync("script", ["-qec", command, "/dev/null"], {
+  const result = spawnSync("script", ["-qec", command, "/dev/null"], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", TERM: "xterm", FORCE_COLOR: undefined, NO_COLOR: undefined, HOME: home, XDG_DATA_HOME: join(home, ".local/share"), XDG_CONFIG_HOME: join(home, ".config"), XDG_STATE_HOME: join(home, ".local/state"), ZDOTDIR: undefined, XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || join(process.env.HOME, ".cache") },
   })
@@ -359,13 +359,13 @@ test("no network is a failure state, not a stack trace", (t) => {
     t.skip("Linux-only: no network is a failure state, not a stack trace (unshare -rn)")
     return
   }
-  const probe = spawnSync("unshare", ["-rn", "true"], { encoding: "utf8" })
+  const probe = spawnSync("unshare", ["-rn", "true"], { timeout: 120_000, encoding: "utf8" })
   if (probe.status !== 0) {
     t.skip("unshare -rn is not available here")
     return
   }
   const offline = (args) => {
-    const result = spawnSync("unshare", ["-rn", process.execPath, join(REPO_ROOT, "bin/omakit"), ...args], {
+    const result = spawnSync("unshare", ["-rn", process.execPath, join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
       encoding: "utf8",
       env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined },
     })
@@ -464,7 +464,7 @@ test("stdout reaches a reader that starts late, whole: the result is never cut b
   assert.equal(written.code, 0, written.err)
   const expected = readFileSync(whole, "utf8")
   assert.ok(expected.length > 8192, `the fixture's document is ${expected.length} bytes; the test needs more than one pipe chunk`)
-  const late = spawnSync("sh", ["-c", `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} submit ${JSON.stringify(good.dir)} --category Widgets --tags bar --offline --json | (sleep 1; cat)`], {
+  const late = spawnSync("sh", ["-c", `${JSON.stringify(process.execPath)} ${JSON.stringify(join(REPO_ROOT, "bin/omakit"))} submit ${JSON.stringify(good.dir)} --category Widgets --tags bar --offline --json | (sleep 1; cat)`], { timeout: 120_000,
     encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" },
   })
   assert.equal(late.status, 0, late.stderr)

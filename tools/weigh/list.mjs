@@ -51,7 +51,16 @@ export function lastWeighings(stateDir) {
  */
 export function installedPlugins({ env = process.env } = {}) {
   const listed = run("listPlugins", { env })
-  if (!listed.ok) throw new WeighError("shell-not-running", "omarchy plugin list did not answer, and the list is what the shell has installed", "omarchy-restart-shell")
+  // The reason travels with the refusal: what the command said on stderr
+  // and how it exited. Measured on 2026-09-19 by a first user whose piped
+  // `omakit audit` reported only "did not answer" while the unpiped one
+  // audited 19 plugins; without the child's own words nothing could tell
+  // the two apart (docs/evidence/ux/2026-09-19-first-user-test.json).
+  if (!listed.ok) {
+    const said = String(listed.stderr || "").trim().split("\n").filter(Boolean).at(-1)
+    const how = listed.missing ? "omarchy is not on PATH" : `exit ${listed.status === null ? "on a signal or the 30 s deadline" : listed.status}${said ? `: ${said}` : ", nothing on stderr"}`
+    throw new WeighError("shell-not-running", `omarchy plugin list did not answer (${how}), and the list is what the shell has installed`, listed.missing ? "Run this on an Omarchy machine, with omarchy on PATH." : "omarchy-restart-shell, or run it from the session: it needs OMARCHY_PATH and the Wayland display the session sets.")
+  }
   let installed
   try {
     installed = JSON.parse(listed.stdout)

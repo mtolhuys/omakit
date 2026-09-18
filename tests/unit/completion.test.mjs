@@ -18,7 +18,7 @@ const pin = requirePin(REPO_ROOT).identity.commit
 const scripts = Object.fromEntries(COMPLETION_SHELLS.map((shell) => [shell, renderCompletion(shell, { contract, pin })]))
 
 function run(args, env = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...env },
   })
@@ -52,13 +52,13 @@ test("each script parses in its shell, where the shell is installed", (t) => {
   let checked = 0
   for (const shell of COMPLETION_SHELLS) {
     const [program, flag] = checks[shell]
-    if (spawnSync(program, ["--version"], { encoding: "utf8" }).error) {
+    if (spawnSync(program, ["--version"], { timeout: 120_000, encoding: "utf8" }).error) {
       t.diagnostic(`${program} is not installed here; its script was not parsed`)
       continue
     }
     const file = join(mkdtempSync(join(tmpdir(), "omakit-completion-")), `omakit.${shell}`)
     writeFileSync(file, scripts[shell])
-    const result = spawnSync(program, [flag, file], { encoding: "utf8" })
+    const result = spawnSync(program, [flag, file], { timeout: 120_000, encoding: "utf8" })
     assert.equal(result.status, 0, `${program} ${flag}: ${result.stderr}`)
     assert.equal(result.stdout + result.stderr, "", `${program} ${flag} is silent`)
     checked += 1
@@ -67,7 +67,7 @@ test("each script parses in its shell, where the shell is installed", (t) => {
 })
 
 test("the bash function completes commands, flags, controlled values and directories", (t) => {
-  if (spawnSync("bash", ["--version"], { encoding: "utf8" }).error) {
+  if (spawnSync("bash", ["--version"], { timeout: 120_000, encoding: "utf8" }).error) {
     t.skip("bash is not installed here")
     return
   }
@@ -82,7 +82,7 @@ test("the bash function completes commands, flags, controlled values and directo
       `source "$1"; shift`,
       `COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); COMP_LINE="$*"; COMP_POINT=\${#COMP_LINE}`,
       `_omakit; printf '%s\\n' "\${COMPREPLY[@]}"`,
-    ].join("\n"), "bash", script, ...words], { encoding: "utf8", cwd: REPO_ROOT, env })
+    ].join("\n"), "bash", script, ...words], { timeout: 120_000, encoding: "utf8", cwd: REPO_ROOT, env })
     assert.equal(result.status, 0, result.stderr)
     return result.stdout.split("\n").filter(Boolean)
   }
@@ -117,7 +117,7 @@ test("the bash function completes commands, flags, controlled values and directo
 })
 
 test("the jq expression behind weigh <TAB> puts enabled ids first and leaves whole bars out", (t) => {
-  if (spawnSync("jq", ["--version"], { encoding: "utf8" }).error) {
+  if (spawnSync("jq", ["--version"], { timeout: 120_000, encoding: "utf8" }).error) {
     t.skip("jq is not installed here")
     return
   }
@@ -127,7 +127,7 @@ test("the jq expression behind weigh <TAB> puts enabled ids first and leaves who
     { id: "a.on", kinds: ["bar-widget"], enabled: true },
     { id: "c.on", enabled: true },
   ])
-  const result = spawnSync("jq", ["-r", PLUGIN_IDS_JQ], { encoding: "utf8", input: listed })
+  const result = spawnSync("jq", ["-r", PLUGIN_IDS_JQ], { timeout: 120_000, encoding: "utf8", input: listed })
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(result.stdout.split("\n").filter(Boolean), ["a.on", "c.on", "b.off"], "enabled first in their order, the bar gone, no kinds tolerated")
   assert.match(PLUGIN_IDS_COMMAND, /^omarchy-shell shell listPlugins 2>\/dev\/null \| jq -r '/, "jq, not node, behind the TAB")

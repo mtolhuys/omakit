@@ -136,7 +136,7 @@ export async function auditInstalled(options = {}) {
   try {
     installed = readers.installed({ env })
   } catch (error) {
-    throw new AuditError(error?.code || "shell-not-running", error?.message || String(error))
+    throw new AuditError(error?.code || "shell-not-running", error?.message || String(error), error?.remedy || null)
   }
   let live
   try {

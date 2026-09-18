@@ -67,7 +67,7 @@ export function tool(repoRoot) {
 /** The first line a command prints for `--version`, or null when it is not there; shared with `setup`. */
 export function version(command, args = ["--version"]) {
   try {
-    return execFileSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n")[0]
+    return execFileSync(command, args, { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n")[0]
   } catch {
     return null
   }
@@ -75,7 +75,7 @@ export function version(command, args = ["--version"]) {
 
 /** The object id a path has at a commit in the pinned checkout: a tree id for a directory, a blob id for a file. Local; a blob-filtered clone still has every tree. */
 function pinObjectId(pinDir, commit, path) {
-  return execFileSync("git", ["-C", pinDir, "rev-parse", `${commit}:${path}`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
+  return execFileSync("git", ["-C", pinDir, "rev-parse", `${commit}:${path}`], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 }
 
 /**

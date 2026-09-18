@@ -61,11 +61,11 @@ export function verifySignature({ file, signature, keyFile, stagingRoot, run = s
   const home = labDir(stagingRoot, `gnupg-${process.pid}`)
   const env = { ...process.env, GNUPGHOME: home }
   try {
-    const imported = run("gpg", ["--batch", "--quiet", "--import", keyFile], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    const imported = run("gpg", ["--batch", "--quiet", "--import", keyFile], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000 })
     if (imported.error || imported.status !== 0) {
       return { state: "gpg-failed", fingerprint: null, detail: String(imported.stderr || imported.error?.message || "").trim().split("\n")[0] || "gpg could not import the packaged key" }
     }
-    const verified = run("gpg", ["--batch", "--status-fd", "1", "--verify", signature, file], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    const verified = run("gpg", ["--batch", "--status-fd", "1", "--verify", signature, file], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 600_000 })
     const status = String(verified.stdout || "")
     const valid = status.match(/^\[GNUPG:\] VALIDSIG ([0-9A-F]{40}) /m)
     if (valid && verified.status === 0) return { state: "valid", fingerprint: valid[1], detail: status.match(/^\[GNUPG:\] GOODSIG \S+ (.+)$/m)?.[1] || null }

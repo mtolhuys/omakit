@@ -126,7 +126,7 @@ function installedVersion(repoRoot) {
 /** Where the `npm` on PATH installs global packages, or null when there is no npm. */
 function npmGlobalRoot() {
   try {
-    return resolve(execFileSync("npm", ["root", "--global"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
+    return resolve(execFileSync("npm", ["root", "--global"], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
   } catch {
     return null
   }
@@ -143,14 +143,14 @@ export const NPM_PREFIX_ARGS = Object.freeze(["prefix", "--global"])
 /** The `npm` on PATH's global prefix, or null when there is no npm. */
 export function npmGlobalPrefix() {
   try {
-    return resolve(execFileSync("npm", [...NPM_PREFIX_ARGS], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
+    return resolve(execFileSync("npm", [...NPM_PREFIX_ARGS], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim())
   } catch {
     return null
   }
 }
 
 function git(dir, args) {
-  return execFileSync("git", ["-C", dir, ...args], {
+  return execFileSync("git", ["-C", dir, ...args], { timeout: 300_000,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   }).trim()
@@ -190,7 +190,7 @@ function refreshCompletionWith(root, stream) {
   // past eighty columns in a sentence (measured in CI: 109).
   if (!existsSync(entryPoint)) return { ran: false, reason: "this install has no bin/omakit under its root" }
   try {
-    const out = execFileSync(process.execPath, [entryPoint, ...COMPLETION_REFRESH_ARGS], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    const out = execFileSync(process.execPath, [entryPoint, ...COMPLETION_REFRESH_ARGS], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
     stream.write(out)
     return { ran: true, ok: true }
   } catch (error) {
@@ -348,7 +348,7 @@ async function upgradeNpm({ repoRoot, stream, dryRun, latest, npmRoot, name, ref
   }
   spinner.phase(`npm install --global ${spec}`)
   try {
-    execFileSync("npm", [...NPM_UPGRADE_ARGS, spec], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    execFileSync("npm", [...NPM_UPGRADE_ARGS, spec], { timeout: 600_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   } catch (error) {
     spinner.done()
     const reason = String(error?.stderr || "").trim().split("\n").filter((line) => /^npm (?:error|ERR!)/.test(line)).pop() || "npm install failed"

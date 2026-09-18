@@ -82,7 +82,7 @@ function fakes({ commit = HEAD, files = LIVE, fail = null } = {}) {
   }
 }
 
-const pinStatus = () => execFileSync("git", ["-C", pinDir, "status", "--porcelain"], { encoding: "utf8" }).trim()
+const pinStatus = () => execFileSync("git", ["-C", pinDir, "status", "--porcelain"], { timeout: 120_000, encoding: "utf8" }).trim()
 
 test("the two live files are read from HEAD at the exact commit, cached beside the pin, and the pin is untouched", async () => {
   const cacheRoot = mkdtempSync(join(tmpdir(), "omakit-registry-"))

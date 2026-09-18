@@ -42,7 +42,7 @@ function machine({ shell = "bash", loader = "yes", spec = "lazy" } = {}) {
   for (const dir of [home, bin, tools]) mkdirSync(dir, { recursive: true })
   for (const name of ["cat", "cut", "grep", "head", "tail"]) {
     // Found on this system's PATH, wherever it keeps them (/bin on macOS for cat).
-    const found = spawnSync("sh", ["-c", `command -v ${name}`], { encoding: "utf8" }).stdout.trim()
+    const found = spawnSync("sh", ["-c", `command -v ${name}`], { timeout: 120_000, encoding: "utf8" }).stdout.trim()
     if (found) symlinkSync(found, join(tools, name))
   }
   writeFileSync(control, `${loader}\n${spec}\n`)
@@ -102,11 +102,11 @@ test("each probe parses in its shell, where the shell is installed", (t) => {
   // a machine that had one.
   const checks = { bash: ["bash", ["-n", "-c"]], zsh: ["zsh", ["-n", "-c"]], fish: ["fish", ["--no-execute", "-c"]] }
   for (const [shell, [program, flags]] of Object.entries(checks)) {
-    if (spawnSync(program, ["--version"], { encoding: "utf8" }).error) {
+    if (spawnSync(program, ["--version"], { timeout: 120_000, encoding: "utf8" }).error) {
       t.diagnostic(`${program} is not installed here; its probe was not parsed`)
       continue
     }
-    const result = spawnSync(program, [...flags, PROBES[shell][1]], { encoding: "utf8" })
+    const result = spawnSync(program, [...flags, PROBES[shell][1]], { timeout: 120_000, encoding: "utf8" })
     assert.equal(result.status, 0, `${shell}: ${result.stderr}`)
   }
 })

@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process"
 
 function runGit(sourceDir, args, env = process.env) {
-  const result = spawnSync("git", ["-C", sourceDir, ...args], {
+  const result = spawnSync("git", ["-C", sourceDir, ...args], { timeout: 60_000,
     encoding: "utf8",
     env: { ...env, GIT_NO_LAZY_FETCH: "1" },
     stdio: ["ignore", "pipe", "pipe"],
@@ -27,7 +27,7 @@ export function readCheckout(sourceDir, { env = process.env } = {}) {
 
 /** A missing object is a local-history fact, not a failed ancestry check. */
 export function hasCommit(sourceDir, commit, { env = process.env } = {}) {
-  const result = spawnSync("git", ["-C", sourceDir, "cat-file", "-e", commit], {
+  const result = spawnSync("git", ["-C", sourceDir, "cat-file", "-e", commit], { timeout: 60_000,
     encoding: "utf8",
     env: { ...env, GIT_NO_LAZY_FETCH: "1" },
     stdio: ["ignore", "pipe", "pipe"],
@@ -44,7 +44,7 @@ export function isShallow(sourceDir, { env = process.env } = {}) {
 
 /** Is a recorded commit an ancestor of the running checkout? */
 export function ancestorOf(sourceDir, commit, { env = process.env } = {}) {
-  const result = spawnSync("git", ["-C", sourceDir, "merge-base", "--is-ancestor", commit, "HEAD"], {
+  const result = spawnSync("git", ["-C", sourceDir, "merge-base", "--is-ancestor", commit, "HEAD"], { timeout: 60_000,
     encoding: "utf8",
     env: { ...env, GIT_NO_LAZY_FETCH: "1" },
     stdio: ["ignore", "pipe", "pipe"],

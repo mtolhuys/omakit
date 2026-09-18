@@ -161,7 +161,7 @@ function ownerNoreply(repoRoot) {
  * removes a trailer has to be able to say so.
  */
 export function historyViolations(dir, ownerAddress = ownerNoreply(dir)) {
-  const log = execFileSync("git", ["-C", dir, "log", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%B%x01"], {
+  const log = execFileSync("git", ["-C", dir, "log", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%B%x01"], { timeout: 120_000,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   })
@@ -210,7 +210,7 @@ test("the author signs the work; no tool trailers, no bot identities, in the who
 
 test("the policy catches what it is for: a synthetic commit with each shape of tool attribution", () => {
   const dir = mkdtempSync(join(tmpdir(), "omakit-hygiene-"))
-  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...gitEnv } })
+  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...gitEnv } })
   let gitEnv = {}
   git("init", "-q", "-b", "main")
   git("config", "commit.gpgsign", "false")

@@ -120,14 +120,58 @@ const REMEDY = Object.freeze({
  * restatement of the message. `body` is extra labelled lines between the
  * message and the arrow, for a usage error that has values to list.
  */
-function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => []) {
+/**
+ * How a failure state leaves: not through `process.exit()` in the middle
+ * of a write. A write to a pipe is asynchronous on some platforms, and an
+ * exit right behind it drops the bytes; measured on 2026-09-19 by a first
+ * user whose `omakit audit --wat` came back with exit 2 and an empty
+ * stderr. So every failure throws this, the dispatcher at the bottom
+ * catches it, waits for both streams to drain, and exits with the code.
+ */
+class Exit extends Error {
+  constructor(exit) {
+    super(`exit ${exit}`)
+    this.exit = exit
+  }
+}
+
+/** Both streams flushed, then the exit; a closed pipe on either is not an error worth a trace. */
+async function leave(exit) {
+  for (const stream of [process.stdout, process.stderr]) {
+    await new Promise((resolve) => {
+      if (stream.destroyed || stream.writableEnded) return resolve()
+      stream.write("", () => resolve())
+    }).catch(() => {})
+  }
+  process.exit(exit)
+}
+
+/**
+ * Under --json every outcome is a document on stdout, a failure included:
+ * `{ command, ok: false, error: { code, message, remedy } }`, with the
+ * same sentence the person reads on stderr. Measured on 2026-09-19 by a
+ * first user: `audit --json` with no shell, `watch --list --json` with no
+ * network, `lab prove --json` with no base and `weigh --json` unconfirmed
+ * all left stdout empty and a parser with nothing (finding 10). The
+ * dispatcher sets this from the command line before anything runs, and
+ * docs/COMMANDS.md states the rule once.
+ */
+const JSON_MODE = { command: null, enabled: false }
+
+function failureDocument(code, message, remedy, extra = {}) {
+  if (!JSON_MODE.enabled) return
+  process.stdout.write(`${JSON.stringify({ command: JSON_MODE.command, ok: false, error: { code, message, remedy: remedy || null, ...extra } }, null, 2)}\n`)
+}
+
+function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => [], extra = {}) {
+  failureDocument(code, message, remedy, extra)
   const c = styler(colourEnabled(process.stderr))
   const lines = withOutputStream(process.stderr, () => [
     `${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c), ...body(c),
     ...(remedy ? action(remedy, c) : []),
   ])
   process.stderr.write(`${lines.join("\n")}\n`)
-  process.exit(exit)
+  throw new Exit(exit)
 }
 
 /**
@@ -144,7 +188,7 @@ function failFrom(error) {
     const body = error.missing?.length
       ? (c) => error.missing.flatMap((item) => [`${" ".repeat(GUTTER)}${c("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), c), ...(item.command ? action(withHomeAbbreviated(item.command), c) : [])])
       : () => []
-    fail(error.code, error.message, exit, error.remedy || REMEDY[error.code], body)
+    fail(error.code, error.message, exit, error.remedy || REMEDY[error.code], body, error.missing?.length ? { missing: error.missing } : {})
   }
   throw error
 }
@@ -401,17 +445,18 @@ async function cmdParity(args) {
   process.exitCode = ok ? 0 : 1
 }
 
-function notAudited(message, remedy = null, exit = 1) {
+function notAudited(message, remedy = null, exit = 1, code = "not-audited") {
+  failureDocument(code, message, remedy)
   const c = styler(colourEnabled(process.stderr))
   const lines = verdict("fail", AUDIT_VERDICTS.unavailable, message, c)
   if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
   process.stderr.write(`${lines.join("\n")}\n`)
-  process.exit(exit)
+  throw new Exit(exit)
 }
 
 async function cmdAudit(args) {
   const parsed = checkArgs(args, ACCEPTED.audit)
-  if (parsed.offending !== null) notAudited(`${parsed.reason}. Accepted: ${acceptedWords("audit")}.`, "omakit audit [<plugin-id-or-dir>] [--drift] [--json] [--out FILE] [--offline]", 2)
+  if (parsed.offending !== null) notAudited(`${parsed.reason}. Accepted: ${acceptedWords("audit")}.`, "omakit audit [<plugin-id-or-dir>] [--drift] [--json] [--out FILE] [--offline]", 2, "usage")
   let document
   try {
     document = await auditInstalled({
@@ -421,7 +466,7 @@ async function cmdAudit(args) {
       offline: parsed.options.has("--offline"),
     })
   } catch (error) {
-    if (error?.code && typeof error.code === "string") notAudited(`${error.message}.`, error.remedy || REMEDY[error.code])
+    if (error?.code && typeof error.code === "string") notAudited(`${error.message}.`, error.remedy || REMEDY[error.code], 1, error.code)
     throw error
   }
   const json = `${JSON.stringify(document, null, 2)}\n`
@@ -520,11 +565,12 @@ async function cmdAdd(args) {
  * an unanswered confirmation, 130 for an interrupt, 1 for the rest.
  */
 function notWeighed(code, message, remedy, exit = 1) {
+  failureDocument(code, message, remedy)
   const c = styler(colourEnabled(process.stderr))
   const lines = verdict("fail", "NOT WEIGHED", message, c)
   if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
   process.stderr.write(`${lines.join("\n")}\n`)
-  process.exit(exit)
+  throw new Exit(exit)
 }
 
 async function cmdWeigh(args) {
@@ -806,7 +852,20 @@ async function cmdLab(args) {
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
 
 const [command, ...rest] = process.argv.slice(2)
+JSON_MODE.command = command === "lab" ? `lab ${rest.find((arg) => !arg.startsWith("-")) || ""}`.trim() : command || null
+JSON_MODE.enabled = rest.includes("--json")
 
+// A reader that closes early (`omakit audit --json | head`) is not an
+// error worth a trace: the write fails with EPIPE and the command is over,
+// with whatever exit code it had decided on.
+for (const stream of [process.stdout, process.stderr]) {
+  stream.on("error", (error) => {
+    if (error?.code === "EPIPE") process.exit(process.exitCode ?? 0)
+    throw error
+  })
+}
+
+try {
 // Every token checked against the command's table before anything runs
 // (options.mjs): an option the command does not know, an option without its
 // value, or one positional too many is a usage error naming the token and
@@ -914,5 +973,9 @@ if (command === "setup") {
     "",
     renderSummary({ stream: process.stderr, colour: colourEnabled(process.stderr), heading: false }),
   ].join("\n")))
-  process.exit(2)
+  throw new Exit(2)
+}
+} catch (error) {
+  if (error instanceof Exit) await leave(error.exit)
+  throw error
 }

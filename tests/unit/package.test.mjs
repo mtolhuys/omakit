@@ -17,7 +17,7 @@ test("the real npm pack matches the reviewed list, so a new file cannot reach a 
   // [tools/marketplace/path-hint.mjs]" because the list above was checked
   // against itself locally and against `npm pack` only in the workflow. Now
   // the pack is read here too, so the suite is red before the tag exists.
-  const json = execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+  const json = execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], { timeout: 120_000,
     cwd: REPO_ROOT,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],

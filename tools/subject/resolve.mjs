@@ -15,7 +15,7 @@ export class SubjectError extends Error {
 }
 
 function git(dir, args) {
-  return execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  return execFileSync("git", ["-C", dir, ...args], { timeout: 300_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
 }
 
 /** "https://github.com/owner/repo(.git)" -> { owner, repository, url } or null. */
@@ -102,7 +102,7 @@ export function resolveSubject(target, options) {
   const dir = join(resolve(options.cacheRoot), "subjects", `${gh.owner}__${gh.repository}`)
   if (!existsSync(join(dir, ".git"))) {
     mkdirSync(dir, { recursive: true })
-    execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
+    execFileSync("git", ["init", "-q", dir], { timeout: 60_000, encoding: "utf8" })
     git(dir, ["remote", "add", "origin", gh.url])
   }
   let present = false

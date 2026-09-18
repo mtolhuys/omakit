@@ -113,7 +113,7 @@ test("doctor reads the issues URL from package.json and HEAD unreadable stays un
 
 /** The pin's own object ids, read the way doctor reads them. */
 function pinId(pinDir, path) {
-  return execFileSync("git", ["-C", pinDir, "rev-parse", `${MARKETPLACE_PIN.commit}:${path}`], { encoding: "utf8" }).trim()
+  return execFileSync("git", ["-C", pinDir, "rev-parse", `${MARKETPLACE_PIN.commit}:${path}`], { timeout: 120_000, encoding: "utf8" }).trim()
 }
 
 test("each path in PIN_PATHS is compared by object id between the pin and HEAD, through the trees API at the exact commit", async () => {

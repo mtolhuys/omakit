@@ -54,7 +54,7 @@ test("the parser refuses what the table does not name, and reads what it does", 
 })
 
 test("the entry point refuses an unknown option for every command, before anything runs", () => {
-  const run = (args) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } })
+  const run = (args) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } })
   for (const name of Object.keys(ACCEPTED)) {
     const result = run([name, "--no-such-option"])
     assert.equal(result.status, 2, `${name}: exit 2`)

@@ -26,7 +26,7 @@ import { parityOutput } from "../../tools/marketplace/parity-output.mjs"
 function shallowClone(cacheDir, repoUrl, commit) {
   const dir = join(cacheDir, subjectSlug(repoUrl))
   mkdirSync(dir, { recursive: true })
-  const run = (args) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  const run = (args) => execFileSync("git", ["-C", dir, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   try {
     run(["rev-parse", commit + "^{commit}"])
     return dir
@@ -35,7 +35,7 @@ function shallowClone(cacheDir, repoUrl, commit) {
   }
   // Test for the clone's own .git instead of relying on an outer repository.
   if (!existsSync(join(dir, ".git"))) {
-    execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
+    execFileSync("git", ["init", "-q", dir], { timeout: 120_000, encoding: "utf8" })
     run(["remote", "add", "origin", repoUrl])
   }
   run(["fetch", "-q", "--depth", "1", "origin", commit])
@@ -59,7 +59,7 @@ function digest(result) {
 
 function pinCommit(dir) {
   try {
-    return execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
+    return execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { timeout: 120_000, encoding: "utf8" }).trim()
   } catch {
     return "unknown"
   }
@@ -67,7 +67,7 @@ function pinCommit(dir) {
 
 function generatorIdentity(repoRoot) {
   try {
-    return { omakitCommit: execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() }
+    return { omakitCommit: execFileSync("git", ["-C", repoRoot, "rev-parse", "HEAD"], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() }
   } catch {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
     return { omakitPackage: `${pkg.name}@${pkg.version}` }

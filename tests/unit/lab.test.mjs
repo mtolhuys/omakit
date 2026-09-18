@@ -149,7 +149,7 @@ test("the guest is the only target: nothing under tools/lab reaches the host's s
       // guest wrote and the harness copied into the run directory.
       assert.ok(/ssh_guest|ssh_session|guest_job|\b(?:echo|printf|log) |"\$RUN_DIR\//.test(line), `${file}:${index + 1} reaches the host's session: ${line.trim()}`)
     }
-    assert.equal(spawnSync("bash", ["-n", join(REPO_ROOT, file)]).status, 0, `${file} parses`)
+    assert.equal(spawnSync("bash", ["-n", join(REPO_ROOT, file)], { timeout: 120_000 }).status, 0, `${file} parses`)
     for (const [index, line] of text.split("\n").entries()) {
       if (/\bsudo\b/.test(line) && !/^\s*#/.test(line)) assert.ok(/ssh_guest|ssh_session/.test(line), `${file}:${index + 1} runs sudo on the host: ${line.trim()}`)
     }
@@ -303,16 +303,16 @@ function testSigner(dir) {
   const home = join(dir, "gnupg")
   mkdirSync(home, { recursive: true, mode: 0o700 })
   const env = { ...process.env, GNUPGHOME: home }
-  const made = spawnSync("gpg", ["--batch", "--quiet", "--pinentry-mode", "loopback", "--passphrase", "", "--quick-generate-key", "Lab Test <lab@example.invalid>", "ed25519", "sign", "0"], { env, encoding: "utf8" })
+  const made = spawnSync("gpg", ["--batch", "--quiet", "--pinentry-mode", "loopback", "--passphrase", "", "--quick-generate-key", "Lab Test <lab@example.invalid>", "ed25519", "sign", "0"], { timeout: 120_000, env, encoding: "utf8" })
   if (made.status !== 0) return null
-  const fingerprint = spawnSync("gpg", ["--batch", "--with-colons", "--list-keys"], { env, encoding: "utf8" }).stdout.match(/^fpr:+([0-9A-F]{40}):/m)[1]
+  const fingerprint = spawnSync("gpg", ["--batch", "--with-colons", "--list-keys"], { timeout: 120_000, env, encoding: "utf8" }).stdout.match(/^fpr:+([0-9A-F]{40}):/m)[1]
   const keyFile = join(dir, "test.gpg")
-  writeFileSync(keyFile, spawnSync("gpg", ["--batch", "--armor", "--export", fingerprint], { env, encoding: "utf8" }).stdout)
-  const sign = (file) => spawnSync("gpg", ["--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", "", "--detach-sign", "--output", `${file}.sig`, file], { env }).status === 0
+  writeFileSync(keyFile, spawnSync("gpg", ["--batch", "--armor", "--export", fingerprint], { timeout: 120_000, env, encoding: "utf8" }).stdout)
+  const sign = (file) => spawnSync("gpg", ["--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", "", "--detach-sign", "--output", `${file}.sig`, file], { timeout: 120_000, env }).status === 0
   return { fingerprint, keyFile, sign }
 }
 
-test("verification fails closed: the byte count, the digest, the sidecar, the signature and the signer are each held to the pin, in a throwaway keyring", { skip: spawnSync("gpg", ["--version"]).status !== 0 ? "no gpg" : false }, () => {
+test("verification fails closed: the byte count, the digest, the sidecar, the signature and the signer are each held to the pin, in a throwaway keyring", { skip: spawnSync("gpg", ["--version"], { timeout: 120_000 }).status !== 0 ? "no gpg" : false }, () => {
   const { dir, layout, rm } = scratch()
   try {
     const signer = testSigner(dir)
@@ -354,7 +354,7 @@ test("verification fails closed: the byte count, the digest, the sidecar, the si
   }
 })
 
-test("setup with steps and no consent refuses before a byte moves; an import is copied, verified and recorded, and a mismatching import is refused and never promoted", { skip: spawnSync("gpg", ["--version"]).status !== 0 ? "no gpg" : false }, async () => {
+test("setup with steps and no consent refuses before a byte moves; an import is copied, verified and recorded, and a mismatching import is refused and never promoted", { skip: spawnSync("gpg", ["--version"], { timeout: 120_000 }).status !== 0 ? "no gpg" : false }, async () => {
   const { dir, env, layout, rm } = scratch()
   try {
     const signer = testSigner(dir)
@@ -535,7 +535,7 @@ test("the command surface: one `lab` entry with four actions in the help, the op
 test("the entry point: an unknown suite is a usage error, a bare lab is one, run on an empty home refuses with what is missing and no escape byte, twice the same bytes", () => {
   const { env, rm } = scratch()
   try {
-    const run = (args) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "lab", ...args], { encoding: "utf8", env: { ...env, NODE_NO_WARNINGS: "1" } })
+    const run = (args) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), "lab", ...args], { timeout: 120_000, encoding: "utf8", env: { ...env, NODE_NO_WARNINGS: "1" } })
     assert.equal(run([]).status, 2)
     assert.equal(run(["prove"]).status, 2)
     const unknown = run(["prove", "nosuch"])

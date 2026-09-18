@@ -28,7 +28,7 @@ for (const [name, status, output, error, expectedStatus, decision] of [
       const env = { ...process.env, PATH: `${root}:${process.env.PATH}`, RUNNER_TEMP: root, GITHUB_OUTPUT: resultFile, VERSION: "0.1.1", MOCK_OUTPUT: output, MOCK_ERROR: error, MOCK_STATUS: String(status) }
       delete env.NPM_TOKEN
       delete env.NODE_AUTH_TOKEN
-      const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", registry], { cwd: root, env, encoding: "utf8" })
+      const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", registry], { timeout: 120_000, cwd: root, env, encoding: "utf8" })
       assert.equal(result.status, expectedStatus, result.stderr)
       assert.equal(readFileSync(resultFile, "utf8"), decision)
     } finally {
@@ -41,7 +41,7 @@ test("every release shell block parses before it runs in CI", () => {
   for (const step of steps) {
     const body = script(step)
     if (!body) continue
-    const result = spawnSync("bash", ["-n"], { input: body, encoding: "utf8" })
+    const result = spawnSync("bash", ["-n"], { timeout: 120_000, input: body, encoding: "utf8" })
     assert.equal(result.status, 0, `${step.split("\n")[0]}: ${result.stderr}`)
   }
 })

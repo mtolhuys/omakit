@@ -25,7 +25,7 @@
   },
   "scripts": {
     "pin": "node tools/marketplace/cli.mjs pin",
-    "test": "node --test tests/unit/*.test.mjs",
+    "test": "node --test --test-timeout=180000 tests/unit/*.test.mjs",
     "parity": "node tools/marketplace/cli.mjs parity --count 30",
     "doctor": "node tools/marketplace/cli.mjs doctor"
   },

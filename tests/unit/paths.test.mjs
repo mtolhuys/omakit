@@ -37,7 +37,7 @@ test("with HOME unset, or not an absolute path, nothing is abbreviated", () => {
 
 test("doctor and pin print the pin path with ~ for a person, and --json keeps it absolute", () => {
   const pinDir = requirePinForTests()
-  const run = (args, extra = {}) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+  const run = (args, extra = {}) => spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...process.env, NODE_NO_WARNINGS: "1", FORCE_COLOR: undefined, NO_COLOR: undefined, ...extra },
   })

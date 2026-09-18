@@ -33,7 +33,7 @@ import { REPO_ROOT } from "./helpers.mjs"
  * test only ever runs on an Omarchy, which has them all.
  */
 const STUB_TOOLS = ["cat", "cut", "grep", "md5sum", "mkdir", "rm", "tr", "wc"]
-const TOOL_PATHS = Object.fromEntries(STUB_TOOLS.map((name) => [name, spawnSync("sh", ["-c", `command -v ${name}`], { encoding: "utf8" }).stdout.trim() || null]))
+const TOOL_PATHS = Object.fromEntries(STUB_TOOLS.map((name) => [name, spawnSync("sh", ["-c", `command -v ${name}`], { timeout: 120_000, encoding: "utf8" }).stdout.trim() || null]))
 const MISSING_TOOL = STUB_TOOLS.find((name) => !TOOL_PATHS[name]) || null
 
 /** Skip a stub-machine test where this system cannot host the machine; true when it skipped. */
@@ -320,7 +320,7 @@ test("backup and restore are byte for byte, keep the mode, and verify by md5", (
   assert.equal(backup.backupFile, `${m.configFile}.omakit-backup-20260914120000`)
   assert.equal(readFileSync(backup.backupFile, "utf8"), USER_SHELL_JSON)
   assert.equal(backup.md5Before, md5(Buffer.from(USER_SHELL_JSON)))
-  assert.equal(backup.md5Before, spawnSync("md5sum", [m.configFile], { encoding: "utf8" }).stdout.split(" ")[0], "the same md5 md5sum prints")
+  assert.equal(backup.md5Before, spawnSync("md5sum", [m.configFile], { timeout: 120_000, encoding: "utf8" }).stdout.split(" ")[0], "the same md5 md5sum prints")
   const mode = (path) => (statSync(path).mode & 0o777).toString(8)
   assert.equal(mode(backup.backupFile), "600", "a copy of a private file is a private file")
   writeFileSync(m.configFile, "{}\n")
@@ -891,7 +891,7 @@ test("the contract refuses what it should", () => {
   assert.ok(problems.some((problem) => /plugins\[1\]\.readme is not the README sentence/.test(problem)))
   assert.deepEqual(validateWeighDocument(null), ["the document is not an object"])
   assert.ok(validateWeighDocument({}).length > 10)
-  const check = spawnSync(process.execPath, [join(REPO_ROOT, "tools/weigh/contract.mjs"), join(REPO_ROOT, "package.json")], { encoding: "utf8" })
+  const check = spawnSync(process.execPath, [join(REPO_ROOT, "tools/weigh/contract.mjs"), join(REPO_ROOT, "package.json")], { timeout: 120_000, encoding: "utf8" })
   assert.equal(check.status, 1)
   assert.match(check.stdout, /problem\(s\)/)
 })
@@ -899,7 +899,7 @@ test("the contract refuses what it should", () => {
 // --- the entry point ---------------------------------------------------------------------
 
 function omakit(args, env, { input } = {}) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], {
+  const result = spawnSync(process.execPath, [join(REPO_ROOT, "bin/omakit"), ...args], { timeout: 120_000,
     encoding: "utf8",
     env: { ...env, FORCE_COLOR: undefined, NO_COLOR: undefined },
     input,
@@ -919,10 +919,16 @@ test("in a pipe, without --yes, the plan is printed and the run is refused with 
   assert.match(result.err, new RegExp(`${ARROW} Run it again and answer y, or pass --yes`))
   assert.deepEqual(m.restarts(), [])
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
-  // --json without --yes: the same refusal, and nothing on stdout at all.
+  // --json without --yes: the same refusal on stderr, and on stdout the
+  // failure document every command emits under --json (docs/COMMANDS.md),
+  // with the same sentence.
   const json = omakit(["weigh", "fixture.clean", "--json"], m.env)
   assert.equal(json.code, 2)
-  assert.equal(json.out, "")
+  const refusal = JSON.parse(json.out)
+  assert.equal(refusal.command, "weigh")
+  assert.equal(refusal.ok, false)
+  assert.equal(refusal.error.code, "not-confirmed")
+  assert.ok(json.err.includes(refusal.error.message.split("\n")[0].slice(0, 40)), "the sentence on stderr is the document's")
   assert.match(json.err, /NOT WEIGHED/)
   // A refusal from the plan is one failure state in the usual register.
   const locked = machine({ locked: true })
@@ -1047,8 +1053,8 @@ test("under a pseudo-terminal the question blocks until a line is entered; y pro
   // The harness of cli.test.mjs: util-linux script(1) gives the command a
   // terminal on both ends and passes what is written to its stdin through
   // to the terminal, so the prompt can be seen and answered.
-  const scriptBin = spawnSync("sh", ["-c", "command -v script"], { encoding: "utf8" }).stdout.trim()
-  const probe = scriptBin ? spawnSync(scriptBin, ["--version"], { encoding: "utf8" }) : null
+  const scriptBin = spawnSync("sh", ["-c", "command -v script"], { timeout: 120_000, encoding: "utf8" }).stdout.trim()
+  const probe = scriptBin ? spawnSync(scriptBin, ["--version"], { timeout: 120_000, encoding: "utf8" }) : null
   if (!probe || probe.status !== 0 || !/util-linux/.test(probe.stdout)) {
     t.skip("util-linux script(1) is not installed here")
     return

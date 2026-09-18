@@ -83,7 +83,7 @@ function pinMigration(repoRoot, env = process.env) {
 }
 
 function git(dir, args, options = {}) {
-  return execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options })
+  return execFileSync("git", ["-C", dir, ...args], { timeout: 300_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options })
 }
 
 /** Identity of the checkout at `dir`: commit plus the policy constants read from the pinned source. */
@@ -150,7 +150,7 @@ export function ensurePin(repoRoot, log = () => {}, env = process.env) {
     log({ state: "info", text: `${dir} is at ${identity.commit}, not the pin` })
   } else if (!existsSync(join(dir, ".git"))) {
     mkdirSync(dir, { recursive: true })
-    execFileSync("git", ["init", "-q", dir], { encoding: "utf8" })
+    execFileSync("git", ["init", "-q", dir], { timeout: 60_000, encoding: "utf8" })
     git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
   }
   log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 15 MB` })
@@ -193,7 +193,7 @@ export function pinDiskUsage(dir, env = process.env) {
   // warned "cannot access '.git/index.lock'" over its momentary lock file
   // and exited 1, so doctor said "size unknown" for a checkout it had the
   // size of. Only a run that printed no total is unknown.
-  const result = spawnSync("du", ["-skH", dir], { encoding: "utf8", env, stdio: ["ignore", "pipe", "ignore"] })
+  const result = spawnSync("du", ["-skH", dir], { timeout: 60_000, encoding: "utf8", env, stdio: ["ignore", "pipe", "ignore"] })
   const output = String(result.stdout || "").trim().split(/\s+/)[0]
   if (result.error || !/^\d+$/.test(output)) return "size unknown"
   const mib = Number(output) / 1024
@@ -203,7 +203,7 @@ export function pinDiskUsage(dir, env = process.env) {
 /** True when the checkout was fetched with only PIN_PATHS, as a fresh one is. */
 export function pinIsSparse(dir) {
   try {
-    const enabled = execFileSync("git", ["-C", dir, "config", "--get", "core.sparseCheckout"], { encoding: "utf8" }).trim()
+    const enabled = execFileSync("git", ["-C", dir, "config", "--get", "core.sparseCheckout"], { timeout: 60_000, encoding: "utf8" }).trim()
     return enabled === "true"
   } catch {
     return false

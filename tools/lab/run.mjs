@@ -166,7 +166,7 @@ export async function withGuest({ baseDir, stagingName, logFile, layout, pin, on
   }
   try {
     onPhase("creating the overlay and the run's firmware variables")
-    const created = spawnSync("qemu-img", ["create", "-f", "qcow2", "-b", baseDisk, "-F", "qcow2", paths.overlay], { encoding: "utf8" })
+    const created = spawnSync("qemu-img", ["create", "-f", "qcow2", "-b", baseDisk, "-F", "qcow2", paths.overlay], { timeout: 60_000, encoding: "utf8" })
     if (created.status !== 0) throw new LabError("overlay-failed", `qemu-img could not create the overlay: ${(created.stderr || "").trim()}`)
     chmodSync(paths.overlay, 0o600)
     // The base's variables hold the boot entries the install wrote, so a
@@ -247,7 +247,7 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
     guest: null,
     skew: null,
     testedSource: null,
-    host: { kernel: spawnSync("uname", ["-r"], { encoding: "utf8" }).stdout?.trim() || null, qemu: spawnSync("qemu-system-x86_64", ["--version"], { encoding: "utf8" }).stdout?.split("\n")[0] || null, cpus: guestCpus(), memoryMiB: pin.guest.memoryMiB, sshPort: null },
+    host: { kernel: spawnSync("uname", ["-r"], { timeout: 60_000, encoding: "utf8" }).stdout?.trim() || null, qemu: spawnSync("qemu-system-x86_64", ["--version"], { timeout: 60_000, encoding: "utf8" }).stdout?.split("\n")[0] || null, cpus: guestCpus(), memoryMiB: pin.guest.memoryMiB, sshPort: null },
     session: null,
     suiteStatus: null,
     document: null,

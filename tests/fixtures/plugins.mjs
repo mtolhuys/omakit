@@ -88,7 +88,7 @@ export function materialise(files, options = {}) {
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, content)
   }
-  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  const git = (...args) => execFileSync("git", ["-C", dir, ...args], { timeout: 120_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   git("init", "-q", "-b", "main")
   git("config", "user.name", "Omakit tests")
   git("config", "user.email", "tests@example.invalid")
