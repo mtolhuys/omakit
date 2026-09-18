@@ -14,7 +14,7 @@ here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd -- "$here/../../.." && pwd)"
 blocks="${RUNLAB_BLOCKS:-$repo/blocks}"
 out="${1:-/tmp/omakit-storelab}"
-scenarios=(plain symlink-directory symlink-parent symlink-file swap oversized group-writable foreign-owner invalid crash concurrent outside-home)
+scenarios=(plain symlink-directory symlink-parent symlink-file swap oversized group-writable foreign-owner invalid crash concurrent outside-home fifo short-write non-ascii)
 plugin=lab.store.fixture
 
 for tool in /usr/bin/python3 /usr/bin/quickshell; do [[ -x $tool ]] || { echo "not ok - $tool is missing" >&2; exit 1; }; done
@@ -45,6 +45,12 @@ prepare() {
     crash) mkdir -m 0700 "$dir" && printf '{"version":1,"themes":{}}\n' > "$dir/memory.json" \
       && printf '{"version":9' > "$dir/.store-99999-0123456789abcdef.tmp" && touch -d '-1 hour' "$dir/.store-99999-0123456789abcdef.tmp" \
       && printf '{"version":9' > "$dir/.store-99998-fedcba9876543210.tmp" ;;
+    # 0.2.0 (docs/evidence/blocks/2026-09-18-review.json): a FIFO where the file should be; a
+    # write that cannot complete (RLIMIT_FSIZE 6000 bytes on the instance, see below); a file that
+    # is mostly non-ASCII, within the cap, whose escaped form would not be.
+    fifo) mkdir -m 0700 "$dir" && mkfifo -m 0600 "$dir/memory.json" ;;
+    short-write) mkdir -m 0700 "$dir" && printf '{"version":1,"themes":{}}\n' > "$dir/memory.json" ;;
+    non-ascii) mkdir -p -m 0700 "$home/.cache/$plugin" && /usr/bin/python3 -c 'import json,sys; sys.stdout.write(json.dumps({"names": ["\u00e9\u00e8\u00ea\u20ac\U0001F600" * 20] * 3000}, ensure_ascii=False))' > "$home/.cache/$plugin/catalog.json" ;;
   esac
 }
 
@@ -68,6 +74,13 @@ one() {
   fi
   local runner=$! swapper=""
   waitev ready 30 || { echo "no ready line" >>"$meta"; kill -KILL -- -"$runner" 2>/dev/null; systemctl --user stop "$unit.scope" 2>/dev/null; return 1; }
+  if [[ $scen == short-write ]]; then
+    # RLIMIT_FSIZE 6000 bytes on the instance once it is up (its own startup
+    # writes are larger), inherited by the helper: the 9 KiB staging write
+    # comes up short and the next write raises EFBIG.
+    local qspid; qspid=$(grep -o 'STORELAB {.*}' "$log" | sed 's/^STORELAB //' | /usr/bin/python3 -c 'import json,sys; print(json.loads(sys.stdin.readline())["pid"])')
+    /usr/bin/prlimit --pid "$qspid" --fsize=6000 && echo "fsize_limit=6000 pid=$qspid" >>"$meta"
+  fi
   if [[ $scen == swap ]]; then
     # A hostile neighbour swaps the file between a regular file and a link to the victim while the block reads and writes.
     ( local d=$home/.local/state/$plugin; while [[ -d $d ]]; do ln -sfn "$out/victims/swap" "$d/memory.json.lnk" && mv -T "$d/memory.json.lnk" "$d/memory.json" 2>/dev/null; printf '{"version":1,"themes":{}}\n' > "$d/memory.json.new" && mv -T "$d/memory.json.new" "$d/memory.json" 2>/dev/null; done ) &

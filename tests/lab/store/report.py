@@ -24,10 +24,14 @@ EXPECT = {
     "oversized": {"multiset": ["overflow", "overflow", "missing"], "reason": "over"},
     "group-writable": {"states": ["refused", "ok"], "reason": "writable by the group", "written_mode": "600"},
     "foreign-owner": {"states": ["refused", "ok"], "reason": "not owned", "simulated_only": True, "written_mode": "600"},
-    "invalid": {"states": ["invalid", "ok"], "reason": "is not an integer"},
+    "invalid": {"multiset": ["invalid", "ok"], "reason": "is not an integer"},
     "crash": {"states": ["ok", "ok"], "staging_left": 1, "file_content": '{"themes":{"a":{"wallpaper":"/x"}},"version":1}'},
     "concurrent": {"any_of": {"ok"}, "count": 10, "staging_left": 0, "content_one_of": ['{"themes":{},"version":%d}' % i for i in range(1, 11)]},
     "outside-home": {"states": ["refused", "refused"], "reason": "not inside HOME", "victim_dir_unchanged": True},
+    # 0.2.0: the review of 2026-09-18 (docs/evidence/blocks/2026-09-18-review.json)
+    "fifo": {"states": ["refused", "ok", "ok"], "reason": "not a regular file", "file_type": "regular file"},
+    "short-write": {"states": ["ok", "failed", "ok"], "reason": "File too large", "staging_left": 0, "file_content": '{"version":1,"themes":{}}'},
+    "non-ascii": {"states": ["ok"], "value_bytes_over": 700000},
 }
 
 
@@ -63,6 +67,8 @@ def check_states(results, want, problems):
         reasons = [r.get("reason", "") for r in results if r.get("state") not in ("ok", "missing")]
         if not reasons or not all(want["reason"] in reason for reason in reasons):
             problems.append("reasons %s do not all say %r" % (reasons, want["reason"]))
+    if "value_bytes_over" in want and not any(r.get("bytes", 0) > want["value_bytes_over"] and isinstance(r.get("value"), dict) for r in results):
+            problems.append("no ok read carried a value of over %d bytes" % want["value_bytes_over"])
 
 
 def check_facts(meta, want, problems):
@@ -97,7 +103,7 @@ def main(out, blocks):
     for name in sorted(EXPECT):
         log = os.path.join(runs_dir, name + ".log")
         if not os.path.exists(log):
-            rows.append({"scenario": name, "problems": ["no log"], "results": [], "meta": {}})
+            rows.append({"scenario": name, "problems": ["no log"], "results": [], "meta": {}, "msToLast": None, "skipped": None})
             continue
         evs = events(log)
         results = [e for e in evs if e.get("ev") == "result"]

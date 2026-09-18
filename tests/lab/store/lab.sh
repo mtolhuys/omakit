@@ -65,12 +65,12 @@ omarchy_host_test() {
   ssh_guest "cd /tmp/omakit-storelab && tar -cf - runs" > "$out/storelab-runs.tar" 2>/dev/null || true
   status=$(ssh_guest "cat /tmp/omakit-storelab.done")
   [[ $status == 0 ]] || { echo "the Run lab suite exited $status in the guest" >&2; tail -n 30 "$out/storelab.log" >&2; return 1; }
-  jq -e '.ok == true and (.scenarios | length) == 12 and any(.scenarios[]; .scenario == "foreign-owner" and .skipped == null)' "$out/storelab.json" >/dev/null || { echo "the document does not say ok over 12 scenarios with the foreign owner simulated" >&2; return 1; }
+  jq -e '.ok == true and (.scenarios | length) == 15 and any(.scenarios[]; .scenario == "foreign-owner" and .skipped == null)' "$out/storelab.json" >/dev/null || { echo "the document does not say ok over 15 scenarios with the foreign owner simulated" >&2; return 1; }
   ssh_session "omarchy-shell shell ping | grep -qx ok" || { echo "the guest's shell does not answer after the suite" >&2; return 1; }
   ssh_session "test -z \"\$(hyprctl configerrors)\"" || return 1
   capture_console "success-omakit-storelab-01-done"
   grep '^ok - ' "$out/storelab.log"
-  printf 'ok - the Store block passed all 12 lab scenarios on the stock guest, the foreign owner simulated with chown, the shell untouched; document at %s\n' "$out/storelab.json"
+  printf 'ok - the Store block passed all 15 lab scenarios on the stock guest, the foreign owner simulated with chown, the shell untouched; document at %s\n' "$out/storelab.json"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

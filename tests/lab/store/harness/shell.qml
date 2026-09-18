@@ -54,6 +54,12 @@ ShellRoot {
                 root.expected = 2; state.read(); loose.read(); break
             case "crash":
                 root.expected = 2; state.read(); state.write(value); break
+            case "fifo":
+                root.expected = 3; state.read(); state.write(value); state.read(); break
+            case "short-write":
+                root.expected = 3; state.read(); state.write({ version: 2, themes: { big: "x".repeat(9000) } }); state.read(); break
+            case "non-ascii":
+                root.expected = 1; cache.read(); break
             case "concurrent":
                 root.expected = 10
                 for (let i = 0; i < 10; i++) root.writerComponent.createObject(root).write({ version: i + 1, themes: {} })
