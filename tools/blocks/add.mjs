@@ -66,7 +66,15 @@ function decide(target, entry, { update }) {
   if (!statSync(target).isFile()) throw new AddError("not-a-file", `${target} exists and is not a regular file`, "Move it out of the way; omakit does not replace directories or links.")
   const existing = readFileSync(target, "utf8")
   const parsed = parseHeader(existing)
-  if (parsed && bodySha256(parsed.body) === entry.sha256) return { state: "current", version: parsed.version }
+  if (parsed && bodySha256(parsed.body) === entry.sha256) {
+    if (parsed.version === entry.version) return { state: "current", version: parsed.version }
+    // The shipped body under an older header: a version bump that did not
+    // touch this file (measured on 0.2.1: Run.qml's body was 0.2.0's, and
+    // `--update` left its header at 0.2.0 beside a 0.2.1 supervisor, so
+    // inspect read one block as two versions). The header moves with --update.
+    if (!update) throw new AddError("exists", `${target} has the shipped body under a ${parsed.version} header; omakit ships ${entry.version}, and --update moves the header`, "omakit add <block> [plugin-dir] --update")
+    return { state: "update", version: parsed.version }
+  }
   if (!update) throw new AddError("exists", `${target} is already there; pass --update to replace an unmodified copy`, "omakit add <block> [plugin-dir] --update")
   if (!parsed) throw new AddError("modified", `${target} is not an omakit block file (no block header), so it is the plugin's own and is not replaced`, "Move or rename the file, then run add again.")
   const older = shippedHistory().find((row) => row.block === entry.block && row.file === entry.file && row.sha256 === bodySha256(parsed.body))

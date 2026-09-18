@@ -73,20 +73,20 @@
   "blocks": [
     {
       "name": "run",
-      "version": "0.2.0",
-      "shippedVersion": "0.2.0",
+      "version": "0.2.1",
+      "shippedVersion": "0.2.1",
       "state": "unmodified",
       "complete": true,
       "files": [
         {
           "path": "omakit/Run.qml",
           "state": "unmodified",
-          "version": "0.2.0"
+          "version": "0.2.1"
         },
         {
           "path": "omakit/run-supervisor.py",
           "state": "unmodified",
-          "version": "0.2.0"
+          "version": "0.2.1"
         }
       ]
     }
@@ -213,25 +213,12 @@
       "repoUrl": "https://github.com/example/omarchy-plugin-fixture-run-block",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
-      "outcome": "review-required",
+      "outcome": "passed",
       "enforcementMode": "selective",
-      "disposition": "review-required",
+      "disposition": "clear",
       "blocksApproval": false,
       "findings": [],
-      "capabilities": [
-        {
-          "id": "privilege",
-          "title": "Privilege request",
-          "why": "The plugin or its instructions invoke an explicit privilege boundary such as `sudo` or `pkexec`.",
-          "evidence": [
-            {
-              "path": "omakit/run-supervisor.py",
-              "line": 57,
-              "snippet": "WRAPPERS = frozenset([\"env\", \"nice\", \"timeout\", \"setsid\", \"flock\", \"xargs\", \"sudo\", \"doas\", \"nohup\", \"stdbuf\", \"ionice\", \"chrt\", \"unbuffer\", \"busybox\"])"
-            }
-          ]
-        }
-      ]
+      "capabilities": []
     },
     "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
   }

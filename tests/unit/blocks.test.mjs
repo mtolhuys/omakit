@@ -12,7 +12,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync, spawnSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { bodySha256, parseHeader, recogniseBlockFile, renderNotice, shippedBlocks, shippedHistory, withBodySha256, withSourceCommit } from "../../tools/blocks/registry.mjs"
@@ -67,14 +67,14 @@ function pluginDir() {
 test("the two blocks ship two files each with a header, the header's sha256 is the body's, and NOTICE and history are current", () => {
   const blocks = shippedBlocks()
   assert.deepEqual(blocks.map((block) => [block.name, block.version, block.files.map((entry) => entry.file)]), [
-    ["run", "0.2.0", ["Run.qml", "run-supervisor.py"]],
+    ["run", "0.2.1", ["Run.qml", "run-supervisor.py"]],
     ["store", "0.2.0", ["Store.qml", "store-helper.py"]],
   ])
   const history = shippedHistory()
   for (const block of blocks) {
     for (const entry of block.files) {
       const text = entry.header.join("\n")
-      assert.match(text, new RegExp(`omakit block: ${block.name} 0\\.2\\.0`))
+      assert.match(text, new RegExp(`omakit block: ${block.name} ${block.version.replace(/\\./g, "\\\\.")}`))
       assert.match(text, /SPDX-License-Identifier: MIT/)
       assert.match(text, /Copyright \(c\) 2026 Maarten Tolhuijs/)
       assert.match(text, new RegExp(`Source: omakit blocks/${block.name}/${entry.file.replace(".", "\\.")}, commit unstamped`))
@@ -114,9 +114,9 @@ test("the registry: a header parses, a body hash recognises the shipped copy, an
   const qml = runBlock.files.find((entry) => entry.file === "Run.qml")
   const parsed = parseHeader(qml.text)
   assert.equal(parsed.name, "run")
-  assert.equal(parsed.version, "0.2.0")
+  assert.equal(parsed.version, "0.2.1")
   assert.equal(parsed.sha256, qml.sha256)
-  assert.deepEqual(recogniseBlockFile("Run.qml", qml.text), { name: "run", version: "0.2.0", state: "unmodified", shippedVersion: "0.2.0" })
+  assert.deepEqual(recogniseBlockFile("Run.qml", qml.text), { name: "run", version: "0.2.1", state: "unmodified", shippedVersion: "0.2.1" })
   assert.equal(recogniseBlockFile("Run.qml", withSourceCommit(qml.text, "a".repeat(40))).state, "unmodified", "the stamped commit is not part of the body")
   assert.equal(recogniseBlockFile("Run.qml", `${qml.text}\n// edited\n`).state, "modified")
   assert.equal(recogniseBlockFile("Run.qml", withBodySha256(`${qml.text}\n// edited\n`, bodySha256("x"))).state, "modified", "a rewritten header hash does not make an edit unmodified")
@@ -138,8 +138,16 @@ const SHELL_STRINGS = [
   ["/usr/bin/ruby", "-e", "1"], ["/usr/bin/php", "-r", "1;"], ["/usr/bin/lua", "-e", "x=1"], ["/usr/bin/node", "-e", "1"], ["/usr/bin/node", "--eval", "1"], ["/usr/bin/node", "-p", "1"],
   ["/usr/bin/env", "bash", "-c", "true"], ["/usr/bin/env", "-i", "PATH=/usr/bin", "bash", "-c", "true"], ["/usr/bin/nice", "-n", "10", "bash", "-c", "true"], ["/usr/bin/timeout", "5", "bash", "-c", "true"],
   ["/usr/bin/timeout", "-s", "KILL", "5", "sh", "-c", "true"], ["/usr/bin/setsid", "bash", "-c", "true"], ["/usr/bin/flock", "/tmp/x", "bash", "-c", "true"], ["/usr/bin/flock", "/tmp/x", "-c", "true"],
-  ["/usr/bin/xargs", "bash", "-c", "true"], ["/usr/bin/sudo", "-u", "root", "bash", "-c", "true"], ["/usr/bin/doas", "-u", "root", "sh", "-c", "true"], ["/usr/bin/nohup", "bash", "-c", "true"],
+  ["/usr/bin/xargs", "bash", "-c", "true"], ["/usr/bin/nohup", "bash", "-c", "true"],
   ["/usr/bin/stdbuf", "-oL", "bash", "-c", "true"], ["/usr/bin/env", "nice", "timeout", "5", "bash", "-c", "true"],
+]
+// A privileged wrapper is not on the list (0.2.1): Run decides nothing
+// about privilege, and the marketplace baseline reads the words `sudo`
+// and `doas` in a plugin's tree as a privilege request (measured 2026-09-18,
+// docs/evidence/blocks/2026-09-18-run-block-baseline.json). These are not
+// refused as shell strings; what they do when started is theirs.
+const NOT_JUDGED = [
+  ["/usr/bin/sudo", "-n", "-u", "root", "bash", "-c", "true"], ["/usr/bin/doas", "-n", "-u", "root", "sh", "-c", "true"],
 ]
 const NOT_SHELL_STRINGS = [
   ["/usr/bin/bash", "/tmp/script.sh", "-c"], ["/usr/bin/bash", "--", "-c"], ["/usr/bin/perl", "/tmp/script.pl", "-e"], ["/usr/bin/python3", "-m", "json.tool", "-c"],
@@ -155,6 +163,10 @@ test("the supervisor refuses a relative command and every listed string-program 
     assert.equal(result.state, "spawn-failed", argv.join(" "))
     assert.match(result.reason, /shell string \(an interpreter with its string flag, [a-z]+\)/, argv.join(" "))
     assert.equal(result.pgid, undefined, "nothing was started")
+  }
+  for (const argv of NOT_JUDGED) {
+    const { result } = supervise(["--deadline-ms", "2000", "--", ...argv])
+    assert.doesNotMatch(result.reason || "", /shell string/, `${argv.join(" ")} is not Run's to judge`)
   }
   for (const argv of NOT_SHELL_STRINGS) {
     const { result } = supervise(["--deadline-ms", "2000", "--", ...argv])
@@ -269,7 +281,7 @@ test("add writes the block's files and NOTICE with the commit stamped, reports c
   const copy = readFileSync(join(dir, "omakit/Run.qml"), "utf8")
   assert.match(copy, new RegExp(`Source: omakit blocks/run/Run\\.qml, commit ${first.commit}`))
   assert.equal(recogniseBlockFile("Run.qml", copy).state, "unmodified")
-  assert.match(readFileSync(join(dir, "omakit/NOTICE"), "utf8"), new RegExp(`block run 0\\.2\\.0, from omakit commit ${first.commit}`))
+  assert.match(readFileSync(join(dir, "omakit/NOTICE"), "utf8"), new RegExp(`block run 0\\.2\\.1, from omakit commit ${first.commit}`))
   const second = addBlock({ repoRoot: REPO_ROOT, block: "run", dir })
   assert.deepEqual(second.files.map((file) => file.state), ["current", "current"])
   assert.equal(second.notice.state, "current")
@@ -310,7 +322,7 @@ test("the command line: `omakit add run <dir>` prints one line per file, --json 
   assert.match(first.out, /written +omakit\/Run\.qml\n/)
   assert.match(first.out, /written +omakit\/run-supervisor\.py\n/)
   assert.match(first.out, /written +omakit\/NOTICE\n/)
-  assert.match(first.out, /block +run 0\.2\.0, from omakit commit/)
+  assert.match(first.out, /block +run 0\.2\.1, from omakit commit/)
   assert.match(first.out, /docs\/BLOCKS\.md is the contract/)
   const json = run(["add", "run", dir, "--json"])
   assert.equal(json.code, 0)
@@ -338,16 +350,16 @@ test("the command line: `omakit add run <dir>` prints one line per file, --json 
 test("inspect: an unmodified block is one row, its files raise nothing, and the Run site is a process with its deadline observed through the block", async () => {
   const fixture = materialiseInspectFixture("run-block")
   const document = await inspectPlugin({ repoRoot: REPO_ROOT, target: fixture.dir, omakitVersion: VERSION, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-blocks-")) })
-  assert.deepEqual(document.blocks.map((block) => [block.name, block.version, block.state, block.complete, block.files.map((file) => file.state)]), [["run", "0.2.0", "unmodified", true, ["unmodified", "unmodified"]]])
+  assert.deepEqual(document.blocks.map((block) => [block.name, block.version, block.state, block.complete, block.files.map((file) => file.state)]), [["run", "0.2.1", "unmodified", true, ["unmodified", "unmodified"]]])
   assert.deepEqual(document.patterns, [], "no pattern row anywhere, and none at the block's lines")
   assert.deepEqual(document.observed.processes.map((row) => [row.file, row.line, row.deadline.via, row.deadline.ms, row.output.collector, row.block]), [["Widget.qml", 10, "block-run", 8000, "Run", "run"]])
   assert.ok(document.observed.functions.every((row) => !row.file.startsWith("omakit/")), "the block's functions are not measured as the plugin's")
   const report = renderInspect(document, { colour: false })
-  assert.match(report, /blocks +run 0\.2\.0, 2 files, unmodified: no row of its own/)
+  assert.match(report, /blocks +run 0\.2\.1, 2 files, unmodified: no row of its own/)
   assert.doesNotMatch(report, /omakit\/Run\.qml:\d+/, "no site inside the block")
   const full = renderInspect(document, { colour: false, full: true })
   assert.match(full, /Widget\.qml:10/)
-  assert.match(full, /blocks +run 0\.2\.0/)
+  assert.match(full, /blocks +run 0\.2\.1/)
 })
 
 test("inspect: a modified copy is reported modified, its files are read like any other, and Run is not a process the extraction knows", async () => {
@@ -357,7 +369,7 @@ test("inspect: a modified copy is reported modified, its files are read like any
   assert.ok(document.observed.processes.every((row) => row.file === "omakit/Run.qml"), "the Process sites are the modified block's own; the widget's Run site is not a process")
   assert.ok(document.patterns.some((pattern) => pattern.id === "process-lifecycle" && pattern.sites.every((site) => site.file === "omakit/Run.qml")))
   const report = renderInspect(document, { colour: false })
-  assert.match(report, /blocks +run 0\.2\.0, modified \(omakit\/Run\.qml\): read like any other file/)
+  assert.match(report, /blocks +run 0\.2\.1, modified \(omakit\/Run\.qml\): read like any other file/)
   assert.match(report, /omakit\/Run\.qml:\d+/)
 })
 
@@ -394,6 +406,23 @@ test("the fixture copies are the shipped files, so a block change is a visible f
   }
   assert.match(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/run-block-modified/omakit/Run.qml"), "utf8"), /\/\/ edited by the plugin author/)
   assert.match(readFileSync(join(REPO_ROOT, "tests/fixtures/inspect/store-block-modified/omakit/store-helper.py"), "utf8"), /# edited by the plugin author/)
+})
+
+test("add --update moves a shipped body under an older header, and without --update names the two versions", () => {
+  // Measured on 0.2.1: Run.qml's body was 0.2.0's, the first --update left
+  // its header at 0.2.0 beside a 0.2.1 supervisor, and inspect read one
+  // block as two versions.
+  const dir = pluginDir()
+  addBlock({ repoRoot: REPO_ROOT, block: "run", dir })
+  const file = join(dir, "omakit/Run.qml")
+  const text = readFileSync(file, "utf8")
+  const shipped = shippedBlocks().find((block) => block.name === "run").version
+  writeFileSync(file, text.replace(`// omakit block: run ${shipped}`, "// omakit block: run 0.0.9"))
+  assert.throws(() => addBlock({ repoRoot: REPO_ROOT, block: "run", dir }), (error) => error.code === "exists" && /shipped body under a 0\.0\.9 header; omakit ships/.test(error.message))
+  const moved = addBlock({ repoRoot: REPO_ROOT, block: "run", dir, update: true })
+  assert.deepEqual(moved.files.map((entry) => [entry.path, entry.state, entry.from]), [["omakit/Run.qml", "updated", "0.0.9"], ["omakit/run-supervisor.py", "current", null]])
+  assert.match(readFileSync(file, "utf8"), new RegExp(`^// omakit block: run ${shipped.replace(/\./g, "\\.")}\n`))
+  rmSync(dir, { recursive: true, force: true })
 })
 
 // --- the store helper --------------------------------------------------------------
@@ -551,12 +580,12 @@ print(states[0], len(os.listdir("/proc/self/fd")) - before)
 test("add store brings run along, reports each file's block, and add run alone leaves store out", () => {
   const dir = pluginDir()
   const result = addBlock({ repoRoot: REPO_ROOT, block: "store", dir })
-  assert.deepEqual(result.requires, ["run 0.2.0"])
+  assert.deepEqual(result.requires, ["run 0.2.1"])
   assert.deepEqual(result.files.map((file) => [file.block, file.path, file.state]), [
     ["run", "omakit/Run.qml", "written"], ["run", "omakit/run-supervisor.py", "written"],
     ["store", "omakit/Store.qml", "written"], ["store", "omakit/store-helper.py", "written"],
   ])
-  assert.match(readFileSync(join(dir, "omakit/NOTICE"), "utf8"), /block run 0\.2\.0[\s\S]*block store 0\.2\.0/)
+  assert.match(readFileSync(join(dir, "omakit/NOTICE"), "utf8"), /block run 0\.2\.1[\s\S]*block store 0\.2\.0/)
   const other = pluginDir()
   assert.deepEqual(addBlock({ repoRoot: REPO_ROOT, block: "run", dir: other }).files.map((file) => file.block), ["run", "run"])
   assert.deepEqual(readdirSync(join(other, "omakit")).sort(), ["NOTICE", "Run.qml", "run-supervisor.py"])
@@ -564,7 +593,7 @@ test("add store brings run along, reports each file's block, and add run alone l
   assert.equal(cli.code, 0, cli.err)
   assert.match(cli.out, /current +omakit\/Run\.qml \(run, which store uses\)/)
   assert.match(cli.out, /written +omakit\/Store\.qml/)
-  assert.match(cli.out, /block +store 0\.2\.0, with run 0\.2\.0/)
+  assert.match(cli.out, /block +store 0\.2\.0, with run 0\.2\.1/)
 })
 
 test("inspect: an unmodified store block is one row beside run's, and the Store site is a write under the plugin's own state directory at mode 0600; a modified copy is read like any other file", async () => {
@@ -573,7 +602,7 @@ test("inspect: an unmodified store block is one row beside run's, and the Store 
   assert.deepEqual(whole.observed.writes.map((row) => [row.file, row.line, row.via, row.path, row.controlledDirectory, row.controlledBy, row.mode, row.block]), [["Widget.qml", 8, "block-store", "$XDG_STATE_HOME/fixture.store-block/memory.json", "observed", "$XDG_STATE_HOME", "0600", "store"]])
   assert.deepEqual(whole.patterns, [])
   const report = renderInspect(whole, { colour: false })
-  assert.match(report.replace(/\n +/g, " "), /blocks +run 0\.2\.0, 2 files, unmodified: no row of its own; store 0\.2\.0, 2 files, unmodified: no row of its own/)
+  assert.match(report.replace(/\n +/g, " "), /blocks +run 0\.2\.1, 2 files, unmodified: no row of its own; store 0\.2\.0, 2 files, unmodified: no row of its own/)
   assert.match(renderInspect(whole, { colour: false, full: true }).replace(/\n +/g, " "), /Store \$XDG_STATE_HOME\/fixture\.store-block\/memory\.json \(through the store block\)/)
   const edited = await inspectPlugin({ repoRoot: REPO_ROOT, target: materialiseInspectFixture("store-block-modified").dir, omakitVersion: VERSION, cacheRoot: mkdtempSync(join(tmpdir(), "omakit-blocks-")) })
   assert.deepEqual(edited.blocks.map((block) => [block.name, block.state]), [["run", "unmodified"], ["store", "modified"]])

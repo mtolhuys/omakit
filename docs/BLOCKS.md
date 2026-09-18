@@ -3,7 +3,7 @@
 A block is a small set of files a plugin copies into its own tree with
 `omakit add`, that does one piece of the plumbing the marketplace's review
 blocks on most, built and tested once. This page is the contract of the
-two blocks, Run 0.2.0 and Store 0.2.0: what each does, which review
+two blocks, Run 0.2.1 and Store 0.2.0: what each does, which review
 comments each line answers, the API, what it costs, what it does not do,
 and how it is added, updated and recognised. The reasoning and the measurements behind the
 design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
@@ -61,7 +61,7 @@ comments.
 | Cancel on destruction and supersession | 130 | `Component.onDestruction` starts a detached reaper (the same file, `--kill-group`) that sends TERM, waits the grace, sends KILL, because the `Process` destructor SIGKILLs the supervisor synchronously right after. A run whose leader line `Run.qml` has not read yet is still behind the supervisor's gate: the forked child waits for one byte before it execs, the dying supervisor closes the gate, the child exits unrun (R4). `start()` on a live run cancels it first; its result comes back as `cancelled`, then the new run starts. `cancel()` is TERM to the supervisor, which ends the group as it does on a deadline. |
 | A supervisor that dies is not an escape | (review) | A program can `kill -9` its own supervisor (same uid). When the supervisor exits or dies without a valid result, `Run.qml` starts the detached reaper for the group it learned, reports `supervisor-lost` with what it did in `reason`, and the group is TERM, grace, KILL like any other end (R2). |
 | Group teardown | 126 | The program is the leader of a new session; TERM goes to the whole group, then KILL after the grace, and the run ends only when `/proc` shows no live member of the group, polled every 20 ms in the supervisor (a descendant holding the pipe after the leader exits is ended in about 50 ms, not after the grace). |
-| argv, not a shell string | 106 | `command` is argv; a shell string is refused as `spawn-failed`. What is refused, best effort and not a sandbox: an interpreter by basename (digits and dots stripped: `python3.14` is `python`) with its string flag among its leading options, alone, in a cluster (`-lc`, `-ne`), or behind options that take a value (`-o pipefail -c`, `-W ignore -c`, `--rcfile x -c`, `+x -c`): `-c` for `sh`, `bash`, `dash`, `zsh`, `ksh`, `fish`, `rbash`, `ash`, `mksh` and `busybox <shell>`, `-c` for `python`, `-e` and `-E` for `perl`, `-e` for `ruby` and `lua`, `-r` and `--run` for `php`, `-e`, `-p`, `--eval` and `--print` for `node`; `flock -c` and `--command`; and the same seen through `env` (its `NAME=value` words and options skipped), `nice`, `timeout` (its duration skipped), `setsid`, `flock` (its lock file skipped), `xargs`, `sudo`, `doas`, `nohup`, `stdbuf`, `ionice`, `chrt`, `unbuffer` and `busybox`, up to eight deep. A script path followed by `-c` is a script (`bash x.sh -c`), and `--` ends the options. An interpreter, wrapper or flag not in this list is not refused; `allowShellString: true` lets any of it through, on its own line, where a reviewer sees it (R5). |
+| argv, not a shell string | 106 | `command` is argv; a shell string is refused as `spawn-failed`. What is refused, best effort and not a sandbox: an interpreter by basename (digits and dots stripped: `python3.14` is `python`) with its string flag among its leading options, alone, in a cluster (`-lc`, `-ne`), or behind options that take a value (`-o pipefail -c`, `-W ignore -c`, `--rcfile x -c`, `+x -c`): `-c` for `sh`, `bash`, `dash`, `zsh`, `ksh`, `fish`, `rbash`, `ash`, `mksh` and `busybox <shell>`, `-c` for `python`, `-e` and `-E` for `perl`, `-e` for `ruby` and `lua`, `-r` and `--run` for `php`, `-e`, `-p`, `--eval` and `--print` for `node`; `flock -c` and `--command`; and the same seen through `env` (its `NAME=value` words and options skipped), `nice`, `timeout` (its duration skipped), `setsid`, `flock` (its lock file skipped), `xargs`, `nohup`, `stdbuf`, `ionice`, `chrt`, `unbuffer` and `busybox`, up to eight deep; no privileged wrapper is on the list (0.2.1, below). A script path followed by `-c` is a script (`bash x.sh -c`), and `--` ends the options. An interpreter, wrapper or flag not in this list is not refused; `allowShellString: true` lets any of it through, on its own line, where a reviewer sees it (R5). |
 | Reap order and pid identity | 18 | Inside the supervisor, the leader's status is read with `waitid(P_PIDFD, WNOWAIT)` and it is reaped with `waitpid` only after the group is empty, so the group number cannot be reused by an unrelated process while the supervisor signals it. Measured in the spike: pure QML cannot do this, because `QProcess` reaps the leader the moment it exits. The two paths that signal by number without the supervisor are under what Run does not do. |
 
 ## The API
@@ -120,7 +120,8 @@ from `Quickshell.env("HOME") + "/.config/omarchy/plugins/<id>/"`.
 ## What it costs
 
 From `tests/lab/run/` on the desktop (Quickshell 0.3.1-1, python 3.14.7-1,
-2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json)).
+2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json);
+Run 0.2.1 changes no line the suite measures, and its guest run is below).
 The same 19 scenarios ran the same afternoon on the stock 4.0.3 guest
 through `omakit lab run run`, all ok, the guest's installed package
 `omarchy 4.0.3-1` read by the run and its session not linked
@@ -140,18 +141,18 @@ superseded; it says so in place.
 | a program that ignores TERM, deadline 2 s, grace 1 s | 3,061 ms | +309 kB |
 | ten runs started at once, 1 MiB each | 68 ms to the last result | +676 kB |
 
-One cost is not in the table and is the marketplace's: a plugin that
-carries Run 0.2.0 shows the `privilege` capability in the marketplace
-security baseline, and is `review-required` for that alone. Measured
-2026-09-18 on a throwaway plugin with nothing but a manifest, a README, a
-licence and `omakit add run` ([record](evidence/blocks/2026-09-18-run-block-baseline.json)):
-`privilege` at `omakit/run-supervisor.py` (line 57, the line where the
-supervisor's wrapper list names `sudo` and `doas` so that `sudo sh -c`
-is refused as a shell string, R5). The baseline is a source scan and
-reads the word. Not changed in the release round: dropping the two words
-narrows a contract line that answers 106 comments, and that is a block
-change with its own review; the release notes list it. Theme Manager was
-review-required already, for `installer`.
+One cost was the marketplace's and is gone at 0.2.1: a plugin that
+carried Run 0.2.0 showed the `privilege` capability in the marketplace
+security baseline and was `review-required` for that alone, because the
+supervisor's wrapper list named `sudo` and `doas` and the baseline is a
+source scan that reads the word. Measured 2026-09-18 on a throwaway
+plugin with nothing but a manifest, a README, a licence and `omakit add
+run`, before and after
+([record](evidence/blocks/2026-09-18-run-block-baseline.json)): at 0.2.0
+review-required with `privilege` at `omakit/run-supervisor.py`; at 0.2.1,
+the two words removed from the list in the open, `passed`, disposition
+clear, no capability, no finding. Theme Manager is review-required on its
+own, for `installer`.
 
 About 60 ms and one helper process (5.7 MB Pss while it waits) per run,
 of which 8 ms is the interpreter (`python3 -I -S -B -c pass`, median of
@@ -197,6 +198,16 @@ result; the method is in `tests/lab/run/report.py`.
   (a hook Omarchy runs, a test) are in the `omarchy-plugin-build` skill.
 - It does not decide what a reviewer decides. The counts above are what the
   review asked for in one week; a block is plumbing, not approval.
+- It does not refuse a privileged wrapper, and decides nothing about
+  privilege (0.2.1). `sudo` and `doas` are not on the wrapper list the
+  string-program refusal reads, so `sudo sh -c "..."` is not refused as a
+  shell string by Run; the neutral wrappers (`env`, `nice`, `timeout`,
+  `setsid`, `flock`, `xargs`, `nohup`, `stdbuf`, `ionice`, `chrt`,
+  `unbuffer`, `busybox`) and the interpreters with their string flags
+  are. A plugin that runs a privileged wrapper carries that word in its
+  own tree and is in review for that reason on its own; a block that
+  named the words put every plugin there
+  ([record](evidence/blocks/2026-09-18-run-block-baseline.json)).
 - It does not draw the per-run token from a cryptographic source. The 128
   bits `Run.qml` writes to the supervisor's stdin come from the QML
   engine's ordinary random source (`Math.random`, seeded by Qt), which is
@@ -222,10 +233,15 @@ author's, and the command says so and stops. Every written file's header
 carries the block name and version, the SPDX licence, the copyright, the
 omakit commit it came from (the checkout's HEAD, or the package's recorded
 commit) and the sha256 of the body after the header line, so
-`sha256sum <(tail -n +7 omakit/Run.qml)` is the whole check.
+`sha256sum <(tail -n +7 omakit/Run.qml)` is the whole check. A file whose
+body is the shipped one under an older header (a version that did not
+touch it, as 0.2.1 did not touch `Run.qml`) is refused without `--update`
+and has its header moved with it, so a copy never carries two versions
+(measured on 0.2.1: the first `--update` left `Run.qml` at 0.2.0 beside a
+0.2.1 supervisor, and `inspect` read one block as two versions).
 
 `omakit inspect` reads the header and the body: an unmodified block is one
-row, `block run 0.2.0, 2 files, unmodified`, and its lines raise no pattern
+row, `block run 0.2.1, 2 files, unmodified`, and its lines raise no pattern
 row; a `Run {` site in the plugin's own QML is listed as a process with its
 deadline observed through the block. A file with a block header whose body
 is not a shipped one is reported as `modified`, and its lines are read like
@@ -254,7 +270,7 @@ the commit the marketplace validated) and after
 | environment trust, shell lines | 462 | 484; 434 once the 50 names in the 9 helpers a Run site resolves to are counted apart |
 | file and state boundary rows | 7 | 7 |
 | blocks row | none | `run 0.1.0, 2 files, unmodified` |
-| verify | review-required, installer | the same at 0.1.0; at 0.2.0, review-required, installer and privilege (below) |
+| verify | review-required, installer | the same at 0.1.0; at 0.2.0, review-required, installer and privilege; at 0.2.1, review-required, installer (What it costs) |
 | submit | listed | the same |
 
 The shell lines rose by the five new helpers' bare `mkdir`, `cmp`, `cp`,
@@ -445,8 +461,8 @@ is not submitted; no reviewer has seen it.
 
 ## Versioning
 
-A block's version is its own, `0.2.0` for each since 2026-09-18 (`0.1.0`
-on 2026-09-17), independent of omakit's.
+A block's version is its own, Run `0.2.1` and Store `0.2.0` since
+2026-09-18 (`0.1.0` on 2026-09-17), independent of omakit's.
 A change to a file's body is a new block version; `omakit add <block>
 --update` moves an unmodified copy to it, and `inspect` names the version
 a copy carries beside the one omakit ships. `blocks/<name>/NOTICE` in the
