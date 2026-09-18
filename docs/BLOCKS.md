@@ -3,12 +3,14 @@
 A block is a small set of files a plugin copies into its own tree with
 `omakit add`, that does one piece of the plumbing the marketplace's review
 blocks on most, built and tested once. This page is the contract of the
-two blocks, Run 0.1.0 and Store 0.1.0: what each does, which review
+two blocks, Run 0.2.0 and Store 0.2.0: what each does, which review
 comments each line answers, the API, what it costs, what it does not do,
 and how it is added, updated and recognised. The reasoning and the measurements behind the
 design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
 [history](history/2026-09-17-blocks-plan.md), what is still open in
-[BLOCKS_PLAN.md](BLOCKS_PLAN.md).
+[BLOCKS_PLAN.md](BLOCKS_PLAN.md). The adversarial review of 2026-09-18 and
+what 0.2.0 changed for each of its findings is in
+[evidence/blocks/2026-09-18-review.json](evidence/blocks/2026-09-18-review.json).
 
 A block is not a marketplace rule and never presents itself as one. It
 implements behaviour measured from public review comments (M13,
@@ -23,7 +25,7 @@ Run starts one program for a plugin and always ends it. Two files under
 | File | What it is |
 | --- | --- |
 | `omakit/Run.qml` | The QML object a plugin uses: properties, `start()`, `cancel()`, `finished(result)`. |
-| `omakit/run-supervisor.py` | The helper `Run.qml` starts through `/usr/bin/python3 -I -S -B`, by absolute path, next to it. It forks the program into a new session, watches it through a pidfd, reads both pipes under caps, keeps the deadline, ends the group and reaps the leader last. |
+| `omakit/run-supervisor.py` | The helper `Run.qml` starts through `/usr/bin/python3 -I -S -B`, by absolute path, next to it. It takes a per-run token from stdin, forks the program into a new session behind a gate, announces the leader, releases the gate on `Run.qml`'s acknowledgement, watches it through a pidfd, reads both pipes under caps, keeps the deadline, ends the group and reaps the leader last. Every line it reports starts with the token. |
 | `omakit/NOTICE` | The listing: block, version, licence, copyright, source commit and body sha256 per file. |
 
 Stock Omarchy 4.0.3 has `/usr/bin/python3` (3.14.7) as a dependency of
@@ -40,19 +42,24 @@ Each line cites how many of the 1,001 security blocker comments in the M13
 week raise it ([record](evidence/blocks/2026-09-17-run-requirements.json);
 the counts overlap, 587 comments raise at least one). A count is what the
 review asked for, read by a calibrated classification model; it is not a
-promise that the comment would not have been written.
+promise that the comment would not have been written. Two lines carry
+`(review)` instead of a count: they answer the adversarial review of
+2026-09-18 on the block's own plumbing, not a class of marketplace
+comments.
 
 | Line | Comments | What Run does |
 | --- | ---: | --- |
 | Absolute executable path | 366 | `command[0]` must be absolute; anything else is `spawn-failed` with the reason `command[0] is not an absolute path`. The supervisor and the interpreter are absolute too: `/usr/bin/python3` and the file next to `Run.qml`. |
 | Closed environment | 351 | `clearEnvironment: true`; the program sees `PATH=/usr/bin`, `HOME`, `LANG=C.UTF-8`, `XDG_RUNTIME_DIR` and what the plugin adds through `environment`. Nothing else of the shell's environment reaches it, and nothing reaches what it starts: a helper under Run inherits the closed environment for every line inside it (measured: a helper calling `env`, `sort`, `sed`, `wc` by bare name with shadow copies first in the session's PATH and `BASH_ENV` set scored 0 hits in every run; 3 for the control). |
 | Output cap while reading | 313 | `maxBytes` and `maxLines` per stream, counted by the supervisor as bytes arrive; over either, the run ends as `overflow` with TERM, grace, KILL. `keepBytes` is what the result carries; the rest is counted and dropped, never buffered. Measured: 1 GiB through a run leaves the Quickshell process within 0.3 MB of where it started. |
-| Hard deadline | 291 | `deadlineMs` from `start()`, absolute, in the supervisor's clock; at it, TERM to the group, `graceMs` later KILL, state `timeout`. A backstop `Timer` in `Run.qml` at deadline plus grace plus 3 s sends KILL to the group by pgid and to the supervisor, state `supervisor-lost`, for the case where the supervisor itself is gone. |
-| Untrusted output as plain text | 266 | `result.stdout` and `result.stderr` are text of at most `keepBytes` each with C0 (except tab and newline), DEL, C1 and the bidirectional controls removed, meant for `Text.PlainText`. An escape sequence loses its ESC and shows as the text that followed it. |
-| Cancel on destruction and supersession | 130 | `Component.onDestruction` starts a detached reaper (the same file, `--kill-group`) that sends TERM, waits the grace, sends KILL, because the `Process` destructor SIGKILLs the supervisor synchronously right after. `start()` on a live run cancels it first; its result comes back as `cancelled`, then the new run starts. `cancel()` is TERM to the supervisor, which ends the group as it does on a deadline. |
+| Hard deadline | 291 | `deadlineMs` from `start()`, absolute, in the supervisor's clock; at it, TERM to the group, `graceMs` later KILL, state `timeout`. A backstop `Timer` in `Run.qml` at deadline plus grace plus 3 s sends KILL to the group by pgid and to the supervisor, state `supervisor-lost`, for the case where the supervisor itself is stopped. A `start()` queued behind that backstop waits until the killed supervisor is reaped before it follows (R3). |
+| Untrusted output as plain text | 266 | `result.stdout` and `result.stderr` are text of at most `keepBytes` each with C0 (except tab and newline), DEL, C1 and the bidirectional controls removed, meant for `Text.PlainText`; the supervisor removes them and `Run.qml` removes them again from whatever it delivers, `reason` included. An escape sequence loses its ESC and shows as the text that followed it. |
+| Unforgeable protocol | (review) | The program is a same-uid child of the supervisor and can open the supervisor's stdout through `/proc/<ppid>/fd/1` and write into it (measured: it can, on a stock kernel with Yama scope 1). So `Run.qml` generates 128 random bits per run and writes them to the supervisor's stdin, never argv or the environment, which `/proc` shows; the supervisor consumes them before the fork; every line it reports starts with them; `Run.qml` drops a line without them, takes the first `leader` line and the first `result` only, accepts a `state` only from the closed set, and bounds the unfinished line it buffers at six times `keepBytes` plus 64 KiB. A forged leader, a forged result or a stream without a newline changes nothing (R1). |
+| Cancel on destruction and supersession | 130 | `Component.onDestruction` starts a detached reaper (the same file, `--kill-group`) that sends TERM, waits the grace, sends KILL, because the `Process` destructor SIGKILLs the supervisor synchronously right after. A run whose leader line `Run.qml` has not read yet is still behind the supervisor's gate: the forked child waits for one byte before it execs, the dying supervisor closes the gate, the child exits unrun (R4). `start()` on a live run cancels it first; its result comes back as `cancelled`, then the new run starts. `cancel()` is TERM to the supervisor, which ends the group as it does on a deadline. |
+| A supervisor that dies is not an escape | (review) | A program can `kill -9` its own supervisor (same uid). When the supervisor exits or dies without a valid result, `Run.qml` starts the detached reaper for the group it learned, reports `supervisor-lost` with what it did in `reason`, and the group is TERM, grace, KILL like any other end (R2). |
 | Group teardown | 126 | The program is the leader of a new session; TERM goes to the whole group, then KILL after the grace, and the run ends only when `/proc` shows no live member of the group, polled every 20 ms in the supervisor (a descendant holding the pipe after the leader exits is ended in about 50 ms, not after the grace). |
-| argv, not a shell string | 106 | `command` is argv; a shell string is refused as `spawn-failed`: `sh`, `bash`, `zsh`, `dash`, `fish`, `ksh`, `python`, `python3`, `perl`, `ruby`, `php`, `lua` or `node` as `command[0]` with a `-c` among its leading options (alone or in a cluster, `-lc`). `allowShellString: true` lets it through, on its own line, where a reviewer sees it. |
-| Reap order and pid identity | 18 | The leader's status is read with `waitid(P_PIDFD, WNOWAIT)` and it is reaped with `waitpid` only after the group is empty, so the group number cannot be reused by an unrelated process while it is being signalled. Measured in the spike: pure QML cannot do this, because `QProcess` reaps the leader the moment it exits. |
+| argv, not a shell string | 106 | `command` is argv; a shell string is refused as `spawn-failed`. What is refused, best effort and not a sandbox: an interpreter by basename (digits and dots stripped: `python3.14` is `python`) with its string flag among its leading options, alone, in a cluster (`-lc`, `-ne`), or behind options that take a value (`-o pipefail -c`, `-W ignore -c`, `--rcfile x -c`, `+x -c`): `-c` for `sh`, `bash`, `dash`, `zsh`, `ksh`, `fish`, `rbash`, `ash`, `mksh` and `busybox <shell>`, `-c` for `python`, `-e` and `-E` for `perl`, `-e` for `ruby` and `lua`, `-r` and `--run` for `php`, `-e`, `-p`, `--eval` and `--print` for `node`; `flock -c` and `--command`; and the same seen through `env` (its `NAME=value` words and options skipped), `nice`, `timeout` (its duration skipped), `setsid`, `flock` (its lock file skipped), `xargs`, `sudo`, `doas`, `nohup`, `stdbuf`, `ionice`, `chrt`, `unbuffer` and `busybox`, up to eight deep. A script path followed by `-c` is a script (`bash x.sh -c`), and `--` ends the options. An interpreter, wrapper or flag not in this list is not refused; `allowShellString: true` lets any of it through, on its own line, where a reviewer sees it (R5). |
+| Reap order and pid identity | 18 | Inside the supervisor, the leader's status is read with `waitid(P_PIDFD, WNOWAIT)` and it is reaped with `waitpid` only after the group is empty, so the group number cannot be reused by an unrelated process while the supervisor signals it. Measured in the spike: pure QML cannot do this, because `QProcess` reaps the leader the moment it exits. The two paths that signal by number without the supervisor are under what Run does not do. |
 
 ## The API
 
@@ -96,7 +103,9 @@ catalog.running      // true from start() to the result
 `spawn-failed` comes with the exec's own errno text (`No such file or
 directory`, `Permission denied`) through a close-on-exec pipe the child
 writes to when `execv` fails, so a program that exits 127 on its own is
-`exit` with code 127 and not a spawn failure.
+`exit` with code 127 and not a spawn failure. `supervisor-lost` says in
+`reason` what happened to the supervisor and that the group it named was
+handed to the reaper.
 
 Omarchy's own commands live under `~/.local/share/omarchy/bin`; the base
 `PATH` is `/usr/bin` alone, so a plugin names them by absolute path
@@ -130,9 +139,31 @@ result; the method is in `tests/lab/run/report.py`.
 
 ## What Run does not do
 
-- It does not follow a program out of its session. A program that calls
-  `setsid` itself, or a daemon that double-forks, leaves the group and Run
-  cannot end it; `survivors` counts only the group.
+- It does not follow a program out of its group. A program that calls
+  `setsid` or `setpgid` itself, or a daemon that double-forks, leaves the
+  group and Run cannot end it; `survivors` counts only the group.
+- It does not hold the group number after the supervisor is gone (R6). The
+  detached reaper and the backstop signal the group by number, and the
+  supervisor that held the leader unreaped is being killed at that moment;
+  during the reaper's grace (1 s by default) the number is free. An
+  unrelated process would be hit only if it took that exact pid in that
+  second, which needs the pid counter to wrap: 4,194,304 pids on the stock
+  kernel (`kernel.pid_max`), 32,768 where a distribution keeps the old
+  value.
+- It does not give up before the deadline (R7). After `cancel()` or an
+  overflow, a group member that KILL does not end (uninterruptible sleep on
+  a hung mount) keeps the supervisor polling until deadline plus grace plus
+  2 s, and the backstop fires 1 s later; with a deadline of ten minutes a
+  `cancel()` can take ten minutes to report, and a `start()` queued behind
+  it waits with it. The condition is a process that survives SIGKILL.
+- It does not restore the signal dispositions Python ignores (R8). The
+  program inherits `SIGPIPE` and `SIGXFSZ` ignored through `execv`, as
+  every process a Python parent starts does: a helper's pipeline producer
+  that does not check write errors gets `EPIPE` and spins to the deadline
+  instead of dying, and a write past `RLIMIT_FSIZE` returns short instead
+  of killing the writer. A helper that needs the defaults resets them
+  (`trap - PIPE` does not; a shell cannot un-ignore an inherited `SIG_IGN`
+  for `SIGPIPE`; a C or Python program can).
 - It does not read the program's environment expectations. A helper that
   needs a variable gets it through `environment`, explicitly.
 - It does not make a shell helper's insides safe. A helper Run starts
@@ -251,12 +282,12 @@ the same run as Run's; 527 comments raise at least one, the counts overlap).
 
 | Line | Comments | What Store does |
 | --- | ---: | --- |
-| Descriptor-relative opens, no-follow | 392 | Every directory on the way from HOME to the plugin's directory is opened with `O_DIRECTORY | O_NOFOLLOW` relative to the descriptor before it, and the file relative to the last one with `O_NOFOLLOW`; a planted link anywhere is `refused` with the reason `... is a symbolic link` (`ELOOP`, or `ENOTDIR` where a directory was demanded). Measured: a link on the plugin directory, on its parent and on the file itself, 0 bytes reach the target. |
+| Descriptor-relative opens, no-follow | 392 | Every directory on the way from HOME to the plugin's directory is opened with `O_DIRECTORY | O_NOFOLLOW` relative to the descriptor before it, and the file relative to the last one with `O_NOFOLLOW | O_NONBLOCK`, so a FIFO planted at the file's name opens at once instead of waiting for a writer and is `refused` as `not a regular file` (S1); `O_NONBLOCK` is cleared only after that check. A planted link anywhere is `refused` with the reason `... is a symbolic link` (`ELOOP`, or `ENOTDIR` where a directory was demanded). Measured: a link on the plugin directory, on its parent and on the file itself, 0 bytes reach the target; a FIFO, refused in under a second. A refusal partway through the walk closes the descriptors it opened, so an importer that keeps calling never runs out (S5). |
 | No check-then-use | 288 | Nothing is checked by path. Every check is `fstat` on the descriptor that was just opened, and the write is a rename over whatever is there. Measured: a neighbour swapping the file between a regular file and a link 40 operations long; every read `ok`, `missing` or `refused`, the target untouched. |
-| Exclusive 0600 temp, atomic replace | 273 | A write goes to `.store-<pid>-<16 hex>.tmp` opened `O_CREAT | O_EXCL` at mode 0600 in the plugin's directory, is `fsync`ed, renamed over the name, and the directory is `fsync`ed; a staging file a crashed writer left is swept once it is older than ten minutes, never sooner. Measured: ten writers at once, the file is one whole write and no staging file is left; a stale staging file is swept and a fresh one kept. |
+| Exclusive 0600 temp, atomic replace | 273 | A write goes to `.store-<pid>-<16 hex>.tmp` opened `O_CREAT | O_EXCL` at mode 0600 in the plugin's directory, written in a loop until every byte is there, `fsync`ed, renamed over the name, and the directory is `fsync`ed; a short write, `ENOSPC`, a quota or `RLIMIT_FSIZE` unlinks the staging file and the write is `failed`, the old file untouched (S2). A staging file a crashed writer left is swept once it is older than ten minutes, never sooner. Measured: ten writers at once, the file is one whole write and no staging file is left; a stale staging file is swept and a fresh one kept; a write cut short by `RLIMIT_FSIZE` leaves the old file whole and nothing staged. |
 | Owner and regular-file checks | 263 | After every open: a directory is a directory, a file is a regular file, and both are owned by this user; anything else is `refused` by name. Measured on the stock guest with `chown root`: `refused`, `not owned by this user`. |
-| Schema check on parse | 218 | A read is parsed as JSON without `NaN` or `Infinity` and checked against `schema`, a subset: `type`, `properties`, `required`, `additionalProperties: false`, `items`, `enum`, `maxLength`, `maxItems`, `maxProperties`, `minimum`, `maximum`, `pattern`; a departure is `invalid` with the path that departs. A write is checked the same way before anything is written. |
-| Size cap on read | 190 | `maxBytes` (default 1 MiB), enforced while reading: one byte over is `overflow`, and the rest is not read. A write over `maxBytes`, or over 64 KiB (one argument to the helper), is `overflow` before it starts. |
+| Schema check on parse | 218 | A read is parsed as JSON without `NaN` or `Infinity`, nested at most 64 levels deep, and checked against `schema`, a subset: `type` (one name, not a list), `properties`, `required`, `additionalProperties: false`, `items`, `enum`, `maxLength`, `maxItems`, `maxProperties`, `minimum`, `maximum`, `pattern`; a departure is `invalid` with the path that departs. A write is checked the same way before anything is written. A schema outside that subset in shape, or over 64 KiB, is `refused` by keyword before anything is read (S6). |
+| Size cap on read | 190 | `maxBytes` (default 1 MiB), enforced while reading: one byte over is `overflow`, and the rest is not read. The result line carries the value as UTF-8, not `\u`-escaped, so a file within the cap is within the helper's output cap whatever script it is in (S3). A write over `maxBytes`, or over 64 KiB of UTF-8 (one argument to the helper, counted in bytes, not characters), is `overflow` before it starts (S4). |
 | Refuse group- or world-writable | 146 | Every directory and file on the way with `mode & 022` is `refused`, `writable by the group or by others`; what Store creates is 0700 and 0600. |
 | A private 0700 directory under the XDG base | 96 | `$XDG_STATE_HOME/<pluginId>` (default `~/.local/state`) or `$XDG_CACHE_HOME/<pluginId>` (`~/.cache`), created with mode 0700 where missing, one directory per plugin id; the base has to be inside HOME, or the walk cannot vouch for it and the operation is `refused`. |
 | No /tmp | 63 | There is no path but the one above; the staging file lives in the plugin's own directory. |
@@ -315,9 +346,18 @@ guest's is beside it.
 ### What Store does not do
 
 - It does not keep a cache a helper downloads: a write is one argument to
-  the helper, capped at 64 KiB. A helper that fetches a catalog keeps the
-  transaction on its own side; `store-helper.py` is importable for that
-  and Theme Manager's `catalog-cache.py` is the same code.
+  the helper, capped at 64 KiB of UTF-8 (the kernel's one-argument limit is
+  128 KiB; a schema is capped the same way). A helper that fetches a
+  catalog keeps the transaction on its own side; `store-helper.py` is
+  importable for that and Theme Manager's `catalog-cache.py` is the same
+  code.
+- It does not accept a HOME that is itself a symbolic link, or an XDG base
+  that is group-writable (S7). `O_NOFOLLOW` applies to the last component,
+  so `/home` being a link (`/var/home` on some distributions) is followed
+  and fine, but `HOME=/home/me` where `me` is a link is `refused`; and a
+  base created with umask 002 (`~/.cache` at 0775) is `refused` by the
+  mode check. Both are the walk refusing to vouch, not a defect; the
+  condition is that deployment.
 - It does not walk outside HOME. An `XDG_STATE_HOME` or `XDG_CACHE_HOME`
   elsewhere is `refused`, because the walk cannot vouch for a directory it
   cannot check owner by owner.
