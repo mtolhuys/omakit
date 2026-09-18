@@ -1,0 +1,40 @@
+{
+ "id": "run-block-baseline",
+ "measured": "2026-09-18",
+ "question": "What does the marketplace security baseline say about a plugin that carries nothing but the Run block?",
+ "method": "A throwaway git repository with manifest.json (id io.github.example.e2e, kinds service), README.md, LICENSE and a declared origin, then `omakit add run .` at Run 0.2.0 and `omakit verify . --json` at marketplace pin 38060f89; the document below is that output, the subject fields as verify wrote them.",
+ "reading": "review-required, one capability, privilege, at omakit/run-supervisor.py:57: the supervisor names sudo and doas in the wrapper list its string-program refusal reads (docs/BLOCKS.md, argv not a shell string, R5), and the baseline is a source scan. Every plugin that carries Run 0.2.0 therefore lands in the manual queue for that line alone. Not changed in this round; the release notes list it.",
+ "subject": {
+  "id": "io.github.example.e2e",
+  "commit": "783c3902a5645b9f12da230f160253fa08b26f96",
+  "files": [
+   "manifest.json",
+   "README.md",
+   "LICENSE",
+   "omakit/Run.qml",
+   "omakit/run-supervisor.py",
+   "omakit/NOTICE"
+  ],
+  "runBlock": "0.2.0"
+ },
+ "marketplacePin": {
+  "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
+  "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+  "baselineVersion": "3",
+  "enforcementMode": "selective"
+ },
+ "disposition": "review-required",
+ "enforcement": null,
+ "blocksApproval": false,
+ "findings": 0,
+ "capabilities": [
+  {
+   "id": "privilege",
+   "title": "Privilege request",
+   "at": [
+    "omakit/run-supervisor.py"
+   ]
+  }
+ ],
+ "note": "The official document is reduced to its verdict and the capability paths: committed evidence carries no finding text, snippet or line about any plugin, this throwaway one included (tests/unit/hygiene.test.mjs)."
+}
