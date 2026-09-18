@@ -572,6 +572,14 @@ test("exit 2 when the target cannot be read: no directory, no Git checkout, no m
   const notGit = run(["inspect", plain_])
   assert.equal(notGit.code, 2)
   assert.match(notGit.err, /not-a-git-repository/)
+  // A file where the directory is meant is said to be a file, with the
+  // directory it sits in offered (finding 7 of the first-user test); it is
+  // not "not inside a Git repository", which it may well be.
+  const file = run(["inspect", join(REPO_ROOT, "README.md")])
+  assert.equal(file.code, 2)
+  assert.match(file.err, /not-a-directory/)
+  assert.match(file.err.replace(/\s+/g, " "), /README\.md is a file; the target is the plugin's repository directory/)
+  assert.doesNotMatch(file.err, /not inside a Git repository/)
   const noManifest = mkdtempSync(join(tmpdir(), "omakit-inspect-nomanifest-"))
   mkdirSync(join(noManifest, "src"))
   writeFileSync(join(noManifest, "src", "Widget.qml"), "import QtQuick\nItem { }\n")

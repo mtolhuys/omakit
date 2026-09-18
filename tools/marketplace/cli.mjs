@@ -71,6 +71,7 @@ const REMEDY = Object.freeze({
   "dirty-worktree": "Commit the changes, or pass --allow-dirty to read HEAD as committed; uncommitted edits are not read.",
   "subject-not-found": "Pass a local Git repository path, or <https url>@<40-char sha>.",
   "not-a-git-repository": "Pass a local Git repository path, or <https url>@<40-char sha>.",
+  "not-a-directory": "Pass the plugin's repository directory, not a file inside it.",
   "commit-not-found": "Commit first; the checks read the tree at an exact commit, never the working copy.",
   "network-unavailable": "Connect to the network, then run it again; `omakit watch --user <login>` reads a public account, and needs the network too.",
   "github-unavailable": "Wait for GitHub, then run it again. `gh auth login` raises the rate limit if that is what ran out.",

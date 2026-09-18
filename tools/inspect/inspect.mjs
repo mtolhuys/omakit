@@ -45,7 +45,7 @@ export const NOT_VISIBLE = Object.freeze([
 ])
 
 /** The failure codes that mean the target could not be read at all: exit 2, the contract's second status. */
-export const NOT_READABLE = Object.freeze(["subject-not-found", "not-a-git-repository", "commit-not-found", "nothing-to-inspect", "usage"])
+export const NOT_READABLE = Object.freeze(["subject-not-found", "not-a-directory", "not-a-git-repository", "commit-not-found", "nothing-to-inspect", "usage"])
 
 /**
  * The omakit blocks in the tree, read from the files' own headers and

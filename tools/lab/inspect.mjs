@@ -144,8 +144,15 @@ export function inspectToolchain(layout, pin = labPin()) {
   return out
 }
 
-/** The one command that prepares a toolchain checkout, printed whole so it can be run as it stands. */
-export function toolchainCommand(pin = labPin(), dir = "~/.cache/omakit/lab/toolchain/omarchy-iso") {
+/**
+ * The one command that prepares a toolchain checkout, printed whole so it
+ * can be run as it stands. `dir` is under the resolved lab cache: with
+ * XDG_CACHE_HOME set, the remedy names that root, not ~/.cache (measured
+ * on 2026-09-19 by a first user under XDG_CACHE_HOME=/tmp/empty-cache,
+ * whose `lab inspect` printed clone and setup commands into ~/.cache;
+ * docs/evidence/ux/2026-09-19-first-user-test.json, finding 6).
+ */
+export function toolchainCommand(pin = labPin(), dir = join(labLayout().cache, "toolchain/omarchy-iso")) {
   return `git clone ${pin.toolchain.repository} ${dir} && git -C ${dir} checkout --detach ${pin.toolchain.commit} && git -C ${dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${dir}`
 }
 
@@ -220,7 +227,7 @@ export async function inspectLab({ env = process.env, pin = labPin(), verify = f
     })
   }
   if (toolchain.state !== "ready" && base.state !== "ready") {
-    missing.push({ what: "the toolchain", cost: `a checkout of omarchy-iso at ${pin.toolchain.commit.slice(0, 12)} with ${pin.toolchain.patch} applied; it drives the installer once, to build the base`, command: toolchainCommand(pin) })
+    missing.push({ what: "the toolchain", cost: `a checkout of omarchy-iso at ${pin.toolchain.commit.slice(0, 12)} with ${pin.toolchain.patch} applied; it drives the installer once, to build the base`, command: toolchainCommand(pin, join(layout.cache, "toolchain/omarchy-iso")) })
   }
   if (base.state !== "ready") {
     missing.push({

@@ -3,9 +3,9 @@
 //   reviewer mode - <https url>@<40-char sha>, fetched read-only into
 //                   .cache/subjects/<owner>__<repo>/ and never executed.
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync } from "node:fs"
+import { existsSync, statSync, mkdirSync } from "node:fs"
 import { homedir } from "node:os"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 
 export class SubjectError extends Error {
   constructor(code, message) {
@@ -62,6 +62,11 @@ export function resolveSubject(target, options) {
   const parsed = parseTarget(target)
   if (parsed.mode === "author") {
     if (!existsSync(parsed.path)) throw new SubjectError("subject-not-found", `no such directory: ${parsed.path}`)
+    // A file where a directory is meant is said so: `git -C <file>` fails
+    // and read as "not inside a Git repository" although it was (measured
+    // on 2026-09-19 by a first user passing a plugin's README.md;
+    // docs/evidence/ux/2026-09-19-first-user-test.json, finding 7).
+    if (!statSync(parsed.path).isDirectory()) throw new SubjectError("not-a-directory", `${parsed.path} is a file; the target is the plugin's repository directory, the one with its manifest.json (${dirname(parsed.path)}?)`)
     let top
     try {
       top = git(parsed.path, ["rev-parse", "--show-toplevel"]).trim()

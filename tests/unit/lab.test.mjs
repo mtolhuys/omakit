@@ -171,6 +171,11 @@ test("inspect on an empty home reports everything missing with its cost and comm
     assert.ok(lab.missing.some((item) => item.what === "the verified ISO" && /6,260,654,080 B \(6\.261 GB \/ 5\.831 GiB\)/.test(item.cost) && item.command === "omakit lab setup"))
     assert.ok(lab.missing.some((item) => item.what === "the toolchain" && /git clone https:\/\/github\.com\/omacom-io\/omarchy-iso/.test(item.command) && item.command.includes(pin.toolchain.commit)))
     assert.ok(lab.missing.some((item) => item.what === "a prepared base" && /5m 57\.8s/.test(item.cost)))
+    // Every path in every remedy is the resolved cache root, never ~/.cache (finding 6 of the first-user test).
+    for (const item of lab.missing) {
+      assert.ok(!/~\/\.cache|\/home\/[^/]+\/\.cache/.test(item.command || ""), `${item.what}: ${item.command}`)
+      if (/toolchain/.test(item.what)) assert.ok(item.command.includes(join(layout.cache, "toolchain/omarchy-iso")), item.command)
+    }
     assert.equal(existsSync(layout.cache), false, "inspect created no cache directory")
     assert.equal(existsSync(layout.state), false)
     const text = renderLab(lab, { colour: false, env })

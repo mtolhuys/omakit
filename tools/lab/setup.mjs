@@ -97,7 +97,7 @@ export function planSetup({ env = process.env, pin = labPin(), from = null, plug
       steps.push({ kind: "promote", staged: staged.at(-1), to: layout.base, replacing: base.state === "missing" ? null : base })
     } else {
       for (const line of probeCommands(BUILD_COMMANDS)) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
-      if (toolchain.state !== "ready") blockers.push({ what: "the toolchain", cost: toolchain.reason, command: toolchain.state === "unpatched" ? `git -C ${toolchain.dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${toolchain.dir}` : toolchainCommand(pin) })
+      if (toolchain.state !== "ready") blockers.push({ what: "the toolchain", cost: toolchain.reason, command: toolchain.state === "unpatched" ? `git -C ${toolchain.dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${toolchain.dir}` : toolchainCommand(pin, join(layout.cache, "toolchain/omarchy-iso")) })
       steps.push({ kind: "build", toolchain: toolchain.harness, to: layout.base, replacing: base.state === "missing" ? null : base, bytes: pin.measured.baseDirectoryBytes, milliseconds: pin.measured.buildMilliseconds })
     }
   }
