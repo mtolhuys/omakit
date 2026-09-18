@@ -2,11 +2,22 @@
 
 ## Status
 
-This is the required design and acceptance contract for `omakit lab`. It is not
-an implementation claim. The current CLI deliberately rejects lab scope in
-`tests/unit/self-containment.test.mjs`; implementing this plan is the explicit
-scope decision that must update that invariant, `AGENTS.md`, the command
-completion contract, and the package assertion in the same green change.
+This is the design and acceptance contract `omakit lab` was built to, on
+2026-09-18, in 0.6.0 (`docs/LAB.md` is what shipped; `docs/history/2026-09-18-lab-inventory.md`
+is what it replaced). The scope decision this plan asked for landed in
+one change: `tests/unit/self-containment.test.mjs` now asserts no image
+instead of no lab, `AGENTS.md` names the lab as the fourth exception, the
+completion contract knows `lab` and its suites, and the package assertion
+carries a newly measured ceiling. Where 0.6.0 departs from the text
+below, `docs/LAB.md` says so under what the lab does not do: the
+overlay is a named file removed on every exit path rather than a
+descriptor QEMU holds; the tier planner (static, namespace, compositor)
+is not built, because every suite this repository has needs the
+compositor and `run` names a missing base without booting; `lab.lock` is
+a directory with the holder's pid and QMP socket, and liveness is a QMP
+answer rather than an inherited descriptor; there is no `omakit lab
+plan`. The measured facts M1 to M8 below stand as measured on their
+dates; M14 in `docs/MEASUREMENTS.md` is the 2026-09-18 re-measurement.
 
 `omakit-lab` names the capability below. The public entry point remains the one
 `omakit` executable:

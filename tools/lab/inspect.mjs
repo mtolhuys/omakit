@@ -225,7 +225,7 @@ export async function inspectLab({ env = process.env, pin = labPin(), verify = f
   if (base.state !== "ready") {
     missing.push({
       what: base.state === "missing" ? "a prepared base" : `a usable base (the one there is ${base.state})`,
-      cost: `${bytesBoth(pin.measured.baseDirectoryBytes)} on disk, ${durationWords(pin.measured.buildMilliseconds)} to build on the reference host (M4), plus one verification boot`,
+      cost: `${bytesBoth(pin.measured.baseDirectoryBytes)} on disk, ${durationWords(pin.measured.buildMilliseconds)} to build on the reference host (M14), plus one verification boot`,
       command: "omakit lab setup",
     })
   }

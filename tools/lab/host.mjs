@@ -129,13 +129,13 @@ export function probeRunHost({ pin = labPin(), run } = {}) {
     reason: `${(memory.total / 2 ** 20).toFixed(0)} MiB total, ${(memory.available / 2 ** 20).toFixed(0)} MiB available; the guest takes ${pin.guest.memoryMiB} MiB`,
     remedy: memory.total >= guestBytes * 1.5 ? null : `the guest needs ${pin.guest.memoryMiB} MiB and the host its own; this host has less than one and a half times that`,
   })
-  lines.push({ name: "cpus", state: "ok", reason: `${cpus().length} logical CPUs, and the guest gets every one, as the toolchain's -smp $(nproc) gave the reference build (32, M4)` })
+  lines.push({ name: "cpus", state: "ok", reason: `${cpus().length} logical CPUs, and the guest gets every one, as the toolchain's -smp $(nproc) gave the reference build (32, M14)` })
   return lines
 }
 
 /**
  * The vCPU count a run gives the guest: every logical CPU, which is what
- * the toolchain's `-smp $(nproc)` gave the reference build (32, M4). A
+ * the toolchain's `-smp $(nproc)` gave the reference build (32, packaging/LAB_PLAN.md M4, M14). A
  * smaller number would be a guess about what a suite needs, and no run
  * has measured one.
  */

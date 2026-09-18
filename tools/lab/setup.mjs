@@ -140,7 +140,7 @@ export function disclosureLines(plan) {
   lines.push(["store", plan.layout.cache])
   const promote = plan.steps.find((step) => step.kind === "promote")
   if (build) {
-    lines.push(["build", `${durationWords(build.milliseconds)} on the measured reference host (M4); download excluded`])
+    lines.push(["build", `${durationWords(build.milliseconds)} on the reference host (M14); download excluded`])
     if (build.replacing) lines.push(["replacing", `the ${build.replacing.state} base there (${bytesBoth(build.replacing.allocatedBytes)}), removed after the new one verifies`])
   }
   if (promote) {
@@ -149,7 +149,7 @@ export function disclosureLines(plan) {
   }
   if (plugins) lines.push(["plugins", `${plugins.plugins.length} listed plugins at their validated commits, shallow, into ${plugins.to}`])
   lines.push(["afterwards", "verified ISO, one immutable base, and manifests"])
-  lines.push(["on disk", `${bytesBoth(plan.afterBytes)} (M6), before evidence; ${bytesBoth(plan.free.bytes)} free now`])
+  lines.push(["on disk", `${bytesBoth(plan.afterBytes)} (M14), before evidence; ${bytesBoth(plan.free.bytes)} free now`])
   return lines
 }
 

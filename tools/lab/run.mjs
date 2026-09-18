@@ -221,7 +221,7 @@ export function preflightRun({ suiteName, env = process.env, pin = labPin(), rep
   for (const line of probeRunHost({ pin })) if (line.state !== "ok") missing.push({ what: line.name, cost: line.reason, command: line.remedy })
   missing.push(...suitePreflight(suite, { repoRoot, layout }))
   const free = freeBytesAt(layout.cache)
-  if (free.bytes < pin.measured.overlayAfterRunBytes) missing.push({ what: "disk for one overlay", cost: `${bytesBoth(free.bytes)} free at ${free.path}; one run's overlay measured ${bytesBoth(pin.measured.overlayAfterRunBytes)} (M7)`, command: "omakit lab prune" })
+  if (free.bytes < pin.measured.overlayAfterRunBytes) missing.push({ what: "disk for one overlay", cost: `${bytesBoth(free.bytes)} free at ${free.path}; one run's overlay measured ${bytesBoth(pin.measured.overlayAfterRunBytes)} (M14)`, command: "omakit lab prune" })
   if (missing.length) throw new LabError("lab-not-ready", `\`omakit lab run ${suiteName}\` cannot start: ${missing.length} thing${missing.length === 1 ? " is" : "s are"} missing`, { missing, remedy: missing[0].command })
   return { suite, layout, base, free }
 }
@@ -273,6 +273,9 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
       onPhase(`running ${suite.title}`)
       const status = await runHarness({ suite, runId, runDir, layout, guest, paths, repoRoot, pin, suiteArgs: suite.args(options, layout), timeoutSeconds: suite.timeoutSeconds, onLine, signal })
       record.suiteStatus = status
+      // An interrupt during the suite is an interrupt, exit 130, the same as
+      // one before it: the guest is ended and the staging removed on the way out.
+      if (status === "interrupted") throw new LabError("interrupted", "interrupted during the suite")
       const documentPath = join(runDir, suite.document)
       const document = readJson(documentPath)
       record.document = existsSync(documentPath) ? documentPath : null

@@ -30,12 +30,13 @@
     "diskGiB": 40
   },
   "measured": {
-    "on": "2026-09-10",
-    "buildMilliseconds": 289513,
-    "baseAllocatedBytes": 6456152064,
-    "baseDirectoryBytes": 6456705024,
-    "preparedLabBytes": 12717359104,
-    "overlayAfterRunBytes": 1010110464,
-    "source": "packaging/LAB_PLAN.md M4 to M7; docs/MEASUREMENTS.md M14"
+    "on": "2026-09-18",
+    "buildMilliseconds": 357800,
+    "baseAllocatedBytes": 6181490688,
+    "baseDirectoryBytes": 6182264832,
+    "preparedLabBytes": 12442931200,
+    "overlayAfterRunBytes": 461180928,
+    "pluginsBytes": 6836224,
+    "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host; packaging/LAB_PLAN.md M4 to M7 are the 2026-09-10 to 2026-09-13 observations it re-measured"
   }
 }

@@ -36,10 +36,13 @@ one consent that states the exact size and the destination, and `--yes` is
 that consent in the command itself for an agent; a pipe without it refuses,
 exit 2, naming `omakit lab setup --yes`.
 
-Nothing here touches the daily session. Every command the lab runs on the
-host is on a list (`qemu-system-x86_64`, `qemu-img`, `ssh`, `gpg`, `git`,
-`uname`, `bash` for the harness, and `--version` probes), and
-`tests/unit/lab.test.mjs` reads every file under `tools/lab/` and refuses
+Nothing here touches the daily session. Every binary the lab's modules
+spawn on the host is on a list `tests/unit/lab.test.mjs` holds them to
+(`qemu-system-x86_64`, `qemu-img`, `ssh`, `gpg`, `git`, `uname`, `bash`
+for the harness, and the `--version` probes); the harness and the suites
+add `tar` and `node` on the host side of an ssh pipe, `magick` when it is
+there, and `jq` in the weigh suite. The same test reads every file under
+`tools/lab/` and refuses
 a line that names `omarchy-shell`, `hyprctl`, `shell.json`,
 `~/.config/omarchy`, `systemctl --user` or `quickshell` outside a command
 sent into the guest over SSH. QEMU's argument list is pure and read by the
@@ -122,7 +125,8 @@ recorded one; it will not be booted), `missing`.
 1. Preflight, reading only: the base is ready and the pin's; KVM, QEMU,
    `qemu-img`, `ssh` and the OVMF firmware are there; the host has one and
    a half times the guest's 5120 MiB; the suite's files are in the
-   checkout; the disk has room for one overlay (1,010,110,464 B, M7). What
+   checkout; the disk has room for one overlay (461,180,928 B, the largest
+   of the 2026-09-18 runs, M14). What
    is missing is printed with what it takes and the one command, exit 1.
 2. The lock: `lab.lock/`, made atomically; a QEMU answering on the recorded
    QMP socket, or a live holder pid, means held, whatever PID namespace it
@@ -133,10 +137,11 @@ recorded one; it will not be booted), `missing`.
 4. QEMU as a child of omakit, not daemonised, with the argument list above,
    every logical CPU (as the toolchain's `-smp $(nproc)` gave the reference
    build) and 5120 MiB, SSH on the first free port from 2222.
-5. The session the way a person gets one: SSH answers (35 s on the
-   reference host), the password is typed at the greeter through the
-   virtual keyboard until a `Hyprland` process owned by the guest user
-   exists (one round, 11 s), the startup notifications are dismissed.
+5. The session the way a person gets one: SSH answers (35 to 46 s over
+   the runs of 2026-09-18 on the reference host), the password is typed
+   at the greeter through the virtual keyboard until a `Hyprland` process
+   owned by the guest user exists (one round, 11 s, every time), the
+   startup notifications are dismissed.
 6. The identity, read from inside and printed before anything else, as the
    plan requires:
 
@@ -207,7 +212,8 @@ Store suite, the same afternoon: 1m 48.5s, a 417,075,200 B overlay, 15 of
 the weigh smoke: 1m 47.0s, a 461,180,928 B overlay, three real restarts,
 the restore and the interrupt
 ([evidence/lab/20260918-161929-weigh/](evidence/lab/20260918-161929-weigh/)). The guest takes 5120 MiB while it runs.
-The old harness retained a 1.01 GB overlay per run (M7); this one keeps
+The old harness retained a 1.01 GB overlay per run (packaging/LAB_PLAN.md
+M7); this one keeps
 none.
 
 ## Setup: what it costs and what it does
@@ -219,18 +225,23 @@ reference host:
 Omarchy       release 4.0.3; installed guest expected 4.0.3-1
 download      6,260,654,080 B (6.261 GB / 5.831 GiB)
 from          https://iso.omarchy.org/omarchy-4.0.3.iso
-verify        pinned SHA-256 03d60bc7... and the Omarchy signature 40DFB630...
+verify        pinned SHA-256
+              03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
+              and the Omarchy signature 40DFB630FF42BCFFB047046CF0134EE680CAC571
 store         ~/.cache/omakit/lab
-build         4m 49.5s on the measured reference host (M4); download excluded
+build         5m 57.8s on the reference host (M14); download excluded
 afterwards    verified ISO, one immutable base, and manifests
-on disk       12,717,359,104 B (12.717 GB / 11.844 GiB) (M6), before evidence; <free now>
+on disk       12,442,931,200 B (12.443 GB / 11.588 GiB) (M14), before evidence;
+              1,317,675,511,808 B (1317.676 GB / 1227.181 GiB) free now
 
 Acquire and build this verified base now? [y/N]:
 ```
 
 With `--from <file>` the download line says `0 B` and the file is copied
-(6,260,654,080 B in 4.6 s on the reference host with the source page-cached, then 13.1 s to hash it and check the signature, by the file times of 2026-09-18) and verified; with the ISO already
-verified, only the build remains; with a base the toolchain built but a
+(6,260,654,080 B in 4.6 s on the reference host with the source
+page-cached, then 13.1 s to hash it and check the signature, by the file
+times of 2026-09-18) and verified; with the ISO already verified, only
+the build remains; with a base the toolchain built but a
 verification boot never promoted (an interrupted setup), the build line
 says `none` and the staged base is verified and promoted instead of built
 again. The download is a literal GET to `<name>.part`, resumed by byte

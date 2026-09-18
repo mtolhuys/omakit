@@ -29,7 +29,7 @@ export function labDoctorChecks(lab) {
   // inspect` prints the path and the cache's own size.
   // To a tenth of a GiB: the exact figure moves with every write on the
   // filesystem, and doctor's two consecutive runs are held to the same bytes.
-  add("lab.disk", enough, `${(lab.free.bytes / 2 ** 30).toFixed(1)} GiB free on the lab cache's filesystem; a prepared lab measured ${bytesBoth(lab.pin.measured.preparedLabBytes)} (M6)`, enough ? null : "omakit lab prune, or free the difference")
+  add("lab.disk", enough, `${(lab.free.bytes / 2 ** 30).toFixed(1)} GiB free on the lab cache's filesystem; a prepared lab measured ${bytesBoth(lab.pin.measured.preparedLabBytes)} (M14)`, enough ? null : "omakit lab prune, or free the difference")
   add("lab.iso", lab.download.verified, `${lab.pin.release.name}, ${lab.download.reason}`, lab.download.verified ? null : "omakit lab setup", { sha256: lab.pin.release.sha256, present: lab.download.present, verified: lab.download.verified })
   add("lab.base", lab.base.state === "ready", `${lab.base.state}: ${lab.base.reason}`, lab.base.state === "ready" ? null : "omakit lab setup", { state: lab.base.state, release: lab.base.manifest?.release?.name ?? null, guestVersion: lab.base.manifest?.guest?.version ?? null, diskSha256: lab.base.manifest?.disk?.sha256 ?? null, allocatedBytes: lab.base.allocatedBytes, lockHeld: lab.lock.held, lockAlive: lab.lock.alive })
   if (lab.lock.held) add("lab.lock", !lab.lock.alive, lab.lock.alive ? `held by run ${lab.lock.record?.runId || "unknown"} (pid ${lab.lock.record?.pid || "?"})` : `a stale lock from ${lab.lock.record?.runId || "an unknown run"}`, lab.lock.alive ? "wait for the run" : "omakit lab prune")
