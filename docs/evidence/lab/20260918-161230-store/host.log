@@ -1,0 +1,23 @@
+==> Checking the stock guest for the block's plumbing
+==> Python 3.14.7;warning: database file for 'core' does not exist (use '-Sy' to download);warning: database file for 'extra' does not exist (use '-Sy' to download);warning: database file for 'multilib' does not exist (use '-Sy' to download);
+==> Staging the suite and the block files in the guest
+==> Allowing chown without a password in the guest's overlay, for the foreign-owner scenario
+[sudo] password for omarchy: ==> Running the Store lab suite in the guest session
+ok - the storelab job finished
+ok - concurrent: ok x10, 93 ms to the last result
+ok - crash: ok x2, 163 ms to the last result
+ok - fifo: refused x1, ok x2, 279 ms to the last result
+ok - foreign-owner: refused x1, ok x1, 302 ms to the last result
+ok - group-writable: refused x1, ok x1, 174 ms to the last result
+ok - invalid: invalid x1, ok x1, 82 ms to the last result
+ok - non-ascii: ok x1, 180 ms to the last result
+ok - outside-home: refused x2, 213 ms to the last result
+ok - oversized: overflow x2, missing x1, 82 ms to the last result
+ok - plain: ok x3, missing x1, 368 ms to the last result
+ok - short-write: ok x2, failed x1, 260 ms to the last result
+ok - swap: ok x30, refused x10, 3649 ms to the last result
+ok - symlink-directory: refused x2, 174 ms to the last result
+ok - symlink-file: refused x1, ok x2, 254 ms to the last result
+ok - symlink-parent: refused x2, 188 ms to the last result
+ok - Store lab suite: 15 scenarios, document at /tmp/omakit-storelab/storelab.json
+ok - the Store block ran its lab scenarios on the stock guest, the foreign owner simulated with chown, the shell untouched; document at /home/mtolhuijs/.local/state/omakit/lab/runs/20260918-161230-store/storelab.json

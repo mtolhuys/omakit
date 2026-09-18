@@ -500,7 +500,8 @@ in `omakit watch --all`. No issue, comment or label was written.
 
 The figures behind `omakit weigh` are the measurements themselves and their
 noise floor, not a population statistic, so this entry is a different kind
-of evidence from M2 to M7: three runs of `tests/lab/weigh.sh` in the Omarchy
+of evidence from M2 to M7: three runs of the weigh lab gate (then
+`tests/lab/weigh.sh`, now `omakit lab run weigh-evidence`) in the Omarchy
 plugin lab guest (stock pin `b5589fa`, shell `4.0.0.alpha`, one 1280x800
 screen, software rendering) on 14 September 2026, each `omakit weigh --all
 --runs 5 --yes` over the four fixtures under `tests/fixtures/weigh/` and three
@@ -1104,3 +1105,36 @@ scenarios plus a control, is [docs/BLOCKS_SPIKE.md](BLOCKS_SPIKE.md) with
 its [record](evidence/blocks/2026-09-17-run-spike.json). The repeatable
 form of those scenarios is `tests/lab/run/`, and its document is what
 `docs/BLOCKS.md` cites for the block's own numbers.
+
+## M14. What one lab run costs, and what the lab is pinned to
+
+Measured 2026-09-18 on the reference host (AMD, 32 logical CPUs, 15,618
+MiB, QEMU 11.1.1, kernel 7.2.3-arch1-3, Btrfs under `/home`) by `omakit
+lab` itself; the records are under
+[evidence/lab/](evidence/lab/) with their run ids, and `docs/LAB.md` is
+the contract that cites them. Every figure below is read from a record or
+a file time, and the method is named beside it.
+
+| Figure | Value | Method |
+| --- | --- | --- |
+| The pinned release | Omarchy 4.0.3, `omarchy-4.0.3.iso`, 6,260,654,080 B (6.261 GB / 5.831 GiB), SHA-256 `03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14`, signed by `40DFB630FF42BCFFB047046CF0134EE680CAC571` | `packaging/LAB_PLAN.md` M1 and M2, re-verified by `omakit lab setup` on 2026-09-18 (`verified.json` beside the ISO: the byte count, the digest, the sidecar, the signature). |
+| Hashing the ISO in Node | 5,215 ms page-cached | `createHash("sha256")` over 4 MiB reads (`tools/lab/verify.mjs`); `sha256sum` took 5,126 ms on the same cached file, so the tool does not shell out. |
+| The signature check | 9,430 ms | `gpg --verify` in a throwaway keyring, `date +%s%N` around it. |
+| A local ISO into the lab | 4.6 s to copy, 13.1 s to verify | The download directory's birth time (15:56:49.45), the ISO's mtime (15:56:54.01), `verified.json`'s mtime (15:57:07.15). The source was page-cached. |
+| Building the base | 5m 57.8s (357,800 ms) | The toolchain's `--install-only` run from the lab's staging copy, timed by `omakit lab setup` from spawn to exit; the harness configured 5120 MiB and 32 vCPUs. `packaging/LAB_PLAN.md` M4 measured 4m 49.5s for the run of 2026-09-10 on the same host; the difference is not explained by anything recorded and both are one observation. |
+| The verification boot | 35 s to SSH, one login round, 11 s to a Hyprland owned by the guest user | `base/manifest.json`, `build.verificationBoot`. |
+| The base | 6,181,552,128 B on disk, 6,181,490,688 B allocated, 42,949,672,960 B virtual, SHA-256 `c47c74a09ce49b8170e923e4b97d93fc4ef7ef7cd372600ad74744e3418d38a3`; the directory with the build's records 6,182,264,832 B | `stat`, `st_blocks * 512`, `qemu-img info --output=json`, `tools/lab/verify.mjs`; the directory by `allocatedBytes` in `run.json`. M5 measured 6,456,152,064 B allocated for the 2026-09-10 base. |
+| The guest | `omarchy 4.0.3-1`, kernel 7.2.3-arch1-3, hostname `omarchy-test`, session from the installed package, skew false | `pacman -Q omarchy`, `uname -r`, `/etc/hostname`, `/etc/omarchy.conf` over SSH, in every run's identity block. |
+| One Run-suite run | 173,358 ms (2m 53.4s) from the lock to the record; 35 s to SSH, 11 s to the session; overlay 413,470,720 B (0.413 GB / 0.385 GiB) allocated and removed; base and template unchanged by size, mtime and inode; 19 of 19 scenarios | `evidence/lab/20260918-160936-run/run.json` and `runlab.json`. A first run twenty minutes earlier allocated 440,602,624 B and took 173,491 ms with the same result; the gate miscounted its keyed summary and it is not the evidence. |
+| One Store-suite run | 108,465 ms (1m 48.5s); 36 s to SSH, 11 s to the session; overlay 417,075,200 B (0.417 GB / 0.388 GiB) allocated and removed; base and template unchanged; 15 of 15 scenarios, the foreign owner simulated with `chown root` through a sudoers drop-in in the overlay | `evidence/lab/20260918-161230-store/run.json` and `storelab.json`. |
+| The lab in the package | 20 files, 163,753 bytes unpacked; the package packs to 308,856 bytes across 105 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
+| The plugin checkouts the 0.5 weigh gate left | 6.6 MB (632 K + 572 K + 5.4 M) at `~/.cache/omakit/lab/<id>/` | `du -sh`; named under what the lab does not do. |
+
+Limits, stated. One host, one day: the build and run times are one
+observation each and no spread is known. The guest gets every logical
+CPU because that is what the reference build measured; a smaller count
+has not been measured. Free-space and memory figures are the host's at
+the time and are printed, not pinned. The download itself was not
+measured over the network on this host: the ISO came from a local copy
+(`--from`), and the resumable GET is proven against a local origin in
+`tests/unit/lab.test.mjs`.
