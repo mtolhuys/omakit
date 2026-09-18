@@ -1,0 +1,933 @@
+{
+ "id": "storelab",
+ "measured": "2026-09-18",
+ "kernel": "7.2.3-arch1-3",
+ "blocks": {
+  "store/Store.qml": "e464bbb8af0b41334639ff1378959e28be7de771f54af148e00287c00ef48d19",
+  "store/store-helper.py": "58e777b7d5f6580f9b8508251345a2bbada9a6aef91d2c41d34dcb09f559d7a2",
+  "run/Run.qml": "01dc42b620aad219c024b3138224f9d3191f1b199a6668c5558bf872b9335314",
+  "run/run-supervisor.py": "5a92edb89791b3b869f863ba580f719fabafd6f428c996099b80e2604ee8ebd2"
+ },
+ "method": "The Store lab suite's reader: every scenario's results under <out>/runs\ninto <out>/storelab.json, and the gate, asserted. A result is the state\nthe block reported for one operation; the facts after the run come from\nsuite.sh's stat of the throwaway HOME (the victim file's content, the\ndirectory and file modes, the staging files left). Every expectation\nbelow names the contract line it holds (docs/BLOCKS.md, Store).",
+ "scenarios": [
+  {
+   "scenario": "concurrent",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 89
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 89
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 90
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 91
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 92
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 92
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 93
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 94
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 95
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/concurrent/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 99
+    }
+   ],
+   "msToLast": 99,
+   "meta": {
+    "victim_dir_before": "11",
+    "victim": "untouched",
+    "victim_dir_after": "11",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{},\"version\":7}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "crash",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736911,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/crash/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 82
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/crash/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 160
+    }
+   ],
+   "msToLast": 160,
+   "meta": {
+    "victim_dir_before": "10",
+    "victim": "untouched",
+    "victim_dir_after": "10",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{\"a\":{\"wallpaper\":\"/x\"}},\"version\":1}",
+    "staging_left": "1",
+    "entries": "memory.json .store-99998-fedcba9876543210.tmp "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "fifo",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is not a regular file",
+     "state": "refused",
+     "ms": 75
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/fifo/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 148
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "mtime": 1789736922,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/fifo/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 222
+    }
+   ],
+   "msToLast": 222,
+   "meta": {
+    "victim_dir_before": "13",
+    "victim": "untouched",
+    "victim_dir_after": "13",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{\"a\":{\"wallpaper\":\"/x\"}},\"version\":1}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "foreign-owner",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is not owned by this user",
+     "state": "refused",
+     "ms": 79
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/foreign-owner/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 156
+    }
+   ],
+   "msToLast": 156,
+   "meta": {
+    "victim_dir_before": "8",
+    "foreign_owner": "root",
+    "victim": "untouched",
+    "victim_dir_after": "8",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{\"a\":{\"wallpaper\":\"/x\"}},\"version\":1}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "group-writable",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is writable by the group or by others",
+     "state": "refused",
+     "ms": 78
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/group-writable/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 154
+    }
+   ],
+   "msToLast": 154,
+   "meta": {
+    "victim_dir_before": "7",
+    "victim": "untouched",
+    "victim_dir_after": "7",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{\"a\":{\"wallpaper\":\"/x\"}},\"version\":1}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "invalid",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "value.version is not an integer",
+     "state": "invalid",
+     "ms": 75
+    },
+    {
+     "ev": "result",
+     "bytes": 30,
+     "mtime": 1789736909,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/invalid/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 76
+    }
+   ],
+   "msToLast": 76,
+   "meta": {
+    "victim_dir_before": "9",
+    "victim": "untouched",
+    "victim_dir_after": "9",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "644",
+    "file_type": "regular file",
+    "file_content": "{\"version\":\"one\",\"themes\":{}}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "non-ascii",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 792011,
+     "mtime": 1789736926,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/non-ascii/.cache/lab.store.fixture/catalog.json",
+     "state": "ok",
+     "ms": 109
+    }
+   ],
+   "msToLast": 109,
+   "meta": {
+    "victim_dir_before": "15",
+    "victim": "untouched",
+    "victim_dir_after": "15"
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "outside-home",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "XDG_STATE_HOME is not inside HOME, so its ownership cannot be walked",
+     "state": "refused",
+     "ms": 80
+    },
+    {
+     "ev": "result",
+     "op": "write",
+     "reason": "XDG_STATE_HOME is not inside HOME, so its ownership cannot be walked",
+     "state": "refused",
+     "ms": 155
+    }
+   ],
+   "msToLast": 155,
+   "meta": {
+    "victim_dir_before": "12",
+    "victim": "untouched",
+    "victim_dir_after": "12"
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "oversized",
+   "results": [
+    {
+     "ev": "result",
+     "op": "write",
+     "state": "overflow",
+     "reason": "the value is 70033 bytes, over 65536",
+     "ms": 2
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/oversized/.local/state/lab.store.fixture/memory.json",
+     "state": "missing",
+     "ms": 78
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "the file is over 1048576 bytes",
+     "state": "overflow",
+     "ms": 83
+    }
+   ],
+   "msToLast": 83,
+   "meta": {
+    "victim_dir_before": "6",
+    "victim": "untouched",
+    "victim_dir_after": "6",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "staging_left": "0",
+    "entries": ""
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "plain",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/plain/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 201
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "mtime": 1789736884,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/plain/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 279
+    },
+    {
+     "ev": "result",
+     "op": "remove",
+     "path": "/tmp/omakit-storelab/homes/plain/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 364
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/plain/.local/state/lab.store.fixture/memory.json",
+     "state": "missing",
+     "ms": 446
+    }
+   ],
+   "msToLast": 446,
+   "meta": {
+    "victim_dir_before": "1",
+    "victim": "untouched",
+    "victim_dir_after": "1",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "staging_left": "0",
+    "entries": ""
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "short-write",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736923,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/short-write/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 77
+    },
+    {
+     "ev": "result",
+     "op": "write",
+     "reason": "OSError: [Errno 27] File too large",
+     "state": "failed",
+     "ms": 153
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736923,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/short-write/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 229
+    }
+   ],
+   "msToLast": 229,
+   "meta": {
+    "victim_dir_before": "14",
+    "fsize_limit": "6000 pid=13076",
+    "victim": "untouched",
+    "victim_dir_after": "14",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "644",
+    "file_type": "regular file",
+    "file_content": "{\"version\":1,\"themes\":{}}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "swap",
+   "results": [
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736896,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 89
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 181
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736896,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 279
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 366
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 451
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 541
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736896,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 631
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 719
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 816
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 911
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736896,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1003
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1092
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736897,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1175
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1265
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 1354
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1447
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736897,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1535
+    },
+    {
+     "ev": "result",
+     "bytes": 33,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1619
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736897,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1708
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1796
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 1884
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 1975
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 2066
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2155
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736898,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2238
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2424
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736898,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2556
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2640
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736898,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2729
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2815
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736898,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2904
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 2993
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 3081
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3179
+    },
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 3266
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3356
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736899,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3440
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3534
+    },
+    {
+     "ev": "result",
+     "bytes": 26,
+     "mtime": 1789736899,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3621
+    },
+    {
+     "ev": "result",
+     "bytes": 34,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/swap/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 3703
+    }
+   ],
+   "msToLast": 3703,
+   "meta": {
+    "victim_dir_before": "5",
+    "victim": "untouched",
+    "victim_dir_after": "5",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "644",
+    "file_type": "regular file",
+    "file_content": "{\"version\":1,\"themes\":{}}",
+    "staging_left": "0",
+    "entries": "memory.json memory.json.lnk "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "symlink-directory",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "the plugin's state directory is a symbolic link or a file, not a directory",
+     "state": "refused",
+     "ms": 96
+    },
+    {
+     "ev": "result",
+     "op": "write",
+     "reason": "the plugin's state directory is a symbolic link or a file, not a directory",
+     "state": "refused",
+     "ms": 177
+    }
+   ],
+   "msToLast": 177,
+   "meta": {
+    "victim_dir_before": "2",
+    "victim": "untouched",
+    "victim_dir_after": "2",
+    "dir_mode": "777",
+    "dir_type": "symbolic link",
+    "staging_left": "0",
+    "entries": "plain symlink-directory "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "symlink-file",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "memory.json is a symbolic link",
+     "state": "refused",
+     "ms": 88
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "op": "write",
+     "path": "/tmp/omakit-storelab/homes/symlink-file/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 166
+    },
+    {
+     "ev": "result",
+     "bytes": 69,
+     "mtime": 1789736893,
+     "op": "read",
+     "path": "/tmp/omakit-storelab/homes/symlink-file/.local/state/lab.store.fixture/memory.json",
+     "state": "ok",
+     "ms": 250
+    }
+   ],
+   "msToLast": 250,
+   "meta": {
+    "victim_dir_before": "4",
+    "victim": "untouched",
+    "victim_dir_after": "4",
+    "dir_mode": "700",
+    "dir_type": "directory",
+    "file_mode": "600",
+    "file_type": "regular file",
+    "file_content": "{\"themes\":{\"a\":{\"wallpaper\":\"/x\"}},\"version\":1}",
+    "staging_left": "0",
+    "entries": "memory.json "
+   },
+   "problems": [],
+   "skipped": null
+  },
+  {
+   "scenario": "symlink-parent",
+   "results": [
+    {
+     "ev": "result",
+     "op": "read",
+     "reason": "the state directory is a symbolic link or a file, not a directory",
+     "state": "refused",
+     "ms": 83
+    },
+    {
+     "ev": "result",
+     "op": "write",
+     "reason": "the state directory is a symbolic link or a file, not a directory",
+     "state": "refused",
+     "ms": 164
+    }
+   ],
+   "msToLast": 164,
+   "meta": {
+    "victim_dir_before": "3",
+    "victim": "untouched",
+    "victim_dir_after": "3"
+   },
+   "problems": [],
+   "skipped": null
+  }
+ ],
+ "ok": true,
+ "where": "the stock 4.0.3 guest of the Omarchy plugin lab, run 20260918-150608, chown allowed for the foreign-owner scenario"
+}
