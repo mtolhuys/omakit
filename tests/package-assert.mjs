@@ -45,13 +45,13 @@ import { pathToFileURL } from "node:url"
 // tools/lab/: the release pin, the 632-byte armoured Omarchy signing key,
 // the 351-line toolchain patch, one harness and three suites in bash, and
 // the modules, and the README's fourth job) the package measured 310,081
-// bytes across 105 files at the release round's end (310,059 before the
-// subcommand was named prove, 309,687 before Run 0.2.1, 308,856 before
-// the polish), over that ceiling by 54,081, so the ceiling is now
-// 358,400 bytes: 48,319 bytes of room, still a fortieth of an accidental tree with the 15 MB
-// marketplace pin in it, and a two-thousandth of the 6.26 GB ISO the lab
-// never ships (tests/unit/self-containment.test.mjs sniffs every file for
-// an image or archive signature).
+// bytes across 105 files at the release round's end. After the first-user
+// test of 2026-09-19, with the lab suites' in-guest inputs shipping
+// (tests/lab, the weigh fixtures: 23 files, 51,479 bytes unpacked) and the
+// commit record and its tool under tools/blocks/, it measured 330,934 bytes
+// across 130 files, 27,466 under the same 358,400-byte ceiling, which
+// stands: still a forty-fifth of an accidental tree with the 15 MB
+// marketplace pin in it.
 export const MAX_PACKED_BYTES = 358_400
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([

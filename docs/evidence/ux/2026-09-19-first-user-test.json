@@ -1,0 +1,125 @@
+{
+ "id": "first-user-test-2026-09-19",
+ "measured": "2026-09-19",
+ "question": "What does a first user of the packaged 0.6.0 candidate meet that a maintainer on the reference host does not?",
+ "method": "A first user installed the npm package on their own Omarchy machine and worked through the command surface, then reported eleven blocking findings and two notes. Each finding below records what was reported, what was reproduced on the reference host, what changed, and which test now holds it. Findings that could not be reproduced say so; nothing here is a guess dressed as a cause.",
+ "findings": [
+  {
+   "n": 1,
+   "reported": "`npm test` failed on tests/unit/audit.test.mjs and then hung for minutes (exit 130 on interrupt); alone, the file exited 1 with two failures: an expectation on `--wat is not an option this command knows` receiving empty output, and `Unexpected end of JSON input`.",
+   "reproduced": "The hang, by construction: the one fetch call site carried no deadline, so a network that drops packets waited on the kernel's own timeout (minutes); a local server that accepts a connection and never answers reproduces it (tests/unit/deadlines.test.mjs). The empty stderr, by construction: `fail()` wrote to stderr and called `process.exit()` in the same tick, and a pipe's write is asynchronous on some platforms, so the bytes were dropped. The empty stdout under --json: no command emitted a document on a failure (finding 10). Not reproduced: the exact environment.",
+   "changed": "Every GET carries a deadline (GET_DEADLINE_MS, 20 s to the first byte; a caller's signal wins); every spawned child in tools/ and tests/ carries a `timeout`; the test runner is bounded per test (--test-timeout=180000); every failure state throws an Exit that the dispatcher catches, drains both streams and only then exits; a closed reader (EPIPE) ends the command with its exit code, not a trace.",
+   "held_by": [
+    "tests/unit/deadlines.test.mjs",
+    "tests/unit/json-outcomes.test.mjs",
+    "tests/unit/audit.test.mjs"
+   ]
+  },
+  {
+   "n": 2,
+   "reported": "The packaged product stamps blocks with `commit unknown` in the header, the NOTICE and `add`'s output, because the package has no Git checkout.",
+   "reproduced": "Yes: an extracted `npm pack` tarball has no .git and no gitHead in its package.json.",
+   "changed": "The release workflow runs tools/blocks/record-commit.mjs before `npm pack`, writing HEAD into tools/blocks/commit.json (null in a checkout, where git is the source); sourceCommit reads git, then the record, then gitHead; a package with none refuses `add` with `no-source-commit` instead of writing a header it cannot name. Proven from an extracted tarball, with and without the record.",
+   "held_by": [
+    "tests/unit/packaged-commit.test.mjs",
+    "tests/unit/self-containment.test.mjs"
+   ]
+  },
+  {
+   "n": 3,
+   "reported": "`omakit audit --drift | cat` reported `omarchy plugin list did not answer` while the same command unpiped audited 19 plugins; `--json` yielded empty stdout and exit 4 in that state.",
+   "reproduced": "Not reproduced: on the reference host the piped and pty runs print the same 15 rows and `--json` parses (19 rows). Nothing in omakit reads a tty on that path, and `omarchy plugin list --json` itself has no tty check; what fails is `omarchy-shell`, which needs OMARCHY_PATH and the session's Wayland display and gives up after 2 s (`omarchy plugin list` without a session says `OMARCHY_PATH is not set`). Exit 4 comes from nothing in omakit.",
+   "changed": "The refusal now carries the shell command's own exit status and last stderr line (`did not answer (exit 1: OMARCHY_PATH is not set)`), and the remedy names the session it needs, so a next occurrence names its cause; under --json the refusal is a document (finding 10) with exit 1.",
+   "held_by": [
+    "tests/unit/json-outcomes.test.mjs"
+   ]
+  },
+  {
+   "n": 4,
+   "reported": "`omakit watch --list` without network reports `login-required` and recommends `gh auth login`.",
+   "reproduced": "By construction: with no gh credential, `authenticatedUser` raised login-required before anything touched the network.",
+   "changed": "With no credential, one unauthenticated GET with a 5 s deadline asks whether api.github.com answers; an unreachable one is `network-unavailable` (\"no login would change that\") with reconnecting or `--user <login>` as the remedy; login-required is kept for a reachable GitHub.",
+   "held_by": [
+    "tests/unit/watch-all.test.mjs"
+   ]
+  },
+  {
+   "n": 5,
+   "reported": "`omakit lab prove <suite>` refuses in the packaged product because the suites are repository-only, and its remedy (`git clone ... && cd omakit && omakit lab prove run`) still runs the global package.",
+   "reproduced": "Yes: tests/lab and tests/fixtures/weigh were not in package.json `files`.",
+   "changed": "The suite inputs ship (23 files, 51,479 bytes unpacked); an installed omakit's preflight finds every file each suite stages, proven from an extracted tarball; an incomplete tree names the tree's own entry point (`<root>/bin/omakit`) in its remedy, never a global package; the package ceiling is re-measured.",
+   "held_by": [
+    "tests/unit/packaged-commit.test.mjs",
+    "tests/unit/lab.test.mjs",
+    "tests/unit/package.test.mjs"
+   ]
+  },
+  {
+   "n": 6,
+   "reported": "Remedies ignore XDG_CACHE_HOME: under XDG_CACHE_HOME=/tmp/empty-cache, `lab inspect` prints clone and setup commands pointing at ~/.cache.",
+   "reproduced": "Yes: toolchainCommand's default directory was a ~/.cache literal.",
+   "changed": "Every remedy path comes from the resolved cache root (labLayout(env).cache); inspect and setup pass it.",
+   "held_by": [
+    "tests/unit/lab.test.mjs"
+   ]
+  },
+  {
+   "n": 7,
+   "reported": "A file passed where a directory is meant (/tmp/tm-clean/README.md) is reported as `not inside a Git repository` although it is.",
+   "reproduced": "Yes: `git -C <file>` fails and read as no repository.",
+   "changed": "A file target is `not-a-directory`: the target is the plugin's repository directory, the one with its manifest.json, with the directory the file sits in offered; exit 2 like the other unreadable targets.",
+   "held_by": [
+    "tests/unit/inspect.test.mjs"
+   ]
+  },
+  {
+   "n": 8,
+   "reported": "`doctor` calls tab completion healthy while the installed script lacks `add` and `lab`, right after `setup` failed to replace it with EROFS.",
+   "reproduced": "Yes, on the reference host itself: the installed script named the current version and pin and lacked add and lab, and doctor said ok. A failed install printed as `info` and setup ended READY.",
+   "changed": "doctor validates the script's content against the current command surface (every subcommand named) and reports what it does not complete; a completion install that fails is a FAIL line with the path to make writable, and setup's verdict is NOT READY.",
+   "held_by": [
+    "tests/unit/completion-check.test.mjs"
+   ]
+  },
+  {
+   "n": 9,
+   "reported": "`doctor` tells a freshly fetched pin that it predates the sparse fetch and should be removed.",
+   "reproduced": "By construction: the judgement read `git config core.sparseCheckout`, which fails on a machine where git will not read the checkout (dubious ownership, a different git), while the tree was the four pinned paths.",
+   "changed": "The pin is judged by its tree: sparse when the top-level entries are the pinned paths and nothing else; a full checkout is named with what it carries beyond them; the git setting is evidence only.",
+   "held_by": [
+    "tests/unit/pin.test.mjs"
+   ]
+  },
+  {
+   "n": 10,
+   "reported": "With --json, failures leave stdout empty (audit, watch, lab prove, weigh).",
+   "reproduced": "Yes.",
+   "changed": "Under --json every outcome is a document on stdout: `{ command, ok: false, error: { code, message, remedy } }`, the message being the sentence on stderr, with `error.missing` where the refusal lists what is missing; the rule is stated once in docs/COMMANDS.md and emitted by the one failure helper.",
+   "held_by": [
+    "tests/unit/json-outcomes.test.mjs",
+    "tests/unit/weigh.test.mjs",
+    "tests/unit/watch-all.test.mjs"
+   ]
+  },
+  {
+   "n": 11,
+   "reported": "The tester's machine reported /dev/kvm absent while the lab suites ran on this same machine hours earlier.",
+   "reproduced": "Not the tester's environment; the probe cannot report falsely on a device that is there (a stat and an access check, fresh each time), so the process ran where the node was not: a container or sandbox without the host's /dev/kvm. The message blamed the kernel and the firmware.",
+   "changed": "An absent node is told apart by where the process runs: a container (/.dockerenv, /run/.containerenv, a runtime in /proc/1/cgroup) says the host's device is not mapped in and a lab that ran on the host says nothing about this process; a loaded kvm module without its node says the node is missing or /dev is not the host's; no module says firmware or nested virtualisation. A node this login cannot open names the group and the new login it needs.",
+   "held_by": [
+    "tests/unit/lab.test.mjs"
+   ]
+  }
+ ],
+ "notes": [
+  {
+   "reported": "`submit` on a missing directory states no cost.",
+   "decision": "Left: a usage error names what was expected and the one command; a cost is for a thing that can be acquired."
+  },
+  {
+   "reported": "`weigh --list` needs the shell to answer and says so.",
+   "decision": "Left: the list is what the shell has installed, and the refusal now carries the shell's own words (finding 3)."
+  }
+ ],
+ "packagedRun": "On 2026-09-18 at 19:26 the tree was packed with npm pack, extracted, its commit recorded as the workflow records it, and `bin/omakit lab prove run` run from the extracted package: PROVED, 19 of 19, guest omarchy 4.0.3-1, skew false, 3m 4.7s (docs/evidence/lab/20260918-192654-run/). The installed product proves a suite without a checkout."
+}

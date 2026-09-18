@@ -27,8 +27,10 @@ a base disk, firmware variables, an overlay, or a compressed or renamed
 form of one; `tests/unit/self-containment.test.mjs` sniffs every file in
 the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
-bash. What ships is measured: 20 files, 163,753 bytes unpacked, in a
-package that packs to 310,081 bytes (`tests/package-assert.mjs`).
+bash, plus the suites' in-guest inputs under `tests/lab/` and
+`tests/fixtures/weigh/`. What ships is measured: 20 files under
+`tools/lab/`, 163,753 bytes unpacked, and 23 suite files, 51,479 bytes, in
+a package that packs to 330,934 bytes (`tests/package-assert.mjs`).
 
 Nothing is fetched implicitly. `prove`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after
