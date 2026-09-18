@@ -59,12 +59,12 @@ omarchy_host_test() {
   ssh_guest "cd /tmp/omakit-runlab && tar -cf - runs" > "$out/runlab-runs.tar" 2>/dev/null || true
   status=$(ssh_guest "cat /tmp/omakit-runlab.done")
   [[ $status == 0 ]] || { echo "the Run lab suite exited $status in the guest" >&2; tail -n 30 "$out/runlab.log" >&2; return 1; }
-  jq -e '.ok == true and (.summary | length) == 13' "$out/runlab.json" >/dev/null || { echo "the document does not say ok over 13 scenarios" >&2; return 1; }
+  jq -e '.ok == true and (.summary | length) == 19' "$out/runlab.json" >/dev/null || { echo "the document does not say ok over 19 scenarios" >&2; return 1; }
   ssh_session "omarchy-shell shell ping | grep -qx ok" || { echo "the guest's shell does not answer after the suite" >&2; return 1; }
   ssh_session "test -z \"\$(hyprctl configerrors)\"" || return 1
   capture_console "success-omakit-runlab-01-done"
   grep '^ok - ' "$out/runlab.log"
-  printf 'ok - the Run block passed all 13 lab scenarios on the stock guest, the shell untouched; document at %s\n' "$out/runlab.json"
+  printf 'ok - the Run block passed all 19 lab scenarios on the stock guest, the shell untouched; document at %s\n' "$out/runlab.json"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

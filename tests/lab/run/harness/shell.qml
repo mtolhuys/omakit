@@ -24,7 +24,13 @@ ShellRoot {
         "relative":        { command: ["bash", base + "/scenarios/envprobe.sh"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
         "missing":         { command: ["/usr/bin/no-such-program-runlab"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
         "controls":        { command: ["/usr/bin/bash", base + "/scenarios/controls.sh"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
-        "concurrency":     { command: ["/usr/bin/head", "-c", "1048576", "/dev/zero"], deadlineMs: 30000, graceMs: 1000, maxBytes: 2097152, count: 10 }
+        "concurrency":     { command: ["/usr/bin/head", "-c", "1048576", "/dev/zero"], deadlineMs: 30000, graceMs: 1000, maxBytes: 2097152, count: 10 },
+        "forge":           { command: ["/usr/bin/bash", base + "/scenarios/forge.sh"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
+        "orphan":          { command: ["/usr/bin/bash", base + "/scenarios/orphan.sh"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
+        "stalled-supersede": { command: ["/usr/bin/bash", base + "/scenarios/stall.sh"], deadlineMs: 2000, graceMs: 500, maxBytes: 65536, supersedeAfterMs: 500 },
+        "destroy-early":   { command: ["/usr/bin/bash", base + "/scenarios/tree.sh"], deadlineMs: 10000, graceMs: 1000, maxBytes: 65536, destroyBusyMs: 300 },
+        "shell-string-option": { command: ["/usr/bin/bash", "-o", "pipefail", "-c", "echo never"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 },
+        "shell-string-wrapper": { command: ["/usr/bin/env", "bash", "-c", "echo never"], deadlineMs: 5000, graceMs: 1000, maxBytes: 65536 }
     })
     property var runs: []
     property int finishedCount: 0
@@ -49,6 +55,15 @@ ShellRoot {
             root.runs = objects
             root.log({ ev: "start", scenario: root.scenario, count: count, t: Date.now() })
             for (const object of objects) object.start()
+            if (spec.destroyBusyMs) {
+                // The event loop is held after start(), so the supervisor has
+                // forked the program but this side has not read its leader line
+                // when the object is destroyed on the next turn.
+                const until = Date.now() + spec.destroyBusyMs
+                while (Date.now() < until) {}
+                root.log({ ev: "destroy", pgid: objects[0]._pgid, t: Date.now() })
+                objects[0].destroy(); root.runs = []
+            }
             if (spec.destroyAfterMs) { root.later.mode = "destroy"; root.later.interval = spec.destroyAfterMs; root.later.start() }
             if (spec.cancelAfterMs) { root.later.mode = "cancel"; root.later.interval = spec.cancelAfterMs; root.later.start() }
             if (spec.supersedeAfterMs) { root.later.mode = "supersede"; root.later.interval = spec.supersedeAfterMs; root.later.start() }

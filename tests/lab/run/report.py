@@ -35,6 +35,13 @@ EXPECT = {
     "missing": {"deadline": 5000, "grace": 1000, "state": "spawn-failed", "reason": "No such file"},
     "controls": {"deadline": 5000, "grace": 1000, "state": "ok", "stdout": ["a[31mbcde\tf\ng\n"], "stderr": ["stderr]0;titleline\n"]},
     "concurrency": {"deadline": 30000, "grace": 1000, "state": "ok", "count": 10, "outBytes": 1048576},
+    # 0.2.0: the review of 2026-09-18 (docs/evidence/blocks/2026-09-18-review.json)
+    "forge": {"deadline": 5000, "grace": 1000, "state": "supervisor-lost", "reason": "detached reaper", "notStdout": ["forged"], "notPgid": 4194303},
+    "orphan": {"deadline": 5000, "grace": 1000, "state": "supervisor-lost", "reason": "detached reaper"},
+    "stalled-supersede": {"deadline": 2000, "grace": 500, "states": ["supervisor-lost", "ok"], "bound": 2000 + 500 + 3000 + 6000},
+    "destroy-early": {"deadline": 10000, "grace": 1000, "state": None},
+    "shell-string-option": {"deadline": 5000, "grace": 1000, "state": "spawn-failed", "reason": "shell string"},
+    "shell-string-wrapper": {"deadline": 5000, "grace": 1000, "state": "spawn-failed", "reason": "shell string"},
 }
 CONTROL = re.compile("[\\x00-\\x08\\x0b-\\x1f\\x7f-\\x9f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]")
 SLACK_MS = 500
@@ -79,7 +86,7 @@ def read_run(runs_dir, scen, index):
     pss = pss_of(base + ".pss", start or 0, end_wall)
     if scen == "concurrency" and done and start:
         ms = done["t"] - start
-    elif scen == "destroy" and destroy and start:
+    elif scen in ("destroy", "destroy-early") and destroy and start:
         ms = destroy["t"] - start
     else:
         ms = results[-1]["ms"] if results else None
@@ -113,6 +120,11 @@ def check_results(row, want, problems):
             problems.append("outBytes %s, expected %s" % (result.get("outBytes"), want["outBytes"]))
         if "reason" in want and want["reason"] not in str(result.get("reason", "")):
             problems.append("reason %r does not say %r" % (result.get("reason"), want["reason"]))
+        for piece in want.get("notStdout", []):
+            if piece in str(result.get("stdout", "")):
+                problems.append("stdout carries the forged %r" % piece)
+        if "notPgid" in want and result.get("pgid") == want["notPgid"]:
+            problems.append("pgid is the forged %d" % want["notPgid"])
         for key in ("stdout", "stderr"):
             text = result.get(key, "")
             if CONTROL.search(text):
@@ -133,7 +145,7 @@ def check(row):
         return ["no start event"]
     check_states(row, want, problems)
     check_results(row, want, problems)
-    bound = want["deadline"] + want["grace"] + SLACK_MS
+    bound = want.get("bound", want["deadline"] + want["grace"]) + SLACK_MS
     if row["ms"] is None:
         problems.append("no end")
     elif row["ms"] > bound:
@@ -144,7 +156,7 @@ def check(row):
         problems.append("%d signal(s) to an empty group" % row["toEmptyGroup"])
     if row["shadowHits"]:
         problems.append("%d shadow hit(s)" % row["shadowHits"])
-    if row["scenario"] == "destroy" and not row["destroyed"]:
+    if row["scenario"] in ("destroy", "destroy-early") and not row["destroyed"]:
         problems.append("no destroy event")
     return problems
 

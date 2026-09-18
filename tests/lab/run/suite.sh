@@ -19,7 +19,7 @@ repo="$(cd -- "$here/../../.." && pwd)"
 blocks="${RUNLAB_BLOCKS:-$repo/blocks/run}"
 out="${1:-/tmp/omakit-runlab}"
 runs="${2:-1}"
-scenarios=(producer producer-stream holder stubborn hostile destroy cancel supersede shell-string relative missing controls concurrency)
+scenarios=(producer producer-stream holder stubborn hostile destroy cancel supersede shell-string relative missing controls concurrency forge orphan stalled-supersede destroy-early shell-string-option shell-string-wrapper)
 
 for tool in /usr/bin/python3 /usr/bin/quickshell /usr/bin/setsid /usr/bin/kill; do
   [[ -x $tool ]] || { echo "not ok - $tool is missing" >&2; exit 1; }
@@ -71,8 +71,8 @@ one() {
   local sampler=$!
   local want=1 limit=200
   [[ $scen == concurrency ]] && want=10
-  [[ $scen == supersede ]] && want=2
-  if [[ $scen == destroy ]]; then waitev destroy 1 30 || echo "no destroy line" >>"$meta"; else waitev result "$want" "$limit" || echo "no result within $limit s" >>"$meta"; fi
+  [[ $scen == supersede || $scen == stalled-supersede ]] && want=2
+  if [[ $scen == destroy || $scen == destroy-early ]]; then waitev destroy 1 30 || echo "no destroy line" >>"$meta"; else waitev result "$want" "$limit" || echo "no result within $limit s" >>"$meta"; fi
   echo "end_wall=$(date +%s%3N)" >>"$meta"
   sleep 2
   local pgids; pgids=$(grep -o 'RUNLAB {.*}' "$log" | sed 's/^RUNLAB //' | /usr/bin/python3 -c '
