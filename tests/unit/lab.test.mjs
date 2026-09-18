@@ -16,6 +16,7 @@ import { REPO_ROOT } from "./helpers.mjs"
 import { bytesBoth, durationWords, labPin, LAB_DIR } from "../../tools/lab/pin.mjs"
 import { allocatedBytes, inLab, labLayout, writeJson } from "../../tools/lab/paths.mjs"
 import { qcodesFor, qemuArgs } from "../../tools/lab/qemu.mjs"
+import { kvmContext, probeKvm } from "../../tools/lab/host.mjs"
 import { GUEST_HOST, sshArgs } from "../../tools/lab/guest.mjs"
 import { judgeRelease, sha256File, verifySignature } from "../../tools/lab/verify.mjs"
 import { BASE_FILES, inspectBase, inspectDownload, inspectLab, inspectToolchain } from "../../tools/lab/inspect.mjs"
@@ -108,6 +109,32 @@ test("SSH reaches the guest at the loopback address with the lab's key, no agent
   assert.deepEqual(args.slice(0, 2), ["-i", "/lab/base/id_ed25519"])
   for (const option of ["BatchMode=yes", "IdentitiesOnly=yes", "IdentityAgent=none", "ForwardAgent=no", "ForwardX11=no", "UserKnownHostsFile=/dev/null"]) {
     assert.ok(args.includes(option), option)
+  }
+})
+
+test("an absent /dev/kvm is told apart by where the process runs: a container, a loaded module without its node, or no module at all", () => {
+  // Finding 11 of the first-user test: doctor said /dev/kvm was absent on
+  // the machine whose lab suites had run hours earlier, because the
+  // product ran inside a sandbox; the message blamed the kernel and the firmware.
+  const gone = join(tmpdir(), "omakit-no-such-kvm")
+  const inContainer = probeKvm(gone, () => ({ container: true, marks: ["/.dockerenv"], moduleLoaded: true }))
+  assert.equal(inContainer.state, "missing")
+  assert.match(inContainer.reason, /is a container \(\/\.dockerenv\); the host's device is not mapped in/)
+  assert.match(inContainer.remedy, /--device \/dev\/kvm/)
+  const noNode = probeKvm(gone, () => ({ container: false, marks: [], moduleLoaded: true }))
+  assert.match(noNode.reason, /the kvm module is loaded .* the device node is missing/)
+  const noModule = probeKvm(gone, () => ({ container: false, marks: [], moduleLoaded: false }))
+  assert.match(noModule.reason, /no kvm module is loaded: virtualisation may be off in firmware/)
+  // The context reader itself, over files that exist and files that do not.
+  const { dir, rm } = scratch()
+  try {
+    writeFileSync(join(dir, "cgroup"), "0::/system.slice/docker-abc.scope\n")
+    const marked = kvmContext({ files: { dockerenv: join(dir, "none"), containerenv: join(dir, "none"), cgroup: join(dir, "cgroup"), module: join(dir, "none") } })
+    assert.deepEqual(marked, { container: true, marks: [`${join(dir, "cgroup")} names docker`], moduleLoaded: false })
+    const clean = kvmContext({ files: { dockerenv: join(dir, "none"), containerenv: join(dir, "none"), cgroup: join(dir, "nowhere"), module: dir } })
+    assert.deepEqual(clean, { container: false, marks: [], moduleLoaded: true })
+  } finally {
+    rm()
   }
 })
 

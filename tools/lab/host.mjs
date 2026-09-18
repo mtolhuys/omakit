@@ -68,16 +68,45 @@ export function probeCommands(list, { run } = {}) {
   })
 }
 
+/**
+ * Where this process runs, when /dev/kvm is not there: a container leaves
+ * marks (`/.dockerenv`, `/run/.containerenv`, a container runtime in
+ * /proc/1/cgroup), and a loaded kvm module without its device node is a
+ * missing node, not a missing kernel feature. Measured on 2026-09-19 by a
+ * first user whose `doctor` said /dev/kvm was absent on the machine whose
+ * lab suites had run hours earlier: the product was run from inside a
+ * sandbox without the device, and the message blamed the kernel and the
+ * firmware (docs/evidence/ux/2026-09-19-first-user-test.json, finding 11).
+ */
+export function kvmContext({ files = { dockerenv: "/.dockerenv", containerenv: "/run/.containerenv", cgroup: "/proc/1/cgroup", module: "/sys/module/kvm" } } = {}) {
+  const marks = []
+  if (existsSync(files.dockerenv)) marks.push(files.dockerenv)
+  if (existsSync(files.containerenv)) marks.push(files.containerenv)
+  try {
+    const cgroup = readFileSync(files.cgroup, "utf8")
+    const runtime = cgroup.match(/docker|lxc|podman|containerd|libpod|machine\.slice|nspawn/)?.[0]
+    if (runtime) marks.push(`${files.cgroup} names ${runtime}`)
+  } catch {
+    // no cgroup file to read: not Linux, or no /proc; nothing to conclude
+  }
+  return { container: marks.length > 0, marks, moduleLoaded: existsSync(files.module) }
+}
+
 /** /dev/kvm: a character device this user can open for reading and writing, which is what QEMU needs from it. */
-export function probeKvm(path = "/dev/kvm") {
+export function probeKvm(path = "/dev/kvm", context = kvmContext) {
   try {
     const st = statSync(path)
     if (!st.isCharacterDevice()) return { name: "kvm", state: "missing", reason: `${path} is not a character device`, remedy: "load the kvm module for this CPU (kvm_amd or kvm_intel)" }
     accessSync(path, constants.R_OK | constants.W_OK)
     return { name: "kvm", state: "ok", reason: `${path} is a character device this user can open read-write` }
   } catch (error) {
-    if (error.code === "ENOENT") return { name: "kvm", state: "missing", reason: `${path} does not exist: no KVM on this kernel, or virtualisation is off in firmware`, remedy: "enable virtualisation in firmware; a guest without KVM is not something the lab runs" }
-    return { name: "kvm", state: "missing", reason: `${path} exists but this user cannot open it (${error.code})`, remedy: "sudo usermod -aG kvm $USER, then log in again" }
+    if (error.code === "ENOENT") {
+      const where = context()
+      if (where.container) return { name: "kvm", state: "missing", reason: `${path} is not there in this environment, which is a container (${where.marks.join("; ")}); the host's device is not mapped in, and a lab that ran on the host says nothing about this process`, remedy: "run omakit on the host itself, or start the container with --device /dev/kvm" }
+      if (where.moduleLoaded) return { name: "kvm", state: "missing", reason: `${path} is not there although the kvm module is loaded (/sys/module/kvm exists): the device node is missing, or this process runs in a mount namespace without the host's /dev`, remedy: "check udev for /dev/kvm on the host, or run omakit outside the sandbox" }
+      return { name: "kvm", state: "missing", reason: `${path} is not there and no kvm module is loaded: virtualisation may be off in firmware, or this is a virtual machine without nested virtualisation`, remedy: "enable virtualisation in firmware (kvm_amd or kvm_intel loads on its own); a guest without KVM is not something the lab runs" }
+    }
+    return { name: "kvm", state: "missing", reason: `${path} exists but this user cannot open it (${error.code}): a permission of the device node or a group this login does not carry yet`, remedy: "sudo usermod -aG kvm $USER, then log in again (a new login picks the group up; a new shell does not)" }
   }
 }
 
