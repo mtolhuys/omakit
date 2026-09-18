@@ -103,7 +103,7 @@ writes. The fourth is the lab, which writes only under its own two roots,
 one guard every write is held to: `omakit lab setup` fetches bytes after
 one consent that names the exact size and destination (`--yes` for an
 agent), verifies them against the pinned digest and signature before
-anything boots them, and builds one base; `omakit lab run` boots a guest
+anything boots them, and builds one base; `omakit lab prove` boots a guest
 from that base, writes a run record, and never touches the host's own
 session, which `tests/unit/lab.test.mjs` proves over every file under
 `tools/lab/`; `omakit lab prune` removes what the lab owns after asking

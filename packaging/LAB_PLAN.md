@@ -23,7 +23,7 @@ dates; M14 in `docs/MEASUREMENTS.md` is the 2026-09-18 re-measurement.
 `omakit` executable:
 
 ```text
-omakit lab run
+omakit lab prove
 omakit lab setup
 omakit lab prune
 ```
@@ -206,7 +206,7 @@ There are two different mismatch rules:
 
 ## First compositor run
 
-`omakit lab run` performs local prerequisite and free-space preflight before it
+`omakit lab prove` performs local prerequisite and free-space preflight before it
 asks. Those checks may read the machine but may not create cache state or use the
 network. If a required host capability is absent, the command refuses with the
 missing executable/device and a remedy; it does not ask consent for an operation
@@ -240,11 +240,11 @@ A decline returns without a network call, cache creation, partial file, or base
 mutation. Consent authorizes this one acquisition/build operation; it is not
 remembered for a future version pin.
 
-When stdin or stdout is not a TTY, `omakit lab run` never prompts and never
+When stdin or stdout is not a TTY, `omakit lab prove` never prompts and never
 downloads. It exits non-zero with an escape-free refusal that names one action:
 
 ```text
-Lab base missing. Run `omakit lab setup` interactively before `omakit lab run`.
+Lab base missing. Run `omakit lab setup` interactively before `omakit lab prove`.
 ```
 
 Automation may use `omakit lab setup --yes`, where `--yes` is the explicit

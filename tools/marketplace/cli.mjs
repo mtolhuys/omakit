@@ -9,7 +9,7 @@
 //   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
 //   omakit inspect <plugin-dir>      what a plugin tree does, as observations; decides nothing
 //   omakit add run|store [dir]       copy a block into the plugin's omakit/ directory
-//   omakit lab run|inspect|setup|prune  prove a suite in a disposable Omarchy guest; docs/LAB.md
+//   omakit lab prove|inspect|setup|prune  a suite proved in a disposable Omarchy guest; docs/LAB.md
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
@@ -620,7 +620,7 @@ async function cmdWeigh(args) {
 }
 
 /**
- * `omakit lab <run|inspect|setup|prune>`: one command surface, four
+ * `omakit lab <prove|inspect|setup|prune>`: one command surface, four
  * actions, docs/LAB.md the contract. Every refusal is the failure
  * register with the one command; a missing thing is listed with its cost
  * before the arrow. `setup` and `prune` ask once at a terminal and take
@@ -628,10 +628,10 @@ async function cmdWeigh(args) {
  */
 async function cmdLab(args) {
   const parsed = checkArgs(args, ACCEPTED.lab)
-  const signature = "omakit lab run <suite> | inspect [--verify] | setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes] | prune [--keep-iso] [--records] [--yes]"
+  const signature = "omakit lab prove <suite> | inspect [--verify] | setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes] | prune [--keep-iso] [--records] [--yes]"
   if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("lab")}.`, 2, signature)
   const [what, suite] = parsed.positionals
-  if (!["run", "inspect", "setup", "prune"].includes(what || "")) fail("usage", `lab needs one of run, inspect, setup or prune${what ? `, not ${JSON.stringify(what)}` : ""}.`, 2, signature)
+  if (!["prove", "inspect", "setup", "prune"].includes(what || "")) fail("usage", `lab needs one of prove, inspect, setup or prune${what ? `, not ${JSON.stringify(what)}` : ""}.`, 2, signature)
   const json = parsed.options.has("--json")
   const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
   const c = styler(colourEnabled(json ? process.stderr : process.stdout))
@@ -660,8 +660,8 @@ async function cmdLab(args) {
     return
   }
 
-  if (what === "run") {
-    if (!suite) fail("usage", "run needs a suite: `omakit lab run <run|store|weigh|weigh-evidence>`", 2, signature)
+  if (what === "prove") {
+    if (!suite) fail("usage", "prove needs a suite: `omakit lab prove <run|store|weigh|weigh-evidence>`", 2, signature)
     const runs = parsed.options.has("--runs") ? Number(parsed.options.get("--runs")) : undefined
     if (parsed.options.has("--runs") && !(Number.isInteger(runs) && runs >= 1)) fail("usage", `--runs needs an integer of at least 1, not ${JSON.stringify(parsed.options.get("--runs"))}.`, 2, signature)
     process.on("SIGINT", interrupt)

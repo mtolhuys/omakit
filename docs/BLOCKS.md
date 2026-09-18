@@ -123,7 +123,7 @@ From `tests/lab/run/` on the desktop (Quickshell 0.3.1-1, python 3.14.7-1,
 2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json);
 Run 0.2.1 changes no line the suite measures, and its guest run is below).
 The same 19 scenarios ran the same afternoon on the stock 4.0.3 guest
-through `omakit lab run run`, all ok, the guest's installed package
+through `omakit lab prove run`, all ok, the guest's installed package
 `omarchy 4.0.3-1` read by the run and its session not linked
 ([record](evidence/lab/20260918-160936-run/runlab.json)): there the
 first row took 157 ms, 1 GiB streamed through in 1,469 ms, and the other
@@ -402,7 +402,7 @@ non-ASCII read and 3 ms for a write refused in QML for its size; ten
 writers started at once all finished within 87 ms. Measured by the
 harness's clock (`Date.now()` at the call and at the result), in
 [the record](evidence/blocks/2026-09-18-store-lab-desktop.json); the stock
-guest's, 15 of 15 through `omakit lab run store` with the installed
+guest's, 15 of 15 through `omakit lab prove store` with the installed
 package read and the session not linked, is
 [the lab record](evidence/lab/20260918-161230-store/storelab.json). The
 earlier guest run of that day

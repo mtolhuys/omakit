@@ -1,4 +1,4 @@
-// The suites `omakit lab run` knows, as data: what each stages, what it
+// The suites `omakit lab prove` knows, as data: what each stages, what it
 // runs, which document it writes, and what that document must say for the
 // gate to pass. The host-side body of each is a bash file under
 // tools/lab/suites/, run through tools/lab/harness.sh; the in-guest
@@ -91,7 +91,7 @@ export function suiteNames() {
 export function suitePreflight(suite, { repoRoot, layout, pinDir = marketplacePinDir(repoRoot) }) {
   const missing = []
   for (const relative of suite.needs) {
-    if (!existsSync(join(repoRoot, relative))) missing.push({ what: relative, cost: "a file of this repository's checkout; the suites do not ship in the package", command: `git clone https://github.com/mtolhuys/omakit && cd omakit && omakit lab run ${suite.name}` })
+    if (!existsSync(join(repoRoot, relative))) missing.push({ what: relative, cost: "a file of this repository's checkout; the suites do not ship in the package", command: `git clone https://github.com/mtolhuys/omakit && cd omakit && omakit lab prove ${suite.name}` })
   }
   if (suite.plugins) {
     for (const id of suite.plugins) {

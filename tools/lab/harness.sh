@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 # The one harness every suite runs through, on the host, against a guest
-# that `omakit lab run` has already booted, logged in and identified.
+# that `omakit lab prove` has already booted, logged in and identified.
 #
 #   bash tools/lab/harness.sh <suite.sh> <run-dir> <ssh-key> <ssh-port> <qmp-socket> <repo-root> <session-preamble> <guest-user> <guest-password> [suite arguments...]
 #

@@ -17,7 +17,7 @@ omakit verify <plugin-repo>    # check: the official security baseline over the 
 omakit submit <plugin-repo>    # check: every check, the issue title and body; asks for a category and tags at a terminal
 omakit watch <issue-url>       # track: the commit the marketplace validated, against the plugin's current HEAD
 omakit watch --all             # track: every open marketplace issue authored by your gh account; --list lists them; bare, a terminal chooses
-omakit lab run <suite>         # prove: a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
+omakit lab prove <suite>         # prove: a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
 omakit lab inspect             # prove: what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing
 omakit lab setup               # prove: one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; --toolchain, --from, --plugins
 omakit lab prune               # prove: what the lab owns on disk, asked once, removed, the bytes said
@@ -118,8 +118,8 @@ the run without asking, and `--json` carries it as `reproduce`.
 
 Account-wide watch without `--user` requires `gh auth login` so it can discover your account. `--user <login>` can discover a public author's issues without a login. An individual issue URL still works unauthenticated. Discovery reads open authored issues, excludes pull requests, follows pagination, and refuses an incomplete list. JSON, `--out` and pipes never prompt: pass `--all`, `--list` or an issue URL. See [VALIDATION_WATCH.md](VALIDATION_WATCH.md) for batch output and exit codes.
 
-`omakit lab <run|inspect|setup|prune>` proves a suite in a disposable
-Omarchy guest ([LAB.md](LAB.md)). `run <suite>` boots nothing until the
+`omakit lab <prove|inspect|setup|prune>` proves a suite in a disposable
+Omarchy guest ([LAB.md](LAB.md)). `prove <suite>` boots nothing until the
 base is ready, the host can run a guest and the suite's files are there,
 and otherwise names what is missing, what it takes and the one command;
 it fetches nothing, prints the guest's installed `omarchy` package and

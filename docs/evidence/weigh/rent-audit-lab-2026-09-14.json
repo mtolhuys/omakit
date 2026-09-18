@@ -2471,6 +2471,6 @@
     }
   ],
   "provenance": {
-    "session": "Measured in the Omarchy plugin lab guest with the session dev-linked to the omarchy checkout at b5589fa (shell 4.0.0.alpha at ~/.local/share/omarchy, as the shell field says), over the installed omarchy 4.0.3-1 package, whose shell was not the one restarted. The plugin-lab harness passed --sync-all and --dev-link on every run (docs/history/2026-09-18-lab-inventory.md, P8). The noise floor and every delta are that checkout's shell's. Annotated 2026-09-18; a measurement on the unlinked guest through omakit lab run weigh-evidence is recorded beside this file when it exists."
+    "session": "Measured in the Omarchy plugin lab guest with the session dev-linked to the omarchy checkout at b5589fa (shell 4.0.0.alpha at ~/.local/share/omarchy, as the shell field says), over the installed omarchy 4.0.3-1 package, whose shell was not the one restarted. The plugin-lab harness passed --sync-all and --dev-link on every run (docs/history/2026-09-18-lab-inventory.md, P8). The noise floor and every delta are that checkout's shell's. Annotated 2026-09-18; a measurement on the unlinked guest through omakit lab prove weigh-evidence is recorded beside this file when it exists."
   }
 }

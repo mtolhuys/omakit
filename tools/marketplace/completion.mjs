@@ -18,7 +18,7 @@ import { shippedBlocks } from "../blocks/registry.mjs"
 import { suiteNames } from "../lab/suites.mjs"
 
 /** The words after `omakit lab`, for TAB: the actions, and the suites after `run`. */
-export const LAB_ACTIONS = Object.freeze(["run", "inspect", "setup", "prune"])
+export const LAB_ACTIONS = Object.freeze(["prove", "inspect", "setup", "prune"])
 
 /**
  * The completion model, read out of the help data. A subcommand is the word
@@ -49,7 +49,7 @@ export function subcommandsOf(commands = COMMANDS) {
     // `omakit add <block> [<plugin-dir>]`: the block names omakit ships for
     // the first word, a directory for the second.
     // `omakit lab <action> [<suite>]`: the four actions for the first word,
-    // the suites for the second after `run`.
+    // the suites for the second after `prove`.
     const target = /^omakit +lab\b/.test(signature) ? "lab" : /^omakit +add\b/.test(signature) ? "block" : /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
     return { name, description: sentence, flags, target, blocks: target === "block" ? shippedBlocks().map((block) => block.name) : [], actions: target === "lab" ? [...LAB_ACTIONS] : [], suites: target === "lab" ? suiteNames() : [] }
   })
@@ -189,7 +189,7 @@ function bash({ subcommands, categories, tags, pin, version }) {
     } else if (sub.target === "lab") {
       lines.push('    if ((COMP_CWORD == 2)); then')
       lines.push(`      COMPREPLY=($(compgen -W ${single(sub.actions.join(" "))} -- "$cur"))`)
-      lines.push('    elif ((COMP_CWORD == 3)) && [[ ${COMP_WORDS[2]} == run ]]; then')
+      lines.push('    elif ((COMP_CWORD == 3)) && [[ ${COMP_WORDS[2]} == prove ]]; then')
       lines.push(`      COMPREPLY=($(compgen -W ${single(sub.suites.join(" "))} -- "$cur"))`)
       lines.push("    fi")
     } else if (sub.target) {
@@ -307,7 +307,7 @@ function fish({ subcommands, categories, tags, pin, version }) {
     if (sub.target === "block") lines.push(`complete -c omakit ${when} -a ${single(sub.blocks.join(" "))}`)
     if (sub.target === "lab") {
       lines.push(`complete -c omakit ${when} -n ${single(`not __fish_seen_subcommand_from ${sub.actions.join(" ")}`)} -a ${single(sub.actions.join(" "))}`)
-      lines.push(`complete -c omakit ${when} -n ${single("__fish_seen_subcommand_from run")} -a ${single(sub.suites.join(" "))}`)
+      lines.push(`complete -c omakit ${when} -n ${single("__fish_seen_subcommand_from prove")} -a ${single(sub.suites.join(" "))}`)
     }
     if (sub.target && sub.target !== "lab") lines.push(`complete -c omakit ${when} -a '(__fish_complete_directories)'`)
     for (const { flag, value } of sub.flags) {

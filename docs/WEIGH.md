@@ -116,7 +116,7 @@ baseline memory spread of 15.54 MB over three runs in the plugin lab guest
 (whose session, like every guest run before 2026-09-18, was dev-linked to
 the omarchy checkout at `b5589fa`, so the shell restarted was that
 checkout's; C1 in [MEASUREMENTS.md](MEASUREMENTS.md) says so). On the
-unlinked guest, through `omakit lab run weigh-evidence` on 2026-09-18,
+unlinked guest, through `omakit lab prove weigh-evidence` on 2026-09-18,
 the shipped method's floor read 26.00 MB `Pss` at the end of the window
 and 0.133% CPU (C1b), with the same verdicts.
 The first port took the memory sample at that 8 s settle instead, a fixed
@@ -434,8 +434,8 @@ guest, never on a working desktop, by `omakit lab` ([LAB.md](LAB.md)).
 From the omakit checkout on the host:
 
 ```bash
-omakit lab run weigh                   # smoke: the maintainer's check, about a minute after the guest is up
-omakit lab run weigh-evidence          # the five-run gate that docs/evidence/weigh/ carries; --runs N shortens it
+omakit lab prove weigh                   # smoke: the maintainer's check, about a minute after the guest is up
+omakit lab prove weigh-evidence          # the five-run gate that docs/evidence/weigh/ carries; --runs N shortens it
 omakit lab inspect                     # what the lab is missing before either can boot, read-only
 ```
 

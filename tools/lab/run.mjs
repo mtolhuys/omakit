@@ -1,4 +1,4 @@
-// `omakit lab run <suite>`: one suite in a disposable guest, its document
+// `omakit lab prove <suite>`: one suite in a disposable guest, its document
 // written with the identity of the guest it ran on.
 //
 // The lifecycle, in order, and what each step guarantees:
@@ -213,7 +213,7 @@ export async function withGuest({ baseDir, stagingName, logFile, layout, pin, on
  */
 export function preflightRun({ suiteName, env = process.env, pin = labPin(), repoRoot, options = {} }) {
   const suite = SUITES[suiteName]
-  if (!suite) throw new LabError("usage", `no suite named ${JSON.stringify(suiteName)}; the suites are ${Object.keys(SUITES).join(", ")}`, { remedy: `omakit lab run <${Object.keys(SUITES).join("|")}>` })
+  if (!suite) throw new LabError("usage", `no suite named ${JSON.stringify(suiteName)}; the suites are ${Object.keys(SUITES).join(", ")}`, { remedy: `omakit lab prove <${Object.keys(SUITES).join("|")}>` })
   const layout = labLayout(env)
   const missing = []
   const base = inspectBase(layout, pin)
@@ -222,7 +222,7 @@ export function preflightRun({ suiteName, env = process.env, pin = labPin(), rep
   missing.push(...suitePreflight(suite, { repoRoot, layout }))
   const free = freeBytesAt(layout.cache)
   if (free.bytes < pin.measured.overlayAfterRunBytes) missing.push({ what: "disk for one overlay", cost: `${bytesBoth(free.bytes)} free at ${free.path}; one run's overlay measured ${bytesBoth(pin.measured.overlayAfterRunBytes)} (M14)`, command: "omakit lab prune" })
-  if (missing.length) throw new LabError("lab-not-ready", `\`omakit lab run ${suiteName}\` cannot start: ${missing.length} thing${missing.length === 1 ? " is" : "s are"} missing`, { missing, remedy: missing[0].command })
+  if (missing.length) throw new LabError("lab-not-ready", `\`omakit lab prove ${suiteName}\` cannot start: ${missing.length} thing${missing.length === 1 ? " is" : "s are"} missing`, { missing, remedy: missing[0].command })
   return { suite, layout, base, free }
 }
 

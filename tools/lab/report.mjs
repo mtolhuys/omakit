@@ -77,7 +77,7 @@ export function renderLab(lab, { colour = colourEnabled(), env = process.env } =
   }
   out.push("")
   if (lab.missing.length) {
-    out.push(...section(`missing for \`omakit lab run\`: ${lab.missing.length}`, c))
+    out.push(...section(`missing for \`omakit lab prove\`: ${lab.missing.length}`, c))
     for (const item of lab.missing) {
       out.push(`${mark("advisory", c)}${c("name", item.what)}`)
       out.push(...labelled("costs", home(item.cost), c))
@@ -126,7 +126,7 @@ export function renderSetupResult(result, { colour = colourEnabled(), env = proc
     else if (step.kind === "plugins") out.push(`${mark("pass", c)}${step.fetched.length} listed plugins in the lab cache: ${step.fetched.map((row) => `${row.id} ${row.state}`).join(", ")}`)
   }
   out.push("")
-  out.push(...verdict("pass", "PREPARED", "the lab is ready; `omakit lab run <suite>` boots it.", c))
+  out.push(...verdict("pass", "PREPARED", "the lab is ready; `omakit lab prove <suite>` boots it.", c))
   return out.join("\n")
 }
 

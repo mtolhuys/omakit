@@ -15,7 +15,7 @@ the measurements are M14 in [MEASUREMENTS.md](MEASUREMENTS.md).
 omakit lab inspect                   # read-only: the pin, what is on disk and verified, what the host lacks
 omakit lab setup --toolchain <dir>   # record the omarchy-iso checkout, after hashing its harness against the pin
 omakit lab setup                     # one consent, then the ISO, its verification, and one base; --from <file> for an ISO already downloaded
-omakit lab run run                   # the Run block's 19 scenarios in the guest; also store, weigh, weigh-evidence
+omakit lab prove run                   # the Run block's 19 scenarios in the guest; also store, weigh, weigh-evidence
 omakit lab prune                     # what the lab owns on disk, asked once, removed, the bytes said
 omakit doctor                        # the lab lines beside the others, advisory
 ```
@@ -28,9 +28,9 @@ form of one; `tests/unit/self-containment.test.mjs` sniffs every file in
 the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash. What ships is measured: 20 files, 163,753 bytes unpacked, in a
-package that packs to 310,059 bytes (`tests/package-assert.mjs`).
+package that packs to 310,081 bytes (`tests/package-assert.mjs`).
 
-Nothing is fetched implicitly. `run`, `inspect`, `prune` and `doctor`
+Nothing is fetched implicitly. `prove`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after
 one consent that states the exact size and the destination, and `--yes` is
 that consent in the command itself for an agent; a pipe without it refuses,
@@ -120,7 +120,7 @@ recorded one; it will not be booted), `missing`.
 
 ## A run
 
-`omakit lab run <suite>`, in order:
+`omakit lab prove <suite>`, in order:
 
 1. Preflight, reading only: the base is ready and the pin's; KVM, QEMU,
    `qemu-img`, `ssh` and the OVMF firmware are there; the host has one and
@@ -189,7 +189,7 @@ The closing word is `PROVED` or `NOT PROVED`, with the suite's own reason.
 | `weigh-evidence` | four fixtures and three listed plugins from `plugins/` | The five-run gate `docs/evidence/weigh/` carries; `--runs` shortens it | `omakit-weigh.json` |
 
 The in-guest content lives with the tests and does not ship in the
-package; a packaged omakit running `lab run` names the files it is
+package; a packaged omakit running `lab prove` names the files it is
 missing and the clone that has them. `weigh-evidence` needs the three
 listed plugins in the lab's plugin cache at the commits the pinned
 catalog records as validated; `omakit lab setup --plugins` fetches them,
@@ -364,7 +364,7 @@ bytes, lock state).
   (`packaging/LAB_PLAN.md`, the per-run overlay rule). The overlay is a
   named file under `staging/run-<id>/`, removed by omakit on the normal
   path, on failure, on SIGINT and on SIGTERM; a SIGKILL to omakit leaves
-  QEMU running on it, the next `run` finds the lock held by a QEMU that
+  QEMU running on it, the next `prove` finds the lock held by a QEMU that
   answers, and `prune` refuses while it answers. Decided for 0.6.0: it
   stays a named file. The descriptor form is a new mechanism (`-add-fd`,
   a qcow2 opened through `/dev/fdset`, a lock QEMU inherits) with its

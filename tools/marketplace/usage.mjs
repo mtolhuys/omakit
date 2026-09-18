@@ -104,7 +104,7 @@ export const COMMANDS = Object.freeze([
   },
   {
     signature: [
-      "omakit lab run <suite> [--runs <n>] [--json] [--out <file>]",
+      "omakit lab prove <suite> [--runs <n>] [--json] [--out <file>]",
       "omakit lab inspect [--verify] [--json] [--out <file>]",
       "omakit lab setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes]",
       "omakit lab prune [--keep-iso] [--records] [--yes] [--json]",
@@ -113,7 +113,7 @@ export const COMMANDS = Object.freeze([
       "Prove a suite in a disposable Omarchy guest, never on the desktop: the",
       "pinned 4.0.3 release booted from an immutable verified base, a fresh",
       "overlay per run, the guest's installed omarchy package read and printed",
-      "before the suite, the document written with that identity. `run` boots",
+      "before the suite, the document written with that identity. `prove` boots",
       "nothing until the base, the host and the suite's files are there, and",
       "names what is missing, what it takes, and the one command; it fetches",
       "nothing. `inspect` is read-only: the pinned release, its exact size,",
