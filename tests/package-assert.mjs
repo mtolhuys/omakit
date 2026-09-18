@@ -38,6 +38,10 @@ import { pathToFileURL } from "node:url"
 // 0.6.0, with the Run-started helper resolver (tools/inspect/helpers.mjs)
 // and the README rewritten around the blocks, 247,435 bytes across 85
 // files, 8,565 under it; the GIFs and captures under docs/media do not ship.
+// With the blocks at 0.2.0 (the token protocol and the gate in Run, the
+// string-program tables, the Store checks; the lab suites and their
+// records do not ship) it measured 252,565 bytes across 85 files, 3,435
+// under the same ceiling.
 export const MAX_PACKED_BYTES = 256_000
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
