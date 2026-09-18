@@ -215,7 +215,10 @@ the restore and the interrupt
 the weigh evidence gate: 32m 20.9s, a 610,734,080 B overlay, forty real
 restarts, C1b in [MEASUREMENTS.md](MEASUREMENTS.md)
 ([evidence/lab/20260918-162602-weigh-evidence/](evidence/lab/20260918-162602-weigh-evidence/)).
-The guest takes 5120 MiB while it runs.
+A second pass on the release round's code, the same evening
+([end-to-end log](evidence/lab/2026-09-18-end-to-end.log)): 2m 53.3s,
+1m 46.7s and 1m 36.8s, every one PROVED. The guest takes 5120 MiB while
+it runs.
 The old harness retained a 1.01 GB overlay per run (packaging/LAB_PLAN.md
 M7); this one keeps
 none.

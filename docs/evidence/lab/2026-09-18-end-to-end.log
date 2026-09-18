@@ -1,0 +1,224 @@
+Fri Sep 18 05:01:08 PM CEST 2026
+the release the lab is pinned to
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+release       Omarchy 4.0.3; guest package expected 4.0.3-1; ISO build
+              2026.09.08, volume OMARCHY_202609
+iso           https://iso.omarchy.org/omarchy-4.0.3.iso
+size          6,260,654,080 B (6.261 GB / 5.831 GiB)
+sha256        03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
+signed by     40DFB630FF42BCFFB047046CF0134EE680CAC571 (Omarchy
+              <pkgs@omarchy.org>, the packaged key)
+toolchain     omarchy-iso 268bac16d351 with patches/omarchy-iso-test.patch;
+              harness sha256 8637e8cc...93974e97
+
+on disk
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+▁ ok    iso
+        6,260,654,080 B (6.261 GB / 5.831 GiB) at
+        ~/.cache/omakit/lab/downloads/03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14/omarchy-4.0.3.iso:
+        verified 2026-09-18T13:57:07.151Z: sha256
+        03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14, signed
+        by 40DFB630FF42BCFFB047046CF0134EE680CAC571; the file's size and mtime
+        still match that record
+▁ ok    base (ready)
+        Omarchy 4.0.3, guest omarchy 4.0.3-1; 6,182,264,832 B (6.182 GB / 5.758
+        GiB); created 2026-09-18T14:05:40.267Z
+        disk sha256  c47c74a09ce49b8170e923e4b97d93fc4ef7ef7cd372600ad74744e3418d38a3
+        origin  built 2026-09-18T14:03:04.000Z by the pinned toolchain harness
+                8637e8cc8241 from
+                ~/.cache/omakit/lab/downloads/03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14/omarchy-4.0.3.iso,
+                promoted 2026-09-18T14:04:37.952Z after a verification boot
+▁ ok    toolchain (ready)
+        ~/Projects/omarchy/omarchy-iso/bin/omarchy-iso-test hashes to the pinned
+        patched harness (omarchy-iso 268bac16d351 with
+        patches/omarchy-iso-test.patch)
+lab cache     12,449,771,520 B (12.450 GB / 11.595 GiB) at ~/.cache/omakit/lab:
+              downloads 6.261 GB / 5.831 GiB, base 6.182 GB / 5.758 GiB, staging
+              0.000 GB / 0.000 GiB, plugins 0.007 GB / 0.006 GiB
+runs          5 records, 11,767,808 B (0.012 GB / 0.011 GiB) at
+              ~/.local/state/omakit/lab/runs; newest
+              20260918-162602-weigh-evidence
+free          1,306,941,562,880 B (1306.942 GB / 1217.184 GiB) at
+              ~/.cache/omakit/lab
+
+the host
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+▁ ok    kvm
+        /dev/kvm is a character device this user can open read-write
+▁ ok    qemu-system-x86_64
+        QEMU emulator version 11.1.1
+▁ ok    qemu-img
+        qemu-img version 11.1.1
+▁ ok    ssh
+        OpenSSH_10.5p1, OpenSSL 3.6.4 25 Aug 2026
+▁ ok    ovmf
+        /usr/share/edk2/x64/OVMF_CODE.4m.fd (3,653,632 B) and the 540,672 B
+        variables template readable
+▁ ok    memory
+        15618 MiB total, 3872 MiB available; the guest takes 5120 MiB
+▁ ok    cpus
+        32 logical CPUs, and the guest gets every one, as the toolchain's -smp
+        $(nproc) gave the reference build (32, M14)
+▁ ok    gpg
+        gpg (GnuPG) 2.4.9
+▁ ok    socat
+        socat by Gerhard Rieger and contributors - see www.dest-unreach.org
+▁ ok    magick
+        Version: ImageMagick 7.1.2-31 Q16-HDRI x86_64 8309dc92a:20260903
+        https://imagemagick.org
+▁ ok    tesseract
+        tesseract 5.5.3
+▁ ok    ssh-keygen
+        /dev/null is not a public key file.
+▁ ok    python3
+        Python 3.14.7
+
+▁ PREPARED  verified 4.0.3, a ready base, the host can run it; nothing was
+            fetched or written.
+exit 0
+Fri Sep 18 05:01:08 PM CEST 2026
+run           20260918-170108-run
+release       4.0.3
+guest         omarchy 4.0.3-1 on 7.2.3-arch1-3
+iso sha256    03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
+base          created 2026-09-18T14:05:40.267Z; 6,182,264,832 B (6.182 GB /
+              5.758 GiB); disk sha256 c47c74a0...418d38a3
+tested        installed package omarchy 4.0.3-1
+skew          false: the installed package is the pinned 4.0.3-1
+
+░ info  ==> Checking the stock guest for the block's plumbing
+░ info  ==> Python 3.14.7;warning: database file for 'core' does not exist (use '-Sy' to download);warning: database file for 'extra' does not exist (use '-Sy' to download);warning: database file for 'multilib' does not exist (use '-Sy' to download);
+░ info  ==> Staging the suite and the block files in the guest
+░ info  ==> Running the Run lab suite in the guest session (1 run per scenario)
+▁ ok    ok - the runlab job finished
+▁ ok    ok - producer: 1 run(s), end 50 ms (50-50), Pss after-before 96 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - producer-stream: 1 run(s), end 925 ms (925-925), Pss after-before 95 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - holder: 1 run(s), end 47 ms (47-47), Pss after-before 88 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - stubborn: 1 run(s), end 3050 ms (3050-3050), Pss after-before 93 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - hostile: 1 run(s), end 53 ms (53-53), Pss after-before 88 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - destroy: 1 run(s), end 502 ms (502-502), Pss after-before -61 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - cancel: 1 run(s), end 519 ms (519-519), Pss after-before 101 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - supersede: 1 run(s), end 67 ms (67-67), Pss after-before 112 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - shell-string: 1 run(s), end 28 ms (28-28), Pss after-before 85 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - relative: 1 run(s), end 29 ms (29-29), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - missing: 1 run(s), end 43 ms (43-43), Pss after-before 88 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - controls: 1 run(s), end 50 ms (50-50), Pss after-before 80 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - concurrency: 1 run(s), end 126 ms (126-126), Pss after-before 213 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - forge: 1 run(s), end 28 ms (28-28), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - orphan: 1 run(s), end 33 ms (33-33), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - stalled-supersede: 1 run(s), end 50 ms (50-50), Pss after-before 100 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - destroy-early: 1 run(s), end 301 ms (301-301), Pss after-before 77 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - shell-string-option: 1 run(s), end 30 ms (30-30), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - shell-string-wrapper: 1 run(s), end 31 ms (31-31), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+▁ ok    ok - Run lab suite: 19 scenarios, 19 runs, document at /tmp/omakit-runlab/runlab.json
+▁ ok    ok - the Run block ran its lab scenarios on the stock guest, the shell untouched; document at ~/.local/state/omakit/lab/runs/20260918-170108-run/runlab.json
+
+duration      2m 53.3s
+overlay       418,451,456 B (0.418 GB / 0.390 GiB) allocated by the run, removed
+base          unchanged (size, mtime and inode of the disk and the template)
+document      ~/.local/state/omakit/lab/runs/20260918-170108-run/runlab.json
+record        ~/.local/state/omakit/lab/runs/20260918-170108-run/run.json
+
+▁ PROVED  run: ok over 19 scenarios; guest omarchy 4.0.3-1, skew false.
+exit 0
+Fri Sep 18 05:04:01 PM CEST 2026
+run           20260918-170402-store
+release       4.0.3
+guest         omarchy 4.0.3-1 on 7.2.3-arch1-3
+iso sha256    03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
+base          created 2026-09-18T14:05:40.267Z; 6,182,264,832 B (6.182 GB /
+              5.758 GiB); disk sha256 c47c74a0...418d38a3
+tested        installed package omarchy 4.0.3-1
+skew          false: the installed package is the pinned 4.0.3-1
+
+░ info  ==> Checking the stock guest for the block's plumbing
+░ info  ==> Python 3.14.7;warning: database file for 'core' does not exist (use '-Sy' to download);warning: database file for 'extra' does not exist (use '-Sy' to download);warning: database file for 'multilib' does not exist (use '-Sy' to download);
+░ info  ==> Staging the suite and the block files in the guest
+░ info  ==> Allowing chown without a password in the guest's overlay, for the foreign-owner scenario
+        [sudo] password for omarchy: ==> Running the Store lab suite in the guest session
+▁ ok    ok - the storelab job finished
+▁ ok    ok - concurrent: ok x10, 95 ms to the last result
+▁ ok    ok - crash: ok x2, 159 ms to the last result
+▁ ok    ok - fifo: refused x1, ok x2, 232 ms to the last result
+▁ ok    ok - foreign-owner: refused x1, ok x1, 162 ms to the last result
+▁ ok    ok - group-writable: refused x1, ok x1, 157 ms to the last result
+▁ ok    ok - invalid: ok x1, invalid x1, 82 ms to the last result
+▁ ok    ok - non-ascii: ok x1, 168 ms to the last result
+▁ ok    ok - outside-home: refused x2, 158 ms to the last result
+▁ ok    ok - oversized: overflow x2, missing x1, 81 ms to the last result
+▁ ok    ok - plain: ok x3, missing x1, 726 ms to the last result
+▁ ok    ok - short-write: ok x2, failed x1, 241 ms to the last result
+▁ ok    ok - swap: ok x31, refused x9, 3590 ms to the last result
+▁ ok    ok - symlink-directory: refused x2, 160 ms to the last result
+▁ ok    ok - symlink-file: refused x1, ok x2, 242 ms to the last result
+▁ ok    ok - symlink-parent: refused x2, 224 ms to the last result
+▁ ok    ok - Store lab suite: 15 scenarios, document at /tmp/omakit-storelab/storelab.json
+▁ ok    ok - the Store block ran its lab scenarios on the stock guest, the foreign owner simulated with chown, the shell untouched; document at ~/.local/state/omakit/lab/runs/20260918-170402-store/storelab.json
+
+duration      1m 46.7s
+overlay       411,045,888 B (0.411 GB / 0.383 GiB) allocated by the run, removed
+base          unchanged (size, mtime and inode of the disk and the template)
+document      ~/.local/state/omakit/lab/runs/20260918-170402-store/storelab.json
+record        ~/.local/state/omakit/lab/runs/20260918-170402-store/run.json
+
+▁ PROVED  store: ok over 15 scenarios, the foreign owner simulated; guest
+          omarchy 4.0.3-1, skew false.
+exit 0
+Fri Sep 18 05:05:48 PM CEST 2026
+run           20260918-170549-weigh
+release       4.0.3
+guest         omarchy 4.0.3-1 on 7.2.3-arch1-3
+iso sha256    03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
+base          created 2026-09-18T14:05:40.267Z; 6,182,264,832 B (6.182 GB /
+              5.758 GiB); disk sha256 c47c74a0...418d38a3
+tested        installed package omarchy 4.0.3-1
+skew          false: the installed package is the pinned 4.0.3-1
+
+░ info  ==> Checking that the guest has node
+        v26.8.1
+░ info  ==> Staging omakit, the 2 fixtures and 0 listed plugins in the guest
+        Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.3063'...
+        done.
+        Added fixture.clean into /home/omarchy/.config/omarchy/plugins/fixture.clean
+        Enabled fixture.clean
+        Cloning into '/home/omarchy/.config/omarchy/plugins/.add.tmp.3573'...
+        done.
+        Added fixture.timer-180ms into /home/omarchy/.config/omarchy/plugins/fixture.timer-180ms
+        Enabled fixture.timer-180ms
+▁ ok    ok - the 2 plugins are installed and enabled
+░ info  ==> shell.json before: c617611664df9a744e145083cbc702f1  -
+        weighing      fixture.timer-180ms, fixture.clean
+        shell         4.0.0.alpha at /usr/share/omarchy
+        restarts      3: (1 baseline + 2 plugins) × 1 run
+        estimate      about 1 minute, 10 s per restart: 5 s for the shell to come back
+                      (before any run on this machine; the lab measured 1 s), then the 2
+                      s settle and the 3 s window
+        shell.json    backed up beside itself and restored on every exit path; the md5
+                      is printed before and after
+        writes        ~/.local/state/omakit/weigh/2026-09-18T150647Z.json
+        █ NOT WEIGHED  this restarts the shell 3 times and edits shell.json for the
+                       duration; a pipe, an agent or --json cannot answer for the person
+                       whose shell it is.
+        → Run it again and answer y, or pass --yes when the person whose shell it is has
+          agreed.
+░ info  ==> Running omakit weigh --all --runs 1 --settle 2 --window 3 in the guest (3 restarts)
+▁ ok    ok - the weigh-smoke job finished
+░ info  ==> shell.json after the measurement: c617611664df9a744e145083cbc702f1  -
+        ok: the document follows the contract in docs/WEIGH.md
+        true
+░ info  ==> Interrupting a second measurement inside its settle
+▁ ok    ok - the interrupted measurement has backed shell.json up
+▁ ok    ok - the interrupted measurement has exited
+░ info  ==> shell.json after the interrupt: c617611664df9a744e145083cbc702f1  -
+▁ ok    ok - omakit weigh smoke: 3 measured restarts and a restore weighed two fixtures from the real /proc and put shell.json back byte for byte, the document follows docs/WEIGH.md, and an interrupted measurement restored it and exited 130
+
+duration      1m 36.8s
+overlay       437,587,968 B (0.438 GB / 0.408 GiB) allocated by the run, removed
+base          unchanged (size, mtime and inode of the disk and the template)
+document      ~/.local/state/omakit/lab/runs/20260918-170549-weigh/omakit-weigh.json
+record        ~/.local/state/omakit/lab/runs/20260918-170549-weigh/run.json
+
+▁ PROVED  weigh: the document says the shell configuration was restored; guest
+          omarchy 4.0.3-1, skew false.
+exit 0
+Fri Sep 18 05:07:26 PM CEST 2026
