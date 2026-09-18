@@ -1,58 +1,85 @@
 # The commands
 
 Every command, what it reads, what it prints, and what it will not do. The
-short list is `omakit help`; this page is the rest. Build first: the two
-blocks are what the review blocks on most, measured ([M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own));
-the checks are the second half.
+short list is `omakit help`; this page is the rest, in the same order:
+build (the two blocks are what the review blocks on most, measured
+([M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own))),
+check, track, prove, and then the rest.
 
 Agent-first: the expected user is a coding agent submitting a plugin on an
 owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
 
 ```bash
-omakit add run <plugin-dir>  # the Run block into the plugin's omakit/ directory; --update moves an unmodified copy
-omakit add store <plugin-dir> # the Store block, with run, which it uses
-omakit inspect <plugin-dir>  # what a plugin tree does, as observations: processes, hosts, writes, timers, the blocks it carries, and the review classes the tree shows
-omakit setup                 # the environment, the pin, tab completion, and what to try first
-omakit submit <plugin-repo>  # every check, the issue title and body; asks for a category and tags at a terminal
-omakit watch <issue-url>     # the commit the marketplace validated, against the plugin's current HEAD
-omakit watch --all           # check every open marketplace issue authored by your gh account
-omakit watch --list          # list those issues without checking every plugin
-omakit watch                 # choose one or several issues at a terminal
-omakit verify <plugin-repo>  # the official security baseline over the local transport; --json for the document
-omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
-omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
-omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
-omakit lab run <suite>       # a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
-omakit lab inspect           # what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing
-omakit lab setup             # one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; --toolchain, --from, --plugins
-omakit lab prune             # what the lab owns on disk, asked once, removed, the bytes said
-omakit doctor                # what is installed, what is pinned, and what has moved
-omakit pin                   # what setup does for the pin, on its own
-omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
-omakit help --agent          # the operating instructions, for the agent running this
+omakit add run <plugin-dir>    # build: the Run block into the plugin's omakit/ directory; --update moves an unmodified copy
+omakit add store <plugin-dir>  # build: the Store block, with run, which it uses
+omakit inspect <plugin-dir>    # check: what a plugin tree does, as observations, and the review classes the tree shows
+omakit verify <plugin-repo>    # check: the official security baseline over the local transport; --json for the document
+omakit submit <plugin-repo>    # check: every check, the issue title and body; asks for a category and tags at a terminal
+omakit watch <issue-url>       # track: the commit the marketplace validated, against the plugin's current HEAD
+omakit watch --all             # track: every open marketplace issue authored by your gh account; --list lists them; bare, a terminal chooses
+omakit lab run <suite>         # prove: a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
+omakit lab inspect             # prove: what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing
+omakit lab setup               # prove: one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; --toolchain, --from, --plugins
+omakit lab prune               # prove: what the lab owns on disk, asked once, removed, the bytes said
+omakit audit [<plugin>]        # installed third-party commits against the commits the marketplace validated
+omakit weigh <plugin>          # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
+omakit doctor                  # what is installed, what is pinned, what has moved, and what the lab has
+omakit setup                   # the environment, the pin, tab completion, and what to try first
+omakit pin                     # what setup does for the pin, on its own
+omakit upgrade                 # updates omakit through its own installer: npm, or a fast-forward
+omakit parity                  # the baseline over GitHub versus the local transport, on real listings; writes the evidence
+omakit help --agent            # the operating instructions, for the agent running this
 ```
 
-![omakit setup checking the environment and fetching the pinned checkout](media/setup.gif)
+`omakit add <block> [<plugin-dir>]` copies a block ([BLOCKS.md](BLOCKS.md))
+into the plugin's `omakit/` directory: `run` is `Run.qml` and
+`run-supervisor.py`; `store` is `Store.qml` and `store-helper.py`, with
+`run`, which it uses; and `NOTICE`, each file with a header naming the
+block, its version, the MIT licence, the copyright, the omakit commit and
+the body's sha256. It is the
+one command that writes into a plugin tree, and it writes those files and
+nothing else: a file already there is not overwritten without `--update`,
+and with `--update` a copy whose body is not one omakit shipped is refused,
+before anything is written, because a modified block is the author's. The
+report is one line per file, `written`, `updated` or `current`; `--json`
+is the document. The plugin directory defaults to the current one and
+has to carry a `manifest.json`. After it, `omakit inspect` lists each block
+as one row, each `Run {` site as a process whose deadline the block holds,
+and each `Store {` site as a write under the plugin's own state or cache
+directory at mode 0600; a modified copy is reported as modified.
 
-`omakit setup` checks the environment, fetches the marketplace checkout that
-every rule is read from, installs tab completion for the shell you run it from
-and proves it in a new shell (`docs/INSTALL.md` says what it asks when the
-shell has no loader)
-(bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
-idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
-seven files omakit reads out of that repository rather than the 325 MB it is at
-that commit. The completion script knows the subcommands and their flags,
-completes a directory for `<target>`, and offers the categories and tags the
-pin's submission form actually has. For `omakit weigh <TAB>` it offers the
-plugin ids the running shell has installed, read at TAB time through
-`omarchy-shell shell listPlugins` and `jq` (enabled ids first, whole bars
-left out, since a bar cannot be weighed), and falls back to a directory
-when the shell does not answer within a second. The decision behind that:
-nothing starts a node process behind a TAB, because node's startup is not
-something to put between a keystroke and its answer, and the ids are the
-shell's to report, not a list to bake into a script that would go stale
-the next time a plugin is added. The same pipeline is in the bash, zsh and
-fish scripts, and `tests/unit/completion.test.mjs` runs its jq expression.
+![omakit inspect over a fixture with one process and no deadline](media/inspect.gif)
+
+`omakit inspect <plugin-dir>` reads the plugin's tree at its commit and
+prints what the text shows, in the order a reviewer reads it: every
+`Process` with its argv, whether a deadline is observed for it and what
+collects its output; every `http` or `https` literal with its host, the tool
+it reaches and the timeout and size-cap flags beside it; every write with
+whether its path falls under a directory the plugin controls; every `Timer`
+with its interval; and the capabilities and findings the marketplace's own
+baseline records for the same tree, through `verify`. Below the facts, one
+row for each class the marketplace's human review has raised, printed only
+where the tree shows the class's precondition and citing the class's measured
+share of review findings ([M11](MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)).
+It is regular expressions over QML and shell, and every row says so: a
+command that is not one literal is a `▒ ?` row with no argv, a section with
+nothing in it says "observed nothing of this kind", and the report ends by
+naming what the method cannot see. No verdict, no `--fix`: it runs
+nothing from the tree, resolves no host and writes nothing into it, and the
+one word it closes on is `INSPECTED`. The report opens with the size score,
+the share of the plugin's function lines that sit in functions over the
+measured size, placed among the listed trees' shares (10.00 when no
+function is over, 0.00 when heavier than every listed tree), a position
+to work towards and never a grade; then what needs
+attention, biggest first: the functions longer, more branched or deeper than 90 of 100
+functions in listed trees ([M12](MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)),
+longest first, then one block per review class the tree shows, ordered by
+the class's measured share of review findings, with up to five sites under
+each and the fact at each site; classes under five percent are counted, not
+listed; `--full` is every site with every qualifier. `--json` prints the
+document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
+`--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
+when the target could not be read.
 
 `omakit verify` prints the official baseline result alone, with no Omakit
 check around it: the subject, the pin, the transport and what the local
@@ -91,66 +118,6 @@ the run without asking, and `--json` carries it as `reproduce`.
 
 Account-wide watch without `--user` requires `gh auth login` so it can discover your account. `--user <login>` can discover a public author's issues without a login. An individual issue URL still works unauthenticated. Discovery reads open authored issues, excludes pull requests, follows pagination, and refuses an incomplete list. JSON, `--out` and pipes never prompt: pass `--all`, `--list` or an issue URL. See [VALIDATION_WATCH.md](VALIDATION_WATCH.md) for batch output and exit codes.
 
-If you have `gh auth login` done, omakit
-reads that credential for GET requests and stores nothing; a token in
-`GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
-those itself. Without either, `watch` and `parity` share GitHub's
-60-requests-an-hour unauthenticated allowance; `submit` reads two things
-online, the subject's default-branch HEAD and the marketplace's current
-registry, and `--offline` turns both off; `verify` on a local repository does
-not touch the network at all (a `<url>@<sha>` target is fetched once, over
-git, into the cache). omakit reads no environment variable of its own, and
-
-![omakit inspect over a fixture with one process and no deadline](media/inspect.gif)
-
-`omakit inspect <plugin-dir>` reads the plugin's tree at its commit and
-prints what the text shows, in the order a reviewer reads it: every
-`Process` with its argv, whether a deadline is observed for it and what
-collects its output; every `http` or `https` literal with its host, the tool
-it reaches and the timeout and size-cap flags beside it; every write with
-whether its path falls under a directory the plugin controls; every `Timer`
-with its interval; and the capabilities and findings the marketplace's own
-baseline records for the same tree, through `verify`. Below the facts, one
-row for each class the marketplace's human review has raised, printed only
-where the tree shows the class's precondition and citing the class's measured
-share of review findings ([M11](MEASUREMENTS.md#m11-what-the-human-review-raises-by-class)).
-It is regular expressions over QML and shell, and every row says so: a
-command that is not one literal is a `▒ ?` row with no argv, a section with
-nothing in it says "observed nothing of this kind", and the report ends by
-naming what the method cannot see. No verdict, no `--fix`: it runs
-nothing from the tree, resolves no host and writes nothing into it, and the
-one word it closes on is `INSPECTED`. The report opens with the size score,
-the share of the plugin's function lines that sit in functions over the
-measured size, placed among the listed trees' shares (10.00 when no
-function is over, 0.00 when heavier than every listed tree), a position
-to work towards and never a grade; then what needs
-attention, biggest first: the functions longer, more branched or deeper than 90 of 100
-functions in listed trees ([M12](MEASUREMENTS.md#m12-how-long-a-plugins-functions-are-in-listed-trees)),
-longest first, then one block per review class the tree shows, ordered by
-the class's measured share of review findings, with up to five sites under
-each and the fact at each site; classes under five percent are counted, not
-listed; `--full` is every site with every qualifier. `--json` prints the
-document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
-`--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
-when the target could not be read.
-
-`omakit add <block> [<plugin-dir>]` copies a block ([BLOCKS.md](BLOCKS.md))
-into the plugin's `omakit/` directory: `run` is `Run.qml` and
-`run-supervisor.py`; `store` is `Store.qml` and `store-helper.py`, with
-`run`, which it uses; and `NOTICE`, each file with a header naming the
-block, its version, the MIT licence, the copyright, the omakit commit and
-the body's sha256. It is the
-one command that writes into a plugin tree, and it writes those files and
-nothing else: a file already there is not overwritten without `--update`,
-and with `--update` a copy whose body is not one omakit shipped is refused,
-before anything is written, because a modified block is the author's. The
-report is one line per file, `written`, `updated` or `current`; `--json`
-is the document. The plugin directory defaults to the current one and
-has to carry a `manifest.json`. After it, `omakit inspect` lists each block
-as one row, each `Run {` site as a process whose deadline the block holds,
-and each `Store {` site as a write under the plugin's own state or cache
-directory at mode 0600; a modified copy is reported as modified.
-
 `omakit lab <run|inspect|setup|prune>` proves a suite in a disposable
 Omarchy guest ([LAB.md](LAB.md)). `run <suite>` boots nothing until the
 base is ready, the host can run a guest and the suite's files are there,
@@ -172,6 +139,40 @@ with its bytes, asks once, removes only that, and says what it recovered.
 `omakit doctor` gains the lab's lines, advisory.
 
 `omakit doctor` names the credential source it found, or that it found none.
+
+![omakit setup checking the environment and fetching the pinned checkout](media/setup.gif)
+
+`omakit setup` checks the environment, fetches the marketplace checkout that
+every rule is read from, installs tab completion for the shell you run it from
+and proves it in a new shell (`docs/INSTALL.md` says what it asks when the
+shell has no loader)
+(bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
+idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
+seven files omakit reads out of that repository rather than the 325 MB it is at
+that commit. The completion script knows the subcommands and their flags,
+completes a directory for `<target>`, and offers the categories and tags the
+pin's submission form actually has. For `omakit weigh <TAB>` it offers the
+plugin ids the running shell has installed, read at TAB time through
+`omarchy-shell shell listPlugins` and `jq` (enabled ids first, whole bars
+left out, since a bar cannot be weighed), and falls back to a directory
+when the shell does not answer within a second. The decision behind that:
+nothing starts a node process behind a TAB, because node's startup is not
+something to put between a keystroke and its answer, and the ids are the
+shell's to report, not a list to bake into a script that would go stale
+the next time a plugin is added. The same pipeline is in the bash, zsh and
+fish scripts, and `tests/unit/completion.test.mjs` runs its jq expression.
+
+If you have `gh auth login` done, omakit
+reads that credential for GET requests and stores nothing; a token in
+`GH_TOKEN` or `GITHUB_TOKEN` reaches it the same way, because `gh` honours
+those itself. Without either, `watch` and `parity` share GitHub's
+60-requests-an-hour unauthenticated allowance; `submit` reads two things
+online, the subject's default-branch HEAD and the marketplace's current
+registry, and `--offline` turns both off; `verify` on a local repository does
+not touch the network at all (a `<url>@<sha>` target is fetched once, over
+git, into the cache). omakit reads no environment variable of its own; the
+cache and the state follow XDG, and colour follows `NO_COLOR`, `FORCE_COLOR`
+and `TERM`, which are everybody's.
 
 Every colour omakit prints is an ANSI palette index, so your Omarchy theme
 decides what it looks like, and nothing is said by colour alone. What the

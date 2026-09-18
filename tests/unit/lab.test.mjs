@@ -23,7 +23,7 @@ import { CONSENT_QUESTION, disclosureLines, downloadRelease, planSetup, setupLab
 import { acquireLock, LabError, preflightRun, releaseLock } from "../../tools/lab/run.mjs"
 import { planPrune, prune } from "../../tools/lab/prune.mjs"
 import { SUITES, suiteNames, suitePreflight } from "../../tools/lab/suites.mjs"
-import { labDoctorChecks, renderInspect, renderSetupPlan } from "../../tools/lab/report.mjs"
+import { labDoctorChecks, renderLab, renderSetupPlan } from "../../tools/lab/report.mjs"
 import { ACCEPTED } from "../../tools/marketplace/options.mjs"
 import { LAB_ACTIONS, subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { COMMANDS } from "../../tools/marketplace/usage.mjs"
@@ -172,7 +172,7 @@ test("inspect on an empty home reports everything missing with its cost and comm
     assert.ok(lab.missing.some((item) => item.what === "a prepared base" && /4m 49\.5s/.test(item.cost)))
     assert.equal(existsSync(layout.cache), false, "inspect created no cache directory")
     assert.equal(existsSync(layout.state), false)
-    const text = renderInspect(lab, { colour: false, env })
+    const text = renderLab(lab, { colour: false, env })
     assert.match(text, /NOT PREPARED/)
     assert.doesNotMatch(text, //)
     const checks = labDoctorChecks(lab)

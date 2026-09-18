@@ -188,7 +188,10 @@ package; a packaged omakit running `lab run` names the files it is
 missing and the clone that has them. `weigh-evidence` needs the three
 listed plugins in the lab's plugin cache at the commits the pinned
 catalog records as validated; `omakit lab setup --plugins` fetches them,
-once, after the same consent, and the suite fetches nothing.
+once, after the same consent (three shallow fetches, 6,836,224 B
+allocated on 2026-09-18), and the suite fetches nothing. Both were
+exercised on 2026-09-18: the fetch, and the forty-restart run recorded
+as C1b in [MEASUREMENTS.md](MEASUREMENTS.md).
 
 ## What one run costs
 
@@ -344,9 +347,13 @@ bytes, lock state).
   named file under `staging/run-<id>/`, removed by omakit on the normal
   path, on failure, on SIGINT and on SIGTERM; a SIGKILL to omakit leaves
   QEMU running on it, the next `run` finds the lock held by a QEMU that
-  answers, and `prune` refuses while it answers. Condition: an fd-set
-  boot proven on QEMU 11 with a qcow2 whose backing file is resolved from
-  its header, then the `-add-fd` argument and its test.
+  answers, and `prune` refuses while it answers. Decided for 0.6.0: it
+  stays a named file. The descriptor form is a new mechanism (`-add-fd`,
+  a qcow2 opened through `/dev/fdset`, a lock QEMU inherits) with its
+  own proof, not a polish of this one, and the release round adds no
+  feature. Condition: an fd-set boot proven on QEMU 11 with a qcow2
+  whose backing file is resolved from its header, then the argument and
+  its test.
 - It does not hold a lock QEMU inherits. The lock is a directory with the
   holder's pid and QMP socket; the QMP answer is what crosses namespaces.
   Condition: the same descriptor work as above.
@@ -375,7 +382,3 @@ bytes, lock state).
   rebuilt.
 - It does not retain a guest for inspection, and has no `--keep-overlay`,
   by design.
-- The `prune` inventory does not name the three plugin checkouts the 0.5
-  weigh gate left at the lab root (`~/.cache/omakit/lab/<id>/`, 6.6 MB on
-  the reference host); they are not this lab's layout and are left alone.
-  Condition: none; remove them by hand.
