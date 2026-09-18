@@ -34,5 +34,29 @@
   "version": "0.1.0",
   "file": "store-helper.py",
   "sha256": "cec3fcc9573ce7c12f1365e106cc65a936e213553bfe4e3128e8a87eea511dc5"
+ },
+ {
+  "block": "run",
+  "version": "0.2.0",
+  "file": "Run.qml",
+  "sha256": "0e54a5a82aacbdcd2e61163091bbeebb597787abb285df86bf85d7d835451419"
+ },
+ {
+  "block": "run",
+  "version": "0.2.0",
+  "file": "run-supervisor.py",
+  "sha256": "07c3d5fa103fcbfc40eb081206fdd8571c6e3852a188389d79bbac12db00170d"
+ },
+ {
+  "block": "store",
+  "version": "0.2.0",
+  "file": "Store.qml",
+  "sha256": "6fafd2ec98b4d4fe18ead2ae1f1221386e9714eb9a33ef0f1b9cf48520f2c743"
+ },
+ {
+  "block": "store",
+  "version": "0.2.0",
+  "file": "store-helper.py",
+  "sha256": "2dd4d6ad308bbed473936c29844793411d8849415812b96ca5e7a6688097e37c"
  }
 ]

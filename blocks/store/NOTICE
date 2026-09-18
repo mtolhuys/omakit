@@ -7,6 +7,6 @@ sha256 is over everything after the file's header line
 modified, and `omakit add --update` refuses to overwrite one. Modifications
 are to be listed here by the plugin's author.
 
-block store 0.1.0, from omakit commit unstamped
-  Store.qml  sha256 c71b5646e0b6ccc4b45e5c57a8c7ed08a089319f4ee7d3ce74ef5e28d8af3801
-  store-helper.py  sha256 cec3fcc9573ce7c12f1365e106cc65a936e213553bfe4e3128e8a87eea511dc5
+block store 0.2.0, from omakit commit unstamped
+  Store.qml  sha256 6fafd2ec98b4d4fe18ead2ae1f1221386e9714eb9a33ef0f1b9cf48520f2c743
+  store-helper.py  sha256 2dd4d6ad308bbed473936c29844793411d8849415812b96ca5e7a6688097e37c

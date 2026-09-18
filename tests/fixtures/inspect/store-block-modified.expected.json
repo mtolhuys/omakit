@@ -27,17 +27,27 @@
     "functions": [
       {
         "file": "omakit/store-helper.py",
-        "line": 52,
-        "name": "emit",
+        "line": 57,
+        "name": "nesting",
         "kind": "function",
-        "lines": 3,
-        "depth": 0,
-        "branches": 0,
-        "percentile": 8.1
+        "lines": 6,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 63.9
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 57,
+        "line": 65,
+        "name": "emit",
+        "kind": "function",
+        "lines": 4,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 19.1
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 71,
         "name": "parse",
         "kind": "function",
         "lines": 13,
@@ -47,7 +57,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 72,
+        "line": 86,
         "name": "check_options",
         "kind": "function",
         "lines": 8,
@@ -57,7 +67,17 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 82,
+        "line": 96,
+        "name": "check_schema",
+        "kind": "function",
+        "lines": 11,
+        "depth": 2,
+        "branches": 4,
+        "percentile": 88.4
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 109,
         "name": "verify_owned",
         "kind": "function",
         "lines": 12,
@@ -67,7 +87,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 96,
+        "line": 123,
         "name": "open_child_directory",
         "kind": "function",
         "lines": 14,
@@ -77,7 +97,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 112,
+        "line": 139,
         "name": "open_no_follow",
         "kind": "function",
         "lines": 10,
@@ -87,7 +107,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 124,
+        "line": 151,
         "name": "base_components",
         "kind": "function",
         "lines": 15,
@@ -97,17 +117,17 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 141,
+        "line": 168,
         "name": "open_private_directory",
         "kind": "function",
-        "lines": 16,
-        "depth": 1,
-        "branches": 1,
-        "percentile": 80.8
+        "lines": 21,
+        "depth": 2,
+        "branches": 3,
+        "percentile": 88.4
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 159,
+        "line": 191,
         "name": "read_capped",
         "kind": "function",
         "lines": 10,
@@ -117,7 +137,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 171,
+        "line": 203,
         "name": "schema_problem",
         "kind": "function",
         "lines": 12,
@@ -127,7 +147,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 185,
+        "line": 217,
         "name": "bounds_problem",
         "kind": "function",
         "lines": 13,
@@ -137,7 +157,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 200,
+        "line": 232,
         "name": "members_problem",
         "kind": "function",
         "lines": 6,
@@ -147,7 +167,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 208,
+        "line": 240,
         "name": "object_problem",
         "kind": "function",
         "lines": 12,
@@ -157,7 +177,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 222,
+        "line": 254,
         "name": "array_problem",
         "kind": "function",
         "lines": 6,
@@ -167,27 +187,37 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 230,
+        "line": 262,
         "name": "parse_value",
         "kind": "function",
-        "lines": 9,
+        "lines": 13,
         "depth": 1,
-        "branches": 2,
-        "percentile": 63.9
+        "branches": 4,
+        "percentile": 78.2
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 241,
-        "name": "read_file",
+        "line": 277,
+        "name": "open_regular",
         "kind": "function",
-        "lines": 11,
+        "lines": 10,
         "depth": 1,
         "branches": 1,
-        "percentile": 68.9
+        "percentile": 64.9
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 254,
+        "line": 289,
+        "name": "read_file",
+        "kind": "function",
+        "lines": 10,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 64.9
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 301,
         "name": "stale_staging",
         "kind": "function",
         "lines": 9,
@@ -197,7 +227,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 265,
+        "line": 312,
         "name": "unlink_quietly",
         "kind": "function",
         "lines": 5,
@@ -207,7 +237,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 272,
+        "line": 319,
         "name": "sweep_staging",
         "kind": "function",
         "lines": 5,
@@ -217,7 +247,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 279,
+        "line": 326,
         "name": "create_staging",
         "kind": "function",
         "lines": 9,
@@ -227,7 +257,17 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 290,
+        "line": 337,
+        "name": "write_all",
+        "kind": "function",
+        "lines": 8,
+        "depth": 2,
+        "branches": 2,
+        "percentile": 88.4
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 347,
         "name": "write_file",
         "kind": "function",
         "lines": 17,
@@ -237,7 +277,7 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 309,
+        "line": 366,
         "name": "remove_file",
         "kind": "function",
         "lines": 7,
@@ -247,7 +287,17 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 318,
+        "line": 375,
+        "name": "parse_schema",
+        "kind": "function",
+        "lines": 12,
+        "depth": 1,
+        "branches": 3,
+        "percentile": 72.1
+      },
+      {
+        "file": "omakit/store-helper.py",
+        "line": 389,
         "name": "operate",
         "kind": "function",
         "lines": 16,
@@ -257,17 +307,17 @@
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 336,
+        "line": 407,
         "name": "result_of",
         "kind": "function",
-        "lines": 13,
+        "lines": 15,
         "depth": 1,
-        "branches": 4,
-        "percentile": 78.2
+        "branches": 5,
+        "percentile": 83.9
       },
       {
         "file": "omakit/store-helper.py",
-        "line": 351,
+        "line": 424,
         "name": "main",
         "kind": "function",
         "lines": 4,
@@ -280,39 +330,39 @@
   "blocks": [
     {
       "name": "run",
-      "version": "0.1.0",
-      "shippedVersion": "0.1.0",
+      "version": "0.2.0",
+      "shippedVersion": "0.2.0",
       "state": "unmodified",
       "complete": true,
       "files": [
         {
           "path": "omakit/Run.qml",
           "state": "unmodified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         },
         {
           "path": "omakit/run-supervisor.py",
           "state": "unmodified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         }
       ]
     },
     {
       "name": "store",
-      "version": "0.1.0",
-      "shippedVersion": "0.1.0",
+      "version": "0.2.0",
+      "shippedVersion": "0.2.0",
       "state": "modified",
       "complete": true,
       "files": [
         {
           "path": "omakit/Store.qml",
           "state": "unmodified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         },
         {
           "path": "omakit/store-helper.py",
           "state": "modified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         }
       ]
     }
@@ -392,7 +442,7 @@
     "hosts": 0,
     "writes": 0,
     "timers": 0,
-    "functions": 25,
+    "functions": 30,
     "notResolvable": 0
   },
   "notResolvable": [],
@@ -439,12 +489,25 @@
       "repoUrl": "https://github.com/example/omarchy-plugin-fixture-store-block-modified",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
-      "outcome": "passed",
+      "outcome": "review-required",
       "enforcementMode": "selective",
-      "disposition": "clear",
+      "disposition": "review-required",
       "blocksApproval": false,
       "findings": [],
-      "capabilities": []
+      "capabilities": [
+        {
+          "id": "privilege",
+          "title": "Privilege request",
+          "why": "The plugin or its instructions invoke an explicit privilege boundary such as `sudo` or `pkexec`.",
+          "evidence": [
+            {
+              "path": "omakit/run-supervisor.py",
+              "line": 57,
+              "snippet": "WRAPPERS = frozenset([\"env\", \"nice\", \"timeout\", \"setsid\", \"flock\", \"xargs\", \"sudo\", \"doas\", \"nohup\", \"stdbuf\", \"ionice\", \"chrt\", \"unbuffer\", \"busybox\"])"
+            }
+          ]
+        }
+      ]
     },
     "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
   }

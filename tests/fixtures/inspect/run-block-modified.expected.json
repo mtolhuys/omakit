@@ -23,7 +23,55 @@
     "processes": [
       {
         "file": "omakit/Run.qml",
-        "line": 143,
+        "line": 184,
+        "declaredIn": "qml",
+        "id": null,
+        "argv": [
+          "/usr/bin/python3",
+          "-I",
+          "-S",
+          "-B",
+          "supervisor",
+          "--kill-group",
+          "String(_pgid)",
+          "--grace-ms",
+          "String(graceMs)"
+        ],
+        "argvForm": "array",
+        "expressions": [
+          {
+            "index": 4,
+            "text": "supervisor"
+          },
+          {
+            "index": 6,
+            "text": "String(_pgid)"
+          },
+          {
+            "index": 8,
+            "text": "String(graceMs)"
+          }
+        ],
+        "commandText": null,
+        "running": true,
+        "detached": true,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "closedEnvironment": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 217,
         "declaredIn": "qml",
         "id": null,
         "argv": [
@@ -59,7 +107,7 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 149,
+        "line": 223,
         "declaredIn": "qml",
         "id": null,
         "argv": null,
@@ -84,7 +132,7 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 163,
+        "line": 239,
         "declaredIn": "qml",
         "id": null,
         "argv": [
@@ -147,7 +195,7 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 141,
+        "line": 215,
         "id": null,
         "intervalMs": null,
         "intervalText": null,
@@ -160,7 +208,7 @@
     "functions": [
       {
         "file": "omakit/Run.qml",
-        "line": 71,
+        "line": 79,
         "name": "_now",
         "kind": "function",
         "lines": 1,
@@ -170,17 +218,17 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 74,
+        "line": 82,
         "name": "start",
         "kind": "function",
-        "lines": 14,
+        "lines": 18,
         "depth": 1,
-        "branches": 1,
-        "percentile": 76.9
+        "branches": 2,
+        "percentile": 83.5
       },
       {
         "file": "omakit/Run.qml",
-        "line": 90,
+        "line": 102,
         "name": "cancel",
         "kind": "function",
         "lines": 3,
@@ -190,7 +238,17 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 94,
+        "line": 108,
+        "name": "_newToken",
+        "kind": "function",
+        "lines": 5,
+        "depth": 0,
+        "branches": 1,
+        "percentile": 38.2
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 114,
         "name": "_argv",
         "kind": "function",
         "lines": 6,
@@ -200,17 +258,77 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 101,
-        "name": "_line",
+        "line": 124,
+        "name": "_chunk",
         "kind": "function",
-        "lines": 6,
+        "lines": 11,
         "depth": 1,
-        "branches": 3,
-        "percentile": 70.6
+        "branches": 2,
+        "percentile": 68.9
       },
       {
         "file": "omakit/Run.qml",
-        "line": 108,
+        "line": 138,
+        "name": "_line",
+        "kind": "function",
+        "lines": 8,
+        "depth": 1,
+        "branches": 6,
+        "percentile": 87.5
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 149,
+        "name": "_leader",
+        "kind": "function",
+        "lines": 6,
+        "depth": 0,
+        "branches": 2,
+        "percentile": 56.9
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 156,
+        "name": "_int",
+        "kind": "function",
+        "lines": 1,
+        "depth": 0,
+        "branches": 2,
+        "percentile": 56.9
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 157,
+        "name": "_intOrNull",
+        "kind": "function",
+        "lines": 1,
+        "depth": 0,
+        "branches": 1,
+        "percentile": 38.2
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 158,
+        "name": "_text",
+        "kind": "function",
+        "lines": 1,
+        "depth": 0,
+        "branches": 1,
+        "percentile": 38.2
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 161,
+        "name": "_checked",
+        "kind": "function",
+        "lines": 10,
+        "depth": 0,
+        "branches": 4,
+        "percentile": 78.2
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 172,
         "name": "_plain",
         "kind": "function",
         "lines": 3,
@@ -220,7 +338,7 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 112,
+        "line": 176,
         "name": "_lost",
         "kind": "function",
         "lines": 3,
@@ -230,17 +348,37 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 124,
+        "line": 182,
+        "name": "_reap",
+        "kind": "function",
+        "lines": 7,
+        "depth": 1,
+        "branches": 1,
+        "percentile": 63.9
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 190,
+        "name": "_onExited",
+        "kind": "function",
+        "lines": 7,
+        "depth": 1,
+        "branches": 5,
+        "percentile": 83.9
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 198,
         "name": "_onRunningChanged",
         "kind": "function",
         "lines": 8,
         "depth": 1,
-        "branches": 3,
-        "percentile": 70.6
+        "branches": 5,
+        "percentile": 83.9
       },
       {
         "file": "omakit/Run.qml",
-        "line": 133,
+        "line": 207,
         "name": "_finish",
         "kind": "function",
         "lines": 7,
@@ -250,33 +388,43 @@
       },
       {
         "file": "omakit/Run.qml",
-        "line": 142,
+        "line": 216,
         "name": "onTriggered",
         "kind": "handler",
         "lines": 5,
         "depth": 0,
         "branches": 1,
         "percentile": 38.2
+      },
+      {
+        "file": "omakit/Run.qml",
+        "line": 228,
+        "name": "onStarted",
+        "kind": "handler",
+        "lines": 1,
+        "depth": 0,
+        "branches": 0,
+        "percentile": 0
       }
     ]
   },
   "blocks": [
     {
       "name": "run",
-      "version": "0.1.0",
-      "shippedVersion": "0.1.0",
+      "version": "0.2.0",
+      "shippedVersion": "0.2.0",
       "state": "modified",
       "complete": true,
       "files": [
         {
           "path": "omakit/Run.qml",
           "state": "modified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         },
         {
           "path": "omakit/run-supervisor.py",
           "state": "unmodified",
-          "version": "0.1.0"
+          "version": "0.2.0"
         }
       ]
     }
@@ -349,20 +497,20 @@
   },
   "counts": {
     "processes": {
-      "total": 3,
-      "qml": 3,
+      "total": 4,
+      "qml": 4,
       "shell": 0
     },
     "hosts": 0,
     "writes": 0,
     "timers": 2,
-    "functions": 10,
+    "functions": 20,
     "notResolvable": 1
   },
   "notResolvable": [
     {
       "file": "omakit/Run.qml",
-      "line": 149,
+      "line": 223,
       "kind": "command",
       "text": "command: command not declared in the block"
     }
@@ -374,10 +522,10 @@
       "sites": [
         {
           "file": "omakit/Run.qml",
-          "line": 149
+          "line": 223
         }
       ],
-      "observation": "observed 1 process with no deadline (omakit/Run.qml:149)",
+      "observation": "observed 1 process with no deadline (omakit/Run.qml:223)",
       "summary": "1 process with no deadline",
       "measurement": "M11",
       "share": 0.2
@@ -388,29 +536,33 @@
       "sites": [
         {
           "file": "omakit/Run.qml",
-          "line": 149
+          "line": 223
         }
       ],
-      "observation": "observed 1 collector with no cap (omakit/Run.qml:149)",
+      "observation": "observed 1 collector with no cap (omakit/Run.qml:223)",
       "summary": "1 collector with no cap",
       "measurement": "M11",
       "share": 0.19
     },
     {
       "id": "argument-grammar",
-      "observedCount": 2,
+      "observedCount": 3,
       "sites": [
         {
           "file": "omakit/Run.qml",
-          "line": 143
+          "line": 184
         },
         {
           "file": "omakit/Run.qml",
-          "line": 163
+          "line": 217
+        },
+        {
+          "file": "omakit/Run.qml",
+          "line": 239
         }
       ],
-      "observation": "observed 2 argvs with a computed element (omakit/Run.qml:143, omakit/Run.qml:163)",
-      "summary": "2 argvs with a computed element",
+      "observation": "observed 3 argvs with a computed element (omakit/Run.qml:184, omakit/Run.qml:217, omakit/Run.qml:239)",
+      "summary": "3 argvs with a computed element",
       "measurement": "M11",
       "share": 0.04
     }
@@ -454,12 +606,25 @@
       "repoUrl": "https://github.com/example/omarchy-plugin-fixture-run-block-modified",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
-      "outcome": "passed",
+      "outcome": "review-required",
       "enforcementMode": "selective",
-      "disposition": "clear",
+      "disposition": "review-required",
       "blocksApproval": false,
       "findings": [],
-      "capabilities": []
+      "capabilities": [
+        {
+          "id": "privilege",
+          "title": "Privilege request",
+          "why": "The plugin or its instructions invoke an explicit privilege boundary such as `sudo` or `pkexec`.",
+          "evidence": [
+            {
+              "path": "omakit/run-supervisor.py",
+              "line": 57,
+              "snippet": "WRAPPERS = frozenset([\"env\", \"nice\", \"timeout\", \"setsid\", \"flock\", \"xargs\", \"sudo\", \"doas\", \"nohup\", \"stdbuf\", \"ionice\", \"chrt\", \"unbuffer\", \"busybox\"])"
+            }
+          ]
+        }
+      ]
     },
     "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
   }
