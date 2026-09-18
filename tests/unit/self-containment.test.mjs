@@ -96,6 +96,10 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // same names under this checkout's blocks/ (blockFile, in stamp.mjs).
     // Both are held to those names and counted below.
     const blockWrites = path === "tools/blocks/add.mjs" || path === "tools/blocks/stamp.mjs" ? /^blockFile,/ : /$^/
+    // The release tool writes one file, the commit record under this
+    // checkout's tools/blocks/ (commitFile, in record-commit.mjs), run by
+    // the workflow before npm pack and never at install time.
+    const commitWrites = path === "tools/blocks/record-commit.mjs" ? /^commitFile,/ : /$^/
     // The lab writes under its own two roots only: every target is built
     // by inLab (tools/lab/paths.mjs), which throws for a path outside the
     // lab cache or state, or is a descriptor opened on such a path
@@ -105,7 +109,7 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || labWrites.test(target),
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || commitWrites.test(target) || labWrites.test(target),
         `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, a block file, a lab path, nor one of the three files weigh may write`,
       )
     }
@@ -118,6 +122,9 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     } else if (path === "tools/blocks/stamp.mjs") {
       assert.equal((text.match(/writeFileSync\(/g) || []).length, 3, "stamp.mjs writes block files, NOTICE and history.json under blocks/, nothing else")
       assert.doesNotMatch(text, /process\.argv\[2\]|resolve\(process\.cwd|pluginDir/, "stamp.mjs takes no directory: it writes only under this checkout's blocks/")
+    } else if (path === "tools/blocks/record-commit.mjs") {
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "record-commit.mjs writes the commit record and nothing else")
+      assert.match(text, /const commitFile = file\n/, "and the record is tools/blocks/commit.json in the tree it was given")
     } else {
       assert.doesNotMatch(text, /\bblockFile\b/, `${path} writes a block file; only tools/blocks/add.mjs and stamp.mjs may`)
     }

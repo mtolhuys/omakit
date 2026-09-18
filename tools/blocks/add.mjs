@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process"
 import { join, resolve } from "node:path"
 import { findAgentControl } from "../marketplace/agent-control.mjs"
 import { blockClosure, bodySha256, parseHeader, renderNotice, shippedBlock, shippedBlocks, shippedHistory, withBodySha256, withSourceCommit } from "./registry.mjs"
+import { recordedCommit } from "./record-commit.mjs"
 
 export class AddError extends Error {
   constructor(code, message, remedy = null) {
@@ -30,8 +31,11 @@ export const BLOCK_DIR = "omakit"
 
 /**
  * The omakit commit the files come from: the checkout's HEAD when omakit
- * runs from a Git checkout, else the commit npm recorded at publish
- * (`gitHead` in the packaged package.json), else "unknown".
+ * runs from a Git checkout, else the commit the release workflow recorded
+ * in tools/blocks/commit.json before it packed (record-commit.mjs), else
+ * the `gitHead` npm records at publish, else null. Null is a refusal in
+ * `add`, never a blank in a header: a header that cannot name its commit
+ * is a bug (docs/evidence/ux/2026-09-19-first-user-test.json, finding 2).
  */
 export function sourceCommit(repoRoot) {
   if (existsSync(join(repoRoot, ".git"))) {
@@ -41,13 +45,15 @@ export function sourceCommit(repoRoot) {
       // fall through to the package's record
     }
   }
+  const recorded = recordedCommit(repoRoot)
+  if (recorded) return recorded
   try {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
     if (/^[0-9a-f]{40}$/.test(String(pkg.gitHead || ""))) return pkg.gitHead
   } catch {
     // no package.json to read
   }
-  return "unknown"
+  return null
 }
 
 /** The text `add` writes for one shipped file: the header stamped with the commit, the body untouched. */
@@ -103,6 +109,7 @@ export function addBlock({ repoRoot, block, dir = ".", update = false, cwd = pro
   // Every decision first; the first refusal stops everything, unwritten.
   const decisions = closure.flatMap((one) => one.files.map((entry) => ({ entry: { ...entry, block: one.name }, target: join(blockDir, entry.file), ...decide(join(blockDir, entry.file), { ...entry, block: one.name }, { update }) })))
   const commit = sourceCommit(repoRoot)
+  if (!commit) throw new AddError("no-source-commit", `this omakit names no source commit: it runs from neither a Git checkout nor a package the release workflow stamped (tools/blocks/commit.json is empty and package.json has no gitHead), and a block header that cannot name the commit it came from is not written`, "Install omakit from the npm registry (`npm i -g omakit`), or run it from a checkout of the repository.")
   mkdirSync(blockDir, { recursive: true })
   const files = []
   for (const { entry, target, state, version } of decisions) {

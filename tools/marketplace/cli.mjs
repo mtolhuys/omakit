@@ -84,6 +84,7 @@ const REMEDY = Object.freeze({
   "not-a-plugin": "Pass the plugin's directory, the one with its manifest.json.",
   "plugin-dir-not-found": "Pass the plugin's directory, the one with its manifest.json.",
   "unknown-block": "omakit add run [<plugin-dir>], or omakit add store [<plugin-dir>]",
+  "no-source-commit": "Install omakit from the npm registry (`npm i -g omakit`), or run it from a checkout of the repository.",
   "lab-not-ready": "omakit lab inspect",
   "lab-busy": "omakit lab inspect",
   "iso-mismatch": "omakit lab prune, then omakit lab setup",

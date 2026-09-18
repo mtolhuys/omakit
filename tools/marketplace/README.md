@@ -161,4 +161,5 @@ itself is `blocks/run/`, files a plugin copies (docs/BLOCKS.md).
 | `blocks/registry.mjs` | The shipped blocks read from `blocks/<name>/`: each file's header (block, version, licence, source, body sha256) and body hash; `recogniseBlockFile` for inspect and `add`; `blocks/history.json` for every hash ever shipped; the NOTICE renderer. |
 | `blocks/add.mjs` | `omakit add <block> [plugin-dir]`: the one code path that writes into a plugin tree, held to the registry's names under `omakit/`, checked against the agent-control list first, never over a file without `--update`, never over a modified copy. |
 | `blocks/stamp.mjs` | Maintainer's tool after editing a block: rewrites each header's sha256 to its body's, regenerates NOTICE and appends to history.json, under this checkout's `blocks/` only. |
+| `blocks/record-commit.mjs`, `blocks/commit.json` | The release tool: HEAD written into the record before `npm pack`, so an installed package names the commit its block files come from; null in a checkout, where git is the source. Never a lifecycle hook. |
 

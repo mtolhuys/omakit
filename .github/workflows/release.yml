@@ -92,6 +92,8 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p release-assets
+          node tools/blocks/record-commit.mjs
+          node tools/blocks/record-commit.mjs --check
           npm pack --ignore-scripts --json --pack-destination release-assets > "$RUNNER_TEMP/npm-pack.json"
           node tests/package-assert.mjs "$RUNNER_TEMP/npm-pack.json"
           npm_file=$(node --input-type=module --eval 'const doc=JSON.parse(await (await import("node:fs/promises")).readFile(process.argv[1], "utf8")); process.stdout.write(doc[0].filename)' "$RUNNER_TEMP/npm-pack.json")

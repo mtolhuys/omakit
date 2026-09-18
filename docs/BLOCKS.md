@@ -237,8 +237,12 @@ else; it refuses to overwrite a file that is already there without
 whose body is not one omakit ever shipped: a modified block is the
 author's, and the command says so and stops. Every written file's header
 carries the block name and version, the SPDX licence, the copyright, the
-omakit commit it came from (the checkout's HEAD, or the package's recorded
-commit) and the sha256 of the body after the header line, so
+omakit commit it came from (the checkout's HEAD; in a package, the commit
+the release workflow recorded in `tools/blocks/commit.json` before it
+packed, since a package has no checkout and `npm pack` records no
+`gitHead` in the tarball; a package with neither refuses to write a header
+it cannot name, `no-source-commit`) and the sha256 of the body after the
+header line, so
 `sha256sum <(tail -n +7 omakit/Run.qml)` is the whole check. A file whose
 body is the shipped one under an older header (a version that did not
 touch it, as 0.2.1 did not touch `Run.qml`) is refused without `--update`

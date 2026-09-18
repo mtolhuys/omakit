@@ -1,0 +1,5 @@
+{
+  "commit": null,
+  "recordedAt": null,
+  "how": "Written by `node tools/blocks/record-commit.mjs` in the release workflow before `npm pack`, so a packaged omakit, which has no Git checkout, still names the commit its block files come from. In a checkout this file is null and `git rev-parse HEAD` is the source; a package with null here was packed without the release step, and `omakit add` refuses to stamp a header it cannot name."
+}

@@ -78,6 +78,8 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/audit/git.mjs",
   "tools/audit/report.mjs",
   "tools/blocks/add.mjs",
+  "tools/blocks/commit.json",
+  "tools/blocks/record-commit.mjs",
   "tools/blocks/registry.mjs",
   "tools/blocks/stamp.mjs",
   "tools/inspect/contract.mjs",
