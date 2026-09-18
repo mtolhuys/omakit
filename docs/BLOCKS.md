@@ -174,6 +174,13 @@ result; the method is in `tests/lab/run/report.py`.
   (a hook Omarchy runs, a test) are in the `omarchy-plugin-build` skill.
 - It does not decide what a reviewer decides. The counts above are what the
   review asked for in one week; a block is plumbing, not approval.
+- It does not draw the per-run token from a cryptographic source. The 128
+  bits `Run.qml` writes to the supervisor's stdin come from the QML
+  engine's ordinary random source (`Math.random`, seeded by Qt), which is
+  enough because the program never observes a token, on stdin, in argv,
+  in the environment or through `/proc`, and every run gets a new one; a
+  token that is never seen does not need to be unguessable, only
+  unrepeated within the run.
 
 ## Adding, updating, recognising
 

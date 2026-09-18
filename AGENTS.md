@@ -53,11 +53,16 @@ Zero runtime dependencies. Plain ESM. `node --test`. One executable entry point,
 wrong change or it belongs somewhere else.
 
 The scope is submission readiness: everything an author can know about a
-plugin before posting it, including what it weighs. It is not a scaffolder, not
-a plugin framework, not a conformance suite; the disposable-VM conformance work
-stayed in the archive and is a separate decision. `tests/unit/self-containment.test.mjs`
-fails if a `scaffold`, `vendor` or `template` command appears, and if any
-module gains a file-copying primitive.
+plugin before posting it, including what it weighs, and since 0.6.0 the
+lab that proves it: `omakit lab` runs this repository's suites in a
+disposable Omarchy guest (`docs/LAB.md`). It is not a scaffolder, not a
+plugin framework, not a conformance suite for plugins in general.
+`tests/unit/self-containment.test.mjs` fails if a `scaffold`, `vendor` or
+`template` command appears, if any module outside `tools/lab/paths.mjs`
+gains a file-copying primitive, and if any file in the tree carries a
+disk-image or archive signature: omakit ships the ability to acquire a
+lab and never an ISO, an image, a base disk, firmware variables or an
+overlay.
 
 Passive terminal notices may store only installed/latest version metadata and
 the check time at `$XDG_STATE_HOME/omakit/update-check.json` (or
@@ -66,7 +71,7 @@ stamp. No code, credential or subject data is stored; no update is applied.
 `docs/INSTALL.md` describes the throttle, timeout, skipped modes and opt-out.
 
 Apart from that notification metadata, every command is read-only against the
-user's own machine, with three
+user's own machine, with four
 exceptions, and each says so before or as it acts. `omakit setup` writes the
 completion script where the shell in `$SHELL` loads it from, and edits an rc
 file in exactly one case: when a new shell has no completion loader, it asks
@@ -93,7 +98,18 @@ the agent-control list first, never over a file that is there without
 `--update`, and never over a copy whose body is not one omakit shipped.
 `tests/unit/self-containment.test.mjs` counts its writes and proves no
 agent-control file can ride along; `docs/BLOCKS.md` says exactly what it
-writes.
+writes. The fourth is the lab, which writes only under its own two roots,
+`$XDG_CACHE_HOME/omakit/lab` and `$XDG_STATE_HOME/omakit/lab`, through
+one guard every write is held to: `omakit lab setup` fetches bytes after
+one consent that names the exact size and destination (`--yes` for an
+agent), verifies them against the pinned digest and signature before
+anything boots them, and builds one base; `omakit lab run` boots a guest
+from that base, writes a run record, and never touches the host's own
+session, which `tests/unit/lab.test.mjs` proves over every file under
+`tools/lab/`; `omakit lab prune` removes what the lab owns after asking
+once. Nothing under `tools/lab/` may name `omarchy-shell`, `hyprctl` or
+`shell.json` outside a command sent into the guest, spawn anything but
+the listed binaries, or read an environment variable of its own.
 
 ## This repository's own agent files must never travel
 
@@ -136,6 +152,7 @@ else.
 | `docs/AUDIT.md` | installed commit states, the read-only boundary and the verification route |
 | `docs/WEIGH.md` | what `weigh` measures, how, the noise floor, the `shell.json` mutation and its restore, and the JSON contract |
 | `docs/VALIDATION_WATCH.md` | the validation watch and why it is the centre |
+| `docs/LAB.md` | the lab: the contract, the trust anchor, the cost of a run, the toolchain dependency, what it does not do |
 | `docs/MEASUREMENTS.md` | every number, its method and its limits |
 | `docs/UPSTREAM_CONTRACT.md` | the seam, the pin, the boundaries |
 | `docs/MARKETPLACE.md` | who this actually helps, stated honestly |

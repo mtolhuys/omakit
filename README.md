@@ -31,6 +31,13 @@ A block is a file the plugin owns: added and updated only by `omakit add`, never
 | --- | --- | --- |
 | `omakit watch <issue-url>` | Whether the commit the marketplace checked is still the one you are shipping, and what re-runs validation when it is not. The marketplace validates one exact commit; push a fix or comment "fixed", and nothing re-runs ([M6](docs/MEASUREMENTS.md#m6-the-validated-commit-falls-behind-silently-and-that-is-the-centre-of-this-tool)). | [watch](docs/VALIDATION_WATCH.md) |
 
+## Prove
+
+| Command | What you get | Read more |
+| --- | --- | --- |
+| `omakit lab run <suite>` | A suite run in a disposable Omarchy guest, never on your desktop: the pinned 4.0.3 release from an immutable verified base, a fresh overlay per run, the guest's installed `omarchy` package printed before the suite and written into the document with the run id. The Run and Store suites, and `weigh` against a real shell. | [lab](docs/LAB.md) |
+| `omakit lab inspect`, `omakit lab setup`, `omakit lab prune` | What the lab is pinned to and what is on disk, read-only; one consent naming the exact size and destination before the first byte, then the ISO verified against the pinned SHA-256 and the Omarchy signature and one base built by the pinned toolchain; what the lab owns on disk, removed with the bytes said. Nothing is fetched implicitly, and no image ships. | [lab](docs/LAB.md) |
+
 ## More
 
 | Command | What you get | Read more |
@@ -48,7 +55,7 @@ npm i -g omakit && omakit setup
 npx skills add mtolhuys/omakit
 ```
 
-Runs where [Node 22+](package.json) and Git run; the blocks need `/usr/bin/python3`, which a stock Omarchy 4.0.3 has as a dependency of its desktop packages; `weigh` and `audit` need a running Omarchy shell.
+Runs where [Node 22+](package.json) and Git run; the blocks need `/usr/bin/python3`, which a stock Omarchy 4.0.3 has as a dependency of its desktop packages; `weigh` and `audit` need a running Omarchy shell; `lab` needs KVM, QEMU and the OVMF firmware, reported by `omakit doctor` and installed by nobody but you.
 
 Licence: [MIT](LICENSE).
 
@@ -88,6 +95,7 @@ Reads a plugin's tree and prints what needs attention, biggest first: a size sco
 | --- | --- |
 | Run: the design chosen by measurement | 36 runs, five scenarios, two candidates, on a real Quattro shell: both end every scenario, the supervisor is chosen for reaping last, [spike](docs/BLOCKS_SPIKE.md), 2026-09-17 |
 | Run: lab scenarios | 19 of 19 on the desktop and 19 of 19 on the stock 4.0.3 guest, six of them written to fail on 0.1.0 after the review of 2026-09-18, [desktop](docs/evidence/blocks/2026-09-18-run-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-run-lab-guest.json), [review](docs/evidence/blocks/2026-09-18-review.json) |
+| The lab: one run, identified | 19 of 19 by `omakit lab run run` on guest `omarchy 4.0.3-1`, skew false, 2m 53.4s, a 413,470,720 B overlay removed, the base unchanged, [record](docs/evidence/lab/20260918-160936-run/run.json), [M14](docs/MEASUREMENTS.md#m14-what-one-lab-run-costs-and-what-the-lab-is-pinned-to) |
 | Store: lab scenarios | 15 of 15 on the desktop and 15 of 15 on the stock guest with a root-owned file simulated, three of them written to fail on 0.1.0, [desktop](docs/evidence/blocks/2026-09-18-store-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-store-lab-guest.json) |
 | Port: Theme Manager through Run | process lifecycle 23 to 0, unbounded buffering 18 to 0, 24 of 24 QML sites with a deadline, 27 of 27 lab steps on the stock guest, [record](docs/evidence/blocks/2026-09-17-theme-manager-port.json); not submitted, no reviewer has seen it |
 | Port: Sidecar through Store | the device state through the block, a planted link refused and moved aside, 71 tests, [record](docs/evidence/blocks/2026-09-17-sidecar-port.json); inspect's counts unchanged, and the record says why |
@@ -103,5 +111,6 @@ Reads a plugin's tree and prints what needs attention, biggest first: a size sco
 - Building: [blocks](docs/BLOCKS.md), [the spike behind Run](docs/BLOCKS_SPIKE.md), [what is still open](docs/BLOCKS_PLAN.md).
 - Using: [install](docs/INSTALL.md), [commands](docs/COMMANDS.md), [audience](docs/MARKETPLACE.md).
 - Checks and measurements: [submit](docs/SUBMIT.md), [inspect](docs/INSPECT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md), [evidence](docs/MEASUREMENTS.md).
+- Proving: [the lab](docs/LAB.md), [its inventory](docs/history/2026-09-18-lab-inventory.md), [its plan](packaging/LAB_PLAN.md).
 - Method docs: [how](docs/HOW.md), [weigh](docs/WEIGH.md), [upstream contract](docs/UPSTREAM_CONTRACT.md), [palette](docs/PALETTE.md), [terminal](docs/TUI.md).
 - Contributing: [repository rules](AGENTS.md), [releasing](docs/RELEASING.md), [media](docs/media/README.md).

@@ -22,6 +22,10 @@ omakit verify <plugin-repo>  # the official security baseline over the local tra
 omakit parity                # the baseline over GitHub versus the local transport, on real listings; writes the evidence
 omakit audit [<plugin>]      # installed third-party commits against the commits the marketplace validated
 omakit weigh <plugin>        # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
+omakit lab run <suite>       # a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
+omakit lab inspect           # what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing
+omakit lab setup             # one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; --toolchain, --from, --plugins
+omakit lab prune             # what the lab owns on disk, asked once, removed, the bytes said
 omakit doctor                # what is installed, what is pinned, and what has moved
 omakit pin                   # what setup does for the pin, on its own
 omakit upgrade               # updates omakit through its own installer: npm, or a fast-forward
@@ -146,6 +150,26 @@ has to carry a `manifest.json`. After it, `omakit inspect` lists each block
 as one row, each `Run {` site as a process whose deadline the block holds,
 and each `Store {` site as a write under the plugin's own state or cache
 directory at mode 0600; a modified copy is reported as modified.
+
+`omakit lab <run|inspect|setup|prune>` proves a suite in a disposable
+Omarchy guest ([LAB.md](LAB.md)). `run <suite>` boots nothing until the
+base is ready, the host can run a guest and the suite's files are there,
+and otherwise names what is missing, what it takes and the one command;
+it fetches nothing, prints the guest's installed `omarchy` package and
+whether the session runs from it before the suite, and writes that
+identity into the document with the run id. `inspect` is read-only: the
+pinned release with its exact size in GB and GiB, its digest and its
+signer, what is on disk and whether it was verified, the toolchain, what
+the host is missing. `setup` is the only path that fetches bytes: one
+consent naming the exact size and the destination before the first byte
+(`--yes` for an agent; a pipe without it refuses), a resumable GET of the
+pinned URL or a copy of `--from <file>`, verified against the pinned
+SHA-256 and the Omarchy signature before anything boots it, then one base
+built by the pinned omarchy-iso toolchain, whose checkout `--toolchain
+<dir>` records and which setup never fetches; `--plugins` adds the listed
+plugins the weigh evidence suite needs. `prune` lists what the lab owns
+with its bytes, asks once, removes only that, and says what it recovered.
+`omakit doctor` gains the lab's lines, advisory.
 
 `omakit doctor` names the credential source it found, or that it found none.
 
