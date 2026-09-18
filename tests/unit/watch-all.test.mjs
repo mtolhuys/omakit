@@ -175,3 +175,18 @@ test("ambiguous watch modes and noninteractive pickers fail before any network a
     else assert.equal(result.stdout, "")
   }
 })
+
+test("with no credential, an unreachable network is diagnosed as such, and only a reachable one is a missing login", async () => {
+  // Measured on 2026-09-19 by a first user without a connection: `watch
+  // --list` said login-required and recommended `gh auth login`, when no
+  // login would have helped (docs/evidence/ux/2026-09-19-first-user-test.json,
+  // finding 4). The probe is one unauthenticated GET with a short deadline.
+  const { authenticatedUser, githubReachable } = await import("../../tools/marketplace/github.mjs")
+  const down = await githubReachable({ readJson: async () => { throw Object.assign(new Error("api.github.com did not answer (ENETUNREACH) while reading /"), { code: "network-unavailable" }) } })
+  assert.equal(down.reachable, false)
+  const up = await githubReachable({ readJson: async () => { throw Object.assign(new Error("GET returned 403"), { code: "github-unavailable" }) } })
+  assert.equal(up.reachable, true, "any answer, a 403 included, is a network")
+  const none = () => false
+  await assert.rejects(authenticatedUser({ reachable: async () => down, hasToken: none }), (error) => error.code === "network-unavailable" && /no login would change that/.test(error.message))
+  await assert.rejects(authenticatedUser({ reachable: async () => up, hasToken: none }), (error) => error.code === "login-required")
+})

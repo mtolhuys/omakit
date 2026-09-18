@@ -72,7 +72,7 @@ const REMEDY = Object.freeze({
   "subject-not-found": "Pass a local Git repository path, or <https url>@<40-char sha>.",
   "not-a-git-repository": "Pass a local Git repository path, or <https url>@<40-char sha>.",
   "commit-not-found": "Commit first; the checks read the tree at an exact commit, never the working copy.",
-  "network-unavailable": "Connect to the network, then run it again.",
+  "network-unavailable": "Connect to the network, then run it again; `omakit watch --user <login>` reads a public account, and needs the network too.",
   "github-unavailable": "Wait for GitHub, then run it again. `gh auth login` raises the rate limit if that is what ran out.",
   "not-found": "Check the issue URL: it has to be an existing issue on the marketplace repository.",
   "head-unreadable": "Check that the plugin repository is public and its URL is right.",

@@ -195,9 +195,31 @@ export async function issue(owner, repository, number) {
   return getJson(`https://api.github.com/repos/${owner}/${repository}/issues/${number}`)
 }
 
-/** Resolve the account whose credential gh lent us; never persist it. */
-export async function authenticatedUser() {
-  if (!token()) throw new GitHubError("login-required", "Account-wide watch needs your GitHub login. Run `gh auth login`, or pass --user <login> to read a public account.")
+/** Whether api.github.com answers at all, unauthenticated, within a short deadline; the one probe that tells a missing network from a missing login. */
+export async function githubReachable({ readJson = getJson, timeoutMs = 5000 } = {}) {
+  try {
+    await readJson("https://api.github.com/", { signal: AbortSignal.timeout(timeoutMs) })
+    return { reachable: true, reason: null }
+  } catch (error) {
+    if (error?.code === "network-unavailable") return { reachable: false, reason: error.message }
+    // Any answer at all (a 4xx included) means the network is there.
+    return { reachable: true, reason: null }
+  }
+}
+
+/**
+ * Resolve the account whose credential gh lent us; never persist it. With
+ * no credential, the network is asked first: measured on 2026-09-19 by a
+ * first user without a connection, `watch --list` said `login-required`
+ * and sent them to `gh auth login`, when no login would have helped
+ * (docs/evidence/ux/2026-09-19-first-user-test.json, finding 4).
+ */
+export async function authenticatedUser({ reachable = githubReachable, hasToken = () => Boolean(token()) } = {}) {
+  if (!hasToken()) {
+    const probe = await reachable()
+    if (!probe.reachable) throw new GitHubError("network-unavailable", `${probe.reason}; an account cannot be read from GitHub while it is unreachable, and no login would change that`)
+    throw new GitHubError("login-required", "Account-wide watch needs your GitHub login. Run `gh auth login`, or pass --user <login> to read a public account.")
+  }
   const user = await getJson("https://api.github.com/user")
   if (!user?.login) throw new GitHubError("github-unavailable", "GitHub did not return the signed-in account's login")
   return user.login
