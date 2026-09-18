@@ -2,15 +2,11 @@
 
 ## 0.6.0 (unreleased)
 
-The plumbing plugin reviews block most, built and tested once: the Run
-(0.2.1) and Store (0.2.0) blocks, `omakit add run` and `omakit add store`, `inspect`
-reading an unmodified block as one row, a Run site as a process with
-its deadline, a Store site as a write at mode 0600, and a Run-started
-helper in the block's closed environment; M13, the 1,001 blocker
-comments the contracts are counted over; the Theme Manager and Sidecar
-ports, neither submitted; the sixth skill; the README, package
-description, tagline and banner rewritten around the blocks. And the
-fourth job beside build, check and track: prove. `omakit lab prove`,
+Build it, check it, prove it. The Run (0.2.1) and Store (0.2.0) blocks,
+`omakit add run`, `omakit add store`, and `inspect` reading an unmodified
+block as one row; M13, the 1,001 blocker comments the contracts are counted
+over; the Theme Manager and Sidecar ports, neither submitted; and the reader's
+four jobs in order: build, check, track and prove. `omakit lab prove`,
 `inspect`, `setup` and `prune`, the harness moved into omakit from
 `omarchy-plugin-lab` and refactored to one driver, the pinned 4.0.3
 release verified against its SHA-256 and the Omarchy signature, one

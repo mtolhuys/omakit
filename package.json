@@ -1,7 +1,7 @@
 {
   "name": "omakit",
   "version": "0.5.1",
-  "description": "The plumbing Omarchy plugin reviews block most, built and tested once: a Run block and a Store block a plugin copies into its own tree, and the marketplace's own checks run locally. Every line measured against one week of review comments; posts nothing; zero dependencies.",
+  "description": "Build it, check it, prove it.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
   "keywords": [

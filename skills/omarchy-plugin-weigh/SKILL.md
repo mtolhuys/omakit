@@ -3,7 +3,11 @@ name: omarchy-plugin-weigh
 description: Weigh an Omarchy Quattro plugin on the shell, in CPU and child processes, by restarting the shell without it and with it. Use before a submission, after a change that adds a timer, a process or a file watcher, or when asked how heavy a plugin is. Restarts the person's shell, so it must never run without their explicit agreement.
 ---
 
-# What a plugin weighs on the shell
+# Measure what a plugin weighs on the shell
+
+Weigh supplies supporting evidence beside the four jobs. Prove remains the
+disposable guest through `omakit lab prove`; weigh is the consented desktop A/B
+measurement of CPU and child processes.
 
 ## The one thing to get right
 

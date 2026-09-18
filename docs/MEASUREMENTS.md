@@ -842,6 +842,40 @@ nothing in the README says a plugin passes review: the port rows say what
 was measured and that no reviewer has seen either port. Commands and
 versions are in [media/README.md](media/README.md#the-add-run-capture-2026-09-17).
 
+### M10 the four-job rebrand, 2026-09-18
+
+The [machine-readable record](evidence/readme/2026-09-18-rebrand.json) measures
+the new README and all eight GIFs. The README fell from 1,371 to 484 words by
+the same method as the earlier records and leads with `Build it, check it,
+prove it.` Build, check, track and prove appear in that order. The evidence
+table names the M13 block records, the current Run and Store guest documents,
+the fresh lab run, both port records, the dated staleness record, this media
+record and the package boundary. It says plainly that neither port was
+submitted and no reviewer has seen either.
+
+Every GIF was captured again and rendered from its scene: `banner`, `add-run`,
+`inspect`, `submit`, `watch-all`, `audit`, `weigh`, and the new `lab-prove`.
+The account snapshot found 4 current issues. The desktop audit found 19
+third-party plugins, 7 at validated commits and 12 in drift. The consented
+Omadock run completed 3 baseline and 3 plugin samples, restored `shell.json`
+with equal md5 values, and measured a 4.459% median shell CPU delta against a
+3.793% baseline spread; one plugin sample was unusually busy, and the record
+keeps its spread rather than hiding it. The fresh disposable guest run completed
+19 of 19 scenarios on `omarchy 4.0.3-1`, skew false, in 191,674 ms; its
+449,974,272-byte overlay was removed and the base was unchanged. Its record is
+[20260918-191139-run](evidence/lab/20260918-191139-run/run.json).
+
+Pillow decoded every frame. The largest scene width is 110 columns, the widest
+shown line is 102, and every displayed URL is complete. Pillow 12.3.0, FreeType
+2.14.3 and ffmpeg n9.0.1 produced the committed files. Their hashes, byte sizes,
+durations, dimensions, frame counts, final holds, capture hashes and line counts
+are in the record; exact capture and render recipes are in
+[media/README.md](media/README.md). The package description is the fixed line,
+and the package packs to 329,160 bytes across 130 files with 0 runtime and 0
+development dependencies. The read-only source check remains the evidence for
+0 marketplace writes. None of those facts is a claim about human review or
+safety.
+
 ## M11. What the human review raises, by class
 
 The automated baseline decides whether a person has to look (M4). This entry
@@ -1171,7 +1205,7 @@ a file time, and the method is named beside it.
 | One weigh-smoke run | 106,980 ms (1m 47.0s); 46 s to SSH, 11 s to the session; overlay 461,180,928 B (0.461 GB / 0.430 GiB) allocated and removed; base and template unchanged; three measured restarts, the refused plan, the restore, the interrupt at exit 130; the weigh document itself stays with the run record, not under docs/evidence/weigh/, because a smoke is not the evidence gate | `evidence/lab/20260918-161929-weigh/run.json` and `host.log`. |
 | The end-to-end pass on the release round's code | `omakit lab inspect` (PREPARED), then the Run suite 2m 53.3s (overlay 418,451,456 B), the Store suite 1m 46.7s (411,045,888 B), the weigh smoke 1m 36.8s (437,587,968 B), each PROVED, guest `omarchy 4.0.3-1`, skew false, base unchanged, 35 to 36 s to SSH; a second observation of each, within 2 s of the first for run and store and 10 s shorter for the smoke | `evidence/lab/2026-09-18-end-to-end.log`; `evidence/lab/20260918-170108-run/`, `-170402-store/`, `-170549-weigh/`. |
 | The Run suite at Run 0.2.1 | two runs on the stock guest: the first 3m 13.2s, `stubborn` at 3,925 ms against the 3,500 ms gate, NOT PROVED and kept; the second 3m 34.7s, 19 of 19, `stubborn` at 3,137 ms; overlays 412,815,360 B and 411,570,176 B | `evidence/lab/20260918-172116-run/`, `evidence/lab/20260918-172451-run/`. The 0.2.1 change is two strings removed from a frozenset the string-program refusal reads; the timing miss is the guest's, one observation, and the earlier stock runs measured 3,051 ms. |
-| The lab in the package | 20 files under tools/lab/, 163,753 bytes unpacked, and since the first-user test of 2026-09-19 the suites' inputs, 23 files, 51,479 bytes; the package packs to 330,934 bytes across 130 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
+| The lab in the package | 20 files under tools/lab/, 163,753 bytes unpacked, and since the first-user test of 2026-09-19 the suites' inputs, 23 files, 51,479 bytes; the package packs to 329,160 bytes across 130 files under the 358,400-byte ceiling | `npm pack --dry-run --json`, `tests/package-assert.mjs`. |
 | The listed plugins for `weigh-evidence` | 6,836,224 B allocated for three shallow checkouts under `plugins/`, fetched by `omakit lab setup --plugins` in one consent | `allocatedBytes` over the directory, 2026-09-18. The three checkouts the 0.5 weigh gate had left at the lab root (the same 6,836,224 B) were removed by hand the same day. |
 | The toolchain from the printed command | 1,132 ms, a 3.1 MB clone, the harness hashing to the pinned `8637e8cc...` | The one command `omakit lab inspect` prints, timed with `date +%s%N` around it on 2026-09-18. |
 | Self-supply, from nothing to a green guest run | 4 commands; 10m 12s on this host without the ISO download: toolchain 1.1 s, a local ISO copied and verified in 17.7 s, the base built in 5m 57.8s, the verification boot and promotion in 63 s, the Run suite in 2m 53.4s | `npm i -g omakit && omakit setup`; the toolchain line; `omakit lab setup --from <iso> --yes`; `omakit lab prove run`. Each duration is the one measured above; the sum is arithmetic. The ISO download itself was not measured over the network on this host: 6,260,654,080 B at 100 Mbit/s is 8m 21s of arithmetic, not a measurement. |

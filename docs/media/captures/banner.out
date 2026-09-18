@@ -1,4 +1,4 @@
-Script started on 2026-09-17 23:15:46+02:00 [COMMAND="stty rows 12 cols 40; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; import { TAGLINE } from \"./tools/marketplace/usage.mjs\"; await banner({ tagline: TAGLINE })"" <not executed on terminal>]
+Script started on 2026-09-18 19:24:27+02:00 [COMMAND="stty rows 12 cols 40; node --input-type=module -e 'import { banner } from "./tools/marketplace/banner.mjs"; await banner(); process.stdout.write("Build it, check it, prove it.\n")'" <not executed on terminal>]
 [2K                            
 [2K                            
 [2K                            
@@ -113,8 +113,7 @@ Script started on 2026-09-17 23:15:46+02:00 [COMMAND="stty rows 12 cols 40; node
 [2K[34m▓[0m  [34m▓[0m [34m▓[0m   [34m▓[0m [34m▓[0m  [34m▓[0m [39m█[0m [39m█[0m   [39m█[0m   [39m█[0m 
 [2K [34m▓▓[0m  [34m▓[0m   [34m▓[0m [34m▓[0m  [34m▓[0m [39m█[0m  [39m█[0m [39m███[0m  [39m█[0m 
 [34m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
-[39mthe plumbing plugin reviews block[0m
-[39mmost, built and tested once[0m
 
+Build it, check it, prove it.
 
-Script done on 2026-09-17 23:15:47+02:00 [COMMAND_EXIT_CODE="0"]
+Script done on 2026-09-18 19:24:28+02:00 [COMMAND_EXIT_CODE="0"]

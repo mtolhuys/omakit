@@ -1,18 +1,17 @@
-[2msubject[0m       /tmp/omakit-fixture-XsYY5E at 321d3602
+[2msubject[0m       /tmp/omakit-fixture-sXvSLo at 46850f92
 [2mbaseline[0m      passed at pin 38060f89
-[2msize score[0m    4.86 of 10; 10 minus the mean rank of its 4 functions among 6040
-              in 50 listed trees (M12), so a tree of median functions scores
-              5.00
+[2msize score[0m    0.00 of 10; 87% of its function lines sit in functions over the
+              measured size, no heavier than 0 of 49 listed trees (M12)
 
 [2mattention[0m     long functions first, by length, then 1 class reviewers raise,
               biggest first by share of review findings (M11); up to 5 sites
               each
 
 [33m▓ note[0m  [1mlong functions[0m  2 functions over what 90 of 100 functions in 50 listed
-        trees, 6040 functions stay under: 22 lines, 6 branches or nesting 3
+        trees, 6034 functions stay under: 25 lines, 6 branches or nesting 2
         (M12); rank is the share of listed functions smaller than it
-        [1mscripts/helper.sh:8[0m  decide    21 lines, 9 branches, nesting 3, [2mrank 94[0m
-        [1mWidget.qml:12      [0m  classify  20 lines, 6 branches, nesting 4, [2mrank 95[0m
+        [1mscripts/helper.sh:8[0m  decide    21 lines, 9 branches, nesting 3, [2mrank 96[0m
+        [1mWidget.qml:12      [0m  classify  20 lines, 6 branches, nesting 3, [2mrank 96[0m
 
 [33m▓ note[0m  [1menvironment trust[0m  [2m7 of 100 findings[0m  6 tools resolved from PATH (say,
         decide)

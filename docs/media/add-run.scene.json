@@ -1,11 +1,11 @@
 {
   "title": "omakit add run",
-  "width": 100,
+  "width": 110,
   "rows": 40,
   "fontSize": 12,
   "steps": [
     {
-      "command": "omakit inspect /tmp/omakit-fixture-qzjuL3",
+      "command": "omakit inspect ~/src/omarchy-plugin-fixture-process",
       "capture": "docs/media/captures/add-run-before.ansi",
       "reveal": 3,
       "pace": 12,
@@ -13,7 +13,7 @@
       "hold": 400
     },
     {
-      "command": "omakit add run /tmp/omakit-fixture-qzjuL3",
+      "command": "omakit add run ~/src/omarchy-plugin-fixture-process",
       "capture": "docs/media/captures/add-run-add.ansi",
       "reveal": 3,
       "pace": 12,
@@ -21,7 +21,7 @@
       "hold": 400
     },
     {
-      "command": "omakit inspect /tmp/omakit-fixture-qzjuL3",
+      "command": "omakit inspect ~/src/omarchy-plugin-fixture-process",
       "capture": "docs/media/captures/add-run-after.ansi",
       "reveal": 3,
       "pace": 12,

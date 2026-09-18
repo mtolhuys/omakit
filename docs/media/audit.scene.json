@@ -1,15 +1,15 @@
 {
   "title": "omakit audit",
-  "width": 100,
-  "rows": 91,
+  "width": 110,
+  "rows": 102,
   "steps": [
     {
       "command": "omakit audit",
       "capture": "docs/media/captures/audit-drift.ansi",
-      "reveal": 12,
+      "reveal": 10,
       "pace": 12,
       "pauses": [],
-      "hold": 700
+      "hold": 800
     }
   ],
   "fontSize": 12

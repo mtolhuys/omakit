@@ -1,10 +1,11 @@
 {
   "title": "omakit watch --all",
-  "width": 102,
-  "rows": 24,
+  "width": 110,
+  "rows": 48,
+  "fontSize": 12,
   "steps": [
     {
-      "command": "omakit watch --all",
+      "command": "omakit watch --all --user mtolhuys",
       "capture": "docs/media/captures/watch-all.ansi",
       "reveal": 3,
       "pace": 10,
@@ -14,14 +15,7 @@
           150
         ]
       ],
-      "hold": 600,
-      "omit": [
-        [
-          21,
-          43,
-          "23 further lines omitted; header and first two issues retained"
-        ]
-      ]
+      "hold": 800
     }
   ]
 }

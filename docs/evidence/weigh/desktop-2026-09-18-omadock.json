@@ -1,0 +1,5553 @@
+{
+  "omakit": "0.5.1",
+  "command": "weigh",
+  "method": "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise",
+  "started": "2026-09-18T17:06:16Z",
+  "ended": "2026-09-18T17:11:05Z",
+  "host": "omarchy",
+  "shell": {
+    "version": "4.0.0.alpha",
+    "omarchyPath": "/home/mtolhuijs/Projects/omarchy/core"
+  },
+  "settings": {
+    "runs": 3,
+    "windowSeconds": 15,
+    "settleSeconds": 30,
+    "readyTimeoutSeconds": 45,
+    "sampleIntervalMs": 500,
+    "clockTicksPerSecond": 100
+  },
+  "config": {
+    "path": "/home/mtolhuijs/.config/omarchy/shell.json",
+    "backup": "/home/mtolhuijs/.config/omarchy/shell.json.omakit-backup-20260918170616",
+    "md5Before": "cff48fb31eb492a78893b9ebf943689e",
+    "md5After": "cff48fb31eb492a78893b9ebf943689e",
+    "restored": true,
+    "shellAnsweredAfterRestore": true
+  },
+  "audited": [
+    "omadock"
+  ],
+  "failedRuns": [],
+  "baseline": {
+    "config": {
+      "bar": {
+        "centerAnchor": "omarchy.clock",
+        "layout": {
+          "center": [
+            {
+              "id": "omarchy.keyboard-layout"
+            },
+            {
+              "id": "akshar.radio-atlas"
+            },
+            {
+              "id": "omarchy.system-update"
+            },
+            {
+              "id": "io.github.mtolhuys.news-readers"
+            },
+            {
+              "format": "ddd d MMM HH:mm",
+              "id": "omarchy.clock"
+            },
+            {
+              "id": "omaplug",
+              "autoCheckUpdates": true
+            },
+            {
+              "id": "robzolkos.github",
+              "iconAlwaysUnlit": false,
+              "includeArchived": true,
+              "includeForks": true,
+              "linkBehavior": "Browser tab"
+            },
+            {
+              "id": "io.github.mtolhuys.plugin-pulse"
+            },
+            {
+              "id": "io.github.mtolhuys.news-radar"
+            }
+          ],
+          "left": [
+            {
+              "id": "omarchy.menu"
+            },
+            {
+              "id": "omarchy.workspaces"
+            },
+            {
+              "id": "bjarneo.workspace-layout"
+            },
+            {
+              "id": "io.github.mtolhuys.sidecar"
+            },
+            {
+              "id": "omarchy.indicators"
+            }
+          ],
+          "right": [
+            {
+              "id": "omarchy.tray"
+            },
+            {
+              "id": "sero.local-ai"
+            },
+            {
+              "id": "io.github.mtolhuys.onscreen-keyboard"
+            },
+            {
+              "id": "omarchy.tailscale"
+            },
+            {
+              "id": "omarchy.agents"
+            },
+            {
+              "id": "omarchy.bluetooth"
+            },
+            {
+              "id": "omarchy.network"
+            },
+            {
+              "id": "omarchy.audio"
+            },
+            {
+              "id": "crmne.hyprmoncfg"
+            },
+            {
+              "id": "omarchy.monitor"
+            },
+            {
+              "id": "io.github.mtolhuys.disk-lens"
+            },
+            {
+              "id": "omarchy.power"
+            }
+          ]
+        },
+        "position": "top",
+        "transparent": true
+      },
+      "cloneSourceRestores": [
+        "io.github.sirjul1337.lock-explorer",
+        "io.github.mtolhuys.theme-manager"
+      ],
+      "disabledPlugins": [
+        "omarchy.image-picker",
+        "omarchy.lock"
+      ],
+      "idle": {
+        "lock": 300,
+        "screensaver": 150
+      },
+      "plugins": [
+        {
+          "design": "zen",
+          "id": "io.github.sirjul1337.lock-explorer"
+        },
+        {
+          "id": "bobbynicholas.omaland"
+        },
+        {
+          "id": "expose.window-overview"
+        },
+        {
+          "id": "io.github.pablo-merino.altswitch"
+        },
+        {
+          "id": "io.github.mtolhuys.theme-manager"
+        }
+      ],
+      "version": 1
+    },
+    "pssMb": {
+      "median": 415.6806640625,
+      "spread": 66.0087890625,
+      "min": 401.625,
+      "max": 467.6337890625,
+      "runs": [
+        415.6806640625,
+        467.6337890625,
+        401.625
+      ]
+    },
+    "rssMb": {
+      "median": 439.671875,
+      "spread": 64.5078125,
+      "min": 429.53515625,
+      "max": 494.04296875,
+      "runs": [
+        439.671875,
+        494.04296875,
+        429.53515625
+      ]
+    },
+    "pssMbSettled": {
+      "median": 418.140625,
+      "spread": 38.9609375,
+      "min": 407.873046875,
+      "max": 446.833984375,
+      "runs": [
+        418.140625,
+        446.833984375,
+        407.873046875
+      ]
+    },
+    "rssMbSettled": {
+      "median": 442.1171875,
+      "spread": 36.921875,
+      "min": 435.62109375,
+      "max": 472.54296875,
+      "runs": [
+        442.1171875,
+        472.54296875,
+        435.62109375
+      ]
+    },
+    "cpuPercent": {
+      "median": 2.1302090267607507,
+      "spread": 3.7934113892807506,
+      "min": 1.9969380283565201,
+      "max": 5.7903494176372705,
+      "runs": [
+        2.1302090267607507,
+        5.7903494176372705,
+        1.9969380283565201
+      ]
+    },
+    "childRssMb": {
+      "median": 131.53125,
+      "spread": 80.1328125,
+      "min": 102.3359375,
+      "max": 182.46875,
+      "runs": [
+        102.3359375,
+        182.46875,
+        131.53125
+      ]
+    },
+    "runs": [
+      {
+        "label": "baseline",
+        "run": 1,
+        "shellPid": 2943232,
+        "started": "2026-09-18T17:06:49Z",
+        "ended": "2026-09-18T17:07:04Z",
+        "readyAfterSeconds": 1.793,
+        "windowSeconds": 15.022,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 425657,
+          "rssKb": 450224,
+          "memoryAt": "window-end",
+          "pssKbSettled": 428176,
+          "rssKbSettled": 452728,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 428176,
+              "rssKb": 452728
+            },
+            {
+              "t": 0.53,
+              "pssKb": 428088,
+              "rssKb": 452640
+            },
+            {
+              "t": 1.056,
+              "pssKb": 427876,
+              "rssKb": 452428
+            },
+            {
+              "t": 1.584,
+              "pssKb": 427856,
+              "rssKb": 452408
+            },
+            {
+              "t": 2.108,
+              "pssKb": 427864,
+              "rssKb": 452416
+            },
+            {
+              "t": 2.632,
+              "pssKb": 427872,
+              "rssKb": 452424
+            },
+            {
+              "t": 3.155,
+              "pssKb": 427880,
+              "rssKb": 452432
+            },
+            {
+              "t": 3.678,
+              "pssKb": 427840,
+              "rssKb": 452456
+            },
+            {
+              "t": 4.201,
+              "pssKb": 427904,
+              "rssKb": 452456
+            },
+            {
+              "t": 4.725,
+              "pssKb": 427928,
+              "rssKb": 452480
+            },
+            {
+              "t": 5.249,
+              "pssKb": 427932,
+              "rssKb": 452484
+            },
+            {
+              "t": 5.772,
+              "pssKb": 427838,
+              "rssKb": 452376
+            },
+            {
+              "t": 6.295,
+              "pssKb": 427838,
+              "rssKb": 452376
+            },
+            {
+              "t": 6.818,
+              "pssKb": 427850,
+              "rssKb": 452388
+            },
+            {
+              "t": 7.342,
+              "pssKb": 427923,
+              "rssKb": 452460
+            },
+            {
+              "t": 7.864,
+              "pssKb": 427931,
+              "rssKb": 452468
+            },
+            {
+              "t": 8.388,
+              "pssKb": 427895,
+              "rssKb": 452468
+            },
+            {
+              "t": 8.911,
+              "pssKb": 427939,
+              "rssKb": 452476
+            },
+            {
+              "t": 9.435,
+              "pssKb": 427947,
+              "rssKb": 452484
+            },
+            {
+              "t": 9.959,
+              "pssKb": 427951,
+              "rssKb": 452488
+            },
+            {
+              "t": 10.485,
+              "pssKb": 428189,
+              "rssKb": 452724
+            },
+            {
+              "t": 11.009,
+              "pssKb": 428159,
+              "rssKb": 452728
+            },
+            {
+              "t": 11.533,
+              "pssKb": 428163,
+              "rssKb": 452732
+            },
+            {
+              "t": 12.056,
+              "pssKb": 428239,
+              "rssKb": 452808
+            },
+            {
+              "t": 12.579,
+              "pssKb": 428239,
+              "rssKb": 452808
+            },
+            {
+              "t": 13.103,
+              "pssKb": 428243,
+              "rssKb": 452812
+            },
+            {
+              "t": 13.626,
+              "pssKb": 426349,
+              "rssKb": 450916
+            },
+            {
+              "t": 14.149,
+              "pssKb": 426477,
+              "rssKb": 451044
+            },
+            {
+              "t": 14.672,
+              "pssKb": 425657,
+              "rssKb": 450224
+            },
+            {
+              "t": 14.999,
+              "pssKb": 425657,
+              "rssKb": 450224
+            }
+          ],
+          "cpuTicksStart": 285,
+          "cpuTicksEnd": 317,
+          "cpuSeconds": 0.32,
+          "cpuPercent": 2.1302090267607507,
+          "reapedChildTicksStart": 5120,
+          "reapedChildTicksEnd": 5243,
+          "reapedChildCpuSeconds": 1.23,
+          "reapedChildCpuPercent": 8.187990946611636
+        },
+        "children": [
+          {
+            "pid": 2943329,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 5,
+            "cpuLast": 5,
+            "rssLast": 4756,
+            "samples": 30
+          },
+          {
+            "pid": 2943814,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11744,
+            "samples": 30
+          },
+          {
+            "pid": 2943819,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 12152,
+            "samples": 30
+          },
+          {
+            "pid": 2944139,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 44,
+            "cpuLast": 59,
+            "rssLast": 29912,
+            "samples": 30
+          },
+          {
+            "pid": 2944224,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 30
+          },
+          {
+            "pid": 2944307,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4248,
+            "samples": 30
+          },
+          {
+            "pid": 2944330,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 22312,
+            "samples": 30
+          },
+          {
+            "pid": 2945692,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2100,
+            "samples": 30
+          },
+          {
+            "pid": 2945693,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2160,
+            "samples": 30
+          },
+          {
+            "pid": 2952486,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 0,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11164,
+            "samples": 1
+          },
+          {
+            "pid": 2952637,
+            "comm": "omarchy-theme-c",
+            "arg0": "",
+            "firstSeen": 2.108,
+            "lastSeen": 2.108,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          },
+          {
+            "pid": 2953113,
+            "comm": "omarchy-hyprlan",
+            "arg0": "",
+            "firstSeen": 8.388,
+            "lastSeen": 8.388,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 2,
+        "shellPid": 2984268,
+        "started": "2026-09-18T17:08:25Z",
+        "ended": "2026-09-18T17:08:40Z",
+        "readyAfterSeconds": 1.558,
+        "windowSeconds": 15.025,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 478857,
+          "rssKb": 505900,
+          "memoryAt": "window-end",
+          "pssKbSettled": 457558,
+          "rssKbSettled": 483884,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 457558,
+              "rssKb": 483884
+            },
+            {
+              "t": 0.521,
+              "pssKb": 457590,
+              "rssKb": 483916
+            },
+            {
+              "t": 1.053,
+              "pssKb": 456030,
+              "rssKb": 482356
+            },
+            {
+              "t": 1.576,
+              "pssKb": 456170,
+              "rssKb": 482496
+            },
+            {
+              "t": 2.099,
+              "pssKb": 456250,
+              "rssKb": 482576
+            },
+            {
+              "t": 2.623,
+              "pssKb": 458334,
+              "rssKb": 484896
+            },
+            {
+              "t": 3.147,
+              "pssKb": 458718,
+              "rssKb": 485276
+            },
+            {
+              "t": 3.671,
+              "pssKb": 458794,
+              "rssKb": 485404
+            },
+            {
+              "t": 4.194,
+              "pssKb": 458958,
+              "rssKb": 485516
+            },
+            {
+              "t": 4.717,
+              "pssKb": 447154,
+              "rssKb": 472716
+            },
+            {
+              "t": 5.241,
+              "pssKb": 447266,
+              "rssKb": 472768
+            },
+            {
+              "t": 5.764,
+              "pssKb": 447230,
+              "rssKb": 472732
+            },
+            {
+              "t": 6.287,
+              "pssKb": 445358,
+              "rssKb": 472732
+            },
+            {
+              "t": 6.809,
+              "pssKb": 447422,
+              "rssKb": 472924
+            },
+            {
+              "t": 7.333,
+              "pssKb": 447406,
+              "rssKb": 472948
+            },
+            {
+              "t": 7.857,
+              "pssKb": 447458,
+              "rssKb": 472960
+            },
+            {
+              "t": 8.38,
+              "pssKb": 446106,
+              "rssKb": 471608
+            },
+            {
+              "t": 8.903,
+              "pssKb": 446250,
+              "rssKb": 471752
+            },
+            {
+              "t": 9.426,
+              "pssKb": 446282,
+              "rssKb": 471784
+            },
+            {
+              "t": 9.95,
+              "pssKb": 446281,
+              "rssKb": 471784
+            },
+            {
+              "t": 10.473,
+              "pssKb": 457875,
+              "rssKb": 483976
+            },
+            {
+              "t": 10.997,
+              "pssKb": 451366,
+              "rssKb": 476876
+            },
+            {
+              "t": 11.525,
+              "pssKb": 451366,
+              "rssKb": 476876
+            },
+            {
+              "t": 12.051,
+              "pssKb": 451406,
+              "rssKb": 476916
+            },
+            {
+              "t": 12.575,
+              "pssKb": 451606,
+              "rssKb": 477116
+            },
+            {
+              "t": 13.099,
+              "pssKb": 450411,
+              "rssKb": 475924
+            },
+            {
+              "t": 13.623,
+              "pssKb": 448354,
+              "rssKb": 473932
+            },
+            {
+              "t": 14.146,
+              "pssKb": 474788,
+              "rssKb": 502480
+            },
+            {
+              "t": 14.67,
+              "pssKb": 479061,
+              "rssKb": 506104
+            },
+            {
+              "t": 15.001,
+              "pssKb": 478857,
+              "rssKb": 505900
+            }
+          ],
+          "cpuTicksStart": 418,
+          "cpuTicksEnd": 505,
+          "cpuSeconds": 0.87,
+          "cpuPercent": 5.7903494176372705,
+          "reapedChildTicksStart": 2357,
+          "reapedChildTicksEnd": 2534,
+          "reapedChildCpuSeconds": 1.77,
+          "reapedChildCpuPercent": 11.78036605657238
+        },
+        "children": [
+          {
+            "pid": 2984662,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 4,
+            "cpuLast": 4,
+            "rssLast": 4540,
+            "samples": 30
+          },
+          {
+            "pid": 2985291,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 10604,
+            "samples": 30
+          },
+          {
+            "pid": 2985295,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 10456,
+            "samples": 30
+          },
+          {
+            "pid": 2985630,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 40,
+            "cpuLast": 53,
+            "rssLast": 29072,
+            "samples": 30
+          },
+          {
+            "pid": 2985725,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4128,
+            "samples": 30
+          },
+          {
+            "pid": 2985808,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 30
+          },
+          {
+            "pid": 2985831,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 22236,
+            "samples": 30
+          },
+          {
+            "pid": 2987092,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2164,
+            "samples": 30
+          },
+          {
+            "pid": 2987093,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 30
+          },
+          {
+            "pid": 2991091,
+            "comm": "omarchy-hyprlan",
+            "arg0": "",
+            "firstSeen": 3.147,
+            "lastSeen": 3.147,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          },
+          {
+            "pid": 2991110,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 3.671,
+            "lastSeen": 3.671,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11708,
+            "samples": 1
+          },
+          {
+            "pid": 2991272,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 6.287,
+            "lastSeen": 6.287,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4096,
+            "samples": 1
+          },
+          {
+            "pid": 2991273,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 6.287,
+            "lastSeen": 6.287,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2252,
+            "samples": 1
+          },
+          {
+            "pid": 2991274,
+            "comm": "timeout",
+            "arg0": "--kill-after=1s",
+            "firstSeen": 6.287,
+            "lastSeen": 6.287,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2392,
+            "samples": 1
+          },
+          {
+            "pid": 2991275,
+            "comm": "qs",
+            "arg0": "ipc",
+            "firstSeen": 6.287,
+            "lastSeen": 6.287,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 19108,
+            "samples": 1
+          },
+          {
+            "pid": 2991899,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 13.623,
+            "lastSeen": 13.623,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 13800,
+            "samples": 1
+          },
+          {
+            "pid": 2991940,
+            "comm": "marketplace-cat",
+            "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/marketplace-catalog",
+            "firstSeen": 14.146,
+            "lastSeen": 14.146,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4200,
+            "samples": 1
+          },
+          {
+            "pid": 2991942,
+            "comm": "curl",
+            "arg0": "",
+            "firstSeen": 14.146,
+            "lastSeen": 14.146,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          },
+          {
+            "pid": 2991943,
+            "comm": "jq",
+            "arg0": "-ce",
+            "firstSeen": 14.146,
+            "lastSeen": 14.146,
+            "cpuFirst": 9,
+            "cpuLast": 9,
+            "rssLast": 33336,
+            "samples": 1
+          },
+          {
+            "pid": 2991975,
+            "comm": "bash",
+            "arg0": "-c",
+            "firstSeen": 14.146,
+            "lastSeen": 14.146,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4124,
+            "samples": 1
+          },
+          {
+            "pid": 2992132,
+            "comm": "bash",
+            "arg0": "-c",
+            "firstSeen": 14.146,
+            "lastSeen": 14.146,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2220,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 3,
+        "shellPid": 3014786,
+        "started": "2026-09-18T17:10:00Z",
+        "ended": "2026-09-18T17:10:15Z",
+        "readyAfterSeconds": 1.962,
+        "windowSeconds": 15.023,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 411264,
+          "rssKb": 439844,
+          "memoryAt": "window-end",
+          "pssKbSettled": 417662,
+          "rssKbSettled": 446076,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 417662,
+              "rssKb": 446076
+            },
+            {
+              "t": 0.52,
+              "pssKb": 417662,
+              "rssKb": 446076
+            },
+            {
+              "t": 1.053,
+              "pssKb": 417406,
+              "rssKb": 445820
+            },
+            {
+              "t": 1.576,
+              "pssKb": 412742,
+              "rssKb": 441156
+            },
+            {
+              "t": 2.1,
+              "pssKb": 412564,
+              "rssKb": 441180
+            },
+            {
+              "t": 2.627,
+              "pssKb": 412766,
+              "rssKb": 441180
+            },
+            {
+              "t": 3.15,
+              "pssKb": 412782,
+              "rssKb": 441196
+            },
+            {
+              "t": 3.675,
+              "pssKb": 412746,
+              "rssKb": 441160
+            },
+            {
+              "t": 4.198,
+              "pssKb": 412746,
+              "rssKb": 441160
+            },
+            {
+              "t": 4.721,
+              "pssKb": 412754,
+              "rssKb": 441168
+            },
+            {
+              "t": 5.244,
+              "pssKb": 412757,
+              "rssKb": 441172
+            },
+            {
+              "t": 5.767,
+              "pssKb": 412778,
+              "rssKb": 441192
+            },
+            {
+              "t": 6.29,
+              "pssKb": 412806,
+              "rssKb": 441220
+            },
+            {
+              "t": 6.813,
+              "pssKb": 412814,
+              "rssKb": 441228
+            },
+            {
+              "t": 7.337,
+              "pssKb": 411562,
+              "rssKb": 439976
+            },
+            {
+              "t": 7.86,
+              "pssKb": 411574,
+              "rssKb": 439988
+            },
+            {
+              "t": 8.383,
+              "pssKb": 411582,
+              "rssKb": 439996
+            },
+            {
+              "t": 8.907,
+              "pssKb": 410804,
+              "rssKb": 439900
+            },
+            {
+              "t": 9.434,
+              "pssKb": 411130,
+              "rssKb": 439544
+            },
+            {
+              "t": 9.958,
+              "pssKb": 411138,
+              "rssKb": 439552
+            },
+            {
+              "t": 10.482,
+              "pssKb": 411142,
+              "rssKb": 439556
+            },
+            {
+              "t": 11.005,
+              "pssKb": 411154,
+              "rssKb": 439568
+            },
+            {
+              "t": 11.527,
+              "pssKb": 411406,
+              "rssKb": 439824
+            },
+            {
+              "t": 12.051,
+              "pssKb": 411300,
+              "rssKb": 439880
+            },
+            {
+              "t": 12.575,
+              "pssKb": 411324,
+              "rssKb": 439904
+            },
+            {
+              "t": 13.098,
+              "pssKb": 411324,
+              "rssKb": 439904
+            },
+            {
+              "t": 13.621,
+              "pssKb": 411312,
+              "rssKb": 439892
+            },
+            {
+              "t": 14.147,
+              "pssKb": 411260,
+              "rssKb": 439840
+            },
+            {
+              "t": 14.671,
+              "pssKb": 411264,
+              "rssKb": 439844
+            },
+            {
+              "t": 15,
+              "pssKb": 411264,
+              "rssKb": 439844
+            }
+          ],
+          "cpuTicksStart": 319,
+          "cpuTicksEnd": 349,
+          "cpuSeconds": 0.3,
+          "cpuPercent": 1.9969380283565201,
+          "reapedChildTicksStart": 3925,
+          "reapedChildTicksEnd": 4045,
+          "reapedChildCpuSeconds": 1.2,
+          "reapedChildCpuPercent": 7.9877521134260805
+        },
+        "children": [
+          {
+            "pid": 3014949,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 6,
+            "cpuLast": 6,
+            "rssLast": 4360,
+            "samples": 30
+          },
+          {
+            "pid": 3015743,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 1,
+            "rssLast": 10392,
+            "samples": 30
+          },
+          {
+            "pid": 3015747,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 10764,
+            "samples": 30
+          },
+          {
+            "pid": 3016099,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 44,
+            "cpuLast": 59,
+            "rssLast": 28600,
+            "samples": 30
+          },
+          {
+            "pid": 3016207,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 30
+          },
+          {
+            "pid": 3016249,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4196,
+            "samples": 30
+          },
+          {
+            "pid": 3016270,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 22264,
+            "samples": 30
+          },
+          {
+            "pid": 3017788,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 30
+          },
+          {
+            "pid": 3017790,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2164,
+            "samples": 30
+          },
+          {
+            "pid": 3025380,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 5.244,
+            "lastSeen": 5.244,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11264,
+            "samples": 1
+          },
+          {
+            "pid": 3025631,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 8.907,
+            "lastSeen": 8.907,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4088,
+            "samples": 1
+          },
+          {
+            "pid": 3025632,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 8.907,
+            "lastSeen": 8.907,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2248,
+            "samples": 1
+          },
+          {
+            "pid": 3025633,
+            "comm": "timeout",
+            "arg0": "--kill-after=1s",
+            "firstSeen": 8.907,
+            "lastSeen": 8.907,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2388,
+            "samples": 1
+          },
+          {
+            "pid": 3025634,
+            "comm": "qs",
+            "arg0": "ipc",
+            "firstSeen": 8.907,
+            "lastSeen": 8.907,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 6852,
+            "samples": 1
+          },
+          {
+            "pid": 3026044,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 14.671,
+            "lastSeen": 14.671,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4176,
+            "samples": 1
+          },
+          {
+            "pid": 3026045,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 14.671,
+            "lastSeen": 14.671,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2260,
+            "samples": 1
+          },
+          {
+            "pid": 3026046,
+            "comm": "timeout",
+            "arg0": "--kill-after=1s",
+            "firstSeen": 14.671,
+            "lastSeen": 14.671,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2392,
+            "samples": 1
+          },
+          {
+            "pid": 3026047,
+            "comm": "qs",
+            "arg0": "ipc",
+            "firstSeen": 14.671,
+            "lastSeen": 14.671,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 9868,
+            "samples": 1
+          }
+        ]
+      }
+    ]
+  },
+  "noiseFloor": {
+    "pssMb": 66.0087890625,
+    "rssMb": 64.5078125,
+    "pssMbSettled": 38.9609375,
+    "rssMbSettled": 36.921875,
+    "cpuPercent": 3.7934113892807506,
+    "origin": "the spread (max minus min) of the 3 baseline runs: Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window"
+  },
+  "plugins": [
+    {
+      "id": "omadock",
+      "name": "omadock",
+      "kinds": [
+        "overlay"
+      ],
+      "firstParty": false,
+      "sourceDir": "/home/mtolhuijs/.config/omarchy/plugins/omadock",
+      "runsCompleted": 3,
+      "shellPssMb": {
+        "median": -30.4765625,
+        "spread": 177.1220703125,
+        "min": -75.14453125,
+        "max": 101.9775390625,
+        "runs": [
+          101.9775390625,
+          -30.4765625,
+          -75.14453125
+        ]
+      },
+      "shellRssMb": {
+        "median": -28.93359375,
+        "spread": 186.8671875,
+        "min": -77.8828125,
+        "max": 108.984375,
+        "runs": [
+          108.984375,
+          -28.93359375,
+          -77.8828125
+        ]
+      },
+      "shellPssMbSettled": {
+        "median": 31.244140625,
+        "spread": 97.8642578125,
+        "min": -41.099609375,
+        "max": 56.7646484375,
+        "runs": [
+          56.7646484375,
+          31.244140625,
+          -41.099609375
+        ]
+      },
+      "shellCpuPercent": {
+        "median": 4.459398499864992,
+        "spread": 16.438629703463004,
+        "min": 2.1979344327155452,
+        "max": 18.63656413617855,
+        "runs": [
+          18.63656413617855,
+          2.1979344327155452,
+          4.459398499864992
+        ]
+      },
+      "childRssMb": {
+        "median": 33.125,
+        "spread": 844.1875,
+        "min": 22.34375,
+        "max": 866.53125,
+        "runs": [
+          866.53125,
+          33.125,
+          22.34375
+        ]
+      },
+      "childCpuPercent": {
+        "median": 19.435038088916844,
+        "spread": 83.72707176856399,
+        "min": 16.3783345159213,
+        "max": 100.10540628448528,
+        "runs": [
+          100.10540628448528,
+          16.3783345159213,
+          19.435038088916844
+        ]
+      },
+      "childSpawns": {
+        "median": 7,
+        "spread": 132,
+        "min": 5,
+        "max": 137,
+        "runs": [
+          137,
+          7,
+          5
+        ]
+      },
+      "unattributedChildren": {
+        "median": 2,
+        "spread": 12,
+        "min": 2,
+        "max": 14,
+        "runs": [
+          14,
+          2,
+          2
+        ]
+      },
+      "unattributedCommands": [
+        "bash -c",
+        "inotifywait -m",
+        "jq -ce",
+        "marketplace-cat /run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/marketplace-catalog",
+        "omarchy-hyprlan",
+        "sidecarctl /home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+        "sidecard /home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+        "tailscale serve",
+        "voxtype status"
+      ],
+      "totalMb": 2.6484375,
+      "totalCpuPercent": 23.894436588781836,
+      "verdict": {
+        "memory": "within-noise",
+        "cpu": "above-noise",
+        "summary": "above noise on CPU"
+      },
+      "withinNoise": {
+        "pss": true,
+        "rss": true,
+        "cpu": false,
+        "ownPss": true,
+        "ownCpu": true,
+        "baselinePssSpreadMb": 66.0087890625,
+        "baselineCpuSpreadPercent": 3.7934113892807506,
+        "cpuTickPercent": 0.06666666666666667,
+        "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas; a CPU delta is above noise only when it also exceeds one clock tick over the window (cpuTickPercent)"
+      },
+      "origin": "plus minus baseline per run over 3 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a 15s window that opens 30s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
+      "readme": "Weighs 4.5% CPU and runs 7 child processes using 33.1 MB and 19.4% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-18",
+      "deltas": [
+        {
+          "run": 1,
+          "shellPssMb": 101.9775390625,
+          "shellRssMb": 108.984375,
+          "shellPssMbSettled": 56.7646484375,
+          "shellCpuPercent": 18.63656413617855,
+          "childRssMb": 866.53125,
+          "childCpuPercent": 100.10540628448528,
+          "reapedChildCpuPercent": 91.91850532601883,
+          "childSpawns": 137,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5436,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 12.062
+            },
+            {
+              "comm": "python3",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/runtime-state.py",
+              "rssKb": 18792,
+              "cpuSeconds": 0,
+              "firstSeen": 5.248,
+              "lastSeen": 9.968
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/plugin-state.sh",
+              "rssKb": 4332,
+              "cpuSeconds": 0.01,
+              "firstSeen": 5.248,
+              "lastSeen": 9.968
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 5.248,
+              "lastSeen": 5.248
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5752,
+              "cpuSeconds": 0,
+              "firstSeen": 5.248,
+              "lastSeen": 5.248
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4152,
+              "cpuSeconds": 0,
+              "firstSeen": 5.248,
+              "lastSeen": 5.248
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15384,
+              "cpuSeconds": 0,
+              "firstSeen": 5.248,
+              "lastSeen": 5.248
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2352,
+              "cpuSeconds": 0,
+              "firstSeen": 5.774,
+              "lastSeen": 5.774
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5556,
+              "cpuSeconds": 0,
+              "firstSeen": 5.774,
+              "lastSeen": 5.774
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4160,
+              "cpuSeconds": 0,
+              "firstSeen": 5.774,
+              "lastSeen": 5.774
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15580,
+              "cpuSeconds": 0,
+              "firstSeen": 5.774,
+              "lastSeen": 5.774
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2388,
+              "cpuSeconds": 0,
+              "firstSeen": 6.299,
+              "lastSeen": 6.299
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5980,
+              "cpuSeconds": 0,
+              "firstSeen": 6.299,
+              "lastSeen": 6.299
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4156,
+              "cpuSeconds": 0,
+              "firstSeen": 6.299,
+              "lastSeen": 6.299
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15452,
+              "cpuSeconds": 0,
+              "firstSeen": 6.299,
+              "lastSeen": 6.299
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2356,
+              "cpuSeconds": 0,
+              "firstSeen": 6.823,
+              "lastSeen": 6.823
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5584,
+              "cpuSeconds": 0,
+              "firstSeen": 6.823,
+              "lastSeen": 6.823
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4208,
+              "cpuSeconds": 0,
+              "firstSeen": 6.823,
+              "lastSeen": 6.823
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15504,
+              "cpuSeconds": 0,
+              "firstSeen": 6.823,
+              "lastSeen": 6.823
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2356,
+              "cpuSeconds": 0,
+              "firstSeen": 7.348,
+              "lastSeen": 7.348
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5768,
+              "cpuSeconds": 0,
+              "firstSeen": 7.348,
+              "lastSeen": 7.348
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4240,
+              "cpuSeconds": 0,
+              "firstSeen": 7.348,
+              "lastSeen": 7.348
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15360,
+              "cpuSeconds": 0,
+              "firstSeen": 7.348,
+              "lastSeen": 7.348
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 7.872,
+              "lastSeen": 7.872
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5612,
+              "cpuSeconds": 0,
+              "firstSeen": 7.872,
+              "lastSeen": 7.872
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4156,
+              "cpuSeconds": 0,
+              "firstSeen": 7.872,
+              "lastSeen": 7.872
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15548,
+              "cpuSeconds": 0,
+              "firstSeen": 7.872,
+              "lastSeen": 7.872
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 8.396,
+              "lastSeen": 8.396
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5632,
+              "cpuSeconds": 0,
+              "firstSeen": 8.396,
+              "lastSeen": 8.396
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4384,
+              "cpuSeconds": 0,
+              "firstSeen": 8.396,
+              "lastSeen": 8.396
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15584,
+              "cpuSeconds": 0,
+              "firstSeen": 8.396,
+              "lastSeen": 8.396
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2372,
+              "cpuSeconds": 0,
+              "firstSeen": 8.92,
+              "lastSeen": 8.92
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5604,
+              "cpuSeconds": 0,
+              "firstSeen": 8.92,
+              "lastSeen": 8.92
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4224,
+              "cpuSeconds": 0,
+              "firstSeen": 8.92,
+              "lastSeen": 8.92
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15668,
+              "cpuSeconds": 0,
+              "firstSeen": 8.92,
+              "lastSeen": 8.92
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2360,
+              "cpuSeconds": 0,
+              "firstSeen": 9.444,
+              "lastSeen": 9.444
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5728,
+              "cpuSeconds": 0,
+              "firstSeen": 9.444,
+              "lastSeen": 9.444
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4120,
+              "cpuSeconds": 0,
+              "firstSeen": 9.444,
+              "lastSeen": 9.444
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15664,
+              "cpuSeconds": 0,
+              "firstSeen": 9.444,
+              "lastSeen": 9.444
+            },
+            {
+              "comm": "omarchy-theme-c",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-theme-color",
+              "rssKb": 4464,
+              "cpuSeconds": 0,
+              "firstSeen": 11.015,
+              "lastSeen": 11.015
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4848,
+              "cpuSeconds": 0,
+              "firstSeen": 12.586,
+              "lastSeen": 12.586
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 4964,
+              "cpuSeconds": 0,
+              "firstSeen": 12.586,
+              "lastSeen": 12.586
+            },
+            {
+              "comm": "tar",
+              "arg0": "-C",
+              "rssKb": 3852,
+              "cpuSeconds": 0,
+              "firstSeen": 12.586,
+              "lastSeen": 12.586
+            },
+            {
+              "comm": "tar",
+              "arg0": "-C",
+              "rssKb": 3772,
+              "cpuSeconds": 0,
+              "firstSeen": 12.586,
+              "lastSeen": 12.586
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4856,
+              "cpuSeconds": 0,
+              "firstSeen": 13.108,
+              "lastSeen": 13.108
+            },
+            {
+              "comm": "tar",
+              "arg0": "-C",
+              "rssKb": 3860,
+              "cpuSeconds": 0,
+              "firstSeen": 13.108,
+              "lastSeen": 13.108
+            },
+            {
+              "comm": "tar",
+              "arg0": "-C",
+              "rssKb": 3768,
+              "cpuSeconds": 0,
+              "firstSeen": 13.108,
+              "lastSeen": 13.108
+            },
+            {
+              "comm": "readlink",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "mkdir",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "mkdir",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "findmnt",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "osk-input",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "install.sh",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "readlink",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "find",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-reminde",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-reminde",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "pgrep",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "pgrep",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "xkbcli-list",
+              "arg0": "--load-exotic",
+              "rssKb": 8768,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-audio-o",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-monitor",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-network",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-dns",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-network",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "mkdir",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "sh",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "sh",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "python3",
+              "arg0": "-B",
+              "rssKb": 28140,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "python3",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-plugin-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-plugin-list",
+              "rssKb": 4052,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "rssKb": 4144,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "marketplace-cat",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/marketplace-catalog",
+              "rssKb": 4060,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "python3",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "curl",
+              "arg0": "-fsSL",
+              "rssKb": 14736,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "rssKb": 2256,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "qs",
+              "arg0": "ipc",
+              "rssKb": 36496,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "rssKb": 4228,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "rssKb": 2212,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "qs",
+              "arg0": "ipc",
+              "rssKb": 36420,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-17/omarchy-github-fetc",
+              "rssKb": 4348,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-17/omarchy-github-fetc",
+              "rssKb": 2308,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "gh",
+              "arg0": "auth",
+              "rssKb": 28492,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "hyprctl",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 13.631,
+              "lastSeen": 13.631
+            },
+            {
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "rssKb": 4152,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "omarchy-update-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-update-available",
+              "rssKb": 4028,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "rssKb": 2224,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "rssKb": 2224,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-claude",
+              "rssKb": 35324,
+              "cpuSeconds": 0.5,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-codex",
+              "rssKb": 49256,
+              "cpuSeconds": 0.72,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "python3",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/runtime-state.py",
+              "rssKb": 18836,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-18/bin/omarchy-local-a",
+              "rssKb": 6088,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/plugin-state.sh",
+              "rssKb": 4332,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5556,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4192,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15424,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "omarchy-update-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-update-available",
+              "rssKb": 2140,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "checkupdates",
+              "arg0": "/usr/bin/checkupdates",
+              "rssKb": 4260,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "awk",
+              "arg0": "-v",
+              "rssKb": 4860,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "python3",
+              "arg0": "-B",
+              "rssKb": 56132,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "checkupdates",
+              "arg0": "/usr/bin/checkupdates",
+              "rssKb": 2212,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "pacman",
+              "arg0": "-Qu",
+              "rssKb": 51500,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "grep",
+              "arg0": "-v",
+              "rssKb": 2760,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 5000,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5580,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4172,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "rssKb": 4460,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "bash",
+              "arg0": "",
+              "rssKb": 0,
+              "cpuSeconds": 0,
+              "firstSeen": 14.156,
+              "lastSeen": 14.156
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4152,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.682
+            },
+            {
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "rssKb": 4384,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.682
+            },
+            {
+              "comm": "python3",
+              "arg0": "-B",
+              "rssKb": 16028,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.682
+            },
+            {
+              "comm": "timeout",
+              "arg0": "15",
+              "rssKb": 2392,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "git",
+              "arg0": "-C",
+              "rssKb": 5500,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "git",
+              "arg0": "remote-https",
+              "rssKb": 4180,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "rssKb": 15508,
+              "cpuSeconds": 0,
+              "firstSeen": 14.682,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "rssKb": 4236,
+              "cpuSeconds": 0,
+              "firstSeen": 14.999,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "rssKb": 2844,
+              "cpuSeconds": 0,
+              "firstSeen": 14.999,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "sort",
+              "arg0": "",
+              "rssKb": 2160,
+              "cpuSeconds": 0,
+              "firstSeen": 14.999,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "python3",
+              "arg0": "-B",
+              "rssKb": 27704,
+              "cpuSeconds": 0,
+              "firstSeen": 14.999,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "rssKb": 2628,
+              "cpuSeconds": 0,
+              "firstSeen": 14.999,
+              "lastSeen": 14.999
+            }
+          ],
+          "unattributedChildren": [
+            {
+              "comm": "marketplace-cat",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/marketplace-catalog"
+            },
+            {
+              "comm": "jq",
+              "arg0": "-ce"
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c"
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c"
+            },
+            {
+              "comm": "omarchy-hyprlan",
+              "arg0": ""
+            },
+            {
+              "comm": "voxtype",
+              "arg0": "status"
+            },
+            {
+              "comm": "voxtype",
+              "arg0": "status"
+            },
+            {
+              "comm": "omarchy-hyprlan",
+              "arg0": ""
+            },
+            {
+              "comm": "omarchy-hyprlan",
+              "arg0": ""
+            },
+            {
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            },
+            {
+              "comm": "tailscale",
+              "arg0": "serve"
+            },
+            {
+              "comm": "jq",
+              "arg0": "-ce"
+            },
+            {
+              "comm": "inotifywait",
+              "arg0": "-m"
+            },
+            {
+              "comm": "inotifywait",
+              "arg0": "-m"
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "shellPssMb": -30.4765625,
+          "shellRssMb": -28.93359375,
+          "shellPssMbSettled": 31.244140625,
+          "shellCpuPercent": 2.1979344327155452,
+          "childRssMb": 33.125,
+          "childCpuPercent": 16.3783345159213,
+          "reapedChildCpuPercent": 16.3783345159213,
+          "childSpawns": 7,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 5344,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 14.999
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 4936,
+              "cpuSeconds": 0,
+              "firstSeen": 7.345,
+              "lastSeen": 7.345
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 5024,
+              "cpuSeconds": 0,
+              "firstSeen": 7.881,
+              "lastSeen": 7.881
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 5060,
+              "cpuSeconds": 0,
+              "firstSeen": 8.412,
+              "lastSeen": 8.412
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 5020,
+              "cpuSeconds": 0,
+              "firstSeen": 8.938,
+              "lastSeen": 8.938
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4156,
+              "cpuSeconds": 0,
+              "firstSeen": 9.986,
+              "lastSeen": 9.986
+            },
+            {
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "rssKb": 4380,
+              "cpuSeconds": 0,
+              "firstSeen": 9.986,
+              "lastSeen": 9.986
+            }
+          ],
+          "unattributedChildren": [
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            },
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "shellPssMb": -75.14453125,
+          "shellRssMb": -77.8828125,
+          "shellPssMbSettled": -41.099609375,
+          "shellCpuPercent": 4.459398499864992,
+          "childRssMb": 22.34375,
+          "childCpuPercent": 19.435038088916844,
+          "reapedChildCpuPercent": 19.435038088916844,
+          "childSpawns": 5,
+          "children": [
+            {
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "rssKb": 4396,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 15.001
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 4992,
+              "cpuSeconds": 0,
+              "firstSeen": 0,
+              "lastSeen": 0
+            },
+            {
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "rssKb": 4908,
+              "cpuSeconds": 0,
+              "firstSeen": 1.09,
+              "lastSeen": 1.09
+            },
+            {
+              "comm": "bash",
+              "arg0": "-c",
+              "rssKb": 4168,
+              "cpuSeconds": 0,
+              "firstSeen": 2.144,
+              "lastSeen": 2.144
+            },
+            {
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "rssKb": 4416,
+              "cpuSeconds": 0,
+              "firstSeen": 2.144,
+              "lastSeen": 2.144
+            }
+          ],
+          "unattributedChildren": [
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            },
+            {
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "label": "omadock",
+          "run": 1,
+          "shellPid": 2953668,
+          "started": "2026-09-18T17:07:37Z",
+          "ended": "2026-09-18T17:07:52Z",
+          "readyAfterSeconds": 1.832,
+          "windowSeconds": 15.024,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 530082,
+            "rssKb": 561824,
+            "memoryAt": "window-end",
+            "pssKbSettled": 486303,
+            "rssKbSettled": 512160,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 486303,
+                "rssKb": 512160
+              },
+              {
+                "t": 0.529,
+                "pssKb": 486304,
+                "rssKb": 512160
+              },
+              {
+                "t": 1.054,
+                "pssKb": 486308,
+                "rssKb": 512164
+              },
+              {
+                "t": 1.578,
+                "pssKb": 486308,
+                "rssKb": 512164
+              },
+              {
+                "t": 2.103,
+                "pssKb": 486296,
+                "rssKb": 512152
+              },
+              {
+                "t": 2.627,
+                "pssKb": 486309,
+                "rssKb": 512176
+              },
+              {
+                "t": 3.15,
+                "pssKb": 511935,
+                "rssKb": 540208
+              },
+              {
+                "t": 3.674,
+                "pssKb": 531340,
+                "rssKb": 558680
+              },
+              {
+                "t": 4.198,
+                "pssKb": 531852,
+                "rssKb": 559192
+              },
+              {
+                "t": 4.723,
+                "pssKb": 531864,
+                "rssKb": 559204
+              },
+              {
+                "t": 5.248,
+                "pssKb": 531453,
+                "rssKb": 559596
+              },
+              {
+                "t": 5.774,
+                "pssKb": 531533,
+                "rssKb": 559644
+              },
+              {
+                "t": 6.299,
+                "pssKb": 531624,
+                "rssKb": 559756
+              },
+              {
+                "t": 6.823,
+                "pssKb": 531606,
+                "rssKb": 559776
+              },
+              {
+                "t": 7.348,
+                "pssKb": 531623,
+                "rssKb": 559780
+              },
+              {
+                "t": 7.872,
+                "pssKb": 529848,
+                "rssKb": 557988
+              },
+              {
+                "t": 8.396,
+                "pssKb": 529856,
+                "rssKb": 557992
+              },
+              {
+                "t": 8.92,
+                "pssKb": 527340,
+                "rssKb": 555492
+              },
+              {
+                "t": 9.444,
+                "pssKb": 525531,
+                "rssKb": 553696
+              },
+              {
+                "t": 9.968,
+                "pssKb": 526026,
+                "rssKb": 553592
+              },
+              {
+                "t": 10.492,
+                "pssKb": 519807,
+                "rssKb": 547200
+              },
+              {
+                "t": 11.015,
+                "pssKb": 519791,
+                "rssKb": 547172
+              },
+              {
+                "t": 11.539,
+                "pssKb": 519785,
+                "rssKb": 547160
+              },
+              {
+                "t": 12.062,
+                "pssKb": 519181,
+                "rssKb": 546560
+              },
+              {
+                "t": 12.586,
+                "pssKb": 468474,
+                "rssKb": 494292
+              },
+              {
+                "t": 13.108,
+                "pssKb": 469502,
+                "rssKb": 494304
+              },
+              {
+                "t": 13.631,
+                "pssKb": 482851,
+                "rssKb": 523016
+              },
+              {
+                "t": 14.156,
+                "pssKb": 533008,
+                "rssKb": 562352
+              },
+              {
+                "t": 14.682,
+                "pssKb": 524617,
+                "rssKb": 553408
+              },
+              {
+                "t": 14.999,
+                "pssKb": 532532,
+                "rssKb": 561504
+              }
+            ],
+            "cpuTicksStart": 489,
+            "cpuTicksEnd": 801,
+            "cpuSeconds": 3.12,
+            "cpuPercent": 20.766773162939298,
+            "reapedChildTicksStart": 4273,
+            "reapedChildTicksEnd": 5777,
+            "reapedChildCpuSeconds": 15.04,
+            "reapedChildCpuPercent": 100.10649627263047
+          },
+          "children": [
+            {
+              "pid": 2953803,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 4864,
+              "samples": 30
+            },
+            {
+              "pid": 2954319,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 11928,
+              "samples": 24
+            },
+            {
+              "pid": 2954324,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 11840,
+              "samples": 24
+            },
+            {
+              "pid": 2954648,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 41,
+              "cpuLast": 52,
+              "rssLast": 29940,
+              "samples": 24
+            },
+            {
+              "pid": 2954770,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4224,
+              "samples": 24
+            },
+            {
+              "pid": 2954798,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4244,
+              "samples": 24
+            },
+            {
+              "pid": 2954800,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 21988,
+              "samples": 24
+            },
+            {
+              "pid": 2955601,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5436,
+              "samples": 24
+            },
+            {
+              "pid": 2956204,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 24
+            },
+            {
+              "pid": 2956205,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 12.062,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 24
+            },
+            {
+              "pid": 2980193,
+              "comm": "marketplace-cat",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/marketplace-catalog",
+              "firstSeen": 3.15,
+              "lastSeen": 3.15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4092,
+              "samples": 1
+            },
+            {
+              "pid": 2980199,
+              "comm": "jq",
+              "arg0": "-ce",
+              "firstSeen": 3.15,
+              "lastSeen": 3.15,
+              "cpuFirst": 11,
+              "cpuLast": 11,
+              "rssLast": 33888,
+              "samples": 1
+            },
+            {
+              "pid": 2980231,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 3.15,
+              "lastSeen": 3.15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4212,
+              "samples": 1
+            },
+            {
+              "pid": 2980392,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 3.15,
+              "lastSeen": 3.15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2188,
+              "samples": 1
+            },
+            {
+              "pid": 2980447,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 3.674,
+              "lastSeen": 3.674,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 12364,
+              "samples": 1
+            },
+            {
+              "pid": 2980474,
+              "comm": "omarchy-hyprlan",
+              "arg0": "",
+              "firstSeen": 4.198,
+              "lastSeen": 4.198,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2980533,
+              "comm": "python3",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/runtime-state.py",
+              "firstSeen": 5.248,
+              "lastSeen": 9.968,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 18792,
+              "samples": 10
+            },
+            {
+              "pid": 2980535,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/plugin-state.sh",
+              "firstSeen": 5.248,
+              "lastSeen": 9.968,
+              "cpuFirst": 0,
+              "cpuLast": 1,
+              "rssLast": 4332,
+              "samples": 10
+            },
+            {
+              "pid": 2980544,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 5.248,
+              "lastSeen": 5.248,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2980545,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 5.248,
+              "lastSeen": 5.248,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5752,
+              "samples": 1
+            },
+            {
+              "pid": 2980546,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 5.248,
+              "lastSeen": 5.248,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4152,
+              "samples": 1
+            },
+            {
+              "pid": 2980547,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 5.248,
+              "lastSeen": 5.248,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15384,
+              "samples": 1
+            },
+            {
+              "pid": 2980638,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 5.774,
+              "lastSeen": 5.774,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2352,
+              "samples": 1
+            },
+            {
+              "pid": 2980639,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 5.774,
+              "lastSeen": 5.774,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5556,
+              "samples": 1
+            },
+            {
+              "pid": 2980640,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 5.774,
+              "lastSeen": 5.774,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4160,
+              "samples": 1
+            },
+            {
+              "pid": 2980641,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 5.774,
+              "lastSeen": 5.774,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15580,
+              "samples": 1
+            },
+            {
+              "pid": 2980685,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 6.299,
+              "lastSeen": 6.299,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2388,
+              "samples": 1
+            },
+            {
+              "pid": 2980686,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 6.299,
+              "lastSeen": 6.299,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5980,
+              "samples": 1
+            },
+            {
+              "pid": 2980687,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 6.299,
+              "lastSeen": 6.299,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4156,
+              "samples": 1
+            },
+            {
+              "pid": 2980688,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 6.299,
+              "lastSeen": 6.299,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15452,
+              "samples": 1
+            },
+            {
+              "pid": 2980751,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 6.823,
+              "lastSeen": 6.823,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2356,
+              "samples": 1
+            },
+            {
+              "pid": 2980752,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 6.823,
+              "lastSeen": 6.823,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5584,
+              "samples": 1
+            },
+            {
+              "pid": 2980753,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 6.823,
+              "lastSeen": 6.823,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4208,
+              "samples": 1
+            },
+            {
+              "pid": 2980754,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 6.823,
+              "lastSeen": 6.823,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15504,
+              "samples": 1
+            },
+            {
+              "pid": 2980786,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 7.348,
+              "lastSeen": 7.348,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2356,
+              "samples": 1
+            },
+            {
+              "pid": 2980787,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 7.348,
+              "lastSeen": 7.348,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5768,
+              "samples": 1
+            },
+            {
+              "pid": 2980788,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 7.348,
+              "lastSeen": 7.348,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4240,
+              "samples": 1
+            },
+            {
+              "pid": 2980789,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 7.348,
+              "lastSeen": 7.348,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15360,
+              "samples": 1
+            },
+            {
+              "pid": 2980886,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 7.872,
+              "lastSeen": 7.872,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2980887,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 7.872,
+              "lastSeen": 7.872,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5612,
+              "samples": 1
+            },
+            {
+              "pid": 2980888,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 7.872,
+              "lastSeen": 7.872,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4156,
+              "samples": 1
+            },
+            {
+              "pid": 2980889,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 7.872,
+              "lastSeen": 7.872,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15548,
+              "samples": 1
+            },
+            {
+              "pid": 2980960,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 8.396,
+              "lastSeen": 8.396,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2980961,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 8.396,
+              "lastSeen": 8.396,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5632,
+              "samples": 1
+            },
+            {
+              "pid": 2980962,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 8.396,
+              "lastSeen": 8.396,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4384,
+              "samples": 1
+            },
+            {
+              "pid": 2980963,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 8.396,
+              "lastSeen": 8.396,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15584,
+              "samples": 1
+            },
+            {
+              "pid": 2981014,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 8.92,
+              "lastSeen": 8.92,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2372,
+              "samples": 1
+            },
+            {
+              "pid": 2981015,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 8.92,
+              "lastSeen": 8.92,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5604,
+              "samples": 1
+            },
+            {
+              "pid": 2981016,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 8.92,
+              "lastSeen": 8.92,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4224,
+              "samples": 1
+            },
+            {
+              "pid": 2981017,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 8.92,
+              "lastSeen": 8.92,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15668,
+              "samples": 1
+            },
+            {
+              "pid": 2981091,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 9.444,
+              "lastSeen": 9.444,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2360,
+              "samples": 1
+            },
+            {
+              "pid": 2981092,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 9.444,
+              "lastSeen": 9.444,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5728,
+              "samples": 1
+            },
+            {
+              "pid": 2981093,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 9.444,
+              "lastSeen": 9.444,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4120,
+              "samples": 1
+            },
+            {
+              "pid": 2981094,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 9.444,
+              "lastSeen": 9.444,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15664,
+              "samples": 1
+            },
+            {
+              "pid": 2981298,
+              "comm": "omarchy-theme-c",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-theme-color",
+              "firstSeen": 11.015,
+              "lastSeen": 11.015,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4464,
+              "samples": 1
+            },
+            {
+              "pid": 2981452,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 12.586,
+              "lastSeen": 12.586,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4848,
+              "samples": 1
+            },
+            {
+              "pid": 2981582,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 12.586,
+              "lastSeen": 12.586,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 4964,
+              "samples": 1
+            },
+            {
+              "pid": 2981653,
+              "comm": "tar",
+              "arg0": "-C",
+              "firstSeen": 12.586,
+              "lastSeen": 12.586,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 3852,
+              "samples": 1
+            },
+            {
+              "pid": 2981654,
+              "comm": "tar",
+              "arg0": "-C",
+              "firstSeen": 12.586,
+              "lastSeen": 12.586,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 3772,
+              "samples": 1
+            },
+            {
+              "pid": 2981946,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 13.108,
+              "lastSeen": 13.108,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 4856,
+              "samples": 1
+            },
+            {
+              "pid": 2982049,
+              "comm": "tar",
+              "arg0": "-C",
+              "firstSeen": 13.108,
+              "lastSeen": 13.108,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 3860,
+              "samples": 1
+            },
+            {
+              "pid": 2982050,
+              "comm": "tar",
+              "arg0": "-C",
+              "firstSeen": 13.108,
+              "lastSeen": 13.108,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 3768,
+              "samples": 1
+            },
+            {
+              "pid": 2982084,
+              "comm": "readlink",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982085,
+              "comm": "mkdir",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982087,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982088,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982090,
+              "comm": "mkdir",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982098,
+              "comm": "findmnt",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982101,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982102,
+              "comm": "osk-input",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982110,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982111,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982112,
+              "comm": "install.sh",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982113,
+              "comm": "readlink",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982114,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982115,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982117,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982118,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982120,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982121,
+              "comm": "omarchy-hyprlan",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982136,
+              "comm": "find",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982137,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 13.631,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11540,
+              "samples": 4
+            },
+            {
+              "pid": 2982138,
+              "comm": "omarchy-reminde",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982140,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 13.631,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11704,
+              "samples": 4
+            },
+            {
+              "pid": 2982144,
+              "comm": "omarchy-reminde",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982149,
+              "comm": "pgrep",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982154,
+              "comm": "pgrep",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982156,
+              "comm": "xkbcli-list",
+              "arg0": "--load-exotic",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 8768,
+              "samples": 1
+            },
+            {
+              "pid": 2982168,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982229,
+              "comm": "omarchy-audio-o",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982232,
+              "comm": "omarchy-monitor",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982233,
+              "comm": "omarchy-hyprlan",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982234,
+              "comm": "omarchy-hyprlan",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982251,
+              "comm": "omarchy-network",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982252,
+              "comm": "omarchy-dns",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982253,
+              "comm": "omarchy-network",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982290,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982291,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982292,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 13.631,
+              "lastSeen": 14.999,
+              "cpuFirst": 12,
+              "cpuLast": 14,
+              "rssLast": 29816,
+              "samples": 4
+            },
+            {
+              "pid": 2982303,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982399,
+              "comm": "mkdir",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982400,
+              "comm": "sh",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982409,
+              "comm": "sh",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982425,
+              "comm": "python3",
+              "arg0": "-B",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 14,
+              "cpuLast": 14,
+              "rssLast": 28140,
+              "samples": 1
+            },
+            {
+              "pid": 2982426,
+              "comm": "python3",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982438,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 13.631,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 22244,
+              "samples": 4
+            },
+            {
+              "pid": 2982470,
+              "comm": "omarchy-plugin-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-plugin-list",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4052,
+              "samples": 1
+            },
+            {
+              "pid": 2982471,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4144,
+              "samples": 1
+            },
+            {
+              "pid": 2982472,
+              "comm": "marketplace-cat",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/marketplace-catalog",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4060,
+              "samples": 1
+            },
+            {
+              "pid": 2982473,
+              "comm": "python3",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982476,
+              "comm": "curl",
+              "arg0": "-fsSL",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 14736,
+              "samples": 1
+            },
+            {
+              "pid": 2982477,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2256,
+              "samples": 1
+            },
+            {
+              "pid": 2982478,
+              "comm": "jq",
+              "arg0": "-ce",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4196,
+              "samples": 1
+            },
+            {
+              "pid": 2982479,
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2982480,
+              "comm": "qs",
+              "arg0": "ipc",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 36496,
+              "samples": 1
+            },
+            {
+              "pid": 2982491,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4228,
+              "samples": 1
+            },
+            {
+              "pid": 2982493,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2212,
+              "samples": 1
+            },
+            {
+              "pid": 2982494,
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2982495,
+              "comm": "qs",
+              "arg0": "ipc",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 36420,
+              "samples": 1
+            },
+            {
+              "pid": 2982498,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-17/omarchy-github-fetc",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4348,
+              "samples": 1
+            },
+            {
+              "pid": 2982499,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-17/omarchy-github-fetc",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2308,
+              "samples": 1
+            },
+            {
+              "pid": 2982500,
+              "comm": "gh",
+              "arg0": "auth",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 28492,
+              "samples": 1
+            },
+            {
+              "pid": 2982517,
+              "comm": "hyprctl",
+              "arg0": "",
+              "firstSeen": 13.631,
+              "lastSeen": 13.631,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2982531,
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4152,
+              "samples": 3
+            },
+            {
+              "pid": 2982532,
+              "comm": "omarchy-update-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-update-available",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4028,
+              "samples": 1
+            },
+            {
+              "pid": 2982537,
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2224,
+              "samples": 3
+            },
+            {
+              "pid": 2982538,
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-update",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2224,
+              "samples": 3
+            },
+            {
+              "pid": 2982539,
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-claude",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 38,
+              "cpuLast": 88,
+              "rssLast": 35324,
+              "samples": 3
+            },
+            {
+              "pid": 2982541,
+              "comm": "omarchy-agent-u",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-agent-usage-codex",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 43,
+              "cpuLast": 115,
+              "rssLast": 49256,
+              "samples": 3
+            },
+            {
+              "pid": 2982568,
+              "comm": "python3",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/runtime-state.py",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 18836,
+              "samples": 3
+            },
+            {
+              "pid": 2982579,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-18/bin/omarchy-local-a",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 6088,
+              "samples": 1
+            },
+            {
+              "pid": 2982612,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4236,
+              "samples": 3
+            },
+            {
+              "pid": 2982640,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-16/plugin-state.sh",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4332,
+              "samples": 3
+            },
+            {
+              "pid": 2982656,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4244,
+              "samples": 3
+            },
+            {
+              "pid": 2982658,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 2982660,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5556,
+              "samples": 1
+            },
+            {
+              "pid": 2982669,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4192,
+              "samples": 1
+            },
+            {
+              "pid": 2982670,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15424,
+              "samples": 1
+            },
+            {
+              "pid": 2982730,
+              "comm": "omarchy-update-",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-update-available",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2140,
+              "samples": 1
+            },
+            {
+              "pid": 2982731,
+              "comm": "checkupdates",
+              "arg0": "/usr/bin/checkupdates",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4260,
+              "samples": 1
+            },
+            {
+              "pid": 2982732,
+              "comm": "awk",
+              "arg0": "-v",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4860,
+              "samples": 1
+            },
+            {
+              "pid": 2982776,
+              "comm": "python3",
+              "arg0": "-B",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 30,
+              "cpuLast": 30,
+              "rssLast": 56132,
+              "samples": 1
+            },
+            {
+              "pid": 2983183,
+              "comm": "checkupdates",
+              "arg0": "/usr/bin/checkupdates",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2212,
+              "samples": 1
+            },
+            {
+              "pid": 2983184,
+              "comm": "pacman",
+              "arg0": "-Qu",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 16,
+              "cpuLast": 16,
+              "rssLast": 51500,
+              "samples": 1
+            },
+            {
+              "pid": 2983185,
+              "comm": "grep",
+              "arg0": "-v",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2760,
+              "samples": 1
+            },
+            {
+              "pid": 2983271,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 8,
+              "cpuLast": 8,
+              "rssLast": 5000,
+              "samples": 1
+            },
+            {
+              "pid": 2983331,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 14.156,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5580,
+              "samples": 3
+            },
+            {
+              "pid": 2983343,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4172,
+              "samples": 1
+            },
+            {
+              "pid": 2983358,
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4460,
+              "samples": 1
+            },
+            {
+              "pid": 2983432,
+              "comm": "bash",
+              "arg0": "",
+              "firstSeen": 14.156,
+              "lastSeen": 14.156,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 0,
+              "samples": 1
+            },
+            {
+              "pid": 2983646,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 14.682,
+              "lastSeen": 14.682,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4152,
+              "samples": 1
+            },
+            {
+              "pid": 2983648,
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "firstSeen": 14.682,
+              "lastSeen": 14.682,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 4384,
+              "samples": 1
+            },
+            {
+              "pid": 2983649,
+              "comm": "python3",
+              "arg0": "-B",
+              "firstSeen": 14.682,
+              "lastSeen": 14.682,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 16028,
+              "samples": 1
+            },
+            {
+              "pid": 2983666,
+              "comm": "timeout",
+              "arg0": "15",
+              "firstSeen": 14.682,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 2
+            },
+            {
+              "pid": 2983667,
+              "comm": "git",
+              "arg0": "-C",
+              "firstSeen": 14.682,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5500,
+              "samples": 2
+            },
+            {
+              "pid": 2983668,
+              "comm": "git",
+              "arg0": "remote-https",
+              "firstSeen": 14.682,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4180,
+              "samples": 2
+            },
+            {
+              "pid": 2983669,
+              "comm": "git-remote-http",
+              "arg0": "origin",
+              "firstSeen": 14.682,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 15508,
+              "samples": 2
+            },
+            {
+              "pid": 2983694,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4236,
+              "samples": 1
+            },
+            {
+              "pid": 2983698,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2844,
+              "samples": 1
+            },
+            {
+              "pid": 2983699,
+              "comm": "sort",
+              "arg0": "",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2160,
+              "samples": 1
+            },
+            {
+              "pid": 2983768,
+              "comm": "python3",
+              "arg0": "-B",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 11,
+              "cpuLast": 11,
+              "rssLast": 27704,
+              "samples": 1
+            },
+            {
+              "pid": 2983868,
+              "comm": "bash",
+              "arg0": "/run/user/1000/omarchy/plugin-runtime/generation-3/plugin-11/icons-inventory.sh",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2628,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omadock",
+          "run": 2,
+          "shellPid": 2992249,
+          "started": "2026-09-18T17:09:12Z",
+          "ended": "2026-09-18T17:09:27Z",
+          "readyAfterSeconds": 1.686,
+          "windowSeconds": 15.022,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 447649,
+            "rssKb": 476272,
+            "memoryAt": "window-end",
+            "pssKbSettled": 489552,
+            "rssKbSettled": 518068,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 489552,
+                "rssKb": 518068
+              },
+              {
+                "t": 0.522,
+                "pssKb": 489591,
+                "rssKb": 518092
+              },
+              {
+                "t": 1.046,
+                "pssKb": 489543,
+                "rssKb": 518044
+              },
+              {
+                "t": 1.57,
+                "pssKb": 489367,
+                "rssKb": 517868
+              },
+              {
+                "t": 2.093,
+                "pssKb": 489367,
+                "rssKb": 517868
+              },
+              {
+                "t": 2.616,
+                "pssKb": 489355,
+                "rssKb": 517856
+              },
+              {
+                "t": 3.142,
+                "pssKb": 489359,
+                "rssKb": 517860
+              },
+              {
+                "t": 3.665,
+                "pssKb": 489371,
+                "rssKb": 517872
+              },
+              {
+                "t": 4.189,
+                "pssKb": 489371,
+                "rssKb": 517872
+              },
+              {
+                "t": 4.713,
+                "pssKb": 489375,
+                "rssKb": 517876
+              },
+              {
+                "t": 5.236,
+                "pssKb": 489375,
+                "rssKb": 517876
+              },
+              {
+                "t": 5.761,
+                "pssKb": 489399,
+                "rssKb": 517900
+              },
+              {
+                "t": 6.284,
+                "pssKb": 489381,
+                "rssKb": 517900
+              },
+              {
+                "t": 6.808,
+                "pssKb": 484574,
+                "rssKb": 512948
+              },
+              {
+                "t": 7.345,
+                "pssKb": 496859,
+                "rssKb": 525192
+              },
+              {
+                "t": 7.881,
+                "pssKb": 497698,
+                "rssKb": 526924
+              },
+              {
+                "t": 8.412,
+                "pssKb": 495955,
+                "rssKb": 524304
+              },
+              {
+                "t": 8.938,
+                "pssKb": 492716,
+                "rssKb": 521008
+              },
+              {
+                "t": 9.462,
+                "pssKb": 485745,
+                "rssKb": 514032
+              },
+              {
+                "t": 9.986,
+                "pssKb": 485730,
+                "rssKb": 514028
+              },
+              {
+                "t": 10.509,
+                "pssKb": 485798,
+                "rssKb": 514084
+              },
+              {
+                "t": 11.032,
+                "pssKb": 485797,
+                "rssKb": 514084
+              },
+              {
+                "t": 11.56,
+                "pssKb": 477980,
+                "rssKb": 506268
+              },
+              {
+                "t": 12.089,
+                "pssKb": 471839,
+                "rssKb": 500128
+              },
+              {
+                "t": 12.615,
+                "pssKb": 463555,
+                "rssKb": 492208
+              },
+              {
+                "t": 13.139,
+                "pssKb": 471068,
+                "rssKb": 499992
+              },
+              {
+                "t": 13.665,
+                "pssKb": 454949,
+                "rssKb": 487752
+              },
+              {
+                "t": 14.187,
+                "pssKb": 459143,
+                "rssKb": 487752
+              },
+              {
+                "t": 14.712,
+                "pssKb": 447662,
+                "rssKb": 476272
+              },
+              {
+                "t": 14.999,
+                "pssKb": 447664,
+                "rssKb": 476272
+              }
+            ],
+            "cpuTicksStart": 334,
+            "cpuTicksEnd": 454,
+            "cpuSeconds": 1.2,
+            "cpuPercent": 7.988283850352816,
+            "reapedChildTicksStart": 3571,
+            "reapedChildTicksEnd": 3994,
+            "reapedChildCpuSeconds": 4.23,
+            "reapedChildCpuPercent": 28.15870057249368
+          },
+          "children": [
+            {
+              "pid": 2992382,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 4496,
+              "samples": 30
+            },
+            {
+              "pid": 2992882,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 12020,
+              "samples": 30
+            },
+            {
+              "pid": 2992887,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 1,
+              "rssLast": 12036,
+              "samples": 30
+            },
+            {
+              "pid": 2993208,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 43,
+              "cpuLast": 58,
+              "rssLast": 29920,
+              "samples": 30
+            },
+            {
+              "pid": 2993301,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4240,
+              "samples": 30
+            },
+            {
+              "pid": 2993357,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4244,
+              "samples": 30
+            },
+            {
+              "pid": 2993388,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 21524,
+              "samples": 30
+            },
+            {
+              "pid": 2994293,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5344,
+              "samples": 30
+            },
+            {
+              "pid": 2994769,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2140,
+              "samples": 30
+            },
+            {
+              "pid": 2994770,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.999,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2112,
+              "samples": 30
+            },
+            {
+              "pid": 2998515,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 6.284,
+              "lastSeen": 6.284,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 17236,
+              "samples": 1
+            },
+            {
+              "pid": 3000686,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 7.345,
+              "lastSeen": 7.345,
+              "cpuFirst": 8,
+              "cpuLast": 8,
+              "rssLast": 4936,
+              "samples": 1
+            },
+            {
+              "pid": 3001018,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 7.345,
+              "lastSeen": 7.345,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 14680,
+              "samples": 1
+            },
+            {
+              "pid": 3002595,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 7.881,
+              "lastSeen": 7.881,
+              "cpuFirst": 16,
+              "cpuLast": 16,
+              "rssLast": 5024,
+              "samples": 1
+            },
+            {
+              "pid": 3004503,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 8.412,
+              "lastSeen": 8.412,
+              "cpuFirst": 12,
+              "cpuLast": 12,
+              "rssLast": 5060,
+              "samples": 1
+            },
+            {
+              "pid": 3004964,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 8.412,
+              "lastSeen": 8.412,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 13012,
+              "samples": 1
+            },
+            {
+              "pid": 3006130,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 8.938,
+              "lastSeen": 8.938,
+              "cpuFirst": 15,
+              "cpuLast": 15,
+              "rssLast": 5020,
+              "samples": 1
+            },
+            {
+              "pid": 3008147,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 9.986,
+              "lastSeen": 9.986,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4156,
+              "samples": 1
+            },
+            {
+              "pid": 3008180,
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "firstSeen": 9.986,
+              "lastSeen": 9.986,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 4380,
+              "samples": 1
+            },
+            {
+              "pid": 3014397,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 14.999,
+              "lastSeen": 14.999,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 17000,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "omadock",
+          "run": 3,
+          "shellPid": 3026219,
+          "started": "2026-09-18T17:10:48Z",
+          "ended": "2026-09-18T17:11:03Z",
+          "readyAfterSeconds": 1.758,
+          "windowSeconds": 15.024,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 334316,
+            "rssKb": 360092,
+            "memoryAt": "window-end",
+            "pssKbSettled": 375576,
+            "rssKbSettled": 404224,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 376077,
+                "rssKb": 405132
+              },
+              {
+                "t": 0.538,
+                "pssKb": 404896,
+                "rssKb": 431808
+              },
+              {
+                "t": 1.09,
+                "pssKb": 392278,
+                "rssKb": 419168
+              },
+              {
+                "t": 1.618,
+                "pssKb": 397403,
+                "rssKb": 423924
+              },
+              {
+                "t": 2.144,
+                "pssKb": 399031,
+                "rssKb": 425540
+              },
+              {
+                "t": 2.669,
+                "pssKb": 401925,
+                "rssKb": 428436
+              },
+              {
+                "t": 3.192,
+                "pssKb": 401926,
+                "rssKb": 428440
+              },
+              {
+                "t": 3.716,
+                "pssKb": 392178,
+                "rssKb": 419124
+              },
+              {
+                "t": 4.242,
+                "pssKb": 391877,
+                "rssKb": 418388
+              },
+              {
+                "t": 4.768,
+                "pssKb": 391847,
+                "rssKb": 418356
+              },
+              {
+                "t": 5.292,
+                "pssKb": 390862,
+                "rssKb": 417416
+              },
+              {
+                "t": 5.815,
+                "pssKb": 389973,
+                "rssKb": 416600
+              },
+              {
+                "t": 6.337,
+                "pssKb": 389857,
+                "rssKb": 416604
+              },
+              {
+                "t": 6.861,
+                "pssKb": 389854,
+                "rssKb": 416604
+              },
+              {
+                "t": 7.389,
+                "pssKb": 389767,
+                "rssKb": 414960
+              },
+              {
+                "t": 7.914,
+                "pssKb": 384388,
+                "rssKb": 412872
+              },
+              {
+                "t": 8.436,
+                "pssKb": 384380,
+                "rssKb": 412872
+              },
+              {
+                "t": 8.959,
+                "pssKb": 383747,
+                "rssKb": 412284
+              },
+              {
+                "t": 9.484,
+                "pssKb": 379925,
+                "rssKb": 408252
+              },
+              {
+                "t": 10.007,
+                "pssKb": 379929,
+                "rssKb": 408256
+              },
+              {
+                "t": 10.53,
+                "pssKb": 329873,
+                "rssKb": 356796
+              },
+              {
+                "t": 11.057,
+                "pssKb": 332133,
+                "rssKb": 359692
+              },
+              {
+                "t": 11.579,
+                "pssKb": 332758,
+                "rssKb": 359708
+              },
+              {
+                "t": 12.102,
+                "pssKb": 332763,
+                "rssKb": 359712
+              },
+              {
+                "t": 12.624,
+                "pssKb": 332761,
+                "rssKb": 359704
+              },
+              {
+                "t": 13.147,
+                "pssKb": 333157,
+                "rssKb": 360096
+              },
+              {
+                "t": 13.67,
+                "pssKb": 334321,
+                "rssKb": 360096
+              },
+              {
+                "t": 14.192,
+                "pssKb": 334313,
+                "rssKb": 360092
+              },
+              {
+                "t": 14.714,
+                "pssKb": 334320,
+                "rssKb": 360092
+              },
+              {
+                "t": 15.001,
+                "pssKb": 334316,
+                "rssKb": 360092
+              }
+            ],
+            "cpuTicksStart": 346,
+            "cpuTicksEnd": 443,
+            "cpuSeconds": 0.97,
+            "cpuPercent": 6.456336528221512,
+            "reapedChildTicksStart": 3703,
+            "reapedChildTicksEnd": 4115,
+            "reapedChildCpuSeconds": 4.12,
+            "reapedChildCpuPercent": 27.422790202342924
+          },
+          "children": [
+            {
+              "pid": 3026336,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 4064,
+              "samples": 30
+            },
+            {
+              "pid": 3026837,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 6488,
+              "samples": 30
+            },
+            {
+              "pid": 3026842,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 1,
+              "rssLast": 6540,
+              "samples": 30
+            },
+            {
+              "pid": 3027164,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 44,
+              "cpuLast": 58,
+              "rssLast": 19180,
+              "samples": 30
+            },
+            {
+              "pid": 3027274,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4004,
+              "samples": 30
+            },
+            {
+              "pid": 3027311,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 3868,
+              "samples": 30
+            },
+            {
+              "pid": 3027321,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5036,
+              "samples": 30
+            },
+            {
+              "pid": 3028117,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4396,
+              "samples": 30
+            },
+            {
+              "pid": 3028714,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 1976,
+              "samples": 30
+            },
+            {
+              "pid": 3028715,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15.001,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 1980,
+              "samples": 30
+            },
+            {
+              "pid": 3034883,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 17,
+              "cpuLast": 17,
+              "rssLast": 4992,
+              "samples": 1
+            },
+            {
+              "pid": 3035887,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4172,
+              "samples": 1
+            },
+            {
+              "pid": 3035891,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2244,
+              "samples": 1
+            },
+            {
+              "pid": 3035892,
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2388,
+              "samples": 1
+            },
+            {
+              "pid": 3035896,
+              "comm": "qs",
+              "arg0": "ipc",
+              "firstSeen": 0,
+              "lastSeen": 0,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 36304,
+              "samples": 1
+            },
+            {
+              "pid": 3039628,
+              "comm": "hidden-entries.",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/shell/services/hidden-entries.sh",
+              "firstSeen": 1.09,
+              "lastSeen": 1.09,
+              "cpuFirst": 6,
+              "cpuLast": 6,
+              "rssLast": 4908,
+              "samples": 1
+            },
+            {
+              "pid": 3040983,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 1.618,
+              "lastSeen": 1.618,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 17060,
+              "samples": 1
+            },
+            {
+              "pid": 3041560,
+              "comm": "bash",
+              "arg0": "-c",
+              "firstSeen": 2.144,
+              "lastSeen": 2.144,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4168,
+              "samples": 1
+            },
+            {
+              "pid": 3041630,
+              "comm": "find",
+              "arg0": "/usr/share/icons",
+              "firstSeen": 2.144,
+              "lastSeen": 2.144,
+              "cpuFirst": 5,
+              "cpuLast": 5,
+              "rssLast": 4416,
+              "samples": 1
+            },
+            {
+              "pid": 3046253,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 5.292,
+              "lastSeen": 5.292,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 17116,
+              "samples": 1
+            },
+            {
+              "pid": 3048775,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 8.959,
+              "lastSeen": 8.959,
+              "cpuFirst": 3,
+              "cpuLast": 3,
+              "rssLast": 17168,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "out": "/home/mtolhuijs/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-18-omadock.json"
+}

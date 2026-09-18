@@ -1,0 +1,42 @@
+{
+  "title": "omakit lab prove run",
+  "width": 110,
+  "rows": 28,
+  "fontSize": 12,
+  "steps": [
+    {
+      "command": "omakit lab prove run",
+      "capture": "docs/media/captures/lab-prove.ansi",
+      "reveal": 3,
+      "pace": 12,
+      "omit": [
+        [
+          11,
+          11,
+          "guest package database warnings omitted; full capture retained"
+        ],
+        [
+          15,
+          33,
+          "19 scenario detail lines omitted; full capture retained"
+        ],
+        [
+          35,
+          35,
+          "guest document path omitted; full capture retained"
+        ]
+      ],
+      "pauses": [
+        [
+          8,
+          220
+        ],
+        [
+          34,
+          260
+        ]
+      ],
+      "hold": 900
+    }
+  ]
+}

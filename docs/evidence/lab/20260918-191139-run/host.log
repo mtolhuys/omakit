@@ -1,0 +1,26 @@
+==> Checking the stock guest for the block's plumbing
+==> Python 3.14.7;warning: database file for 'core' does not exist (use '-Sy' to download);warning: database file for 'extra' does not exist (use '-Sy' to download);warning: database file for 'multilib' does not exist (use '-Sy' to download);
+==> Staging the suite and the block files in the guest
+==> Running the Run lab suite in the guest session (1 run per scenario)
+ok - the runlab job finished
+ok - producer: 1 run(s), end 160 ms (160-160), Pss after-before 237 kB, survivors 0, to empty group 0, shadow hits 0
+ok - producer-stream: 1 run(s), end 1101 ms (1101-1101), Pss after-before 89 kB, survivors 0, to empty group 0, shadow hits 0
+ok - holder: 1 run(s), end 48 ms (48-48), Pss after-before 86 kB, survivors 0, to empty group 0, shadow hits 0
+ok - stubborn: 1 run(s), end 3050 ms (3050-3050), Pss after-before 225 kB, survivors 0, to empty group 0, shadow hits 0
+ok - hostile: 1 run(s), end 54 ms (54-54), Pss after-before 82 kB, survivors 0, to empty group 0, shadow hits 0
+ok - destroy: 1 run(s), end 501 ms (501-501), Pss after-before 69 kB, survivors 0, to empty group 0, shadow hits 0
+ok - cancel: 1 run(s), end 521 ms (521-521), Pss after-before 92 kB, survivors 0, to empty group 0, shadow hits 0
+ok - supersede: 1 run(s), end 63 ms (63-63), Pss after-before 109 kB, survivors 0, to empty group 0, shadow hits 0
+ok - shell-string: 1 run(s), end 33 ms (33-33), Pss after-before 84 kB, survivors 0, to empty group 0, shadow hits 0
+ok - relative: 1 run(s), end 32 ms (32-32), Pss after-before 155 kB, survivors 0, to empty group 0, shadow hits 0
+ok - missing: 1 run(s), end 46 ms (46-46), Pss after-before 82 kB, survivors 0, to empty group 0, shadow hits 0
+ok - controls: 1 run(s), end 48 ms (48-48), Pss after-before 92 kB, survivors 0, to empty group 0, shadow hits 0
+ok - concurrency: 1 run(s), end 83 ms (83-83), Pss after-before 289 kB, survivors 0, to empty group 0, shadow hits 0
+ok - forge: 1 run(s), end 32 ms (32-32), Pss after-before 72 kB, survivors 0, to empty group 0, shadow hits 0
+ok - orphan: 1 run(s), end 29 ms (29-29), Pss after-before -56 kB, survivors 0, to empty group 0, shadow hits 0
+ok - stalled-supersede: 1 run(s), end 63 ms (63-63), Pss after-before 97 kB, survivors 0, to empty group 0, shadow hits 0
+ok - destroy-early: 1 run(s), end 301 ms (301-301), Pss after-before 72 kB, survivors 0, to empty group 0, shadow hits 0
+ok - shell-string-option: 1 run(s), end 31 ms (31-31), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+ok - shell-string-wrapper: 1 run(s), end 30 ms (30-30), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+ok - Run lab suite: 19 scenarios, 19 runs, document at /tmp/omakit-runlab/runlab.json
+ok - the Run block ran its lab scenarios on the stock guest, the shell untouched; document at /home/mtolhuijs/.local/state/omakit/lab/runs/20260918-191139-run/runlab.json

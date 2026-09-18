@@ -3,7 +3,10 @@ name: omarchy-plugin-audit
 description: Compare installed Omarchy Quattro plugin commits with the exact commits the marketplace validated. Use before touching an installed third-party plugin, before enabling or updating one, or when asked whether installed plugins match marketplace review. Read-only.
 ---
 
-# Audit installed plugin commits
+# Track installed plugin commits
+
+This is the other half of the track job: compare what the shell is running with
+the exact commits the marketplace records, without changing either checkout.
 
 Run `omakit audit` before touching an installed third-party plugin. Run
 `omakit audit <plugin-id-or-dir>` when only one installed plugin is in scope.

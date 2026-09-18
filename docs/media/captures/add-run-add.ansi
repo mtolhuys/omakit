@@ -1,8 +1,8 @@
 [32m▁ ok[0m    [2mwritten [0m omakit/Run.qml
 [32m▁ ok[0m    [2mwritten [0m omakit/run-supervisor.py
 [32m▁ ok[0m    [2mwritten [0m omakit/NOTICE
-        [2mblock[0m  run 0.1.0, from omakit commit
-               e1453fff7cf3bf51b7917103174f766e72b95488
-        [2minto[0m  /tmp/omakit-fixture-qzjuL3
+        [2mblock[0m  run 0.2.1, from omakit commit
+               9c667f9c08f6cb3ebd1cbc4af072d541cb8279cb
+        [2minto[0m  /tmp/omakit-fixture-gxTuzr
         [34;1m→[0m [34mimport "omakit" in the QML that starts a process, and use Run { }[0m
           [34mthere; docs/BLOCKS.md is the contract[0m

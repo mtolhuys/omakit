@@ -2,55 +2,61 @@
 [2mshell[0m         4.0.0.alpha at ~/Projects/omarchy/core
 [2mrestarts[0m      6: (1 baseline + 1 plugin) × 3 runs
 [2mestimate[0m      about 5 minutes, 47 s per restart: 2.1 s for the shell to come
-              back (measured over 2 restart(s) on this machine at
-              2026-09-15T07:46:42Z), then the 30 s settle and the 15 s window
+              back (measured over 6 restart(s) on this machine at
+              2026-09-15T15:14:24Z), then the 30 s settle and the 15 s window
 [2mshell.json[0m    backed up beside itself and restored on every exit path; the md5
               is printed before and after
-[2mwrites[0m        ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-15-omadock.json
+[2mwrites[0m        ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-18-omadock.json
 
 [2m░ info[0m  ~/.config/omarchy/shell.json backed up to
-        ~/.config/omarchy/shell.json.omakit-backup-20260915150939, md5
-        8b29f3ccc028037a2cbe84d0517b2ded
-[2m░ info[0m  run 1 of 3, baseline: 535.5 MB Pss, 1.80% CPU, 9 child processes, ready
-        after 1.5 s
-[2m░ info[0m  run 1 of 3, omadock: 539.7 MB Pss, 1.73% CPU, 13 child processes, ready
-        after 1.4 s
-[2m░ info[0m  run 2 of 3, baseline: 530.2 MB Pss, 1.46% CPU, 9 child processes, ready
-        after 1.3 s
-[2m░ info[0m  run 2 of 3, omadock: 553.1 MB Pss, 2.33% CPU, 10 child processes, ready
-        after 1.3 s
-[2m░ info[0m  run 3 of 3, baseline: 539.0 MB Pss, 1.53% CPU, 9 child processes, ready
-        after 1.3 s
-[2m░ info[0m  run 3 of 3, omadock: 552.9 MB Pss, 1.53% CPU, 9 child processes, ready
-        after 1.4 s
+        ~/.config/omarchy/shell.json.omakit-backup-20260918170616, md5
+        cff48fb31eb492a78893b9ebf943689e
+[2m░ info[0m  run 1 of 3, baseline: 415.7 MB Pss, 2.13% CPU, 12 child processes, ready
+        after 1.8 s
+[2m░ info[0m  run 1 of 3, omadock: 517.7 MB Pss, 20.77% CPU, 162 child processes,
+        ready after 1.8 s
+[2m░ info[0m  run 2 of 3, baseline: 467.6 MB Pss, 5.79% CPU, 21 child processes, ready
+        after 1.6 s
+[2m░ info[0m  run 2 of 3, omadock: 437.2 MB Pss, 7.99% CPU, 20 child processes, ready
+        after 1.7 s
+[2m░ info[0m  run 3 of 3, baseline: 401.6 MB Pss, 2.00% CPU, 18 child processes, ready
+        after 2.0 s
+[2m░ info[0m  run 3 of 3, omadock: 326.5 MB Pss, 6.46% CPU, 21 child processes, ready
+        after 1.8 s
 [32m▁ ok[0m    ~/.config/omarchy/shell.json restored and verified, md5
-        8b29f3ccc028037a2cbe84d0517b2ded (before:
-        8b29f3ccc028037a2cbe84d0517b2ded); the backup is removed
+        cff48fb31eb492a78893b9ebf943689e (before:
+        cff48fb31eb492a78893b9ebf943689e); the backup is removed
 
-[2mshell[0m         4.0.0.alpha at ~/Projects/omarchy/core, 2026-09-15T15:09:39Z
+[2mshell[0m         4.0.0.alpha at ~/Projects/omarchy/core, 2026-09-18T17:06:16Z
 [2mmethod[0m        startup A/B, 3 runs, a 15 s window after a settle of 30 s; Pss
               from /proc/<pid>/smaps_rollup at the end of the window, CPU from
               /proc/<pid>/stat over the window, children from a /proc walk every
               500 ms
-[2mnoise floor[0m   0.33% CPU, the spread of 3 baseline runs; a CPU delta inside it is
+[2mnoise floor[0m   3.79% CPU, the spread of 3 baseline runs; a CPU delta inside it is
               within noise
-[2mmemory[0m        within the shell's own startup variance (8.8 MB over 3 baseline
-              runs, 4.5 MB at the settle): a fact about the shell's start, not a
-              plugin's weight, until its two resting levels are understood
+[2mmemory[0m        within the shell's own startup variance (66.01 MB over 3 baseline
+              runs, 38.96 MB at the settle): a fact about the shell's start, not
+              a plugin's weight, until its two resting levels are understood
               (docs/MEASUREMENTS.md C1, C2)
-[2mbaseline[0m      535.5 MB Pss and 1.53% CPU, the median of 3 runs without the
+[2mbaseline[0m      415.7 MB Pss and 2.13% CPU, the median of 3 runs without the
               plugin
-[2mshell.json[0m    md5 8b29f3ccc028037a2cbe84d0517b2ded before,
-              8b29f3ccc028037a2cbe84d0517b2ded after: restored and verified,
+[2mshell.json[0m    md5 cff48fb31eb492a78893b9ebf943689e before,
+              cff48fb31eb492a78893b9ebf943689e after: restored and verified,
               backup removed
 
-[32m▁ ok[0m    [1momadock[0m                                                        [2m[overlay][0m
-        no measurable CPU
-        [2mmemory[0m  13.92 MB (spread 18.75)
-        [2mcpu[0m  0% (spread 0.93), within noise
-        [2mchildren[0m  5.39 MB and 0.07% CPU outside the shell, 1 process per window;
-                  1 unattributed child process (commands: sidecarctl; sidecarctl
-                  ~/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/...)
+[33m▓ note[0m  [1momadock[0m                                                        [2m[overlay][0m
+        above noise on CPU
+        [2mmemory[0m  -30.48 MB (spread 177.12)
+        [2mcpu[0m  4.46% (spread 16.44)
+        [2mchildren[0m  33.13 MB and 19.44% CPU outside the shell, 7 processes per
+                  window; 2 unattributed child processes (commands: bash -c;
+                  inotifywait -m; jq -ce; marketplace-cat
+                  /run/user/1000/omarchy/plugin-runtime/generation-1/plugin-16/...;
+                  omarchy-hyprlan; sidecarctl
+                  ~/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/...;
+                  sidecard
+                  ~/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/...;
+                  tailscale serve; voxtype status)
 
 Every figure is the median over 3 runs of (with the plugin minus without it)
 [39mwith its spread, and carries its origin in the document under [0m[34morigin[0m[39m.[0m
@@ -60,7 +66,6 @@ Every figure is the median over 3 runs of (with the plugin minus without it)
 [1mfor the README[0m
 [2m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
   [1momadock[0m
-        Weighs no CPU above the floor (0.33%) and runs 1 child process using 5.4
-        MB and 0.1% CPU, on Omarchy 4.0.0.alpha, measured with omakit weigh on
-        2026-09-15
-        [2mevidence[0m  ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-15-omadock.json
+        Weighs 4.5% CPU and runs 7 child processes using 33.1 MB and 19.4% CPU,
+        on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-18
+        [2mevidence[0m  ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-18-omadock.json

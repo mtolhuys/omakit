@@ -1,7 +1,7 @@
 # The lab: `omakit lab`
 
-The fourth job beside build, check and track: prove. A suite runs in a
-disposable Omarchy guest, never on the desktop, and its document comes back
+Prove it. This is the fourth job after build, check and track. A suite runs in
+a disposable Omarchy guest, never on the desktop, and its document comes back
 with the identity of the guest it ran on. This page is the contract: what
 each of the four actions does and will not do, the trust anchor, what one
 run costs in disk and time, the honest dependency on the omarchy-iso
@@ -30,7 +30,7 @@ install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 20 files under
 `tools/lab/`, 163,753 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 330,934 bytes (`tests/package-assert.mjs`).
+a package that packs to 329,160 bytes (`tests/package-assert.mjs`).
 
 Nothing is fetched implicitly. `prove`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after

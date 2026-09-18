@@ -1,371 +1,193 @@
 # The GIFs in the README
 
-The seven README GIFs and three retained documentation GIFs are recorded program output. Nothing in them was typed by hand,
-reordered or rewritten, and they are reproducible from this repository: rendering
-them again from the committed scenes and captures, with the same Pillow,
-FreeType and ffmpeg, produces byte-identical files. Measured: a different
-Pillow, FreeType or ffmpeg re-renders the same capture to a GIF that differs
-in frame count and bytes, so the versions are recorded here: `banner`, `setup`
-and `watch` with the versions on the recording desktop on 2026-09-12;
-`submit` re-recorded on 2026-09-13 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg
-4.4.2) after `tree.agent-control` became advisory and the baseline figures
-became the pin's, because the GIF has to show what the tool prints; and
-`submit` again later on 2026-09-13 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg
-n9.0.1) after `identity.available` began naming where its registry came from.
-Measured at that re-recording: the same capture and the same Pillow and
-FreeType, with ffmpeg n9.0.1 instead of 4.4.2, re-rendered the previous
-`submit.gif` to 797,813 bytes against the committed 792,201, so the ffmpeg
-version is part of the record and not decoration. `banner` was re-recorded on
-2026-09-17 (Pillow 12.3.0, FreeType 2.14.3, ffmpeg n9.0.1) when the tagline
-became the 0.6.0 line, which is wider than the wordmark and is drawn as the
-two lines the program wraps it to; the scene grew from 28 to 33 columns and
-from 8 to 9 rows to hold them. `watch.gif` and `setup.gif`
-were left alone at that point because nothing they print had changed: `watch`
-does not read the registry, and the `setup` capture was taken with `omakit`
-already on PATH, where no install hint prints.
+The README uses eight GIFs. Every one is rendered by `render.py` from a scene
+and a real command capture committed beside it. No frame is drawn or edited by
+hand. All command scenes use the same terminal chrome, palette, prompt and
+DejaVu Sans Mono cells. Scene widths stop at 110 columns, and the final frame is
+the most informative screen of the command.
 
-| GIF | What it is | How it was captured |
+The renderer may omit captured lines for reading length. An omission is declared
+in the scene, appears visibly in the GIF, preserves the original order, and never
+changes the capture. The full capture always remains beside the scene.
+
+| GIF | What the final frame shows | Capture kind |
 | --- | --- | --- |
-| `banner.gif` | the wordmark scanning in, then one shine pass, exactly as the tool draws it, and the 0.6.0 tagline on the two lines it wraps to | a terminal session with timings |
-| `add-run.gif` | `omakit inspect` on a fixture with one bare `Process`, `omakit add run` into it, and `inspect` again after the one site is moved to `Run` | stdout of three runs, revealed line by line |
-| `setup.gif` | `omakit setup` on a machine with no pin yet, the wordmark through `ttfx` first | a terminal session with timings |
-| `submit.gif` | `omakit submit` refusing a plugin with no license, no removal instructions and a reserved id, and warning about its agent-control files | stdout, revealed line by line |
-| `watch.gif` | `omakit watch` on a real open submission whose validated commit has fallen behind | stdout, revealed line by line |
+| `banner.gif` | the finished wordmark and `Build it, check it, prove it.` | timed terminal replay |
+| `add-run.gif` | inspect before, the three copied files, and inspect after the port | three fixture commands |
+| `inspect.gif` | the size score, two long functions, environment-trust sites and `INSPECTED` | one fixture command |
+| `submit.gif` | `REFUSED`, three root causes, their remedies and the retry command | one fixture command |
+| `watch-all.gif` | four current issues, their validation state and the closing limitation | live read-only command |
+| `audit.gif` | every audited plugin row and the 12-of-19 drift summary | live read-only command |
+| `weigh.gif` | six samples, equal restoration hashes, noise floor, plugin result and evidence path | consented desktop measurement |
+| `lab-prove.gif` | guest identity, 19-scenario result, run cost, overlay removal, unchanged base and `PROVED` | disposable guest run |
 
-Two capture kinds, because the two need different things. `submit` and `watch`
-print once and never redraw, so their stdout is enough and the renderer reveals
-it line by line at a readable pace. `banner` and `setup` animate in place with
-carriage returns and cursor-up, so they are recorded with `script --log-out
---log-timing` and replayed against a small line-oriented screen model at the real
-recorded delays. That replay is why the scanner in `banner.gif` moves at the
-speed the program actually draws it.
+## Capture rules
 
-## How they were made
+Run from the repository root. Every one-shot command sets `FORCE_COLOR=1`,
+removes `NO_COLOR`, and disables only the passive update notice. Redirect both
+stdout and stderr so the capture is the exact terminal report. A failed or drift
+outcome keeps its real exit status; the recipe notes where that status is
+expected.
 
-The captures in `captures/` are the exact stdout of real runs, taken with
-`FORCE_COLOR=1` so the colour a person sees in a terminal ends up in the file:
+The banner is the one timed replay. It is recorded at the 40-column terminal
+width and 12 rows used by the banner capture rule. The scene is 29 cells wide,
+so the fixed 29-character line stays together beneath the wordmark.
+
+## Recipes
+
+### Banner
 
 ```bash
-# submit, refusing a fixture plugin (and warning about its agent-control files). The subject is a
-# fixture from tests/fixtures/plugins.mjs, materialised into a temporary Git
-# repository, so anyone can reproduce it without a plugin of their own.
-node --input-type=module -e '
+TERM=xterm-256color FORCE_COLOR=1 script -q \
+  --log-out docs/media/captures/banner.out \
+  --log-timing docs/media/captures/banner.tim \
+  -c "stty rows 12 cols 40; node --input-type=module -e 'import { banner } from \"./tools/marketplace/banner.mjs\"; await banner(); process.stdout.write(\"Build it, check it, prove it.\\n\")'"
+```
+
+### Add Run
+
+Materialise the fixture and keep the printed directory as `subject`:
+
+```bash
+subject="$(node --input-type=module -e '
+  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
+  console.log(materialiseInspectFixture("process-without-deadline").dir)
+')"
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$subject" > docs/media/captures/add-run-before.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit add run "$subject" > docs/media/captures/add-run-add.ansi 2>&1
+```
+
+Apply this exact fixture port, then commit it in the temporary repository:
+
+```diff
+-import Quickshell.Io
++import "omakit"
+@@
+-  Process {
++  Run {
+     id: usageProcess
+     command: ["/usr/bin/df", "-h", "/"]
+-    running: true
+-    stdout: StdioCollector {
+-      onStreamFinished: root.usage = this.text
+-    }
++    deadlineMs: 8000
++    onFinished: result => root.usage = result.stdout
+   }
++  Component.onCompleted: usageProcess.start()
+```
+
+```bash
+git -C "$subject" add Widget.qml omakit
+git -C "$subject" commit -m "Port process through Run"
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$subject" > docs/media/captures/add-run-after.ansi 2>&1
+```
+
+### Inspect
+
+```bash
+subject="$(node --input-type=module -e '
+  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
+  console.log(materialiseInspectFixture("long-function").dir)
+')"
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$subject" > docs/media/captures/inspect-fixture.ansi 2>&1
+```
+
+### Submit
+
+The refusal is a repository fixture, never a third-party plugin:
+
+```bash
+subject="$(node --input-type=module -e '
   import { materialise, BAD } from "./tests/fixtures/plugins.mjs"
   const { "nested/manifest.json": _skip, ...tree } = BAD
   console.log(materialise(tree, { origin: "https://github.com/example/omarchy-plugin-clockwork" }).dir)
-' > /tmp/subject
-FORCE_COLOR=1 ./bin/omakit submit "$(cat /tmp/subject)" \
+')"
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit submit "$subject" \
   --category Widgets --tags bar,quickshell --offline \
   > docs/media/captures/submit-refused.ansi 2>&1
-
-# watch, on a real open submission whose validated commit had fallen behind
-FORCE_COLOR=1 ./bin/omakit watch \
-  https://github.com/omacom/omarchy-plugin-marketplace/issues/4403 \
-  > docs/media/captures/watch-stale.ansi 2>&1
+test "$?" -eq 1
 ```
 
-The two animated ones are recorded with their timings:
+### Watch all and audit
 
 ```bash
-script -q --log-out docs/media/captures/banner.out \
-          --log-timing docs/media/captures/banner.tim \
-  -c 'stty rows 12 cols 40; node --input-type=module -e "import { banner } from \"./tools/marketplace/banner.mjs\"; import { TAGLINE } from \"./tools/marketplace/usage.mjs\"; await banner({ tagline: TAGLINE })"'
-
-rm -rf .cache/marketplace   # so setup has something to do
-which ttfx                  # on PATH, so the wordmark plays its effect first
-script -q --log-out docs/media/captures/setup.out \
-          --log-timing docs/media/captures/setup.tim \
-  -c "stty rows 28 cols 100; NODE_NO_WARNINGS=1 ./bin/omakit setup"
-```
-
-The `stty` is not decoration: `script` hands the program a pty with no window
-size, and the banner refuses to animate into a terminal whose height it cannot
-confirm, because five rows redrawn with cursor-up in a screen with no room to
-hold them strand a row of an earlier frame above the wordmark.
-
-Then, from the repository root:
-
-```bash
-for scene in banner setup submit watch; do
-  python3 docs/media/render.py docs/media/$scene.scene.json docs/media/$scene.gif
-done
-```
-
-Every render verifies itself. In the animated region a frame is only taken at the
-moment the program jumps its cursor back up, which is the only point at which a
-redrawn block is complete, and after rendering it asserts that each frame is a
-block of lines the program actually wrote in one go. Without that check the
-replay happily assembled a frame from two different redraws, which looked like a
-wordmark with its bottom row missing and an `I` that read as a `T`.
-
-The scan is what a bare `omakit` and `setup` draw when `ttfx` is not on PATH,
-and its shine pass is how they end the effect when it is; no other command
-draws the wordmark. It is on a budget (`MOTION.bannerBudgetMs` in `tools/marketplace/style.mjs`,
-220ms), so the GIF is brisk because the program is: the first version took 1.4
-seconds, which is long enough to be in the way of someone who ran `help` to
-read a flag.
-
-`render.py` is documentation tooling, not part of omakit: it needs Pillow, ffmpeg
-and DejaVu Sans Mono, which omakit itself does not (`OMAKIT_RENDER_FONTS` names
-a directory to find the font in if it is not where the distribution keeps it).
-The `setup` capture also needs `ttfx` on PATH when it is recorded, because
-the wordmark plays in through it when it is there: the committed capture was
-made with `ttfx 0.3.2`, with the effect and seed frozen in
-`tools/marketplace/effect.mjs`, so the same version replays the same 42 frames.
-Re-recording without it produces the scan instead, which is also real output,
-and a different GIF.
-It cannot draw a character that is not in the capture. It slices the capture by
-the byte counts the timing log records rather than by characters, because a
-block character is three bytes and slicing by characters tears escape sequences
-in half.
-
-The block elements (`█ ▓ ▒ ░ ▁`) are drawn by the renderer as cells, not taken
-from the font, which is what a terminal does too: Alacritty, kitty, foot and
-Ghostty all rasterise that range themselves, because a font's block glyphs are
-sized to its em box and not to the cell. Measured: DejaVu's dark shade stops one
-pixel short of the cell on every side, so the wordmark's shaded `oma` rendered
-as a stipple with grid lines through it. A shade cell is a flat fill of the
-foreground at the coverage Alacritty and foot use (`▓` 192/255, `▒` 128/255,
-`░` 64/255), because that is what the terminal Omarchy ships draws; the
-renderer's earlier two-pixel dither was a pattern no terminal draws and at the
-README's 620px it read as a screen door. `docs/TUI.md` has the measurement.
-A scene with `"wordmark": true` has its finished wordmark measured before the
-GIF is written: for every lit cell with a lit cell under it, the pixel rows on
-both sides of the boundary must carry ink, and the render refuses otherwise.
-`banner.gif` reports the count (`wordmark joins at 30 cell boundaries`).
-
-## What is left out
-
-`submit.gif` omits 34 lines in the middle: the marketplace's own baseline report
-for that commit, which is long. The GIF says so on screen, in place, with a dim
-line naming what was cut. The full output is what
-`omakit submit` prints.
-
-## Why the subject differs between the two
-
-The submit GIF uses a fixture, because pointing the demo at somebody's real
-plugin would publish a list of that plugin's problems on this project's front
-page. The watch GIF uses a real submission, because a stale validation is a fact
-about the submission rather than a judgement of the code, and because a staged
-one would not be evidence of anything. Its author's login is not printed.
-
-
-## Refreshed command captures, 2026-09-15
-
-`watch --all`, `audit` and `weigh --list` were captured on the author's account
-and desktop at local revision `4a29230`, package 0.4.1. No tool output was
-changed for presentation. The current `weigh --list` prints plugin records,
-not a compact table; the GIF preserves those records. Full captures include
-stderr and are not hand-edited. These runs suppress only the update notice
-and remove `NO_COLOR` so the forced-colour capture does not gain a runtime
-warning about contradictory colour settings.
-
-```bash
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit watch --all > docs/media/captures/watch-all.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit watch --all --user mtolhuys > docs/media/captures/watch-all.ansi 2>&1
 FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit audit > docs/media/captures/audit-drift.ansi 2>&1
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh --list > docs/media/captures/weigh-list.ansi 2>&1
-
-python3 docs/media/render.py docs/media/watch-all.scene.json docs/media/watch-all.gif
-python3 docs/media/render.py docs/media/audit.scene.json docs/media/audit.gif
-python3 docs/media/render.py docs/media/weigh-list.scene.json docs/media/weigh-list.gif
+test "$?" -eq 1
 ```
 
-All three new scenes use 88 columns and 26 rows, matching `submit` and the
-retained single-issue `watch` capture. They were rendered with Pillow 12.3.0,
-FreeType 2.14.3 and ffmpeg n9.0.1; `OMAKIT_RENDER_FONTS` selected the bundled
-DejaVu Sans Mono font directory. The renderer itself is unchanged.
+These are dated account and desktop snapshots. `CURRENT` means the validated
+commit matches HEAD, not approval or publication. Audit prints checkout
+suggestions and executes none.
 
-| README GIF | Bytes | Duration | Dimensions | Recording |
-| --- | ---: | ---: | --- | --- |
-| [`banner.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 14,026 | 5.20 s | 440 × 268 | 2026-09-12 |
-| [`submit.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif) | 858,362 | 15.68 s | 777 × 516 | 2026-09-13 |
-| [`watch-all.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif) | 566,215 | 13.96 s | 777 × 516 | 2026-09-15 |
-| [`audit.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif) | 710,223 | 15.28 s | 777 × 516 | 2026-09-15 |
-| [`weigh-list.gif`](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif) | 226,308 | 12.24 s | 777 × 516 | 2026-09-15 |
+### Weigh
 
-`watch-all.gif` includes the five CURRENT verdicts, two human discussion
-records and the live review-cost summary. `audit.gif` reveals drift before
-matching rows and ends with the measured 9-of-18 drift count. `weigh-list.gif`
-visibly omits capture lines 29–233 (205 unweighed-record lines) and 244–278
-(35 further disabled-record lines). The complete 278-line capture is retained;
-the scene's omission notices are presentation annotations, not command output.
-The other two refreshed scenes omit no lines.
-
-The historical [single-issue stale GIF](watch.gif) is linked from
-[VALIDATION_WATCH.md](../VALIDATION_WATCH.md), keeping the README to one GIF
-per command. [setup.gif](setup.gif) remains in the installation documentation.
-The README uses absolute raw-main URLs for its GIFs (seven at 0.6.0: the
-banner, add-run, inspect, submit, watch-all, audit and weigh). The existing live
-badge row is unchanged, including the version and CI badges, to keep it current.
-
-Word-count method: exclude fenced code, images, badge markup and URLs; include
-headings, table cells and documentation link labels. Count word tokens including
-internal apostrophes, periods, slashes and hyphens. The same method counted
-825 words before this rewrite and 259 after it. The provenance and limits of
-the README evidence are recorded as M10 in [MEASUREMENTS.md](../MEASUREMENTS.md).
-
-
-The local GFM preview used the styles read from the actual repository page.
-At an 880px browser viewport, page scroll width was 865px (the remainder was
-the vertical scrollbar), with zero overflowing article elements. All five
-GIFs and four live badges loaded. The temporary preview substituted local
-GIF files for the new raw-main URLs; the README source itself was not
-rewritten for preview. Published-main verification awaits a push. The new
-assets are deliberately unreleased local work.
-
-
-## Second-pass final screens, 2026-09-15
-
-The README now uses the completed `weigh` report, replacing its list GIF.
-The historical list remains here. All `.ansi` files remain full, unedited
-output. Cuts are made only by scene omissions, with a visible notice at the
-cut, in original order. No output formatter or renderer was changed to make
-a capture prettier. Submit was re-captured from the same refusal fixture
-after its M6 reason was corrected to the new dated evidence; no check
-severity or verdict logic changed.
-
-The three-run desktop capture used:
+This command restarts the live shell six times and must only run after explicit
+consent:
 
 ```bash
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh omadock --runs 3 --yes --out docs/evidence/weigh/desktop-2026-09-15-omadock.json > docs/media/captures/weigh-omadock.ansi 2>&1
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh omadock \
+  --runs 3 --yes \
+  --out docs/evidence/weigh/desktop-2026-09-18-omadock.json \
+  > docs/media/captures/weigh-omadock.ansi 2>&1
 ```
 
-All three baseline and all three plus-one runs completed, with the defaults:
-30 s settle and 15 s window. The baseline was 535.5 MB Pss and 1.53% CPU;
-its floors were 8.80 MB Pss and 0.33% CPU. Omadock's median shell CPU delta
-was within noise. The report retained its child and unattributed-process
-figures. `shell.json` was restored and verified, its before/after md5 was
-`8b29f3ccc028037a2cbe84d0517b2ded`, and the restored shell answered.
-The raw [desktop document](../evidence/weigh/desktop-2026-09-15-omadock.json)
-is the numerical source.
+The capture must show three baseline and three plugin samples, equal before and
+after md5 values, `restored and verified`, `WEIGHED`, and the evidence path.
 
-Waiting between samples is not replayed: the line-oriented capture stores
-printed progress, not wall-time delays. The GIF reveals all six sample lines
-in order. Only its first 13 plan/backup-notice lines are elided; it keeps the
-restoration, method, noise floor, baseline, plugin row, verdict and evidence
-path. The wait was not replaced with invented progress or reordered output.
+### Lab prove
 
-`watch-all` elides lines 21–43, leaving the header and first two issues,
-including the first discussion and full comment URL. Audit raises its scene
-to 91 rows, with a 12px font, and removes nothing: its header, drift rows
-and DRIFT summary all remain in the final screen. Submit elides the current
-baseline report's lines 107–140 (34 lines). The retained list now elides
-29–233 and 240–278, ending on Omadock's row. The original `.ansi` files
-record every omitted line.
-
-Measured longest lines after stripping terminal controls: submit 207
-characters (80 among shown lines), watch-all 102, audit 100, weigh 102,
-list 80 and single-issue watch 80. Scene widths are 110, 102, 100, 102,
-88 and 88 respectively. Submit is capped at the requested 110 columns;
-its longer policy prose and URLs are inside the visibly omitted baseline
-block. No URL in a displayed line is cut at the right edge. Banner and
-setup retain their existing geometry and were not re-rendered.
-
-The affected submit, watch-all, audit, retained list and new weigh GIFs
-were rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1,
-using the bundled DejaVu Sans Mono fonts through `OMAKIT_RENDER_FONTS`.
-Render commands, from the repository root:
+The verified base must already be ready. The command fetches nothing:
 
 ```bash
-for scene in submit watch-all audit weigh-list weigh; do
-  python3 docs/media/render.py docs/media/$scene.scene.json docs/media/$scene.gif
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit lab prove run \
+  > docs/media/captures/lab-prove.ansi 2>&1
+```
+
+Keep the resulting `host.log`, `run.json` and `runlab.json` under
+`docs/evidence/lab/<run-id>-run/`.
+
+## Render
+
+`render.py` needs Pillow, ffmpeg and DejaVu Sans Mono. `OMAKIT_RENDER_FONTS`
+may name the directory containing `DejaVuSansMono.ttf`.
+
+```bash
+for scene in banner add-run inspect submit watch-all audit weigh lab-prove; do
+  python3 docs/media/render.py "docs/media/$scene.scene.json" "docs/media/$scene.gif"
 done
 ```
 
-Final holds are measured as the sum of consecutive identical decoded frames
-at the end, rather than only the last 40ms duplicate written by ffmpeg.
-Every frame of every GIF was decoded, every final screen visually inspected,
-and every displayed line measured against its scene width. Current files:
+The 2026-09-18 render used Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1.
+Each render verified the capture replay and, for the banner, 30 joined wordmark
+cell boundaries.
 
-| GIF | Bytes | Duration | Final hold | Final screen |
-| --- | ---: | ---: | ---: | --- |
-| [banner.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 14,026 | 5.20 s | 4.20 s | finished wordmark and tagline |
-| [setup.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/setup.gif) | 35,562 | 8.80 s | 3.80 s | setup checks, completion and the suggested submit command |
-| [submit.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif) | 940,632 | 16.32 s | 6.20 s | REFUSED, three blocking checks, fixes and the retry command |
-| [watch.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch.gif) | 73,985 | 10.44 s | 4.36 s | both commit identifiers, VALIDATION STALE and edit-the-issue action |
-| [watch-all.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif) | 35,891 | 8.96 s | 6.12 s | account, five CURRENT counts, review counts, first two issues, discussion and full source URL |
-| [audit.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif) | 75,800 | 8.80 s | 7.16 s | complete capture: header, drift rows, matching rows and DRIFT 9-of-18 summary |
-| [weigh-list.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh-list.gif) | 117,597 | 13.80 s | 6.16 s | enabled Omadock row and its historical single-run status |
-| [weigh.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif) | 59,075 | 10.92 s | 7.20 s | all six measured samples, restoration hashes, noise floor, baseline, plugin delta, verdict and evidence path |
+## Deliberate omissions
 
-The same word-count method used above counted 266 words before this pass
-and 276 after it. [M10's second-pass record](../evidence/readme/2026-09-15-second-pass.json)
-records hashes, geometry, omissions and final-screen holds alongside the
-new package facts. The old first-pass table is historical, not current file
-metadata. The historical single-run list is not substituted for the new
-three-run desktop report.
+- `submit.gif` replaces capture lines 107 to 140 with one visible note. Those
+  34 lines are the marketplace baseline report already represented above and
+  below the cut.
+- `weigh.gif` replaces its first 13 plan and backup-notice lines. The six
+  samples, restore, method, floor, result and evidence stay visible.
+- `lab-prove.gif` replaces the long guest package-database warning, 19 repetitive
+  scenario detail lines and one duplicate guest-document path. The identity,
+  suite summary, duration, cleanup and verdict stay visible.
+- The other five scenes omit nothing.
 
+## Measured files, 2026-09-18
 
-## The inspect capture, 2026-09-15
+| GIF | Bytes | Duration | Dimensions | Final hold | Widest shown line |
+| --- | ---: | ---: | --- | ---: | ---: |
+| `banner.gif` | 14,243 | 5.12 s | 455 x 298 | 4.20 s | timed replay |
+| `add-run.gif` | 39,766 | 30.00 s | 830 x 688 | 9.16 s | 79 columns |
+| `inspect.gif` | 29,453 | 13.44 s | 830 x 592 | 8.16 s | 79 columns |
+| `submit.gif` | 963,340 | 16.32 s | 830 x 592 | 6.20 s | 80 columns |
+| `watch-all.gif` | 51,639 | 11.64 s | 830 x 816 | 8.16 s | 102 columns |
+| `audit.gif` | 83,592 | 10.04 s | 830 x 1680 | 8.16 s | 100 columns |
+| `weigh.gif` | 124,774 | 11.08 s | 830 x 944 | 7.20 s | 102 columns |
+| `lab-prove.gif` | 32,981 | 13.04 s | 830 x 496 | 9.16 s | 93 columns |
 
-`inspect.gif` is `omakit inspect` over the `long-function` fixture from
-`tests/fixtures/inspect/` (until 0.4.3 shipped, `process-without-deadline`,
-which has no function and so never showed the size score), materialised into a temporary Git
-repository the way `submit.gif`'s subject is, so anyone can reproduce it
-without a plugin of their own and no third-party tree is named. The capture
-is the real stdout, unedited, at the eighty columns a pipe gets; the scene
-is 110 columns wide so nothing is cut, 30 rows, and
-omits nothing. The last frame holds on the attention list and the closing
-line for 8.16 s. Re-captured and re-rendered as the default report changed,
-with the same pipeline and versions, last on 2026-09-16 when the attention
-list gained the size score line.
-
-```bash
-node --input-type=module -e '
-  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
-  console.log(materialiseInspectFixture("long-function").dir)
-' > /tmp/subject
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
-  > docs/media/captures/inspect-fixture.ansi 2>&1
-python3 docs/media/render.py docs/media/inspect.scene.json docs/media/inspect.gif
-```
-
-Rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg 6.1.1, on a machine
-whose ffmpeg is not the n9.0.1 the other GIFs were rendered with; the
-committed capture and scene re-render to a different byte count under
-another ffmpeg, which is the reason the version is recorded.
-
-| GIF | Bytes | Duration | Final hold | Final screen |
-| --- | ---: | ---: | ---: | --- |
-| [inspect.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif) | 29,858 | 13.44 s | 8.16 s | the size score, the two long functions with their ranks, the one review class with its share and sites, and INSPECTED |
-
-The capture has 27 lines, none wider than 80 columns, and its sha256 and the
-GIF's are in the [README evidence record](../evidence/readme/2026-09-15-second-pass.json)
-beside the other GIFs.
-
-## The add-run capture, 2026-09-17
-
-`add-run.gif` is three runs on one fixture, the `process-without-deadline`
-tree from `tests/fixtures/inspect/` materialised into a temporary Git
-repository: `omakit inspect` on it as it is, `omakit add run` into it, and
-`omakit inspect` again after its one `Process` site was rewritten as a `Run`
-site (`command`, `deadlineMs: 8000`, `onFinished`, a `start()` on
-completion) and committed. Three captures, three steps in one scene, and
-the screen accumulates so the before and the after are read together. The
-`add` step prints the omakit commit the block came from, `e1453ff`, which
-is the commit the block files carry in their headers.
-
-```bash
-node --input-type=module -e '
-  import { materialiseInspectFixture } from "./tests/fixtures/inspect.mjs"
-  console.log(materialiseInspectFixture("process-without-deadline").dir)
-' > /tmp/subject
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
-  > docs/media/captures/add-run-before.ansi 2>&1
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit add run "$(cat /tmp/subject)" \
-  > docs/media/captures/add-run-add.ansi 2>&1
-# edit Widget.qml: import "omakit", Process { ... StdioCollector } becomes
-# Run { command, deadlineMs, onFinished }; then commit in the fixture
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit inspect "$(cat /tmp/subject)" \
-  > docs/media/captures/add-run-after.ansi 2>&1
-python3 docs/media/render.py docs/media/add-run.scene.json docs/media/add-run.gif
-```
-
-Rendered with Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1, the scene
-100 columns by 40 rows at font size 12; the widest capture line is 79
-columns and nothing is omitted.
-
-| GIF | Bytes | Duration | Final hold | Final screen |
-| --- | ---: | ---: | ---: | --- |
-| [add-run.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/add-run.gif) | 38,521 | 29.80 s | 9.00 s | the before report with its two `note` rows, the three written files, and the after report with the `blocks` line, `attention nothing`, and INSPECTED counting the same one process |
-| [banner.gif](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif) | 16,829 | 5.20 s | 4.16 s | the finished wordmark, the rule, and the tagline on two lines; `wordmark joins at 30 cell boundaries` |
+All shown lines fit their scene width, and every displayed URL is complete.
+The hashes, capture counts, package facts and README word count are in
+[M10's machine-readable record](../evidence/readme/2026-09-18-rebrand.json).

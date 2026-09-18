@@ -3,7 +3,10 @@ name: omarchy-plugin-validation-watch
 description: Diagnose an Omarchy marketplace plugin submission that has gone quiet or is stuck waiting. Use when a submission issue has had no progress, when a reviewer asked for a fresh validation, or when fixes were pushed but nothing happened. Checks whether the validated commit has fallen behind the repository and names the one action that re-runs validation.
 ---
 
-# A submission that has gone quiet
+# Track a submission that has gone quiet
+
+This is one half of the track job: compare the commit the marketplace validated
+with the repository's current commit, then name the next action without posting.
 
 ## The mechanism, first
 

@@ -1,9 +1,9 @@
 # The commands
 
-Every command, what it reads, what it prints, and what it will not do. The
-short list is `omakit help`; this page is the rest, in the same order:
-build (the two blocks are what the review blocks on most, measured
-([M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own))),
+Build it, check it, prove it. Every command below says what it reads, what it
+prints, and what it will not do. The short list is `omakit help`; this page is
+the rest, ordered by the four jobs: build (the two blocks measured in
+[M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)),
 check, track, prove, and then the rest.
 
 Agent-first: the expected user is a coding agent submitting a plugin on an
@@ -48,7 +48,7 @@ as one row, each `Run {` site as a process whose deadline the block holds,
 and each `Store {` site as a write under the plugin's own state or cache
 directory at mode 0600; a modified copy is reported as modified.
 
-![omakit inspect over a fixture with one process and no deadline](media/inspect.gif)
+![Recorded terminal showing inspect rank two long functions and list the review class observed in a fixture](media/inspect.gif)
 
 `omakit inspect <plugin-dir>` reads the plugin's tree at its commit and
 prints what the text shows, in the order a reviewer reads it: every
@@ -139,8 +139,6 @@ with its bytes, asks once, removes only that, and says what it recovered.
 `omakit doctor` gains the lab's lines, advisory.
 
 `omakit doctor` names the credential source it found, or that it found none.
-
-![omakit setup checking the environment and fetching the pinned checkout](media/setup.gif)
 
 `omakit setup` checks the environment, fetches the marketplace checkout that
 every rule is read from, installs tab completion for the shell you run it from

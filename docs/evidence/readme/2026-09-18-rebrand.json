@@ -1,0 +1,212 @@
+{
+  "measurement": "M10",
+  "date": "2026-09-18",
+  "repositoryHeadAtMeasurement": "bba4950dd66d",
+  "headline": "Build it, check it, prove it.",
+  "readme": {
+    "wordsBefore": 1371,
+    "wordsAfter": 484,
+    "method": "Exclude fenced code, image and badge markup, and URLs; keep headings, table cells and link labels; count word tokens with internal apostrophes, periods, slashes and hyphens."
+  },
+  "package": {
+    "description": "Build it, check it, prove it.",
+    "dependencies": 0,
+    "devDependencies": 0,
+    "packedBytes": 329160,
+    "unpackedBytes": 1067889,
+    "files": 130,
+    "keywords": [
+      "omarchy",
+      "quattro",
+      "plugin",
+      "marketplace",
+      "building-blocks",
+      "qml",
+      "quickshell",
+      "preflight",
+      "cli",
+      "agent"
+    ]
+  },
+  "renderer": {
+    "script": "docs/media/render.py",
+    "pillow": "12.3.0",
+    "freeType": "2.14.3",
+    "ffmpeg": "n9.0.1",
+    "font": "DejaVu Sans Mono",
+    "maximumSceneColumns": 110
+  },
+  "captures": {
+    "watchAll": {
+      "account": "mtolhuys",
+      "checked": 4,
+      "current": 4,
+      "stale": 0,
+      "unknown": 0,
+      "meaning": "Current compares the validated commit with HEAD and does not mean review, approval or publication is complete."
+    },
+    "audit": {
+      "installed": 56,
+      "firstPartyExcluded": 37,
+      "audited": 19,
+      "validated": 7,
+      "drift": 12,
+      "checkoutSuggestionsExecuted": 0
+    },
+    "weigh": {
+      "record": "docs/evidence/weigh/desktop-2026-09-18-omadock.json",
+      "plugin": "omadock",
+      "runs": 3,
+      "baselinePssMbMedian": 415.6806640625,
+      "baselinePssMbSpread": 66.0087890625,
+      "baselineCpuPercentMedian": 2.1302090267607507,
+      "baselineCpuPercentSpread": 3.7934113892807506,
+      "pluginCpuPercentMedian": 4.459398499864992,
+      "pluginCpuPercentSpread": 16.438629703463004,
+      "pluginCpuVerdict": "above-noise",
+      "childProcessesMedian": 7,
+      "configRestored": true,
+      "md5Before": "cff48fb31eb492a78893b9ebf943689e",
+      "md5After": "cff48fb31eb492a78893b9ebf943689e"
+    },
+    "labProve": {
+      "record": "docs/evidence/lab/20260918-191139-run/run.json",
+      "suiteDocument": "docs/evidence/lab/20260918-191139-run/runlab.json",
+      "runId": "20260918-191139-run",
+      "guest": "omarchy 4.0.3-1",
+      "skew": false,
+      "scenarios": 19,
+      "ok": true,
+      "durationMs": 191674,
+      "overlayBytes": 449974272,
+      "overlayRemoved": true,
+      "baseUnchanged": true
+    },
+    "marketplaceWrites": 0
+  },
+  "assets": [
+    {
+      "name": "banner",
+      "gif": "docs/media/banner.gif",
+      "gifSha256": "8dc88213472646f96d6ba012ead2b4a9d7dce3c472532b855a5203b011243062",
+      "bytes": 14243,
+      "durationMs": 5120,
+      "finalHoldMs": 4200,
+      "dimensions": [455, 298],
+      "frames": 23,
+      "scene": "docs/media/banner.scene.json",
+      "sceneSha256": "81d76964fdb1e8222fa4348ce0289f920e6fcbec9af34b40465f1c453ecafd04",
+      "captures": [
+        {"path": "docs/media/captures/banner.out", "sha256": "cde5608c1030e4930dce5883a5f448ac99e0f6b490d0f425e5295e0ea4d05ea1", "bytes": 16495, "lines": 119},
+        {"path": "docs/media/captures/banner.tim", "sha256": "0bece92333de4cd8ee179fa979c1ea23c6c2064482984d989e275e3e2adcb6f0", "bytes": 376, "lines": 29}
+      ]
+    },
+    {
+      "name": "add-run",
+      "gif": "docs/media/add-run.gif",
+      "gifSha256": "62e70f3b109cfd51f1015ee859b706207a795e4a52be2c7a77cc3675ec28d3eb",
+      "bytes": 39766,
+      "durationMs": 30000,
+      "finalHoldMs": 9160,
+      "dimensions": [830, 688],
+      "frames": 42,
+      "scene": "docs/media/add-run.scene.json",
+      "sceneSha256": "0f5d60aad48ce6960e2a22ed01cee83c0c0da2b38e01e3343593ff188bd743f4",
+      "maxShownColumns": 79,
+      "captures": [
+        {"path": "docs/media/captures/add-run-before.ansi", "sha256": "475d90396d91bca2e99b117d43633e7a06463ac3fa3beab00be4f52bc06e903e", "lines": 15},
+        {"path": "docs/media/captures/add-run-add.ansi", "sha256": "9a6e50501028c8d3d9698073e9f799674c7d9ece7092defd94f88d08b4035b5f", "lines": 8},
+        {"path": "docs/media/captures/add-run-after.ansi", "sha256": "1dc55032efbaf4ff9fc15dc17d3070fdaf639bf0cfb148e787b7564a098f0bae", "lines": 11}
+      ]
+    },
+    {
+      "name": "inspect",
+      "gif": "docs/media/inspect.gif",
+      "gifSha256": "c0ff1cd470007c22988a3d8624f3381f05776cdd33e7b708b85a10c597e5325c",
+      "bytes": 29453,
+      "durationMs": 13440,
+      "finalHoldMs": 8160,
+      "dimensions": [830, 592],
+      "frames": 19,
+      "scene": "docs/media/inspect.scene.json",
+      "sceneSha256": "b55b3ffb401a551bb75a31da8e642293523c39bc316db49a1775e718c4591a47",
+      "maxShownColumns": 79,
+      "capture": {"path": "docs/media/captures/inspect-fixture.ansi", "sha256": "d81f63a4b9df8749dea5eb5438a7342f7f2b8ff2e160276fb5574f1a3b7c026a", "lines": 26}
+    },
+    {
+      "name": "submit",
+      "gif": "docs/media/submit.gif",
+      "gifSha256": "8ef8e40d6e2a97fd0a9659058da37330af0ef833b2cff4003b1fcd999327809f",
+      "bytes": 963340,
+      "durationMs": 16320,
+      "finalHoldMs": 6200,
+      "dimensions": [830, 592],
+      "frames": 41,
+      "scene": "docs/media/submit.scene.json",
+      "sceneSha256": "6d28de3a9f775594b504f680f3cb7780278f39343f6208dc6c8c1776f062be46",
+      "maxShownColumns": 80,
+      "capture": {"path": "docs/media/captures/submit-refused.ansi", "sha256": "6d8b83c9114935e300d80557cdd3e88ca080f759c380b1e7d23da32e19203635", "lines": 162}
+    },
+    {
+      "name": "watch-all",
+      "gif": "docs/media/watch-all.gif",
+      "gifSha256": "692ce0d51be79a32a9679d689a28bf3cc06d7f5fa5878580e4623917a56c2c92",
+      "bytes": 51639,
+      "durationMs": 11640,
+      "finalHoldMs": 8160,
+      "dimensions": [830, 816],
+      "frames": 22,
+      "scene": "docs/media/watch-all.scene.json",
+      "sceneSha256": "3c0e11340d93d305c1f0606fded35d1f606c5aa3504f052b15210267774051cf",
+      "maxShownColumns": 102,
+      "capture": {"path": "docs/media/captures/watch-all.ansi", "sha256": "2134ee1fab87d5ff676ca37b030b2dafdbd8ac868807df00aa67ddcfb2444d39", "lines": 38}
+    },
+    {
+      "name": "audit",
+      "gif": "docs/media/audit.gif",
+      "gifSha256": "08440833083cb178eb37ef038e2a565a76b335c2d41d70619c84e8ca9ab86db2",
+      "bytes": 83592,
+      "durationMs": 10040,
+      "finalHoldMs": 8160,
+      "dimensions": [830, 1680],
+      "frames": 16,
+      "scene": "docs/media/audit.scene.json",
+      "sceneSha256": "97193d0fcd08717b64fc8ff43635671e149ded9b0d2543882687394dfcddb50a",
+      "maxShownColumns": 100,
+      "capture": {"path": "docs/media/captures/audit-drift.ansi", "sha256": "eae3149b123dce962eb13847c9804966d18c22df39c604d403ec61632d0e5cac", "lines": 97}
+    },
+    {
+      "name": "weigh",
+      "gif": "docs/media/weigh.gif",
+      "gifSha256": "7f4392e77c74653134738aba540fac831e6578e55cfb5567e3dff52f36c9cd29",
+      "bytes": 124774,
+      "durationMs": 11080,
+      "finalHoldMs": 7200,
+      "dimensions": [830, 944],
+      "frames": 26,
+      "scene": "docs/media/weigh.scene.json",
+      "sceneSha256": "974915a066ad19ff1e1ac482bf985b8cf508e46cb03219add606b9361b2226ac",
+      "maxShownColumns": 102,
+      "capture": {"path": "docs/media/captures/weigh-omadock.ansi", "sha256": "f741186d1fb909bad1e49833b1f62efc4b4efc84becd0e7cfddd956e5160df75", "lines": 71}
+    },
+    {
+      "name": "lab-prove",
+      "gif": "docs/media/lab-prove.gif",
+      "gifSha256": "760d6aa4ab178c8aadc099d037ff3d6c86ff5129262df0034cedb758df6319c6",
+      "bytes": 32981,
+      "durationMs": 13040,
+      "finalHoldMs": 9160,
+      "dimensions": [830, 496],
+      "frames": 16,
+      "scene": "docs/media/lab-prove.scene.json",
+      "sceneSha256": "27d90249b1edc1c0dfc303e4fb25889f0df012a6c211a56477659bb8a9997a1f",
+      "maxShownColumns": 93,
+      "capture": {"path": "docs/media/captures/lab-prove.ansi", "sha256": "616d4d7c7afa78f8f17f3cb7283860fbb56b5bf4fc7152e487e628b452facdda", "lines": 43}
+    }
+  ],
+  "limits": [
+    "The account, desktop weighing and guest run are dated snapshots from one machine on 2026-09-18.",
+    "The weighing reports the measured spread, including one unusually busy plugin sample; it does not turn shell memory into attributed plugin memory.",
+    "Recorded output and read-only source checks do not establish that a plugin passes human review or is safe."
+  ]
+}

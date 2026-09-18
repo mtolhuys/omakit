@@ -3,7 +3,10 @@ name: omarchy-plugin-check
 description: Check an Omarchy Quattro plugin while building or changing it, before committing or pushing. Use whenever you create, edit, refactor or test an Omarchy plugin, when asked whether a plugin is marketplace-ready, or before any push to its default branch. Runs the marketplace's own security baseline and submission checks locally, read-only, reports what the marketplace would refuse, and lists what the tree does (processes, hosts, writes, timers) as observations beside the review classes a human reviewer raises most.
 ---
 
-# Checking a plugin while you build it
+# Check it while you build it
+
+This is the check job: inspect the tree, run the marketplace's own baseline,
+and run every submission check locally before a person sees the result.
 
 ## Run this the way you run a test suite
 
@@ -111,8 +114,8 @@ fetches a sparse read-only checkout of one marketplace commit under
 
 `submit --json` ends with `outcome`:
 
-- `ready`, exit 0: every blocking check passed. The plugin would be accepted
-  by the marketplace's automated checks as it is now.
+- `ready`, exit 0: every blocking check passed and the title and body were
+  produced. This is not review approval or a safety claim.
 - `refused`, exit 1: a blocking check failed. `blocking` lists the root
   causes; each check carries `detail`, `paths`, `remedy` and `why`.
 - `listed`, exit 0: the plugin is already listed by this repository.

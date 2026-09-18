@@ -1,7 +1,8 @@
 {
   "title": "omakit submit",
   "width": 110,
-  "rows": 26,
+  "rows": 34,
+  "fontSize": 12,
   "steps": [
     {
       "command": "omakit submit ~/src/omarchy-plugin-clockwork --category Widgets --tags bar,quickshell",

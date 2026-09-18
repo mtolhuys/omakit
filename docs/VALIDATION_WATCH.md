@@ -7,12 +7,6 @@ omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number
 Reads one submission issue and answers one question: is the commit the
 marketplace validated still the commit the repository is on?
 
-## Historical stale example
-
-![A real submission whose validated commit had fallen behind, captured 2026-09-12](media/watch.gif)
-
-This historical capture illustrates the stale verdict; it is not a live account snapshot.
-
 ## Your account's issues
 
 ```bash
