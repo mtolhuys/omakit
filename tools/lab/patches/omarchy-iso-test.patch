@@ -1,0 +1,351 @@
+diff --git c/bin/omarchy-iso-test w/bin/omarchy-iso-test
+index 281cf56..be30127 100755
+--- c/bin/omarchy-iso-test
++++ w/bin/omarchy-iso-test
+@@ -21,10 +21,18 @@
+ #   --sync-omarchy DIR Push DIR's test/acceptance into the guest before running
+ #                      (defaults to OMARCHY_PATH when the suite is present)
+ #   --sync-all DIR     Push all of DIR (bin/config/shell/test) into the guest
++#   --dev-link         With --sync-all, start a fresh graphical session linked
++#                      to the checkout so the whole desktop uses local source
++#   --host-test FILE   Source FILE after boot; it must define omarchy_host_test
++#                      and may use the harness QMP/SSH/artifact helpers
++#   --host-test-only   Run only --host-test after source activation, skipping
++#                      the broad desktop and in-guest acceptance suites
+ #   --port PORT        Host port forwarded to guest SSH (default 2222)
+ #   --memory MB        VM memory (default 8192)
+ #   --timeout SECS     Install timeout (default 2400)
+ #   --keep-running     Leave the acceptance VM running after the suite finishes
++#   --discard-overlay  Delete the disposable run disk after the VM stops
++#   --keep-overlay     Retain the run disk (overrides --discard-overlay)
+ #   --no-preview       Do not open the collected screenshots in imv
+ 
+ set -euo pipefail
+@@ -42,12 +50,17 @@ PROVISION=false
+ REUSE_BASE=false
+ INSTALL_ONLY=false
+ KEEP_RUNNING=false
++DISCARD_OVERLAY=false
+ NO_PREVIEW=false
+ SYNC_DIR=""
+ SYNC_ALL=false
++DEV_LINK=false
++HOST_TEST=""
++HOST_TEST_ONLY=false
+ 
+ GUEST_USER="omarchy"
+ GUEST_PASSWORD="omarchy"
++GREETER_PATTERN='Opinionated\|Beautiful, Fun & Agentic Linux by DHH'
+ GUEST_HOSTNAME="omarchy-test"
+ 
+ while (($#)); do
+@@ -57,9 +70,14 @@ while (($#)); do
+     --reuse-base) REUSE_BASE=true ;;
+     --install-only) INSTALL_ONLY=true ;;
+     --keep-running) KEEP_RUNNING=true ;;
++    --discard-overlay) DISCARD_OVERLAY=true ;;
++    --keep-overlay) DISCARD_OVERLAY=false ;;
+     --no-preview) NO_PREVIEW=true ;;
+     --sync-omarchy) SYNC_DIR="$2"; shift ;;
+     --sync-all) SYNC_DIR="$2"; SYNC_ALL=true; shift ;;
++    --dev-link) DEV_LINK=true ;;
++    --host-test) HOST_TEST="$2"; shift ;;
++    --host-test-only) HOST_TEST_ONLY=true ;;
+     --port) SSH_PORT="$2"; shift ;;
+     --memory) MEMORY="$2"; shift ;;
+     --timeout) INSTALL_TIMEOUT="$2"; shift ;;
+@@ -69,6 +87,23 @@ while (($#)); do
+   shift
+ done
+ 
++if $DEV_LINK && ! $SYNC_ALL; then
++  echo "--dev-link requires --sync-all DIR" >&2
++  exit 1
++fi
++
++if [[ -n $HOST_TEST ]]; then
++  HOST_TEST=$(realpath -e "$HOST_TEST") || {
++    echo "Host test not found: $HOST_TEST" >&2
++    exit 1
++  }
++fi
++
++if $HOST_TEST_ONLY && [[ -z $HOST_TEST ]]; then
++  echo "--host-test-only requires --host-test FILE" >&2
++  exit 1
++fi
++
+ if [[ -z $SYNC_DIR && -f ${OMARCHY_PATH:-}/test/acceptance ]]; then
+   SYNC_DIR="$OMARCHY_PATH"
+ fi
+@@ -83,10 +118,21 @@ if [[ ! -f ${ISO:-} ]]; then
+   exit 1
+ fi
+ 
+-omarchy-pkg-add qemu-full edk2-ovmf socat imagemagick tesseract tesseract-data-eng
++for required_command in qemu-system-x86_64 qemu-img socat magick tesseract; do
++  if ! command -v "$required_command" >/dev/null; then
++    echo "Missing host prerequisite: $required_command" >&2
++    exit 1
++  fi
++done
+ 
+ OVMF_CODE="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
+ OVMF_VARS_TEMPLATE="/usr/share/edk2/x64/OVMF_VARS.4m.fd"
++for firmware in "$OVMF_CODE" "$OVMF_VARS_TEMPLATE"; do
++  if [[ ! -r $firmware ]]; then
++    echo "Missing readable UEFI firmware: $firmware" >&2
++    exit 1
++  fi
++done
+ 
+ BASE_NAME="$(basename "$ISO" .iso)"
+ $ENCRYPT && BASE_NAME+="-encrypted"
+@@ -121,6 +167,52 @@ qmp() {
+     timeout 5 socat -t 2 - "UNIX-CONNECT:$QMP_SOCK" 2>/dev/null || true
+ }
+ 
++qmp_pointer_move() {
++  local width="$1" height="$2" x="$3" y="$4" qx qy response
++
++  if ((width < 2 || height < 2 || x < 0 || y < 0 || x >= width || y >= height)); then
++    printf 'invalid QMP pointer geometry: viewport=%sx%s point=%s,%s\n' \
++      "$width" "$height" "$x" "$y" >&2
++    return 2
++  fi
++  qx=$((x * 32767 / (width - 1)))
++  qy=$((y * 32767 / (height - 1)))
++  response=$(qmp "\"input-send-event\", \"arguments\": {\"events\": [
++    {\"type\":\"abs\",\"data\":{\"axis\":\"x\",\"value\":$qx}},
++    {\"type\":\"abs\",\"data\":{\"axis\":\"y\",\"value\":$qy}}
++  ]}")
++  if grep -q '"error"' <<<"$response"; then
++    printf 'QMP pointer move failed: %s\n' "$response" >&2
++    return 1
++  fi
++}
++
++qmp_pointer_tap() {
++  local width="$1" height="$2" x="$3" y="$4" button="${5:-left}" response
++
++  case $button in
++    left | right | middle) ;;
++    *)
++      printf 'invalid QMP pointer button: %s\n' "$button" >&2
++      return 2
++      ;;
++  esac
++  qmp_pointer_move "$width" "$height" 1 1
++  sleep 0.1
++  qmp_pointer_move "$width" "$height" "$x" "$y"
++  sleep 0.1
++  response=$(qmp "\"input-send-event\", \"arguments\": {\"events\": [
++    {\"type\":\"btn\",\"data\":{\"down\":true,\"button\":\"$button\"}}
++  ]}")
++  grep -q '"error"' <<<"$response" && return 1
++  sleep 0.12
++  response=$(qmp "\"input-send-event\", \"arguments\": {\"events\": [
++    {\"type\":\"btn\",\"data\":{\"down\":false,\"button\":\"$button\"}}
++  ]}")
++  grep -q '"error"' <<<"$response" && return 1
++  sleep 0.4
++}
++
+ screendump() {
+   qmp "\"screendump\", \"arguments\": {\"filename\": \"$1\"}" >/dev/null
+ }
+@@ -188,6 +280,15 @@ cleanup() {
+   if ! $KEEP_RUNNING; then
+     vm_running && log "Stopping test VM"
+     stop_vm
++
++    if $DISCARD_OVERLAY && [[ -f $RUN_DIR/run.qcow2 ]]; then
++      if vm_running; then
++        echo "WARN: VM did not stop; preserving its run overlay: $RUN_DIR/run.qcow2" >&2
++      else
++        rm -f -- "$RUN_DIR/run.qcow2"
++        log "Discarded the stopped VM overlay; run evidence remains in $RUN_DIR"
++      fi
++    fi
+   fi
+ 
+   rm -f "$RUN_DIR/.screen.ppm" "$RUN_DIR/.screen.png"
+@@ -355,7 +456,10 @@ wait_for_ssh() {
+ }
+ 
+ session_started() {
+-  ssh_guest "ls /run/user/1000/hypr 2>/dev/null | grep -q ." 2>/dev/null
++  # Hyprland leaves its runtime directory behind briefly after logout, while
++  # SDDM starts a different compositor as the sddm user. Only the compositor
++  # owned by the test user proves that the Omarchy session is actually ready.
++  ssh_guest "pgrep -u \$(id -u) -x Hyprland >/dev/null" 2>/dev/null
+ }
+ 
+ ssh_session() {
+@@ -367,7 +471,8 @@ ssh_session() {
+     export LANG=\${LANG:-C.UTF-8}; \
+     export HYPRLAND_INSTANCE_SIGNATURE=\$(ls -t \$XDG_RUNTIME_DIR/hypr | head -1); \
+     export WAYLAND_DISPLAY=\$(find \$XDG_RUNTIME_DIR -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -printf '%f\\n' | head -1); \
+-    export OMARCHY_PATH=/usr/share/omarchy; \
++    [[ ! -f /etc/omarchy.conf ]] || source /etc/omarchy.conf; \
++    export OMARCHY_PATH=\${OMARCHY_PATH:-/usr/share/omarchy}; \
+     export PATH=\$OMARCHY_PATH/bin:\$PATH; \
+     $command" </dev/null
+ }
+@@ -399,6 +504,20 @@ guest_layer_absent() {
+   ! guest_layer_present "$1"
+ }
+ 
++session_stopped() {
++  ! session_started
++}
++
++clear_startup_notifications() {
++  [[ -n $HOST_TEST ]] || return 0
++
++  wait_for_guest_state "notification service is ready" 15 \
++    ssh_session "omarchy-shell notifications ping >/dev/null" || return 1
++  ssh_session "omarchy-shell notifications dismissAll >/dev/null" || return 1
++  wait_for_guest_state "startup notifications are dismissed" 15 \
++    guest_layer_absent "omarchy-notifications"
++}
++
+ cleanup_shortcut_state() {
+   ssh_session 'for plugin in omarchy.launcher omarchy.menu omarchy.emojis omarchy.clipboard omarchy.audio; do
+     omarchy-shell shell hide "$plugin" >/dev/null 2>&1 || true
+@@ -607,7 +726,10 @@ drive_configurator() {
+   log "Driving the installer wizard"
+ 
+   # A greeter (animated logo + tagline) opens the installer; Return begins.
+-  wait_for_screen "Opinionated" 300
++  # Released installers before v4.0.3 use the original slogan; v4.0.3 uses
++  # the exact replacement below. Keep this allowlist explicit so unrelated
++  # OCR text cannot be mistaken for an installer-ready signal.
++  wait_for_screen "$GREETER_PATTERN" 300
+   capture_console "success-installer-00-greeter"
+   press ret
+ 
+@@ -631,7 +753,10 @@ drive_configurator() {
+     capture_console "success-installer-04-prepare-disk-warning-encrypted"
+     if ! $ENCRYPT; then
+       press ctrl-c
+-      wait_for_screen "without encryption" 30
++      # The selected confirmation label is light text on a light background,
++      # which Tesseract intentionally loses. The prompt itself stays put, so
++      # give the Ctrl+C state change time to render and capture it as proof.
++      sleep 2
+       capture_console "success-installer-05-prepare-disk-warning-unencrypted"
+     fi
+     press ret
+@@ -695,7 +820,10 @@ drive_configurator() {
+   capture_console "success-installer-12-disk-warning-encrypted"
+   if ! $ENCRYPT; then
+     press ctrl-c # toggles the confirm to the unencrypted flow
+-    wait_for_screen "without encryption" 30
++    # The selected confirmation label is light text on a light background,
++    # which Tesseract intentionally loses. The prompt itself stays put, so
++    # give the Ctrl+C state change time to render and capture it as proof.
++    sleep 2
+     capture_console "success-installer-13-disk-warning-unencrypted"
+   fi
+   press ret
+@@ -716,7 +844,7 @@ drive_provision_owner() {
+   # layout — UK leaves every letter identical to US, so the typed password (sent
+   # as raw keycodes) still matches the literal one the harness pipes to sudo.
+   # A greeter (animated logo + tagline) opens first boot; Return begins.
+-  wait_for_screen "Opinionated" 600
++  wait_for_screen "$GREETER_PATTERN" 600
+   capture_console "success-provision-00-greeter"
+   press ret
+ 
+@@ -791,7 +919,7 @@ wait_for_install() {
+     # Deferred-provisioning installs skip the celebration and reboot on their own
+     # (no Reboot Now prompt); the first-boot greeter tagline appearing means the
+     # install finished and rebooted into setup.
+-    if $PROVISION && grep -qi "Opinionated" <<<"$text"; then
++    if $PROVISION && grep -qi "$GREETER_PATTERN" <<<"$text"; then
+       log "Install finished and auto-rebooted into first-boot setup."
+       capture_console "success-installer-15-autoreboot"
+       return 0
+@@ -1063,6 +1191,49 @@ sync_omarchy() {
+   fi
+ }
+ 
++activate_dev_checkout() {
++  $DEV_LINK || return 0
++
++  local target=".local/share/omarchy"
++  log "Linking the disposable guest session to the synced Omarchy checkout"
++
++  ssh_guest "echo '$GUEST_PASSWORD' | sudo -S -v && $target/bin/omarchy-dev-link $target --no-reboot"
++
++  # omarchy-dev-link deliberately leaves the running UWSM environment alone.
++  # A fresh graphical login is enough to rebuild that environment from
++  # /etc/omarchy.conf. Avoid rebooting here: the acceptance disk is already a
++  # throwaway overlay, and some released unencrypted ISOs have a separate
++  # post-install Limine/resume defect that would obscure source-level tests.
++  ssh_guest "uwsm stop" >/dev/null 2>&1 || true
++
++  if ! wait_for_guest_state "linked graphical session stops" 60 session_stopped; then
++    return 1
++  fi
++
++  establish_session
++  ssh_guest "grep -Fq '$target' /etc/omarchy.conf"
++  log "Disposable guest is running entirely from the synced checkout"
++}
++
++run_host_test() {
++  [[ -n $HOST_TEST ]] || return 0
++
++  log "Running host-driven acceptance: $HOST_TEST"
++  # The host test is trusted local test code sourced deliberately so it can use
++  # press, ssh_guest, ssh_session, capture_console, wait_for_guest_state, and
++  # the current RUN_DIR without duplicating the QMP/SSH harness.
++  source "$HOST_TEST"
++  declare -F omarchy_host_test >/dev/null || {
++    echo "$HOST_TEST must define omarchy_host_test()" >&2
++    return 1
++  }
++  set +e
++  omarchy_host_test 2>&1 | tee "$RUN_DIR/host-test.log"
++  local status=${PIPESTATUS[0]}
++  set -e
++  return "$status"
++}
++
+ acceptance_phase() {
+   log "Booting acceptance VM from base image overlay"
+ 
+@@ -1074,15 +1245,26 @@ acceptance_phase() {
+ 
+   establish_session
+   sync_omarchy
++  activate_dev_checkout
++  if ! clear_startup_notifications; then
++    capture_console "failure-startup-notifications"
++    return 1
++  fi
+ 
+   local status=0
+-  shortcut_smoke_phase || status=1
+ 
+-  log "Running acceptance suite"
+-  ssh_guest "OMARCHY_PATH=$guest_omarchy_path OMARCHY_ACCEPTANCE_DIR=/tmp/omarchy-acceptance bash .local/share/omarchy/test/acceptance" || status=$?
++  if $HOST_TEST_ONLY; then
++    run_host_test || status=1
++  else
++    shortcut_smoke_phase || status=1
++    run_host_test || status=1
+ 
+-  log "Collecting artifacts into $RUN_DIR"
+-  ssh_guest "tar -C /tmp -cf - omarchy-acceptance 2>/dev/null" | tar -C "$RUN_DIR" -xf - || true
++    log "Running acceptance suite"
++    ssh_guest "OMARCHY_PATH=$guest_omarchy_path OMARCHY_ACCEPTANCE_DIR=/tmp/omarchy-acceptance bash .local/share/omarchy/test/acceptance" || status=$?
++
++    log "Collecting artifacts into $RUN_DIR"
++    ssh_guest "tar -C /tmp -cf - omarchy-acceptance 2>/dev/null" | tar -C "$RUN_DIR" -xf - || true
++  fi
+   ssh_guest "echo $GUEST_PASSWORD | sudo -S cat /var/log/omarchy-install.log 2>/dev/null" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+   if ((status == 0)); then
+     capture_console "success-acceptance-final"

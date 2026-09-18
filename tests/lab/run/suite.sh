@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 # The lab suite for the Run block: the spike's scenarios made repeatable,
 # on whatever machine runs it (the desktop, or the 4.0.3 guest through
-# tests/lab/run/lab.sh). Never touches the running omarchy-shell: every
+# `omakit lab run run`). Never touches the running omarchy-shell: every
 # scenario starts its own `quickshell -p <harness>` in a transient user
 # scope (systemd-run --user --scope -p MemoryMax=768M; setsid when the
 # user manager is not reachable), samples that instance's Pss from

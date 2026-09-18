@@ -15,6 +15,10 @@ import { tagSlug } from "./form.mjs"
 import { COMMANDS, COMPLETION_SHELLS } from "./usage.mjs"
 import { withHomeAbbreviated } from "./paths.mjs"
 import { shippedBlocks } from "../blocks/registry.mjs"
+import { suiteNames } from "../lab/suites.mjs"
+
+/** The words after `omakit lab`, for TAB: the actions, and the suites after `run`. */
+export const LAB_ACTIONS = Object.freeze(["run", "inspect", "setup", "prune"])
 
 /**
  * The completion model, read out of the help data. A subcommand is the word
@@ -44,8 +48,10 @@ export function subcommandsOf(commands = COMMANDS) {
     // as the fallback.
     // `omakit add <block> [<plugin-dir>]`: the block names omakit ships for
     // the first word, a directory for the second.
-    const target = /^omakit +add\b/.test(signature) ? "block" : /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
-    return { name, description: sentence, flags, target, blocks: target === "block" ? shippedBlocks().map((block) => block.name) : [] }
+    // `omakit lab <action> [<suite>]`: the four actions for the first word,
+    // the suites for the second after `run`.
+    const target = /^omakit +lab\b/.test(signature) ? "lab" : /^omakit +add\b/.test(signature) ? "block" : /<plugin-id-or-dir>/.test(signature) ? "plugin" : /<target>/.test(signature) ? "directory" : false
+    return { name, description: sentence, flags, target, blocks: target === "block" ? shippedBlocks().map((block) => block.name) : [], actions: target === "lab" ? [...LAB_ACTIONS] : [], suites: target === "lab" ? suiteNames() : [] }
   })
 }
 
@@ -180,6 +186,12 @@ function bash({ subcommands, categories, tags, pin, version }) {
       lines.push('    elif ((COMP_CWORD == 3)); then')
       lines.push('      COMPREPLY=($(compgen -d -- "$cur")); compopt -o filenames 2>/dev/null')
       lines.push("    fi")
+    } else if (sub.target === "lab") {
+      lines.push('    if ((COMP_CWORD == 2)); then')
+      lines.push(`      COMPREPLY=($(compgen -W ${single(sub.actions.join(" "))} -- "$cur"))`)
+      lines.push('    elif ((COMP_CWORD == 3)) && [[ ${COMP_WORDS[2]} == run ]]; then')
+      lines.push(`      COMPREPLY=($(compgen -W ${single(sub.suites.join(" "))} -- "$cur"))`)
+      lines.push("    fi")
     } else if (sub.target) {
       lines.push('    COMPREPLY=($(compgen -d -- "$cur"))')
       lines.push("    compopt -o filenames 2>/dev/null")
@@ -249,6 +261,7 @@ function zsh({ subcommands, categories, tags, pin, version }) {
     })
     if (sub.target === "plugin") specs.push(single("1:plugin:_omakit_plugins"))
     else if (sub.target === "block") specs.push(single(`1:block:(${sub.blocks.join(" ")})`), single("2:plugin directory:_directories"))
+    else if (sub.target === "lab") specs.push(single(`1:action:(${sub.actions.join(" ")})`), single(`2:suite:(${sub.suites.join(" ")})`))
     else if (sub.target) specs.push(single("1:target:_directories"))
     if (specs.length) lines.push(`      _arguments ${specs.join(" ")}`)
     lines.push("      ;;")
@@ -292,7 +305,11 @@ function fish({ subcommands, categories, tags, pin, version }) {
     const when = `-n ${single(`__fish_seen_subcommand_from ${sub.name}`)}`
     if (sub.target === "plugin") lines.push(`complete -c omakit ${when} -a '(__omakit_plugin_ids)'`)
     if (sub.target === "block") lines.push(`complete -c omakit ${when} -a ${single(sub.blocks.join(" "))}`)
-    if (sub.target) lines.push(`complete -c omakit ${when} -a '(__fish_complete_directories)'`)
+    if (sub.target === "lab") {
+      lines.push(`complete -c omakit ${when} -n ${single(`not __fish_seen_subcommand_from ${sub.actions.join(" ")}`)} -a ${single(sub.actions.join(" "))}`)
+      lines.push(`complete -c omakit ${when} -n ${single("__fish_seen_subcommand_from run")} -a ${single(sub.suites.join(" "))}`)
+    }
+    if (sub.target && sub.target !== "lab") lines.push(`complete -c omakit ${when} -a '(__fish_complete_directories)'`)
     for (const { flag, value } of sub.flags) {
       const long = `-l ${flag.slice(2)}`
       if (value === "category") lines.push(`complete -c omakit ${when} ${long} -x -a ${single(categories.map(fishWord).join(" "))}`)

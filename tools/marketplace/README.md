@@ -74,6 +74,29 @@ the tree, no verdict:
 | `inspect/contract.mjs` | The JSON contract of docs/INSPECT.md as a validator, run by the unit tests over every fixture document. |
 | `inspect/report.mjs` | The report for a person, drawn with `style.mjs` only: `░ info` for a fact, `▒ ?` for one that could not be read, `▓ note` for a pattern row, `▔ skip` under `--offline`, and the closing word `INSPECTED`. |
 
+`tools/lab/` is `omakit lab`, the fourth job (docs/LAB.md): a suite proven
+in a disposable Omarchy guest, never on the desktop, the guest identified
+in the document:
+
+| File | Purpose |
+| --- | --- |
+| `lab/pin.json`, `lab/pin.mjs` | The release pin: Omarchy 4.0.3, its URL, exact bytes, SHA-256, signer fingerprint, expected guest package; the toolchain commit and the digests of its harness before and after the patch; the measured costs. Refuses a URL that resolves latest. `bytesBoth` prints every size in GB and GiB. |
+| `lab/omarchy.gpg` | The Omarchy public signing key, 632 bytes of armoured text, pinned by digest. |
+| `lab/patches/omarchy-iso-test.patch` | The working harness of the reference host against the pinned omarchy-iso commit: the 4.0.3 greeter, no host package install, the host-test extensions. Applied by a person, never by omakit. |
+| `lab/paths.mjs` | The two lab roots under the user cache and state, the layout, and `inLab`, the guard every write goes through; the one rename and the one stream copy in the tree. |
+| `lab/host.mjs` | Read-only probes: KVM, the commands a run, a build and a verification need (`--version`, never `ssh-keygen` bare), the OVMF firmware, free disk, memory, the CPU count. Installs nothing. |
+| `lab/verify.mjs` | SHA-256 streamed in Node, the signature check in a throwaway keyring, and `judgeRelease`: byte count, digest, sidecar, signature, fingerprint, in that order, every field reported. |
+| `lab/inspect.mjs` | The read-only view: the download and its verification record, the base's state from its manifest (`ready`, `mismatch`, `invalid`, `missing`), the toolchain by its harness's hash, staging with QMP liveness, the lock, the totals, what is missing with its cost and command. |
+| `lab/qemu.mjs` | QEMU's argument list, pure; QMP over the Unix socket from Node; the qcode table and `typeText` for the greeter. |
+| `lab/guest.mjs` | SSH to 127.0.0.1 with the base's key and no forwarding; the session preamble; the login loop; the startup-notification dismissal; the guest's identity (`pacman -Q omarchy`, the kernel, whether the session is linked). |
+| `lab/run.mjs` | The lifecycle: the lock, `withGuest` (overlay, the run's firmware copy, QEMU as a child, SSH, login, identity, the body, power-off, the overlay measured and removed, the base checked unchanged), `preflightRun`, `runSuite` with the harness as a child and the document's provenance. |
+| `lab/setup.mjs` | The plan and the disclosure, the resumable literal GET through `github.mjs`'s one call site, the import of a local file, verification and promotion of the ISO, the toolchain record, the build through a copy of the toolchain's harness under staging, the verification boot, the manifest, the promotion; the listed plugins for the evidence suite. |
+| `lab/prune.mjs` | The inventory of what the lab owns with allocated bytes, the refusal while a QEMU answers, the removal of exactly the targets, recovered and remaining bytes. |
+| `lab/suites.mjs` | The four suites as data: host body, files needed, document, assertion, timeout, arguments; the listed plugin ids for `weigh-evidence`, their commits the pinned catalog's. |
+| `lab/harness.sh`, `lab/suites/*.sh` | The one harness every suite runs through, every value an argument; the Run, Store and weigh bodies. |
+| `lab/qmp-cli.mjs` | QMP from a shell: a screendump or a chord, for the harness. |
+| `lab/report.mjs` | The lab's lines for `doctor`, and `inspect`, `setup`, `run` and `prune` for a person, drawn with `style.mjs`. |
+
 ```text
 omakit pin
 omakit inspect /path/to/plugin-repo                      # what the tree does, as observations; --json for the document

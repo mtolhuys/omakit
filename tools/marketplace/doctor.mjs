@@ -45,6 +45,8 @@ import { credential, defaultBranchHead, getJson, UNAUTHENTICATED_LIMIT, GitHubEr
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { pathHint } from "./path-hint.mjs"
 import { completionStatus } from "./completion-check.mjs"
+import { inspectLab } from "../lab/inspect.mjs"
+import { labDoctorChecks } from "../lab/report.mjs"
 
 /** "git+https://github.com/owner/name.git" in package.json -> "https://github.com/owner/name", or null. */
 function repositoryPage(repository) {
@@ -305,6 +307,14 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
       : cli
         ? "`gh auth login` is enough. omakit reads that login for GET requests only and never copies it anywhere."
         : "Install GitHub's `gh` CLI and run `gh auth login`. omakit reads that login for GET requests only.")
+
+  // The lab: KVM, QEMU, the firmware, gpg, free disk, the verified ISO and
+  // the base, each with its measured reason, every one advice and never a
+  // problem, because the lab is optional and doctor installs nothing.
+  // Read-only: inspectLab creates no directory, verifies nothing online
+  // and starts nothing.
+  phase("reading the lab")
+  for (const check of labDoctorChecks(await inspectLab({ env }))) checks.push(check)
 
   return { checks, problems: checks.filter((check) => check.state === "problem").length }
 }

@@ -129,6 +129,32 @@ export const COMMANDS = Object.freeze([
     ],
   },
   {
+    signature: [
+      "omakit lab run <suite> [--runs <n>] [--json] [--out <file>]",
+      "omakit lab inspect [--verify] [--json] [--out <file>]",
+      "omakit lab setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes]",
+      "omakit lab prune [--keep-iso] [--records] [--yes] [--json]",
+    ],
+    lines: [
+      "Prove a suite in a disposable Omarchy guest, never on the desktop: the",
+      "pinned 4.0.3 release booted from an immutable verified base, a fresh",
+      "overlay per run, the guest's installed omarchy package read and printed",
+      "before the suite, the document written with that identity. `run` boots",
+      "nothing until the base, the host and the suite's files are there, and",
+      "names what is missing, what it takes, and the one command; it fetches",
+      "nothing. `inspect` is read-only: the pinned release, its exact size,",
+      "digest and signer, what is on disk and verified, what the host lacks.",
+      "`setup` is the only path that fetches bytes: one consent naming the",
+      "exact size and destination (--yes for an agent), a resumable GET of",
+      "the pinned URL or a copy of --from, verified against the pinned SHA-256",
+      "and the Omarchy signature before anything boots it, then one base built",
+      "by the pinned omarchy-iso toolchain, whose checkout --toolchain records",
+      "and which setup never fetches. `prune` frees the lab cache and says how",
+      "much. docs/LAB.md is the contract. Suites: run, store, weigh,",
+      "weigh-evidence.",
+    ],
+  },
+  {
     signature: "omakit help --agent",
     lines: [
       "The operating instructions for a coding agent, printed from skills/, so an",

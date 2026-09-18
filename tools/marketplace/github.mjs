@@ -109,7 +109,7 @@ export function token() {
 /** The one host the borrowed gh credential may be sent to. */
 export const CREDENTIAL_HOST = "api.github.com"
 
-async function get(url, { accept, signal } = {}) {
+async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
   const { host } = new URL(url)
   // The credential is GitHub's and goes to GitHub's API and nowhere else.
   // Measured before this held: `omakit upgrade` and `doctor` sent the gh
@@ -123,6 +123,10 @@ async function get(url, { accept, signal } = {}) {
   }
   const auth = authenticated ? token() : null
   if (auth) headers.authorization = `Bearer ${auth}`
+  // A resumed download asks for the rest of the object; the lab's ISO
+  // fetch is the one caller, and a server that ignores the range answers
+  // 200 from the start, which the caller handles by starting over.
+  if (rangeFrom > 0) headers.range = `bytes=${rangeFrom}-`
   let response
   try {
     response = await fetch(url, { method: "GET", headers, redirect: "follow", ...(signal ? { signal } : {}) })
@@ -156,6 +160,16 @@ export async function getJson(url, options) {
 
 export async function getText(url, accept) {
   return (await get(url, { accept })).text()
+}
+
+/**
+ * A streamed GET for a large object, the response itself: the lab reads
+ * `body` chunk by chunk into a file. `rangeFrom` resumes. Same call site,
+ * same literal method, and the credential stays with api.github.com; the
+ * ISO origin (iso.omarchy.org) never sees it.
+ */
+export async function getStream(url, { rangeFrom = 0, signal } = {}) {
+  return get(url, { accept: "application/octet-stream", signal, rangeFrom })
 }
 
 /** Parse a marketplace issue URL into its parts. */

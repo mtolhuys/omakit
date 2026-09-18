@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "release": {
+    "name": "4.0.3",
+    "embeddedBuild": "2026.09.08",
+    "volume": "OMARCHY_202609",
+    "isoUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso",
+    "checksumUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso.sha256",
+    "signatureUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso.sig",
+    "fileName": "omarchy-4.0.3.iso",
+    "bytes": 6260654080,
+    "sha256": "03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14",
+    "signingFingerprint": "40DFB630FF42BCFFB047046CF0134EE680CAC571",
+    "signingKey": "omarchy.gpg",
+    "signingKeySha256": "15d6aac44df688165b2ea35fe0b23af239bbc66a6909c10a5c219e8d94b707de",
+    "expectedGuestVersion": "4.0.3-1"
+  },
+  "toolchain": {
+    "repository": "https://github.com/omacom-io/omarchy-iso",
+    "commit": "268bac16d351a21d867e37565738f458b11cb06c",
+    "harness": "bin/omarchy-iso-test",
+    "upstreamHarnessSha256": "fbc236a674464743c6ff8e4cc53be932dc36a16c9fcb159932006e9d7452439c",
+    "patch": "patches/omarchy-iso-test.patch",
+    "patchedHarnessSha256": "8637e8cc82413fb421daa17eb758e3136cf71099b108b6412326172993974e97"
+  },
+  "guest": {
+    "memoryMiB": 5120,
+    "user": "omarchy",
+    "password": "omarchy",
+    "diskGiB": 40
+  },
+  "measured": {
+    "on": "2026-09-10",
+    "buildMilliseconds": 289513,
+    "baseAllocatedBytes": 6456152064,
+    "baseDirectoryBytes": 6456705024,
+    "preparedLabBytes": 12717359104,
+    "overlayAfterRunBytes": 1010110464,
+    "source": "packaging/LAB_PLAN.md M4 to M7; docs/MEASUREMENTS.md M14"
+  }
+}

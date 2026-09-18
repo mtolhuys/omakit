@@ -9,6 +9,7 @@
 //   omakit weigh <plugin> | --all     what a plugin weighs on the shell, measured by restarting it
 //   omakit inspect <plugin-dir>      what a plugin tree does, as observations; decides nothing
 //   omakit add run|store [dir]       copy a block into the plugin's omakit/ directory
+//   omakit lab run|inspect|setup|prune  prove a suite in a disposable Omarchy guest; docs/LAB.md
 //
 // Nothing here writes to the marketplace. There is no POST, PATCH, PUT or
 // DELETE anywhere in this repository, and `tests/unit/read-only.test.mjs`
@@ -49,6 +50,11 @@ import { renderAudit } from "../audit/report.mjs"
 import { inspectPlugin, NOT_READABLE } from "../inspect/inspect.mjs"
 import { renderInspect } from "../inspect/report.mjs"
 import { addBlock } from "../blocks/add.mjs"
+import { inspectLab } from "../lab/inspect.mjs"
+import { runSuite } from "../lab/run.mjs"
+import { CONSENT_QUESTION, planSetup, recordToolchain, setupLab } from "../lab/setup.mjs"
+import { planPrune, prune } from "../lab/prune.mjs"
+import { renderInspect as renderLabInspect, renderPrunePlan, renderPruneResult, renderRunIdentity, renderRunResult, renderSetupPlan, renderSetupResult } from "../lab/report.mjs"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
@@ -78,6 +84,9 @@ const REMEDY = Object.freeze({
   "not-a-plugin": "Pass the plugin's directory, the one with its manifest.json.",
   "plugin-dir-not-found": "Pass the plugin's directory, the one with its manifest.json.",
   "unknown-block": "omakit add run [<plugin-dir>], or omakit add store [<plugin-dir>]",
+  "lab-not-ready": "omakit lab inspect",
+  "lab-busy": "omakit lab inspect",
+  "iso-mismatch": "omakit lab prune, then omakit lab setup",
 })
 
 /*
@@ -582,6 +591,197 @@ async function cmdWeigh(args) {
   }
 }
 
+/**
+ * `omakit lab <run|inspect|setup|prune>`: one command surface, four
+ * actions, docs/LAB.md the contract. Every refusal is the failure
+ * register with the one command; a missing thing is listed with its cost
+ * before the arrow. `setup` and `prune` ask once at a terminal and take
+ * `--yes` anywhere else; `run` and `inspect` never ask.
+ */
+async function cmdLab(args) {
+  const parsed = checkArgs(args, ACCEPTED.lab)
+  const signature = "omakit lab run <suite> | inspect [--verify] | setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes] | prune [--keep-iso] [--records] [--yes]"
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("lab")}.`, 2, signature)
+  const [what, suite] = parsed.positionals
+  if (!["run", "inspect", "setup", "prune"].includes(what || "")) fail("usage", `lab needs one of run, inspect, setup or prune${what ? `, not ${JSON.stringify(what)}` : ""}.`, 2, signature)
+  const json = parsed.options.has("--json")
+  const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
+  const c = styler(colourEnabled(json ? process.stderr : process.stdout))
+  const narrate = json ? process.stderr : process.stdout
+  const say = (line) => narrate.write(`${line.state === "prose" ? " ".repeat(GUTTER) : mark(line.state, c)}${withHomeAbbreviated(line.text)}\n`)
+  const missingBody = (missing) => (cc) => missing.flatMap((item) => [`${" ".repeat(GUTTER)}${cc("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), cc), ...(item.command ? action(withHomeAbbreviated(item.command), cc) : [])])
+  const failLab = (error) => {
+    if (error?.code && typeof error.code === "string") {
+      fail(error.code, error.message, error.code === "usage" ? 2 : error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? 130 : 1, error.remedy || REMEDY[error.code], error.missing?.length ? missingBody(error.missing) : () => [])
+    }
+    throw error
+  }
+  const spinner = spinnerFor(args)
+  const controller = new AbortController()
+  const interrupt = () => {
+    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted: ending the guest and cleaning up before exiting\n`)
+    controller.abort()
+  }
+
+  if (what === "inspect") {
+    if (suite) fail("usage", `inspect takes no suite, so ${JSON.stringify(suite)} is one argument more than it takes.`, 2, signature)
+    let lab
+    try {
+      spinner.phase(parsed.options.has("--verify") ? "hashing the ISO and checking its signature" : "reading the lab")
+      lab = await inspectLab({ verify: parsed.options.has("--verify") })
+    } catch (error) {
+      spinner.done()
+      failLab(error)
+    }
+    spinner.done()
+    emit(args, json ? `${JSON.stringify(lab, null, 2)}\n` : reportText(args, renderLabInspect, lab))
+    process.exitCode = lab.missing.length ? 1 : 0
+    return
+  }
+
+  if (what === "run") {
+    if (!suite) fail("usage", "run needs a suite: `omakit lab run <run|store|weigh|weigh-evidence>`", 2, signature)
+    const runs = parsed.options.has("--runs") ? Number(parsed.options.get("--runs")) : undefined
+    if (parsed.options.has("--runs") && !(Number.isInteger(runs) && runs >= 1)) fail("usage", `--runs needs an integer of at least 1, not ${JSON.stringify(parsed.options.get("--runs"))}.`, 2, signature)
+    process.on("SIGINT", interrupt)
+    process.on("SIGTERM", interrupt)
+    let record
+    try {
+      record = await runSuite({
+        suiteName: suite,
+        repoRoot: ROOT,
+        options: { runs },
+        signal: controller.signal,
+        onPhase: spinner.phase,
+        onLine: (line) => {
+          spinner.done()
+          // The identity block, once the guest has been read: the line
+          // packaging/LAB_PLAN.md says every run prints before its suite.
+          if (line.record) {
+            narrate.write(`${withOutputStream(narrate, () => renderRunIdentity(line.record, { colour: colourEnabled(narrate) }))}\n\n`)
+            return
+          }
+          say(line)
+        },
+      })
+    } catch (error) {
+      spinner.done()
+      failLab(error)
+    } finally {
+      process.off("SIGINT", interrupt)
+      process.off("SIGTERM", interrupt)
+    }
+    spinner.done()
+    if (json) {
+      emit(args, `${JSON.stringify(record, null, 2)}\n`)
+    } else {
+      narrate.write("\n")
+      emit(args, reportText(args, renderRunResult, record))
+    }
+    process.exitCode = record.ok ? 0 : 1
+    return
+  }
+
+  if (what === "setup") {
+    if (suite) fail("usage", `setup takes no suite, so ${JSON.stringify(suite)} is one argument more than it takes.`, 2, signature)
+    try {
+      if (parsed.options.has("--toolchain")) {
+        const recorded = recordToolchain({ dir: parsed.options.get("--toolchain") })
+        narrate.write(`${mark("pass", c)}toolchain recorded: ${withHomeAbbreviated(recorded.dir)} (harness sha256 ${recorded.sha256.slice(0, 12)}, the pinned patched one)\n`)
+      }
+    } catch (error) {
+      failLab(error)
+    }
+    let plan
+    try {
+      plan = planSetup({ from: parsed.options.get("--from") || null, plugins: parsed.options.has("--plugins"), repoRoot: ROOT })
+    } catch (error) {
+      failLab(error)
+    }
+    narrate.write(`${withOutputStream(narrate, () => renderSetupPlan(plan, { colour: colourEnabled(narrate) }))}\n`)
+    if (plan.blockers.length) {
+      process.exitCode = 1
+      return
+    }
+    if (!plan.steps.length) {
+      process.exitCode = 0
+      return
+    }
+    let consented = parsed.options.has("--yes")
+    if (!consented) {
+      if (!interactive) failLab(Object.assign(new Error("not confirmed: a pipe, an agent or --json cannot answer for the person whose disk this is; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
+      narrate.write("\n")
+      consented = await askYes({ question: CONSENT_QUESTION })
+      if (!consented) failLab(Object.assign(new Error("not confirmed; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
+    }
+    narrate.write("\n")
+    process.on("SIGINT", interrupt)
+    process.on("SIGTERM", interrupt)
+    let result
+    let lastProgress = 0
+    try {
+      result = await setupLab({
+        plan,
+        consented,
+        repoRoot: ROOT,
+        signal: controller.signal,
+        onPhase: spinner.phase,
+        onLine: (line) => { spinner.done(); say(line) },
+        onProgress: (read, total) => {
+          const now = Date.now()
+          if (now - lastProgress < 1000) return
+          lastProgress = now
+          spinner.phase(`${read.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} B (${((read / total) * 100).toFixed(1)}%)`)
+        },
+      })
+    } catch (error) {
+      spinner.done()
+      failLab(error)
+    } finally {
+      process.off("SIGINT", interrupt)
+      process.off("SIGTERM", interrupt)
+    }
+    spinner.done()
+    emit(args, json ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSetupResult, result))
+    process.exitCode = 0
+    return
+  }
+
+  // prune
+  if (suite) fail("usage", `prune takes no suite, so ${JSON.stringify(suite)} is one argument more than it takes.`, 2, signature)
+  let plan
+  try {
+    plan = await planPrune({ keepIso: parsed.options.has("--keep-iso"), runs: parsed.options.has("--records") })
+  } catch (error) {
+    failLab(error)
+  }
+  narrate.write(`${withOutputStream(narrate, () => renderPrunePlan(plan, { colour: colourEnabled(narrate) }))}\n`)
+  if (plan.blockers.length) {
+    process.exitCode = 1
+    return
+  }
+  if (!plan.targets.length) {
+    process.exitCode = 0
+    return
+  }
+  let consented = parsed.options.has("--yes")
+  if (!consented) {
+    if (!interactive) failLab(Object.assign(new Error(`not confirmed: ${plan.targets.length} target${plan.targets.length === 1 ? "" : "s"}, ${plan.total.toLocaleString("en-US")} B, and a pipe cannot answer for the person whose disk this is; nothing was removed`), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
+    narrate.write("\n")
+    consented = await askYes({ question: `Remove these ${plan.targets.length} lab-owned target${plan.targets.length === 1 ? "" : "s"}?` })
+    if (!consented) failLab(Object.assign(new Error("not confirmed; nothing was removed"), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
+  }
+  let result
+  try {
+    result = prune(plan)
+  } catch (error) {
+    failLab(error)
+  }
+  narrate.write("\n")
+  emit(args, json ? `${JSON.stringify({ removed: result.removed, recovered: result.recovered, remaining: result.remaining }, null, 2)}\n` : reportText(args, renderPruneResult, result))
+  process.exitCode = 0
+}
+
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
 
 const [command, ...rest] = process.argv.slice(2)
@@ -656,6 +856,8 @@ if (command === "setup") {
   await cmdInspect(rest)
 } else if (command === "add") {
   await cmdAdd(rest)
+} else if (command === "lab") {
+  await cmdLab(rest)
 } else if (command === "help" || command === "--help" || command === "-h" || command === undefined) {
   if (rest.includes("--agent")) {
     // The skills ship in the npm package, so this works from a global install

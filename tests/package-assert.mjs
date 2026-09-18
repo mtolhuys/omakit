@@ -41,8 +41,16 @@ import { pathToFileURL } from "node:url"
 // With the blocks at 0.2.0 (the token protocol and the gate in Run, the
 // string-program tables, the Store checks; the lab suites and their
 // records do not ship) it measured 252,565 bytes across 85 files, 3,435
-// under the same ceiling.
-export const MAX_PACKED_BYTES = 256_000
+// under the same ceiling. With `omakit lab` (twenty files under
+// tools/lab/: the release pin, the 632-byte armoured Omarchy signing key,
+// the 351-line toolchain patch, one harness and three suites in bash, and
+// the modules, and the README's fourth job) the package measured 308,856
+// bytes across 105 files, over that ceiling by 52,856, so the ceiling is
+// now 358,400 bytes: 49,544 bytes of room, still a fortieth of an accidental tree with the 15 MB
+// marketplace pin in it, and a two-thousandth of the 6.26 GB ISO the lab
+// never ships (tests/unit/self-containment.test.mjs sniffs every file for
+// an image or archive signature).
+export const MAX_PACKED_BYTES = 358_400
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
@@ -83,6 +91,26 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/inspect/timers.mjs",
   "tools/inspect/walk.mjs",
   "tools/inspect/writes.mjs",
+  "tools/lab/guest.mjs",
+  "tools/lab/harness.sh",
+  "tools/lab/host.mjs",
+  "tools/lab/inspect.mjs",
+  "tools/lab/omarchy.gpg",
+  "tools/lab/patches/omarchy-iso-test.patch",
+  "tools/lab/paths.mjs",
+  "tools/lab/pin.json",
+  "tools/lab/pin.mjs",
+  "tools/lab/prune.mjs",
+  "tools/lab/qemu.mjs",
+  "tools/lab/qmp-cli.mjs",
+  "tools/lab/report.mjs",
+  "tools/lab/run.mjs",
+  "tools/lab/setup.mjs",
+  "tools/lab/suites.mjs",
+  "tools/lab/suites/run.sh",
+  "tools/lab/suites/store.sh",
+  "tools/lab/suites/weigh.sh",
+  "tools/lab/verify.mjs",
   "tools/weigh/audit.mjs",
   "tools/weigh/commands.mjs",
   "tools/weigh/config.mjs",

@@ -57,8 +57,24 @@ test("the agent-control check flags this repository's own files", () => {
 test("nothing in this repository writes into a plugin or subject tree", () => {
   for (const { path, text } of sources) {
     // No copying primitives at all: a tool that cannot copy cannot smuggle.
+    // The one exception is the lab's own root (tools/lab/paths.mjs): a
+    // verified ISO is renamed from its .part name and a staged base is
+    // promoted with one rename, both to a target built by inLab, which
+    // refuses a path outside the lab cache; and a stream copy into the lab
+    // (copyIntoLab) is the only way bytes enter it. Counted below.
     for (const primitive of ["cpSync", "copyFileSync", "copyFile", "renameSync", "symlinkSync", "linkSync"]) {
+      if (path === "tools/lab/paths.mjs" && primitive === "renameSync") continue
       assert.ok(!new RegExp(`\\b${primitive}\\s*\\(`).test(text), `${path} uses ${primitive}`)
+    }
+    if (path === "tools/lab/paths.mjs") {
+      assert.equal((text.match(/renameSync\(/g) || []).length, 1, "paths.mjs renames in one place")
+      assert.match(text, /const to = inLab\(root, relative\)\n[\s\S]*?renameSync\(from, to\)/, "and the target is inLab's")
+      assert.match(text, /createWriteStream\(to, \{ mode: 0o600, flags: "wx" \}\)/, "the stream copy never overwrites")
+    } else if (path === "tools/lab/setup.mjs") {
+      assert.equal((text.match(/createWriteStream\(/g) || []).length, 1, "setup.mjs streams one thing: the download, to its .part file")
+      assert.match(text, /const part = `\$\{to\}\.part`[\s\S]*?createWriteStream\(part, /, "and only there")
+    } else {
+      assert.doesNotMatch(text, /createWriteStream\(|\bpipeline\(/, `${path} streams bytes to disk; only tools/lab/paths.mjs (copyIntoLab) and setup.mjs (the .part download) may`)
     }
     // Writes are allowed to an explicit --out path, to docs/evidence, to the
     // pinned checkout's own .git/info (the sparse-checkout file, which is how
@@ -92,11 +108,17 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // same names under this checkout's blocks/ (blockFile, in stamp.mjs).
     // Both are held to those names and counted below.
     const blockWrites = path === "tools/blocks/add.mjs" || path === "tools/blocks/stamp.mjs" ? /^blockFile,/ : /$^/
+    // The lab writes under its own two roots only: every target is built
+    // by inLab (tools/lab/paths.mjs), which throws for a path outside the
+    // lab cache or state, or is a descriptor opened on such a path
+    // (writeJson's fd, a run's host log, a build's log). tests/unit/lab.test.mjs
+    // proves the guard; this holds every write to it.
+    const labWrites = path.startsWith("tools/lab/") ? /^inLab\(|^fd,|^hostLog,|^log,/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, a block file, nor one of the three files weigh may write`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || labWrites.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, a block file, a lab path, nor one of the three files weigh may write`,
       )
     }
     if (path === "tools/blocks/add.mjs") {
@@ -159,7 +181,7 @@ test("the command surface is exactly the documented scope", () => {
   const commands = [...cli.matchAll(/command === "(-{0,2}[a-z][a-z-]*)"/g)].map((match) => match[1])
   assert.deepEqual(
     new Set(commands),
-    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "audit", "weigh", "inspect", "add", "help", "--help", "-h"]),
+    new Set(["setup", "pin", "doctor", "upgrade", "marketplace-pin", "submit", "watch", "verify", "parity", "audit", "weigh", "inspect", "add", "lab", "help", "--help", "-h"]),
   )
   // doctor reports and prints. It must not be able to change anything, which is
   // the difference between it and the `upgrade` command this tool deliberately
@@ -173,17 +195,42 @@ test("the command surface is exactly the documented scope", () => {
   }
 })
 
-test("no lab or conformance scope came along with the harvest", () => {
-  // Three things live under tests/lab/: the scenario the plugin lab runs to
-  // measure `omakit weigh` against a stock shell, because the weigh command
-  // restarts a shell and the desktop is never where that is tested, and the
-  // Run and Store blocks' suites (tests/lab/run/, tests/lab/store/), which
-  // start their own Quickshell instances and never touch the shell.
-  // Scenarios for one command and two blocks, not a conformance suite, and
-  // none of them is in the package.
+test("the lab ships the ability to acquire a lab, and never an image", () => {
+  // packaging/LAB_PLAN.md, the central boundary: omakit may carry
+  // orchestration code, a reviewed release pin, the Omarchy public signing
+  // key and text fixtures, and never an ISO, a disk image, firmware
+  // variables, an overlay, or a compressed or renamed form of one. The
+  // tree is walked, not the package list, and every file is sniffed for a
+  // disk-image or archive signature rather than trusted by its name.
+  const IMAGE_NAMES = /\.(?:iso|qcow2?|img|raw|vmdk|vdi|ova|ovf|fd|tar|tgz|zip|xz|gz|zst|7z)$/i
+  const SIGNATURES = [
+    ["QFI\u00fb", "qcow"], ["KDMV", "vmdk"], ["<<< Oracle VM VirtualBox Disk Image", "vdi"], ["CD001", "iso9660"],
+    ["\u001f\u008b", "gzip"], ["\u00fd7zXZ", "xz"], ["PK\u0003\u0004", "zip"], ["7z\u00bc\u00af", "7z"], ["\u0028\u00b5\u002f\u00fd", "zstd"], ["ustar", "tar"],
+  ]
   for (const path of files) {
-    assert.ok(!/^tools\/lab\//.test(path), `${path} is out of scope`)
-    assert.ok(!/^tests\/lab\//.test(path) || path === "tests/lab/weigh.sh" || path.startsWith("tests/lab/run/") || path.startsWith("tests/lab/store/"), `${path} is out of scope`)
+    assert.ok(!IMAGE_NAMES.test(path), `${path} is an image or archive by name`)
+    const st = statSync(join(REPO_ROOT, path))
+    if (st.size > 1024 * 1024) assert.fail(`${path} is ${st.size} bytes; nothing in this tree is a megabyte`)
+    const head = readFileSync(join(REPO_ROOT, path)).subarray(0, 40000).toString("latin1")
+    for (const [magic, kind] of SIGNATURES) {
+      const at = head.indexOf(magic)
+      // A signature at an offset where the format keeps it (qcow at 0, CD001 at 32769, tar's ustar at 257, the rest at 0).
+      const positions = kind === "iso9660" ? [32769] : kind === "tar" ? [257] : [0]
+      assert.ok(!positions.includes(at), `${path} carries a ${kind} signature`)
+    }
+  }
+  // The lab's own tree: orchestration, the pin, the key, a patch, bash. Nothing else.
+  const lab = files.filter((path) => path.startsWith("tools/lab/"))
+  for (const path of lab) assert.match(path, /\.(?:mjs|sh|json|gpg|patch)$/, `${path} is not code, a pin, a key or a patch`)
+  assert.ok(lab.includes("tools/lab/pin.json") && lab.includes("tools/lab/omarchy.gpg"))
+  // And no lifecycle hook can acquire anything at install time.
+  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
+  for (const hook of ["preinstall", "install", "postinstall", "prepare", "prepack", "postpack", "prepublish", "prepublishOnly"]) {
+    assert.equal(pkg.scripts?.[hook], undefined, `package.json has a ${hook} script`)
+  }
+  // The in-guest suites stay with the tests: three directories and nothing else under tests/lab/.
+  for (const path of files) {
+    assert.ok(!/^tests\/lab\//.test(path) || path.startsWith("tests/lab/run/") || path.startsWith("tests/lab/store/"), `${path} is out of scope`)
   }
 })
 

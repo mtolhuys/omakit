@@ -202,7 +202,7 @@ test("there is exactly one HTTP call site, and it is the read-only one", () => {
   // keeps this tool read-only is therefore not the scope, it is that every
   // request in the repository goes through one function whose method is the
   // literal "GET".
-  const callers = sources.filter(({ text }) => /(?<!\w)fetch\s*\(/.test(text)).map(({ path }) => path)
+  const callers = sources.filter(({ text }) => /(?<!\w)fetch\s*\(/.test(text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""))).map(({ path }) => path)
   assert.deepEqual(callers, ["tools/marketplace/github.mjs"],
     "a second fetch call site means the GET-only guarantee is no longer structural")
 })
@@ -215,7 +215,10 @@ test("every request host is one of the four known ones, and the raw file host is
   // change between two requests, so it may be addressed only through the one
   // builder that refuses anything but a 40-character commit and anything but
   // the two data files (tests/unit/registry.test.mjs proves both refusals).
-  const HOSTS = new Set(["api.github.com", "github.com", "registry.npmjs.org", "raw.githubusercontent.com"])
+  // The fifth is the Omarchy ISO origin, reached only by `omakit lab setup`
+  // after one consent, for the pinned release, its checksum and its
+  // signature, through the same GET call site and never with the credential.
+  const HOSTS = new Set(["api.github.com", "github.com", "registry.npmjs.org", "raw.githubusercontent.com", "iso.omarchy.org"])
   const RAW = "raw.githubusercontent.com"
   for (const { path, text } of sources) {
     if (path.startsWith("tests/")) continue
