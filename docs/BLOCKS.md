@@ -131,7 +131,13 @@ three rows below were within 20 ms of the desktop's; one run each, so no
 spread is known, and the desktop's rows are the ones in the table. An
 earlier guest run that day ([record](evidence/blocks/2026-09-18-run-lab-guest.json),
 1 GiB in 865 ms) had its session dev-linked to a source checkout and is
-superseded; it says so in place.
+superseded; it says so in place. At Run 0.2.1 the suite ran twice more on
+the same guest: the first run ended the `stubborn` scenario (a program
+that ignores TERM, deadline 2 s, grace 1 s) at 3,925 ms against the
+3,500 ms gate, one timing miss on a path the two-string change does not
+touch, and is kept ([record](evidence/lab/20260918-172116-run/runlab.json));
+the second passed 19 of 19, `stubborn` at 3,137 ms
+([record](evidence/lab/20260918-172451-run/runlab.json)).
 
 | Scenario | Time to end | Quickshell Pss after minus before |
 | --- | ---: | ---: |

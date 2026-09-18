@@ -100,7 +100,7 @@ set -euo pipefail
 
 After adding the block and moving each site to it, run the check loop of
 `skills/omarchy-plugin-check/SKILL.md`. `omakit inspect` should show one
-`blocks` line, `run 0.2.0, 2 files, unmodified: no row of its own`, each
+`blocks` line, `run 0.2.1, 2 files, unmodified: no row of its own`, each
 `Run {` site as a process with its deadline observed through the block,
 and no process-lifecycle or unbounded-buffering row at those sites. A row
 that remains names a site that still uses `Process` directly.

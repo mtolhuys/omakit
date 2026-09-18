@@ -28,7 +28,7 @@ form of one; `tests/unit/self-containment.test.mjs` sniffs every file in
 the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash. What ships is measured: 20 files, 163,753 bytes unpacked, in a
-package that packs to 309,687 bytes (`tests/package-assert.mjs`).
+package that packs to 310,059 bytes (`tests/package-assert.mjs`).
 
 Nothing is fetched implicitly. `run`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after

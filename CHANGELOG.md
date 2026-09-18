@@ -3,7 +3,7 @@
 ## 0.6.0 (unreleased)
 
 The plumbing plugin reviews block most, built and tested once: the Run
-and Store blocks, `omakit add run` and `omakit add store`, `inspect`
+(0.2.1) and Store (0.2.0) blocks, `omakit add run` and `omakit add store`, `inspect`
 reading an unmodified block as one row, a Run site as a process with
 its deadline, a Store site as a write at mode 0600, and a Run-started
 helper in the block's closed environment; M13, the 1,001 blocker

@@ -1,0 +1,908 @@
+{
+  "id": "runlab",
+  "measured": "2026-09-18",
+  "host": "omarchy-test",
+  "kernel": "7.2.3-arch1-3",
+  "blocks": {
+    "Run.qml": "a8ad4919676bc1bf1776eb94c2c0d7a3f1fe2695daf2990743f181953b34ee5a",
+    "run-supervisor.py": "c181e8d9ac5b5b86094e8628ee512983e1016a307084253a447bbe5795c90895"
+  },
+  "method": "The Run lab suite's reader: every run under <out>/runs into one document,\n<out>/runlab.json, and the gate, asserted. Every figure says how it was\nread: time to end is the harness's own clock from start() to the result\n(to the destroy event for destroy, to the last of ten results for\nconcurrency); Pss is /proc/<quickshell pid>/smaps_rollup sampled every\n100 ms by suite.sh, before = the last sample before the start event, peak\n= the maximum until the end, after = the last sample at least 1.5 s after\nthe end; survivors are counted two seconds after the end by pgid and by\nthe scope's cgroup; a signal to an empty group is the supervisor's\nos.killpg raising ProcessLookupError; shadow hits are the lines the\nhostile scenario's shadow tools wrote.",
+  "runs": [
+    {
+      "scenario": "cancel",
+      "run": 1,
+      "start": 1789744985992,
+      "ms": 524,
+      "states": [
+        "cancelled"
+      ],
+      "pssBefore": 55652,
+      "pssPeak": 55749,
+      "pssAfter": 55749,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [
+        "TERM@471"
+      ],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "concurrency",
+      "run": 1,
+      "start": 1789745019976,
+      "ms": 139,
+      "states": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "pssBefore": 55779,
+      "pssPeak": 56071,
+      "pssAfter": 56068,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "controls",
+      "run": 1,
+      "start": 1789745014424,
+      "ms": 155,
+      "states": [
+        "ok"
+      ],
+      "pssBefore": 55712,
+      "pssPeak": 55780,
+      "pssAfter": 55778,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "destroy",
+      "run": 1,
+      "start": 1789744980128,
+      "ms": 502,
+      "states": [],
+      "pssBefore": 57779,
+      "pssPeak": 57855,
+      "pssAfter": 57854,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": true,
+      "problems": []
+    },
+    {
+      "scenario": "destroy-early",
+      "run": 1,
+      "start": 1789745047590,
+      "ms": 301,
+      "states": [],
+      "pssBefore": 57735,
+      "pssPeak": 57803,
+      "pssAfter": 57802,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": true,
+      "problems": []
+    },
+    {
+      "scenario": "forge",
+      "run": 1,
+      "start": 1789745025531,
+      "ms": 37,
+      "states": [
+        "supervisor-lost"
+      ],
+      "pssBefore": 55641,
+      "pssPeak": 55716,
+      "pssAfter": 55714,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "holder",
+      "run": 1,
+      "start": 1789744959860,
+      "ms": 58,
+      "states": [
+        "ok"
+      ],
+      "pssBefore": 55721,
+      "pssPeak": 55823,
+      "pssAfter": 55822,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [
+        "TERM@10"
+      ],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "hostile",
+      "run": 1,
+      "start": 1789744974481,
+      "ms": 363,
+      "states": [
+        "ok"
+      ],
+      "pssBefore": 57689,
+      "pssPeak": 57745,
+      "pssAfter": 57744,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "missing",
+      "run": 1,
+      "start": 1789745008991,
+      "ms": 55,
+      "states": [
+        "spawn-failed"
+      ],
+      "pssBefore": 55648,
+      "pssPeak": 55719,
+      "pssAfter": 55736,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "orphan",
+      "run": 1,
+      "start": 1789745030991,
+      "ms": 38,
+      "states": [
+        "supervisor-lost"
+      ],
+      "pssBefore": 55659,
+      "pssPeak": 55739,
+      "pssAfter": 55739,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "producer",
+      "run": 1,
+      "start": 1789744947187,
+      "ms": 59,
+      "states": [
+        "overflow"
+      ],
+      "pssBefore": 55802,
+      "pssPeak": 55893,
+      "pssAfter": 55893,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [
+        "TERM@4"
+      ],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "producer-stream",
+      "run": 1,
+      "start": 1789744952630,
+      "ms": 1885,
+      "states": [
+        "ok"
+      ],
+      "pssBefore": 55634,
+      "pssPeak": 55796,
+      "pssAfter": 55795,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "relative",
+      "run": 1,
+      "start": 1789745003495,
+      "ms": 149,
+      "states": [
+        "spawn-failed"
+      ],
+      "pssBefore": 57816,
+      "pssPeak": 57900,
+      "pssAfter": 57766,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "shell-string",
+      "run": 1,
+      "start": 1789744997932,
+      "ms": 40,
+      "states": [
+        "spawn-failed"
+      ],
+      "pssBefore": 55686,
+      "pssPeak": 55754,
+      "pssAfter": 55754,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "shell-string-option",
+      "run": 1,
+      "start": 1789745053461,
+      "ms": 81,
+      "states": [
+        "spawn-failed"
+      ],
+      "pssBefore": 55577,
+      "pssPeak": 55787,
+      "pssAfter": 55785,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "shell-string-wrapper",
+      "run": 1,
+      "start": 1789745058993,
+      "ms": 73,
+      "states": [
+        "spawn-failed"
+      ],
+      "pssBefore": 55675,
+      "pssPeak": 55755,
+      "pssAfter": 55755,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "stalled-supersede",
+      "run": 1,
+      "start": 1789745036600,
+      "ms": 81,
+      "states": [
+        "supervisor-lost",
+        "ok"
+      ],
+      "pssBefore": 55692,
+      "pssPeak": 55804,
+      "pssAfter": 55803,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    },
+    {
+      "scenario": "stubborn",
+      "run": 1,
+      "start": 1789744965157,
+      "ms": 3925,
+      "states": [
+        "timeout"
+      ],
+      "pssBefore": 55794,
+      "pssPeak": 55886,
+      "pssAfter": 55887,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [
+        "TERM@2002",
+        "KILL@3010"
+      ],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": [
+        "ended at 3925 ms, over deadline plus grace (3500)"
+      ]
+    },
+    {
+      "scenario": "supersede",
+      "run": 1,
+      "start": 1789744991920,
+      "ms": 67,
+      "states": [
+        "cancelled",
+        "ok"
+      ],
+      "pssBefore": 55643,
+      "pssPeak": 55747,
+      "pssAfter": 55746,
+      "survivors": 0,
+      "survivorLines": [],
+      "signals": [
+        "TERM@466"
+      ],
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "destroyed": false,
+      "problems": []
+    }
+  ],
+  "summary": {
+    "producer": {
+      "runs": 1,
+      "ms": {
+        "median": 59,
+        "min": 59,
+        "max": 59,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 91,
+        "min": 91,
+        "max": 91,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 91,
+        "min": 91,
+        "max": 91,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "producer-stream": {
+      "runs": 1,
+      "ms": {
+        "median": 1885,
+        "min": 1885,
+        "max": 1885,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 162,
+        "min": 162,
+        "max": 162,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 161,
+        "min": 161,
+        "max": 161,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "holder": {
+      "runs": 1,
+      "ms": {
+        "median": 58,
+        "min": 58,
+        "max": 58,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 102,
+        "min": 102,
+        "max": 102,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 101,
+        "min": 101,
+        "max": 101,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "stubborn": {
+      "runs": 1,
+      "ms": {
+        "median": 3925,
+        "min": 3925,
+        "max": 3925,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 92,
+        "min": 92,
+        "max": 92,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 93,
+        "min": 93,
+        "max": 93,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": [
+        "ended at 3925 ms, over deadline plus grace (3500)"
+      ]
+    },
+    "hostile": {
+      "runs": 1,
+      "ms": {
+        "median": 363,
+        "min": 363,
+        "max": 363,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 56,
+        "min": 56,
+        "max": 56,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 55,
+        "min": 55,
+        "max": 55,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "destroy": {
+      "runs": 1,
+      "ms": {
+        "median": 502,
+        "min": 502,
+        "max": 502,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 76,
+        "min": 76,
+        "max": 76,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 75,
+        "min": 75,
+        "max": 75,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "cancel": {
+      "runs": 1,
+      "ms": {
+        "median": 524,
+        "min": 524,
+        "max": 524,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 97,
+        "min": 97,
+        "max": 97,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 97,
+        "min": 97,
+        "max": 97,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "supersede": {
+      "runs": 1,
+      "ms": {
+        "median": 67,
+        "min": 67,
+        "max": 67,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 104,
+        "min": 104,
+        "max": 104,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 103,
+        "min": 103,
+        "max": 103,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "shell-string": {
+      "runs": 1,
+      "ms": {
+        "median": 40,
+        "min": 40,
+        "max": 40,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 68,
+        "min": 68,
+        "max": 68,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 68,
+        "min": 68,
+        "max": 68,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "relative": {
+      "runs": 1,
+      "ms": {
+        "median": 149,
+        "min": 149,
+        "max": 149,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 84,
+        "min": 84,
+        "max": 84,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": -50,
+        "min": -50,
+        "max": -50,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "missing": {
+      "runs": 1,
+      "ms": {
+        "median": 55,
+        "min": 55,
+        "max": 55,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 71,
+        "min": 71,
+        "max": 71,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 88,
+        "min": 88,
+        "max": 88,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "controls": {
+      "runs": 1,
+      "ms": {
+        "median": 155,
+        "min": 155,
+        "max": 155,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 68,
+        "min": 68,
+        "max": 68,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 66,
+        "min": 66,
+        "max": 66,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "concurrency": {
+      "runs": 1,
+      "ms": {
+        "median": 139,
+        "min": 139,
+        "max": 139,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 292,
+        "min": 292,
+        "max": 292,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 289,
+        "min": 289,
+        "max": 289,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "forge": {
+      "runs": 1,
+      "ms": {
+        "median": 37,
+        "min": 37,
+        "max": 37,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 75,
+        "min": 75,
+        "max": 75,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 73,
+        "min": 73,
+        "max": 73,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "orphan": {
+      "runs": 1,
+      "ms": {
+        "median": 38,
+        "min": 38,
+        "max": 38,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 80,
+        "min": 80,
+        "max": 80,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 80,
+        "min": 80,
+        "max": 80,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "stalled-supersede": {
+      "runs": 1,
+      "ms": {
+        "median": 81,
+        "min": 81,
+        "max": 81,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 112,
+        "min": 112,
+        "max": 112,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 111,
+        "min": 111,
+        "max": 111,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "destroy-early": {
+      "runs": 1,
+      "ms": {
+        "median": 301,
+        "min": 301,
+        "max": 301,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 68,
+        "min": 68,
+        "max": 68,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 67,
+        "min": 67,
+        "max": 67,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "shell-string-option": {
+      "runs": 1,
+      "ms": {
+        "median": 81,
+        "min": 81,
+        "max": 81,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 210,
+        "min": 210,
+        "max": 210,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 208,
+        "min": 208,
+        "max": 208,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    },
+    "shell-string-wrapper": {
+      "runs": 1,
+      "ms": {
+        "median": 73,
+        "min": 73,
+        "max": 73,
+        "n": 1
+      },
+      "pssPeakMinusBeforeKb": {
+        "median": 80,
+        "min": 80,
+        "max": 80,
+        "n": 1
+      },
+      "pssAfterMinusBeforeKb": {
+        "median": 80,
+        "min": 80,
+        "max": 80,
+        "n": 1
+      },
+      "survivors": 0,
+      "toEmptyGroup": 0,
+      "shadowHits": 0,
+      "problems": []
+    }
+  },
+  "ok": false,
+  "where": "the stock Omarchy 4.0.3-1 guest of omakit lab, run 20260918-172116-run",
+  "lab": {
+    "runId": "20260918-172116-run",
+    "suite": "run",
+    "guest": {
+      "omarchyPackage": "omarchy 4.0.3-1",
+      "version": "4.0.3-1",
+      "kernel": "7.2.3-arch1-3",
+      "hostname": "omarchy-test",
+      "omarchyPath": null,
+      "linked": false,
+      "testedSource": "installed package omarchy 4.0.3-1"
+    },
+    "skew": false,
+    "testedSource": "installed package omarchy 4.0.3-1",
+    "pin": {
+      "release": "4.0.3",
+      "isoSha256": "03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14",
+      "expectedGuestVersion": "4.0.3-1"
+    },
+    "base": {
+      "createdAt": "2026-09-18T14:05:40.267Z",
+      "diskSha256": "c47c74a09ce49b8170e923e4b97d93fc4ef7ef7cd372600ad74744e3418d38a3",
+      "origin": "built 2026-09-18T14:03:04.000Z by the pinned toolchain harness 8637e8cc8241 from /home/mtolhuijs/.cache/omakit/lab/downloads/03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14/omarchy-4.0.3.iso, promoted 2026-09-18T14:04:37.952Z after a verification boot"
+    },
+    "host": {
+      "kernel": "7.2.3-arch1-3",
+      "qemu": "QEMU emulator version 11.1.1",
+      "cpus": 32,
+      "memoryMiB": 5120,
+      "sshPort": 2223
+    },
+    "startedAt": "2026-09-18T15:21:16.151Z"
+  }
+}
