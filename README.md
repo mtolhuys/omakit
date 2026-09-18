@@ -87,8 +87,8 @@ Reads a plugin's tree and prints what needs attention, biggest first: a size sco
 | Measurement | Evidence |
 | --- | --- |
 | Run: the design chosen by measurement | 36 runs, five scenarios, two candidates, on a real Quattro shell: both end every scenario, the supervisor is chosen for reaping last, [spike](docs/BLOCKS_SPIKE.md), 2026-09-17 |
-| Run: lab scenarios | 13 of 13 on the desktop and 13 of 13 on the stock 4.0.3 guest, [desktop](docs/evidence/blocks/2026-09-17-run-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-17-run-lab-guest.json) |
-| Store: lab scenarios | 12 of 12 on the desktop and 12 of 12 on the stock guest with a root-owned file simulated, [desktop](docs/evidence/blocks/2026-09-17-store-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-17-store-lab-guest.json) |
+| Run: lab scenarios | 19 of 19 on the desktop and 19 of 19 on the stock 4.0.3 guest, six of them written to fail on 0.1.0 after the review of 2026-09-18, [desktop](docs/evidence/blocks/2026-09-18-run-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-run-lab-guest.json), [review](docs/evidence/blocks/2026-09-18-review.json) |
+| Store: lab scenarios | 15 of 15 on the desktop and 15 of 15 on the stock guest with a root-owned file simulated, three of them written to fail on 0.1.0, [desktop](docs/evidence/blocks/2026-09-18-store-lab-desktop.json), [guest](docs/evidence/blocks/2026-09-18-store-lab-guest.json) |
 | Port: Theme Manager through Run | process lifecycle 23 to 0, unbounded buffering 18 to 0, 24 of 24 QML sites with a deadline, 27 of 27 lab steps on the stock guest, [record](docs/evidence/blocks/2026-09-17-theme-manager-port.json); not submitted, no reviewer has seen it |
 | Port: Sidecar through Store | the device state through the block, a planted link refused and moved aside, 71 tests, [record](docs/evidence/blocks/2026-09-17-sidecar-port.json); inspect's counts unchanged, and the record says why |
 | Baseline parity | 30/30 identical results, [recorded corpus](docs/evidence/parity/2026-09-12-local-vs-github-2.json), 2026-09-12 |

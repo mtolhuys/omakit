@@ -13,6 +13,7 @@ page keeps what has not happened yet, as of the 0.6.0 preparation.
 | 3, the Run proof | Theme Manager's 27 sites through Run on its `run-port` branch, process lifecycle 23 to 0 and unbounded buffering 18 to 0; the fetch blocker proven against hostile repositories ([record](evidence/blocks/2026-09-17-theme-manager-port.json)) |
 | 4, Store 0.1 | `blocks/store/`, from Theme Manager's cache transaction; the lab suite 12 of 12 on both; the Sidecar port of its device state ([record](evidence/blocks/2026-09-17-sidecar-port.json)) |
 | 5, the rebrand | README, package metadata, banner and GIF, this page; 0.6.0 prepared, not released |
+| 6, the hardening round | an adversarial review of both blocks on 2026-09-18, fifteen findings, five blocking, each fixed with a lab scenario that fails on 0.1.0; Run 0.2.0 and Store 0.2.0, the port branches updated ([record](evidence/blocks/2026-09-18-review.json)) |
 
 ## Open
 

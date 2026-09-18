@@ -117,22 +117,24 @@ from `Quickshell.env("HOME") + "/.config/omarchy/plugins/<id>/"`.
 ## What it costs
 
 From `tests/lab/run/` on the desktop (Quickshell 0.3.1-1, python 3.14.7-1,
-2026-09-17, [record](evidence/blocks/2026-09-17-run-lab-desktop.json)); the
-stock 4.0.3 guest, same day, same 13 scenarios, all ok
-([record](evidence/blocks/2026-09-17-run-lab-guest.json)), 1 GiB in 917 ms
+2026-09-18, Run 0.2.0, [record](evidence/blocks/2026-09-18-run-lab-desktop.json));
+the stock 4.0.3 guest, same day, same 19 scenarios, all ok
+([record](evidence/blocks/2026-09-18-run-lab-guest.json)), 1 GiB in 865 ms
 there and every other row within 20 ms of the desktop's:
 
 | Scenario | Time to end | Quickshell Pss after minus before |
 | --- | ---: | ---: |
-| a program that prints one line and exits | 56 ms | +249 kB |
-| 1 GiB streamed through, `keepBytes` 65,536 | 550 ms | +288 kB |
-| a leader that exits while a descendant holds the pipe | 48 ms | within noise |
-| a program that ignores TERM, deadline 2 s, grace 1 s | 3,053 ms | +822 kB |
-| ten runs started at once, 1 MiB each | 57 ms to the last result | +634 kB |
+| a helper that prints its environment and exits | 63 ms | +317 kB |
+| 1 GiB streamed through, `keepBytes` 65,536 | 833 ms | +333 kB |
+| a leader that exits while a descendant holds the pipe | 58 ms | +289 kB |
+| a program that ignores TERM, deadline 2 s, grace 1 s | 3,061 ms | +309 kB |
+| ten runs started at once, 1 MiB each | 68 ms to the last result | +676 kB |
 
-About 50 ms and one helper process (5.7 MB Pss while it waits) per run,
+About 60 ms and one helper process (5.7 MB Pss while it waits) per run,
 of which 8 ms is the interpreter (`python3 -I -S -B -c pass`, median of
-20). Time to end is `Run.qml`'s clock from `start()` to the result; Pss is
+20) and under a millisecond the token and the gate's round trip (0.1.0
+measured 56 ms for the first row on 2026-09-17). Time to end is
+`Run.qml`'s clock from `start()` to the result; Pss is
 `/proc/<quickshell pid>/smaps_rollup` sampled every 100 ms, the last
 sample before `start()` against the last sample at least 1.5 s after the
 result; the method is in `tests/lab/run/report.py`.
@@ -193,7 +195,7 @@ commit) and the sha256 of the body after the header line, so
 `sha256sum <(tail -n +7 omakit/Run.qml)` is the whole check.
 
 `omakit inspect` reads the header and the body: an unmodified block is one
-row, `block run 0.1.0, 2 files, unmodified`, and its lines raise no pattern
+row, `block run 0.2.0, 2 files, unmodified`, and its lines raise no pattern
 row; a `Run {` site in the plugin's own QML is listed as a process with its
 deadline observed through the block. A file with a block header whose body
 is not a shipped one is reported as `modified`, and its lines are read like
@@ -335,12 +337,13 @@ under Run, with Run's state in the reason.
 
 ### What it costs
 
-From `tests/lab/store/` on the desktop, 2026-09-17: a read or a write is
-one helper run under Run, 82 to 102 ms from the call to the result across
-the twelve scenarios' first operation; ten writers started at once all
-finished within 91 ms. Measured by the harness's clock
-(`Date.now()` at the call and at the result), in
-[the record](evidence/blocks/2026-09-17-store-lab-desktop.json); the stock
+From `tests/lab/store/` on the desktop, 2026-09-18, Store 0.2.0: a read or
+a write is one helper run under Run, 84 to 92 ms from the call to the
+result across the scenarios' first operation, 199 ms for the 792 KB
+non-ASCII read and 3 ms for a write refused in QML for its size; ten
+writers started at once all finished within 87 ms. Measured by the
+harness's clock (`Date.now()` at the call and at the result), in
+[the record](evidence/blocks/2026-09-18-store-lab-desktop.json); the stock
 guest's is beside it.
 
 ### What Store does not do
@@ -397,7 +400,8 @@ the Store lab suite. The port is not submitted; no reviewer has seen it.
 
 ## Versioning
 
-A block's version is its own, `0.1.0` for each, independent of omakit's.
+A block's version is its own, `0.2.0` for each since 2026-09-18 (`0.1.0`
+on 2026-09-17), independent of omakit's.
 A change to a file's body is a new block version; `omakit add <block>
 --update` moves an unmodified copy to it, and `inspect` names the version
 a copy carries beside the one omakit ships. `blocks/<name>/NOTICE` in the
