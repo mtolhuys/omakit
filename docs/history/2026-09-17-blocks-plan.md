@@ -178,7 +178,7 @@ raise it.
 ## Decisions, 2026-09-17
 
 1. The name stays omakit.
-2. The working line was superseded by the fixed release line: "Build it, check it, prove it." No alternative remains open.
+2. The working line was superseded by the release positioning. No alternative remains open.
 3. The command is `omakit add run`, `omakit add store`, with `--update`.
 4. Theme Manager is the proof plugin for both blocks: the author's most popular plugin, 26 QML `Process` blocks, and an open review with two file-state blockers and one unbounded-fetch blocker in the M13 week. Its supply-chain blocker (mutable catalog entries into theme install) is not a block's job and is fixed on its own.
 5. The Sunday Space of 20 Sep shares the idea and where it is heading, from the M13 aggregate. No request for testers and no dates.

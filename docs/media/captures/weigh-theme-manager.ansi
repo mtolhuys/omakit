@@ -1,0 +1,63 @@
+[2mweighing[0m      io.github.mtolhuys.theme-manager
+[2mshell[0m         4.0.0.alpha at ~/Projects/omarchy/core
+[2mrestarts[0m      6: (1 baseline + 1 plugin) × 3 runs
+[2mestimate[0m      about 5 minutes, 48 s per restart: 2.7 s for the shell to come
+              back (measured over 6 restart(s) on this machine at
+              2026-09-18T17:11:05Z), then the 30 s settle and the 15 s window
+[2mshell.json[0m    backed up beside itself and restored on every exit path; the md5
+              is printed before and after
+[2mwrites[0m        ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-19-theme-manager.json
+
+[2m░ info[0m  ~/.config/omarchy/shell.json backed up to
+        ~/.config/omarchy/shell.json.omakit-backup-20260919122713, md5
+        cff48fb31eb492a78893b9ebf943689e
+[2m░ info[0m  run 1 of 3, baseline: 560.8 MB Pss, 1.60% CPU, 16 child processes, ready
+        after 1.4 s
+[2m░ info[0m  run 1 of 3, io.github.mtolhuys.theme-manager: 584.4 MB Pss, 1.13% CPU,
+        11 child processes, ready after 1.4 s
+[2m░ info[0m  run 2 of 3, baseline: 555.9 MB Pss, 1.20% CPU, 16 child processes, ready
+        after 1.4 s
+[2m░ info[0m  run 2 of 3, io.github.mtolhuys.theme-manager: 577.5 MB Pss, 1.13% CPU,
+        14 child processes, ready after 1.5 s
+[2m░ info[0m  run 3 of 3, baseline: 555.8 MB Pss, 2.46% CPU, 16 child processes, ready
+        after 1.4 s
+[2m░ info[0m  run 3 of 3, io.github.mtolhuys.theme-manager: 567.2 MB Pss, 1.13% CPU,
+        15 child processes, ready after 1.4 s
+[32m▁ ok[0m    ~/.config/omarchy/shell.json restored and verified, md5
+        cff48fb31eb492a78893b9ebf943689e (before:
+        cff48fb31eb492a78893b9ebf943689e); the backup is removed
+
+[2mshell[0m         4.0.0.alpha at ~/Projects/omarchy/core, 2026-09-19T12:27:13Z
+[2mmethod[0m        startup A/B, 3 runs, a 15 s window after a settle of 30 s; Pss
+              from /proc/<pid>/smaps_rollup at the end of the window, CPU from
+              /proc/<pid>/stat over the window, children from a /proc walk every
+              500 ms
+[2mnoise floor[0m   1.27% CPU, the spread of 3 baseline runs; a CPU delta inside it is
+              within noise
+[2mmemory[0m        within the shell's own startup variance (5.01 MB over 3 baseline
+              runs, 16.77 MB at the settle): a fact about the shell's start, not
+              a plugin's weight, until its two resting levels are understood
+              (docs/MEASUREMENTS.md C1, C2)
+[2mbaseline[0m      555.9 MB Pss and 1.6% CPU, the median of 3 runs without the plugin
+[2mshell.json[0m    md5 cff48fb31eb492a78893b9ebf943689e before,
+              cff48fb31eb492a78893b9ebf943689e after: restored and verified,
+              backup removed
+
+[32m▁ ok[0m    [1mio.github.mtolhuys.theme-manager[0m                               [2m[overlay][0m
+        Omarchy Theme Manager: no measurable CPU
+        [2mmemory[0m  21.55 MB (spread 12.2)
+        [2mcpu[0m  -0.47% (spread 1.27), within noise
+        [2mchildren[0m  none attributed
+
+Every figure is the median over 3 runs of (with the plugin minus without it)
+[39mwith its spread, and carries its origin in the document under [0m[34morigin[0m[39m.[0m
+
+[32;1m▁ WEIGHED[0m  1 plugin over 3 runs. shell.json restored and verified.
+
+[1mfor the README[0m
+[2m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
+  [1mio.github.mtolhuys.theme-manager[0m
+        Weighs nothing measurable: no CPU above the floor (1.27%) and no child
+        process, on Omarchy 4.0.0.alpha, measured with omakit weigh on
+        2026-09-19
+        [2mevidence[0m  ~/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-19-theme-manager.json

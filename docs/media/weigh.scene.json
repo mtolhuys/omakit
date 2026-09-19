@@ -1,12 +1,12 @@
 {
-  "title": "omakit weigh omadock",
+  "title": "omakit weigh Theme Manager",
   "width": 110,
   "rows": 56,
   "fontSize": 12,
   "steps": [
     {
-      "command": "omakit weigh omadock --runs 3 --yes --out docs/evidence/weigh/desktop-2026-09-18-omadock.json",
-      "capture": "docs/media/captures/weigh-omadock.ansi",
+      "command": "omakit weigh io.github.mtolhuys.theme-manager --runs 3 --yes --out docs/evidence/weigh/desktop-2026-09-19-theme-manager.json",
+      "capture": "docs/media/captures/weigh-theme-manager.ansi",
       "omit": [
         [
           1,

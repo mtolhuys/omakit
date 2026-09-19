@@ -1,7 +1,7 @@
 # Blocks: the Run and Store contracts
 
 A block is a small set of files a plugin copies into its own tree with
-`omakit add`. Build it: each block owns one piece of the process or private-state
+`omakit add`. Each block owns one piece of the process or private-state
 plumbing measured in M13. This page is the contract of the
 two blocks, Run 0.2.1 and Store 0.2.0: what each does, which review
 comments each line answers, the API, what it costs, what it does not do,

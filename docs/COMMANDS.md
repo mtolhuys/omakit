@@ -1,8 +1,8 @@
 # The commands
 
-Build it, check it, prove it. Every command below says what it reads, what it
-prints, and what it will not do. The short list is `omakit help`; this page is
-the rest, ordered by the four jobs: build (the two blocks measured in
+Every command below says what it reads, what it prints, and what it will not
+do. The short list is `omakit help`; this page is the rest, ordered by the four
+jobs: build (the two blocks measured in
 [M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)),
 check, track, prove, and then the rest.
 
@@ -48,7 +48,7 @@ as one row, each `Run {` site as a process whose deadline the block holds,
 and each `Store {` site as a write under the plugin's own state or cache
 directory at mode 0600; a modified copy is reported as modified.
 
-![Recorded terminal showing inspect rank two long functions and list the review class observed in a fixture](media/inspect.gif)
+![Recorded terminal showing inspect ranking two long functions and listing the review class observed in a fixture](media/inspect.gif)
 
 `omakit inspect <plugin-dir>` reads the plugin's tree at its commit and
 prints what the text shows, in the order a reviewer reads it: every

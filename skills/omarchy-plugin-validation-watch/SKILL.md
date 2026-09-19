@@ -26,7 +26,7 @@ comparisons were stale (62.8%), with 64 of 583 issues unknown. The older
 2026-09-12 sample found 68/93 readable issues stale (73.1%); that rate was
 not a measurement of all 464 issues in the queue.
 
-## Check it
+## Run the check
 
 ```bash
 omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>

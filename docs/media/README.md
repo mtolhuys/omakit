@@ -12,12 +12,12 @@ changes the capture. The full capture always remains beside the scene.
 
 | GIF | What the final frame shows | Capture kind |
 | --- | --- | --- |
-| `banner.gif` | the finished wordmark and `Build it, check it, prove it.` | timed terminal replay |
+| `banner.gif` | the finished wordmark and `tested plumbing for plugins` on one line | timed terminal replay |
 | `add-run.gif` | inspect before, the three copied files, and inspect after the port | three fixture commands |
 | `inspect.gif` | the size score, two long functions, environment-trust sites and `INSPECTED` | one fixture command |
 | `submit.gif` | `REFUSED`, three root causes, their remedies and the retry command | one fixture command |
-| `watch-all.gif` | four current issues, their validation state and the closing limitation | live read-only command |
-| `audit.gif` | every audited plugin row and the 12-of-19 drift summary | live read-only command |
+| `watch-all.gif` | two current issues, their validation state and the closing limitation | live read-only command |
+| `audit.gif` | every audited plugin row and the 13-of-19 drift summary | live read-only command |
 | `weigh.gif` | six samples, equal restoration hashes, noise floor, plugin result and evidence path | consented desktop measurement |
 | `lab-prove.gif` | guest identity, 19-scenario result, run cost, overlay removal, unchanged base and `PROVED` | disposable guest run |
 
@@ -31,7 +31,7 @@ expected.
 
 The banner is the one timed replay. It is recorded at the 40-column terminal
 width and 12 rows used by the banner capture rule. The scene is 29 cells wide,
-so the fixed 29-character line stays together beneath the wordmark.
+so the fixed 27-character line stays together beneath the wordmark.
 
 ## Recipes
 
@@ -41,7 +41,7 @@ so the fixed 29-character line stays together beneath the wordmark.
 TERM=xterm-256color FORCE_COLOR=1 script -q \
   --log-out docs/media/captures/banner.out \
   --log-timing docs/media/captures/banner.tim \
-  -c "stty rows 12 cols 40; node --input-type=module -e 'import { banner } from \"./tools/marketplace/banner.mjs\"; await banner(); process.stdout.write(\"Build it, check it, prove it.\\n\")'"
+  -c "stty rows 12 cols 40; node --input-type=module -e 'import { banner } from \"./tools/marketplace/banner.mjs\"; await banner(); process.stdout.write(\"tested plumbing for plugins\\n\")'"
 ```
 
 ### Add Run
@@ -127,10 +127,10 @@ This command restarts the live shell six times and must only run after explicit
 consent:
 
 ```bash
-FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh omadock \
+FORCE_COLOR=1 DISABLE_UPDATE_NOTIFIER=1 env -u NO_COLOR ./bin/omakit weigh io.github.mtolhuys.theme-manager \
   --runs 3 --yes \
-  --out docs/evidence/weigh/desktop-2026-09-18-omadock.json \
-  > docs/media/captures/weigh-omadock.ansi 2>&1
+  --out docs/evidence/weigh/desktop-2026-09-19-theme-manager.json \
+  > docs/media/captures/weigh-theme-manager.ansi 2>&1
 ```
 
 The capture must show three baseline and three plugin samples, equal before and
@@ -159,7 +159,7 @@ for scene in banner add-run inspect submit watch-all audit weigh lab-prove; do
 done
 ```
 
-The 2026-09-18 render used Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1.
+The 2026-09-19 render used Pillow 12.3.0, FreeType 2.14.3 and ffmpeg n9.0.1.
 Each render verified the capture replay and, for the banner, 30 joined wordmark
 cell boundaries.
 
@@ -175,19 +175,19 @@ cell boundaries.
   suite summary, duration, cleanup and verdict stay visible.
 - The other five scenes omit nothing.
 
-## Measured files, 2026-09-18
+## Measured files, 2026-09-19
 
 | GIF | Bytes | Duration | Dimensions | Final hold | Widest shown line |
 | --- | ---: | ---: | --- | ---: | ---: |
-| `banner.gif` | 14,243 | 5.12 s | 455 x 298 | 4.20 s | timed replay |
-| `add-run.gif` | 39,766 | 30.00 s | 830 x 688 | 9.16 s | 79 columns |
-| `inspect.gif` | 29,453 | 13.44 s | 830 x 592 | 8.16 s | 79 columns |
-| `submit.gif` | 963,340 | 16.32 s | 830 x 592 | 6.20 s | 80 columns |
-| `watch-all.gif` | 51,639 | 11.64 s | 830 x 816 | 8.16 s | 102 columns |
-| `audit.gif` | 83,592 | 10.04 s | 830 x 1680 | 8.16 s | 100 columns |
-| `weigh.gif` | 124,774 | 11.08 s | 830 x 944 | 7.20 s | 102 columns |
-| `lab-prove.gif` | 32,981 | 13.04 s | 830 x 496 | 9.16 s | 93 columns |
+| `banner.gif` | 14,343 | 5.12 s | 455 x 298 | 4.24 s | timed replay |
+| `add-run.gif` | 39,424 | 30.00 s | 830 x 688 | 9.16 s | 79 columns |
+| `inspect.gif` | 29,311 | 13.44 s | 830 x 592 | 8.16 s | 79 columns |
+| `submit.gif` | 959,947 | 16.32 s | 830 x 592 | 6.20 s | 80 columns |
+| `watch-all.gif` | 39,537 | 11.32 s | 830 x 816 | 8.12 s | 102 columns |
+| `audit.gif` | 88,472 | 10.04 s | 830 x 1680 | 8.16 s | 100 columns |
+| `weigh.gif` | 60,450 | 11.08 s | 830 x 944 | 7.20 s | 102 columns |
+| `lab-prove.gif` | 32,864 | 13.04 s | 830 x 496 | 9.16 s | 93 columns |
 
 All shown lines fit their scene width, and every displayed URL is complete.
 The hashes, capture counts, package facts and README word count are in
-[M10's machine-readable record](../evidence/readme/2026-09-18-rebrand.json).
+[M10's machine-readable record](../evidence/readme/2026-09-19-positioning.json).

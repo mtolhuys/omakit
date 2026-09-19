@@ -1,7 +1,7 @@
 # Working in this repository
 
-You are the primary user of this tool. Build it, check it, prove it. The reader
-meets four jobs in that order: build with the Run and Store blocks, check with
+You are the primary user of this tool. The reader meets four jobs in order:
+build with the Run and Store blocks, check with
 inspect, verify and submit, track with watch and audit, and prove in the
 disposable guest. A coding agent often submits on an owner's behalf and needs
 the refusals up front, in one pass, with the reason attached.

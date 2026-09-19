@@ -2,11 +2,11 @@
 
 ## 0.6.0 (unreleased)
 
-Build it, check it, prove it. The Run (0.2.1) and Store (0.2.0) blocks,
-`omakit add run`, `omakit add store`, and `inspect` reading an unmodified
-block as one row; M13, the 1,001 blocker comments the contracts are counted
-over; the Theme Manager and Sidecar ports, neither submitted; and the reader's
-four jobs in order: build, check, track and prove. `omakit lab prove`,
+The Run (0.2.1) and Store (0.2.0) blocks, `omakit add run`, `omakit add
+store`, and `inspect` reading an unmodified block as one row; M13, the 1,001
+blocker comments the contracts are counted over; the Theme Manager and Sidecar
+ports, neither submitted; and the reader's four jobs in order: build, check,
+track and prove. `omakit lab prove`,
 `inspect`, `setup` and `prune`, the harness moved into omakit from
 `omarchy-plugin-lab` and refactored to one driver, the pinned 4.0.3
 release verified against its SHA-256 and the Omarchy signature, one

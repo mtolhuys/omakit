@@ -1,0 +1,82 @@
+{
+  "date": "2026-09-19",
+  "purpose": "Run the README install and command path as a first reader from a packaged candidate under /tmp.",
+  "isolatedRoot": "/tmp/omakit-first-reader-zrwE2z",
+  "sourceCommit": "6c386fbacb72751ff6b322efdfa138605ef23fae",
+  "candidate": {
+    "path": "/tmp/omakit-first-reader-zrwE2z/omakit-0.5.1.tgz",
+    "bytesAfterReleaseCommitStamp": 329259,
+    "files": 130,
+    "installPrefix": "/tmp/omakit-first-reader-zrwE2z/prefix"
+  },
+  "runs": [
+    {
+      "readme": "npm i -g omakit && omakit setup",
+      "run": "npm install --global <candidate.tgz> --prefix <tmp-prefix>; omakit setup",
+      "result": "ok: one package installed; setup found Node and Git, prepared the pin and installed completion in the isolated home"
+    },
+    {
+      "readme": "npx skills add mtolhuys/omakit",
+      "run": "the same command through the machine's Node runtime, with cwd and home under /tmp",
+      "result": "ok: the current default branch supplied its five skills; the packaged candidate itself contains all six branch skills, including omarchy-plugin-build"
+    },
+    {
+      "readme": "omakit add run <plugin-dir>",
+      "result": "ok: Run.qml, run-supervisor.py and NOTICE were written with commit 6c386fbacb72751ff6b322efdfa138605ef23fae"
+    },
+    {
+      "readme": "omakit add store <plugin-dir>",
+      "result": "ok: Store.qml and store-helper.py were written, the Run copy was kept current and NOTICE was updated"
+    },
+    {
+      "readme": "omakit inspect <plugin-dir>",
+      "result": "ok: both unmodified blocks were recognised and the still-unported fixture process remained visible with its two review-class rows"
+    },
+    {
+      "readme": "omakit verify <plugin-repo>",
+      "result": "ok: the marketplace baseline reported passed over the clean fixture commit"
+    },
+    {
+      "readme": "omakit submit <plugin-repo>",
+      "run": "omakit submit <fixture> --category Widgets --tags bar,quickshell --offline",
+      "result": "ok: READY, title and body printed, no post; the network-dependent validation-commit check was visibly skipped"
+    },
+    {
+      "readme": "omakit watch --all",
+      "run": "omakit watch --all --user mtolhuys",
+      "result": "ok: two issues checked, both current; read-only closing line printed"
+    },
+    {
+      "readme": "omakit audit",
+      "result": "expected exit 1: 19 third-party plugins audited, 6 validated and 13 drift; no checkout command executed"
+    },
+    {
+      "readme": "omakit lab setup",
+      "result": "ok: PREPARED, the verified ISO and ready base were already present and nothing was acquired"
+    },
+    {
+      "readme": "omakit lab prove <suite>",
+      "run": "omakit lab prove run",
+      "result": "ok: packaged candidate, 19 scenarios, guest omarchy 4.0.3-1, skew false, 162687 ms, 439488512-byte overlay removed, base unchanged",
+      "record": "docs/evidence/lab/20260919-144335-run/run.json"
+    },
+    {
+      "readme": "omakit weigh <plugin>",
+      "run": "omakit weigh io.github.mtolhuys.theme-manager --runs 3 --yes",
+      "result": "ok earlier in the same reader pass: six restarts, equal before and after md5, no CPU above the 1.27% floor and no attributed child process",
+      "record": "docs/evidence/weigh/desktop-2026-09-19-theme-manager.json"
+    }
+  ],
+  "notRunLiterally": [
+    "The registry form of npm i -g omakit would install the already published release instead of this candidate, so the candidate tarball was installed globally under the temporary prefix.",
+    "The isolated home has no signed-in GitHub account, so watch named the public user explicitly.",
+    "A new lab setup under /tmp would acquire and build 12,442,931,200 bytes already present in the prepared lab; the packaged candidate was tested against that prepared lab instead.",
+    "The packaged candidate did not repeat the six live desktop restarts after the same checkout had just produced the current Theme Manager weigh record."
+  ],
+  "findings": [
+    "No README sentence contradicted the observed command behavior.",
+    "The machine's npx wrapper needs its normal home configuration; the same command through the installed Node runtime worked in the isolated home.",
+    "An initial sandboxed pin attempt was blocked between git init and remote setup; a clean retry with host network access completed."
+  ],
+  "sentencesRemovedForUnsupportedBehavior": []
+}

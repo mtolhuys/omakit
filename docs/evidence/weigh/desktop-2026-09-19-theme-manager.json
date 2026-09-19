@@ -1,0 +1,2477 @@
+{
+  "omakit": "0.5.1",
+  "command": "weigh",
+  "method": "startup A/B: the shell is restarted with the enabled set minus every measured plugin (baseline) and with that set plus one plugin; after listPlugins reports every installed plugin and a settle, a window opens in which utime+stime is read from /proc/<pid>/stat at both ends, Pss from /proc/<pid>/smaps_rollup and VmRSS from /proc/<pid>/status are traced twice a second and taken at the end of the window (the same two also recorded at the settle), descendants are sampled twice a second and the CPU of reaped children comes from cutime+cstime of the shell pid; each plugin row is the median over runs of (plus minus baseline, run by run) with the spread (max minus min); a delta whose absolute median is not above the baseline spread is within noise",
+  "started": "2026-09-19T12:27:13Z",
+  "ended": "2026-09-19T12:31:57Z",
+  "host": "omarchy",
+  "shell": {
+    "version": "4.0.0.alpha",
+    "omarchyPath": "/home/mtolhuijs/Projects/omarchy/core"
+  },
+  "settings": {
+    "runs": 3,
+    "windowSeconds": 15,
+    "settleSeconds": 30,
+    "readyTimeoutSeconds": 45,
+    "sampleIntervalMs": 500,
+    "clockTicksPerSecond": 100
+  },
+  "config": {
+    "path": "/home/mtolhuijs/.config/omarchy/shell.json",
+    "backup": "/home/mtolhuijs/.config/omarchy/shell.json.omakit-backup-20260919122713",
+    "md5Before": "cff48fb31eb492a78893b9ebf943689e",
+    "md5After": "cff48fb31eb492a78893b9ebf943689e",
+    "restored": true,
+    "shellAnsweredAfterRestore": true
+  },
+  "audited": [
+    "io.github.mtolhuys.theme-manager"
+  ],
+  "failedRuns": [],
+  "baseline": {
+    "config": {
+      "bar": {
+        "centerAnchor": "omarchy.clock",
+        "layout": {
+          "center": [
+            {
+              "id": "omarchy.keyboard-layout"
+            },
+            {
+              "id": "akshar.radio-atlas"
+            },
+            {
+              "id": "omarchy.system-update"
+            },
+            {
+              "id": "io.github.mtolhuys.news-readers"
+            },
+            {
+              "format": "ddd d MMM HH:mm",
+              "id": "omarchy.clock"
+            },
+            {
+              "id": "omaplug",
+              "autoCheckUpdates": true
+            },
+            {
+              "id": "robzolkos.github",
+              "iconAlwaysUnlit": false,
+              "includeArchived": true,
+              "includeForks": true,
+              "linkBehavior": "Browser tab"
+            },
+            {
+              "id": "io.github.mtolhuys.plugin-pulse"
+            },
+            {
+              "id": "io.github.mtolhuys.news-radar"
+            }
+          ],
+          "left": [
+            {
+              "id": "omarchy.menu"
+            },
+            {
+              "id": "omarchy.workspaces"
+            },
+            {
+              "id": "bjarneo.workspace-layout"
+            },
+            {
+              "id": "io.github.mtolhuys.sidecar"
+            },
+            {
+              "id": "omarchy.indicators"
+            }
+          ],
+          "right": [
+            {
+              "id": "omarchy.tray"
+            },
+            {
+              "id": "sero.local-ai"
+            },
+            {
+              "id": "io.github.mtolhuys.onscreen-keyboard"
+            },
+            {
+              "id": "omarchy.tailscale"
+            },
+            {
+              "id": "omarchy.agents"
+            },
+            {
+              "id": "omarchy.bluetooth"
+            },
+            {
+              "id": "omarchy.network"
+            },
+            {
+              "id": "omarchy.audio"
+            },
+            {
+              "id": "crmne.hyprmoncfg"
+            },
+            {
+              "id": "omarchy.monitor"
+            },
+            {
+              "id": "io.github.mtolhuys.disk-lens"
+            },
+            {
+              "id": "omarchy.power"
+            }
+          ]
+        },
+        "position": "top",
+        "transparent": true
+      },
+      "cloneSourceRestores": [
+        "io.github.sirjul1337.lock-explorer",
+        "io.github.mtolhuys.theme-manager"
+      ],
+      "disabledPlugins": [
+        "omarchy.image-picker",
+        "omarchy.lock"
+      ],
+      "idle": {
+        "lock": 300,
+        "screensaver": 150
+      },
+      "plugins": [
+        {
+          "design": "zen",
+          "id": "io.github.sirjul1337.lock-explorer"
+        },
+        {
+          "id": "bobbynicholas.omaland"
+        },
+        {
+          "id": "omadock"
+        },
+        {
+          "id": "expose.window-overview"
+        },
+        {
+          "id": "io.github.pablo-merino.altswitch"
+        }
+      ],
+      "version": 1
+    },
+    "pssMb": {
+      "median": 555.9189453125,
+      "spread": 5.01171875,
+      "min": 555.82421875,
+      "max": 560.8359375,
+      "runs": [
+        560.8359375,
+        555.9189453125,
+        555.82421875
+      ]
+    },
+    "rssMb": {
+      "median": 667.10546875,
+      "spread": 4.875,
+      "min": 666.26171875,
+      "max": 671.13671875,
+      "runs": [
+        671.13671875,
+        667.10546875,
+        666.26171875
+      ]
+    },
+    "pssMbSettled": {
+      "median": 558.0244140625,
+      "spread": 16.76953125,
+      "min": 553.46484375,
+      "max": 570.234375,
+      "runs": [
+        570.234375,
+        558.0244140625,
+        553.46484375
+      ]
+    },
+    "rssMbSettled": {
+      "median": 668.47265625,
+      "spread": 16.6328125,
+      "min": 663.90234375,
+      "max": 680.53515625,
+      "runs": [
+        680.53515625,
+        668.47265625,
+        663.90234375
+      ]
+    },
+    "cpuPercent": {
+      "median": 1.5986145340704723,
+      "spread": 1.2658937119368776,
+      "min": 1.1988011988011986,
+      "max": 2.4646949107380762,
+      "runs": [
+        1.5986145340704723,
+        1.1988011988011986,
+        2.4646949107380762
+      ]
+    },
+    "childRssMb": {
+      "median": 143.828125,
+      "spread": 40.43359375,
+      "min": 128.13671875,
+      "max": 168.5703125,
+      "runs": [
+        168.5703125,
+        128.13671875,
+        143.828125
+      ]
+    },
+    "runs": [
+      {
+        "label": "baseline",
+        "run": 1,
+        "shellPid": 502601,
+        "started": "2026-09-19T12:27:45Z",
+        "ended": "2026-09-19T12:28:00Z",
+        "readyAfterSeconds": 1.379,
+        "windowSeconds": 15.013,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 574296,
+          "rssKb": 687244,
+          "memoryAt": "window-end",
+          "pssKbSettled": 583920,
+          "rssKbSettled": 696868,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 583920,
+              "rssKb": 696868
+            },
+            {
+              "t": 0.515,
+              "pssKb": 583920,
+              "rssKb": 696868
+            },
+            {
+              "t": 1.031,
+              "pssKb": 583624,
+              "rssKb": 696572
+            },
+            {
+              "t": 1.547,
+              "pssKb": 579604,
+              "rssKb": 692552
+            },
+            {
+              "t": 2.063,
+              "pssKb": 579644,
+              "rssKb": 692592
+            },
+            {
+              "t": 2.579,
+              "pssKb": 579652,
+              "rssKb": 692600
+            },
+            {
+              "t": 3.095,
+              "pssKb": 579652,
+              "rssKb": 692600
+            },
+            {
+              "t": 3.61,
+              "pssKb": 579667,
+              "rssKb": 692616
+            },
+            {
+              "t": 4.125,
+              "pssKb": 579692,
+              "rssKb": 692640
+            },
+            {
+              "t": 4.641,
+              "pssKb": 579696,
+              "rssKb": 692644
+            },
+            {
+              "t": 5.155,
+              "pssKb": 579707,
+              "rssKb": 692656
+            },
+            {
+              "t": 5.669,
+              "pssKb": 579724,
+              "rssKb": 692672
+            },
+            {
+              "t": 6.185,
+              "pssKb": 579728,
+              "rssKb": 692676
+            },
+            {
+              "t": 6.7,
+              "pssKb": 579728,
+              "rssKb": 692676
+            },
+            {
+              "t": 7.215,
+              "pssKb": 579736,
+              "rssKb": 692684
+            },
+            {
+              "t": 7.73,
+              "pssKb": 579756,
+              "rssKb": 692704
+            },
+            {
+              "t": 8.245,
+              "pssKb": 579756,
+              "rssKb": 692704
+            },
+            {
+              "t": 8.76,
+              "pssKb": 579772,
+              "rssKb": 692720
+            },
+            {
+              "t": 9.276,
+              "pssKb": 579772,
+              "rssKb": 692720
+            },
+            {
+              "t": 9.791,
+              "pssKb": 579683,
+              "rssKb": 692632
+            },
+            {
+              "t": 10.309,
+              "pssKb": 579696,
+              "rssKb": 692644
+            },
+            {
+              "t": 10.823,
+              "pssKb": 579732,
+              "rssKb": 692680
+            },
+            {
+              "t": 11.338,
+              "pssKb": 579732,
+              "rssKb": 692680
+            },
+            {
+              "t": 11.853,
+              "pssKb": 579716,
+              "rssKb": 692664
+            },
+            {
+              "t": 12.368,
+              "pssKb": 579732,
+              "rssKb": 692680
+            },
+            {
+              "t": 12.883,
+              "pssKb": 579744,
+              "rssKb": 692692
+            },
+            {
+              "t": 13.397,
+              "pssKb": 574975,
+              "rssKb": 687924
+            },
+            {
+              "t": 13.911,
+              "pssKb": 574976,
+              "rssKb": 687924
+            },
+            {
+              "t": 14.425,
+              "pssKb": 574984,
+              "rssKb": 687932
+            },
+            {
+              "t": 14.941,
+              "pssKb": 574296,
+              "rssKb": 687244
+            },
+            {
+              "t": 15,
+              "pssKb": 574296,
+              "rssKb": 687244
+            }
+          ],
+          "cpuTicksStart": 290,
+          "cpuTicksEnd": 314,
+          "cpuSeconds": 0.24,
+          "cpuPercent": 1.5986145340704723,
+          "reapedChildTicksStart": 2970,
+          "reapedChildTicksEnd": 3078,
+          "reapedChildCpuSeconds": 1.08,
+          "reapedChildCpuPercent": 7.193765403317126
+        },
+        "children": [
+          {
+            "pid": 502740,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 4868,
+            "samples": 31
+          },
+          {
+            "pid": 503232,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 1,
+            "rssLast": 11760,
+            "samples": 31
+          },
+          {
+            "pid": 503238,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 12004,
+            "samples": 31
+          },
+          {
+            "pid": 503573,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 40,
+            "cpuLast": 54,
+            "rssLast": 29840,
+            "samples": 31
+          },
+          {
+            "pid": 503676,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4124,
+            "samples": 31
+          },
+          {
+            "pid": 503726,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4104,
+            "samples": 31
+          },
+          {
+            "pid": 503766,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 25912,
+            "samples": 31
+          },
+          {
+            "pid": 504599,
+            "comm": "udevadm",
+            "arg0": "monitor",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 5596,
+            "samples": 31
+          },
+          {
+            "pid": 504853,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 31
+          },
+          {
+            "pid": 504854,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2168,
+            "samples": 31
+          },
+          {
+            "pid": 508475,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 2.579,
+            "lastSeen": 2.579,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 15280,
+            "samples": 1
+          },
+          {
+            "pid": 508787,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 6.185,
+            "lastSeen": 6.185,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 16460,
+            "samples": 1
+          },
+          {
+            "pid": 508843,
+            "comm": "omarchy-hyprlan",
+            "arg0": "",
+            "firstSeen": 6.7,
+            "lastSeen": 6.7,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 0,
+            "samples": 1
+          },
+          {
+            "pid": 508989,
+            "comm": "omarchy-hyprlan",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-hyprland-session-locked",
+            "firstSeen": 8.245,
+            "lastSeen": 8.245,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4088,
+            "samples": 1
+          },
+          {
+            "pid": 509108,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 9.791,
+            "lastSeen": 9.791,
+            "cpuFirst": 3,
+            "cpuLast": 3,
+            "rssLast": 17184,
+            "samples": 1
+          },
+          {
+            "pid": 509346,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 13.397,
+            "lastSeen": 13.397,
+            "cpuFirst": 4,
+            "cpuLast": 4,
+            "rssLast": 17060,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 2,
+        "shellPid": 516901,
+        "started": "2026-09-19T12:29:19Z",
+        "ended": "2026-09-19T12:29:34Z",
+        "readyAfterSeconds": 1.397,
+        "windowSeconds": 15.015,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 569261,
+          "rssKb": 683116,
+          "memoryAt": "window-end",
+          "pssKbSettled": 571417,
+          "rssKbSettled": 684516,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 571417,
+              "rssKb": 684516
+            },
+            {
+              "t": 0.513,
+              "pssKb": 571418,
+              "rssKb": 684516
+            },
+            {
+              "t": 1.028,
+              "pssKb": 570214,
+              "rssKb": 683312
+            },
+            {
+              "t": 1.543,
+              "pssKb": 570042,
+              "rssKb": 683140
+            },
+            {
+              "t": 2.059,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 2.574,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 3.089,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 3.605,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 4.122,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 4.636,
+              "pssKb": 570050,
+              "rssKb": 683148
+            },
+            {
+              "t": 5.151,
+              "pssKb": 570058,
+              "rssKb": 683156
+            },
+            {
+              "t": 5.666,
+              "pssKb": 570058,
+              "rssKb": 683156
+            },
+            {
+              "t": 6.181,
+              "pssKb": 570058,
+              "rssKb": 683156
+            },
+            {
+              "t": 6.696,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 7.211,
+              "pssKb": 565931,
+              "rssKb": 683160
+            },
+            {
+              "t": 7.726,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 8.24,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 8.758,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 9.273,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 9.789,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 10.304,
+              "pssKb": 570062,
+              "rssKb": 683160
+            },
+            {
+              "t": 10.819,
+              "pssKb": 570066,
+              "rssKb": 683164
+            },
+            {
+              "t": 11.333,
+              "pssKb": 570066,
+              "rssKb": 683164
+            },
+            {
+              "t": 11.847,
+              "pssKb": 570082,
+              "rssKb": 683180
+            },
+            {
+              "t": 12.361,
+              "pssKb": 570082,
+              "rssKb": 683180
+            },
+            {
+              "t": 12.877,
+              "pssKb": 570082,
+              "rssKb": 683180
+            },
+            {
+              "t": 13.391,
+              "pssKb": 570082,
+              "rssKb": 683180
+            },
+            {
+              "t": 13.906,
+              "pssKb": 569215,
+              "rssKb": 683192
+            },
+            {
+              "t": 14.421,
+              "pssKb": 570018,
+              "rssKb": 683116
+            },
+            {
+              "t": 14.936,
+              "pssKb": 570017,
+              "rssKb": 683116
+            },
+            {
+              "t": 15.001,
+              "pssKb": 570017,
+              "rssKb": 683116
+            }
+          ],
+          "cpuTicksStart": 287,
+          "cpuTicksEnd": 305,
+          "cpuSeconds": 0.18,
+          "cpuPercent": 1.1988011988011986,
+          "reapedChildTicksStart": 4073,
+          "reapedChildTicksEnd": 4181,
+          "reapedChildCpuSeconds": 1.08,
+          "reapedChildCpuPercent": 7.1928071928071935
+        },
+        "children": [
+          {
+            "pid": 517070,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 4704,
+            "samples": 31
+          },
+          {
+            "pid": 517590,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11616,
+            "samples": 31
+          },
+          {
+            "pid": 517598,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 11788,
+            "samples": 31
+          },
+          {
+            "pid": 517941,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 40,
+            "cpuLast": 53,
+            "rssLast": 29884,
+            "samples": 31
+          },
+          {
+            "pid": 518064,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 31
+          },
+          {
+            "pid": 518104,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 31
+          },
+          {
+            "pid": 518183,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 22196,
+            "samples": 31
+          },
+          {
+            "pid": 518940,
+            "comm": "udevadm",
+            "arg0": "monitor",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 5592,
+            "samples": 31
+          },
+          {
+            "pid": 519314,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2148,
+            "samples": 31
+          },
+          {
+            "pid": 519315,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 15.001,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2164,
+            "samples": 31
+          },
+          {
+            "pid": 525942,
+            "comm": "omarchy-hyprlan",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-hyprland-session-locked",
+            "firstSeen": 1.543,
+            "lastSeen": 1.543,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4152,
+            "samples": 1
+          },
+          {
+            "pid": 526635,
+            "comm": "omarchy-hyprlan",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-hyprland-session-locked",
+            "firstSeen": 10.304,
+            "lastSeen": 10.304,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4108,
+            "samples": 1
+          },
+          {
+            "pid": 526969,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 13.906,
+            "lastSeen": 13.906,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4148,
+            "samples": 1
+          },
+          {
+            "pid": 526970,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 13.906,
+            "lastSeen": 13.906,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2176,
+            "samples": 1
+          },
+          {
+            "pid": 526971,
+            "comm": "timeout",
+            "arg0": "--kill-after=1s",
+            "firstSeen": 13.906,
+            "lastSeen": 13.906,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2360,
+            "samples": 1
+          },
+          {
+            "pid": 526972,
+            "comm": "qs",
+            "arg0": "ipc",
+            "firstSeen": 13.906,
+            "lastSeen": 13.906,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 15688,
+            "samples": 1
+          }
+        ]
+      },
+      {
+        "label": "baseline",
+        "run": 3,
+        "shellPid": 534934,
+        "started": "2026-09-19T12:30:54Z",
+        "ended": "2026-09-19T12:31:09Z",
+        "readyAfterSeconds": 1.422,
+        "windowSeconds": 15.012,
+        "configRewritten": false,
+        "shell": {
+          "pssKb": 569164,
+          "rssKb": 682252,
+          "memoryAt": "window-end",
+          "pssKbSettled": 566748,
+          "rssKbSettled": 679836,
+          "trace": [
+            {
+              "t": 0,
+              "pssKb": 566748,
+              "rssKb": 679836
+            },
+            {
+              "t": 0.513,
+              "pssKb": 566748,
+              "rssKb": 679836
+            },
+            {
+              "t": 1.029,
+              "pssKb": 566527,
+              "rssKb": 678844
+            },
+            {
+              "t": 1.544,
+              "pssKb": 564576,
+              "rssKb": 677664
+            },
+            {
+              "t": 2.059,
+              "pssKb": 564596,
+              "rssKb": 677684
+            },
+            {
+              "t": 2.573,
+              "pssKb": 564611,
+              "rssKb": 677700
+            },
+            {
+              "t": 3.088,
+              "pssKb": 564636,
+              "rssKb": 677724
+            },
+            {
+              "t": 3.603,
+              "pssKb": 564644,
+              "rssKb": 677732
+            },
+            {
+              "t": 4.118,
+              "pssKb": 564664,
+              "rssKb": 677752
+            },
+            {
+              "t": 4.633,
+              "pssKb": 567788,
+              "rssKb": 680876
+            },
+            {
+              "t": 5.147,
+              "pssKb": 567795,
+              "rssKb": 680876
+            },
+            {
+              "t": 5.662,
+              "pssKb": 567804,
+              "rssKb": 680892
+            },
+            {
+              "t": 6.177,
+              "pssKb": 568413,
+              "rssKb": 682280
+            },
+            {
+              "t": 6.691,
+              "pssKb": 569192,
+              "rssKb": 682280
+            },
+            {
+              "t": 7.206,
+              "pssKb": 569200,
+              "rssKb": 682288
+            },
+            {
+              "t": 7.721,
+              "pssKb": 569208,
+              "rssKb": 682296
+            },
+            {
+              "t": 8.236,
+              "pssKb": 569231,
+              "rssKb": 682456
+            },
+            {
+              "t": 8.751,
+              "pssKb": 569372,
+              "rssKb": 682460
+            },
+            {
+              "t": 9.265,
+              "pssKb": 569568,
+              "rssKb": 682656
+            },
+            {
+              "t": 9.783,
+              "pssKb": 569568,
+              "rssKb": 682656
+            },
+            {
+              "t": 10.298,
+              "pssKb": 569568,
+              "rssKb": 682656
+            },
+            {
+              "t": 10.813,
+              "pssKb": 569568,
+              "rssKb": 682656
+            },
+            {
+              "t": 11.327,
+              "pssKb": 569568,
+              "rssKb": 682656
+            },
+            {
+              "t": 11.841,
+              "pssKb": 569567,
+              "rssKb": 682656
+            },
+            {
+              "t": 12.357,
+              "pssKb": 569164,
+              "rssKb": 682252
+            },
+            {
+              "t": 12.871,
+              "pssKb": 569164,
+              "rssKb": 682252
+            },
+            {
+              "t": 13.385,
+              "pssKb": 569163,
+              "rssKb": 682252
+            },
+            {
+              "t": 13.899,
+              "pssKb": 569164,
+              "rssKb": 682252
+            },
+            {
+              "t": 14.416,
+              "pssKb": 569164,
+              "rssKb": 682252
+            },
+            {
+              "t": 14.931,
+              "pssKb": 569163,
+              "rssKb": 682252
+            },
+            {
+              "t": 14.999,
+              "pssKb": 569164,
+              "rssKb": 682252
+            }
+          ],
+          "cpuTicksStart": 288,
+          "cpuTicksEnd": 325,
+          "cpuSeconds": 0.37,
+          "cpuPercent": 2.4646949107380762,
+          "reapedChildTicksStart": 2845,
+          "reapedChildTicksEnd": 2954,
+          "reapedChildCpuSeconds": 1.09,
+          "reapedChildCpuPercent": 7.260857980282441
+        },
+        "children": [
+          {
+            "pid": 535076,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 2,
+            "cpuLast": 2,
+            "rssLast": 4868,
+            "samples": 31
+          },
+          {
+            "pid": 535542,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 12104,
+            "samples": 31
+          },
+          {
+            "pid": 535550,
+            "comm": "voxtype",
+            "arg0": "status",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 12304,
+            "samples": 31
+          },
+          {
+            "pid": 535891,
+            "comm": "sidecard",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 39,
+            "cpuLast": 52,
+            "rssLast": 29904,
+            "samples": 31
+          },
+          {
+            "pid": 535982,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4244,
+            "samples": 31
+          },
+          {
+            "pid": 536039,
+            "comm": "inotifywait",
+            "arg0": "-m",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4204,
+            "samples": 31
+          },
+          {
+            "pid": 536068,
+            "comm": "tailscale",
+            "arg0": "serve",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 25220,
+            "samples": 31
+          },
+          {
+            "pid": 536985,
+            "comm": "udevadm",
+            "arg0": "monitor",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 5620,
+            "samples": 31
+          },
+          {
+            "pid": 537139,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2056,
+            "samples": 31
+          },
+          {
+            "pid": 537140,
+            "comm": "wl-paste",
+            "arg0": "--type",
+            "firstSeen": 0,
+            "lastSeen": 14.999,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2076,
+            "samples": 31
+          },
+          {
+            "pid": 540415,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 1.544,
+            "lastSeen": 1.544,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 12276,
+            "samples": 1
+          },
+          {
+            "pid": 540709,
+            "comm": "sidecarctl",
+            "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+            "firstSeen": 5.147,
+            "lastSeen": 5.147,
+            "cpuFirst": 1,
+            "cpuLast": 1,
+            "rssLast": 11012,
+            "samples": 1
+          },
+          {
+            "pid": 540776,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 6.177,
+            "lastSeen": 6.177,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 4108,
+            "samples": 1
+          },
+          {
+            "pid": 540777,
+            "comm": "omarchy-shell",
+            "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+            "firstSeen": 6.177,
+            "lastSeen": 6.177,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2268,
+            "samples": 1
+          },
+          {
+            "pid": 540778,
+            "comm": "timeout",
+            "arg0": "--kill-after=1s",
+            "firstSeen": 6.177,
+            "lastSeen": 6.177,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 2360,
+            "samples": 1
+          },
+          {
+            "pid": 540779,
+            "comm": "qs",
+            "arg0": "ipc",
+            "firstSeen": 6.177,
+            "lastSeen": 6.177,
+            "cpuFirst": 0,
+            "cpuLast": 0,
+            "rssLast": 12656,
+            "samples": 1
+          }
+        ]
+      }
+    ]
+  },
+  "noiseFloor": {
+    "pssMb": 5.01171875,
+    "rssMb": 4.875,
+    "pssMbSettled": 16.76953125,
+    "rssMbSettled": 16.6328125,
+    "cpuPercent": 1.2658937119368776,
+    "origin": "the spread (max minus min) of the 3 baseline runs: Pss and VmRSS at the end of the window (the headline), the same two at the settle, and CPU percent over the window"
+  },
+  "plugins": [
+    {
+      "id": "io.github.mtolhuys.theme-manager",
+      "name": "Omarchy Theme Manager",
+      "kinds": [
+        "overlay"
+      ],
+      "firstParty": false,
+      "sourceDir": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.theme-manager",
+      "runsCompleted": 3,
+      "shellPssMb": {
+        "median": 21.5498046875,
+        "spread": 12.201171875,
+        "min": 11.3759765625,
+        "max": 23.5771484375,
+        "runs": [
+          23.5771484375,
+          21.5498046875,
+          11.3759765625
+        ]
+      },
+      "shellRssMb": {
+        "median": 21.4453125,
+        "spread": 12.17578125,
+        "min": 12.046875,
+        "max": 24.22265625,
+        "runs": [
+          24.22265625,
+          21.4453125,
+          12.046875
+        ]
+      },
+      "shellPssMbSettled": {
+        "median": 14.9287109375,
+        "spread": 6.525390625,
+        "min": 14.1884765625,
+        "max": 20.7138671875,
+        "runs": [
+          14.9287109375,
+          20.7138671875,
+          14.1884765625
+        ]
+      },
+      "shellCpuPercent": {
+        "median": -0.4662625724372209,
+        "spread": 1.2658182821499318,
+        "min": -1.332267519317879,
+        "max": -0.06644923716794726,
+        "runs": [
+          -0.4662625724372209,
+          -0.06644923716794726,
+          -1.332267519317879
+        ]
+      },
+      "childRssMb": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "childCpuPercent": {
+        "median": -0.19982681675880976,
+        "spread": 0.200802775453905,
+        "min": -0.26645350386357514,
+        "max": -0.06565072840967012,
+        "runs": [
+          -0.19982681675880976,
+          -0.06565072840967012,
+          -0.26645350386357514
+        ]
+      },
+      "childSpawns": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "unattributedChildren": {
+        "median": 0,
+        "spread": 0,
+        "min": 0,
+        "max": 0,
+        "runs": [
+          0,
+          0,
+          0
+        ]
+      },
+      "unattributedCommands": [],
+      "totalMb": 21.5498046875,
+      "totalCpuPercent": -0.6660893891960307,
+      "verdict": {
+        "memory": "above-noise",
+        "cpu": "within-noise",
+        "summary": "no measurable CPU"
+      },
+      "withinNoise": {
+        "pss": false,
+        "rss": false,
+        "cpu": true,
+        "ownPss": false,
+        "ownCpu": true,
+        "baselinePssSpreadMb": 5.01171875,
+        "baselineCpuSpreadPercent": 1.2658937119368776,
+        "cpuTickPercent": 0.06666666666666667,
+        "note": "pss, rss and cpu compare the median delta with the baseline spread; ownPss and ownCpu compare it with the spread of the row's own deltas; a CPU delta is above noise only when it also exceeds one clock tick over the window (cpuTickPercent)"
+      },
+      "origin": "plus minus baseline per run over 3 run(s): Pss from /proc/<shell pid>/smaps_rollup and VmRSS from /proc/<shell pid>/status at the end of a 15s window that opens 30s after listPlugins reports every plugin (the same two at the settle under Settled); utime+stime from /proc/<shell pid>/stat over that window; children from a /proc descendant walk every 500ms, attributed by a command line absent from every baseline run, plus cutime+cstime of the shell pid",
+      "readme": "Weighs nothing measurable: no CPU above the floor (1.27%) and no child process, on Omarchy 4.0.0.alpha, measured with omakit weigh on 2026-09-19",
+      "deltas": [
+        {
+          "run": 1,
+          "shellPssMb": 23.5771484375,
+          "shellRssMb": 24.22265625,
+          "shellPssMbSettled": 14.9287109375,
+          "shellCpuPercent": -0.4662625724372209,
+          "childRssMb": 0,
+          "childCpuPercent": -0.19982681675880976,
+          "reapedChildCpuPercent": -0.19982681675880976,
+          "childSpawns": 0,
+          "children": [],
+          "unattributedChildren": []
+        },
+        {
+          "run": 2,
+          "shellPssMb": 21.5498046875,
+          "shellRssMb": 21.4453125,
+          "shellPssMbSettled": 20.7138671875,
+          "shellCpuPercent": -0.06644923716794726,
+          "childRssMb": 0,
+          "childCpuPercent": -0.06565072840967012,
+          "reapedChildCpuPercent": -0.06565072840967012,
+          "childSpawns": 0,
+          "children": [],
+          "unattributedChildren": []
+        },
+        {
+          "run": 3,
+          "shellPssMb": 11.3759765625,
+          "shellRssMb": 12.046875,
+          "shellPssMbSettled": 14.1884765625,
+          "shellCpuPercent": -1.332267519317879,
+          "childRssMb": 0,
+          "childCpuPercent": -0.26645350386357514,
+          "reapedChildCpuPercent": -0.26645350386357514,
+          "childSpawns": 0,
+          "children": [],
+          "unattributedChildren": []
+        }
+      ],
+      "runs": [
+        {
+          "label": "io.github.mtolhuys.theme-manager",
+          "run": 1,
+          "shellPid": 509516,
+          "started": "2026-09-19T12:28:32Z",
+          "ended": "2026-09-19T12:28:47Z",
+          "readyAfterSeconds": 1.414,
+          "windowSeconds": 15.013,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 598439,
+            "rssKb": 712048,
+            "memoryAt": "window-end",
+            "pssKbSettled": 599207,
+            "rssKbSettled": 712816,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 599207,
+                "rssKb": 712816
+              },
+              {
+                "t": 0.513,
+                "pssKb": 599205,
+                "rssKb": 712816
+              },
+              {
+                "t": 1.028,
+                "pssKb": 599206,
+                "rssKb": 712816
+              },
+              {
+                "t": 1.543,
+                "pssKb": 598231,
+                "rssKb": 711840
+              },
+              {
+                "t": 2.058,
+                "pssKb": 598247,
+                "rssKb": 711856
+              },
+              {
+                "t": 2.573,
+                "pssKb": 598247,
+                "rssKb": 711856
+              },
+              {
+                "t": 3.088,
+                "pssKb": 598287,
+                "rssKb": 711896
+              },
+              {
+                "t": 3.603,
+                "pssKb": 598295,
+                "rssKb": 711904
+              },
+              {
+                "t": 4.118,
+                "pssKb": 598307,
+                "rssKb": 711916
+              },
+              {
+                "t": 4.633,
+                "pssKb": 598319,
+                "rssKb": 711928
+              },
+              {
+                "t": 5.148,
+                "pssKb": 598339,
+                "rssKb": 711948
+              },
+              {
+                "t": 5.663,
+                "pssKb": 598351,
+                "rssKb": 711960
+              },
+              {
+                "t": 6.178,
+                "pssKb": 595963,
+                "rssKb": 711960
+              },
+              {
+                "t": 6.692,
+                "pssKb": 598379,
+                "rssKb": 711988
+              },
+              {
+                "t": 7.207,
+                "pssKb": 598379,
+                "rssKb": 711988
+              },
+              {
+                "t": 7.723,
+                "pssKb": 598379,
+                "rssKb": 711988
+              },
+              {
+                "t": 8.237,
+                "pssKb": 598387,
+                "rssKb": 711996
+              },
+              {
+                "t": 8.751,
+                "pssKb": 598387,
+                "rssKb": 711996
+              },
+              {
+                "t": 9.265,
+                "pssKb": 598391,
+                "rssKb": 712000
+              },
+              {
+                "t": 9.779,
+                "pssKb": 598407,
+                "rssKb": 712016
+              },
+              {
+                "t": 10.293,
+                "pssKb": 598579,
+                "rssKb": 712188
+              },
+              {
+                "t": 10.808,
+                "pssKb": 598639,
+                "rssKb": 712248
+              },
+              {
+                "t": 11.323,
+                "pssKb": 598638,
+                "rssKb": 712248
+              },
+              {
+                "t": 11.842,
+                "pssKb": 598695,
+                "rssKb": 712304
+              },
+              {
+                "t": 12.357,
+                "pssKb": 598835,
+                "rssKb": 712444
+              },
+              {
+                "t": 12.872,
+                "pssKb": 598894,
+                "rssKb": 712504
+              },
+              {
+                "t": 13.387,
+                "pssKb": 598919,
+                "rssKb": 712528
+              },
+              {
+                "t": 13.902,
+                "pssKb": 599115,
+                "rssKb": 712724
+              },
+              {
+                "t": 14.417,
+                "pssKb": 599163,
+                "rssKb": 712772
+              },
+              {
+                "t": 14.934,
+                "pssKb": 599163,
+                "rssKb": 712772
+              },
+              {
+                "t": 15,
+                "pssKb": 598439,
+                "rssKb": 712048
+              }
+            ],
+            "cpuTicksStart": 311,
+            "cpuTicksEnd": 328,
+            "cpuSeconds": 0.17,
+            "cpuPercent": 1.1323519616332514,
+            "reapedChildTicksStart": 3141,
+            "reapedChildTicksEnd": 3246,
+            "reapedChildCpuSeconds": 1.05,
+            "reapedChildCpuPercent": 6.993938586558317
+          },
+          "children": [
+            {
+              "pid": 509659,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4860,
+              "samples": 31
+            },
+            {
+              "pid": 510127,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11884,
+              "samples": 31
+            },
+            {
+              "pid": 510135,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11848,
+              "samples": 31
+            },
+            {
+              "pid": 510491,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 39,
+              "cpuLast": 51,
+              "rssLast": 29876,
+              "samples": 31
+            },
+            {
+              "pid": 510611,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4208,
+              "samples": 31
+            },
+            {
+              "pid": 510657,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4204,
+              "samples": 31
+            },
+            {
+              "pid": 510701,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 27316,
+              "samples": 31
+            },
+            {
+              "pid": 511607,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5608,
+              "samples": 31
+            },
+            {
+              "pid": 512106,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 31
+            },
+            {
+              "pid": 512107,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2164,
+              "samples": 31
+            },
+            {
+              "pid": 516493,
+              "comm": "omarchy-hyprlan",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-hyprland-session-locked",
+              "firstSeen": 9.779,
+              "lastSeen": 9.779,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4052,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "io.github.mtolhuys.theme-manager",
+          "run": 2,
+          "shellPid": 527160,
+          "started": "2026-09-19T12:30:07Z",
+          "ended": "2026-09-19T12:30:22Z",
+          "readyAfterSeconds": 1.515,
+          "windowSeconds": 15.013,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 591328,
+            "rssKb": 705076,
+            "memoryAt": "window-end",
+            "pssKbSettled": 592628,
+            "rssKbSettled": 706376,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 592628,
+                "rssKb": 706376
+              },
+              {
+                "t": 0.514,
+                "pssKb": 592628,
+                "rssKb": 706376
+              },
+              {
+                "t": 1.029,
+                "pssKb": 592384,
+                "rssKb": 706132
+              },
+              {
+                "t": 1.544,
+                "pssKb": 590708,
+                "rssKb": 704456
+              },
+              {
+                "t": 2.058,
+                "pssKb": 590041,
+                "rssKb": 704480
+              },
+              {
+                "t": 2.573,
+                "pssKb": 590045,
+                "rssKb": 704484
+              },
+              {
+                "t": 3.088,
+                "pssKb": 590058,
+                "rssKb": 704496
+              },
+              {
+                "t": 3.607,
+                "pssKb": 590120,
+                "rssKb": 704512
+              },
+              {
+                "t": 4.122,
+                "pssKb": 590772,
+                "rssKb": 704520
+              },
+              {
+                "t": 4.637,
+                "pssKb": 590784,
+                "rssKb": 704532
+              },
+              {
+                "t": 5.152,
+                "pssKb": 590800,
+                "rssKb": 704548
+              },
+              {
+                "t": 5.667,
+                "pssKb": 590804,
+                "rssKb": 704552
+              },
+              {
+                "t": 6.182,
+                "pssKb": 590824,
+                "rssKb": 704572
+              },
+              {
+                "t": 6.697,
+                "pssKb": 590856,
+                "rssKb": 704604
+              },
+              {
+                "t": 7.211,
+                "pssKb": 590860,
+                "rssKb": 704608
+              },
+              {
+                "t": 7.726,
+                "pssKb": 590224,
+                "rssKb": 704616
+              },
+              {
+                "t": 8.241,
+                "pssKb": 590248,
+                "rssKb": 704644
+              },
+              {
+                "t": 8.755,
+                "pssKb": 590912,
+                "rssKb": 704660
+              },
+              {
+                "t": 9.269,
+                "pssKb": 590852,
+                "rssKb": 704600
+              },
+              {
+                "t": 9.783,
+                "pssKb": 590888,
+                "rssKb": 704636
+              },
+              {
+                "t": 10.298,
+                "pssKb": 590888,
+                "rssKb": 704636
+              },
+              {
+                "t": 10.813,
+                "pssKb": 590920,
+                "rssKb": 704668
+              },
+              {
+                "t": 11.327,
+                "pssKb": 590920,
+                "rssKb": 704668
+              },
+              {
+                "t": 11.841,
+                "pssKb": 590552,
+                "rssKb": 704800
+              },
+              {
+                "t": 12.355,
+                "pssKb": 591068,
+                "rssKb": 704816
+              },
+              {
+                "t": 12.872,
+                "pssKb": 591120,
+                "rssKb": 704868
+              },
+              {
+                "t": 13.387,
+                "pssKb": 590488,
+                "rssKb": 704884
+              },
+              {
+                "t": 13.902,
+                "pssKb": 590623,
+                "rssKb": 705020
+              },
+              {
+                "t": 14.418,
+                "pssKb": 591324,
+                "rssKb": 705072
+              },
+              {
+                "t": 14.932,
+                "pssKb": 591328,
+                "rssKb": 705076
+              },
+              {
+                "t": 15,
+                "pssKb": 591328,
+                "rssKb": 705076
+              }
+            ],
+            "cpuTicksStart": 300,
+            "cpuTicksEnd": 317,
+            "cpuSeconds": 0.17,
+            "cpuPercent": 1.1323519616332514,
+            "reapedChildTicksStart": 3174,
+            "reapedChildTicksEnd": 3281,
+            "reapedChildCpuSeconds": 1.07,
+            "reapedChildCpuPercent": 7.127156464397523
+          },
+          "children": [
+            {
+              "pid": 527328,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 2,
+              "cpuLast": 2,
+              "rssLast": 4868,
+              "samples": 31
+            },
+            {
+              "pid": 527803,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11668,
+              "samples": 31
+            },
+            {
+              "pid": 527810,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 12080,
+              "samples": 31
+            },
+            {
+              "pid": 528141,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 39,
+              "cpuLast": 52,
+              "rssLast": 29860,
+              "samples": 31
+            },
+            {
+              "pid": 528278,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4216,
+              "samples": 31
+            },
+            {
+              "pid": 528317,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4208,
+              "samples": 31
+            },
+            {
+              "pid": 528346,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 25412,
+              "samples": 31
+            },
+            {
+              "pid": 528991,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5552,
+              "samples": 31
+            },
+            {
+              "pid": 529597,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2140,
+              "samples": 31
+            },
+            {
+              "pid": 529598,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 15,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 31
+            },
+            {
+              "pid": 534394,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 11.841,
+              "lastSeen": 11.841,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4128,
+              "samples": 1
+            },
+            {
+              "pid": 534395,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 11.841,
+              "lastSeen": 11.841,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2256,
+              "samples": 1
+            },
+            {
+              "pid": 534396,
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "firstSeen": 11.841,
+              "lastSeen": 11.841,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 534397,
+              "comm": "qs",
+              "arg0": "ipc",
+              "firstSeen": 11.841,
+              "lastSeen": 11.841,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11452,
+              "samples": 1
+            }
+          ]
+        },
+        {
+          "label": "io.github.mtolhuys.theme-manager",
+          "run": 3,
+          "shellPid": 541549,
+          "started": "2026-09-19T12:31:41Z",
+          "ended": "2026-09-19T12:31:56Z",
+          "readyAfterSeconds": 1.416,
+          "windowSeconds": 15.012,
+          "configRewritten": false,
+          "shell": {
+            "pssKb": 580813,
+            "rssKb": 694588,
+            "memoryAt": "window-end",
+            "pssKbSettled": 581277,
+            "rssKbSettled": 695052,
+            "trace": [
+              {
+                "t": 0,
+                "pssKb": 581277,
+                "rssKb": 695052
+              },
+              {
+                "t": 0.513,
+                "pssKb": 581277,
+                "rssKb": 695052
+              },
+              {
+                "t": 1.028,
+                "pssKb": 581065,
+                "rssKb": 694840
+              },
+              {
+                "t": 1.546,
+                "pssKb": 579849,
+                "rssKb": 693624
+              },
+              {
+                "t": 2.061,
+                "pssKb": 579777,
+                "rssKb": 693552
+              },
+              {
+                "t": 2.576,
+                "pssKb": 579788,
+                "rssKb": 693564
+              },
+              {
+                "t": 3.093,
+                "pssKb": 579801,
+                "rssKb": 693576
+              },
+              {
+                "t": 3.608,
+                "pssKb": 579809,
+                "rssKb": 693584
+              },
+              {
+                "t": 4.123,
+                "pssKb": 579802,
+                "rssKb": 693592
+              },
+              {
+                "t": 4.638,
+                "pssKb": 579825,
+                "rssKb": 693600
+              },
+              {
+                "t": 5.153,
+                "pssKb": 579853,
+                "rssKb": 693628
+              },
+              {
+                "t": 5.667,
+                "pssKb": 579861,
+                "rssKb": 693636
+              },
+              {
+                "t": 6.182,
+                "pssKb": 579192,
+                "rssKb": 693656
+              },
+              {
+                "t": 6.698,
+                "pssKb": 579885,
+                "rssKb": 693660
+              },
+              {
+                "t": 7.213,
+                "pssKb": 579897,
+                "rssKb": 693672
+              },
+              {
+                "t": 7.728,
+                "pssKb": 579909,
+                "rssKb": 693684
+              },
+              {
+                "t": 8.245,
+                "pssKb": 579921,
+                "rssKb": 693696
+              },
+              {
+                "t": 8.763,
+                "pssKb": 580049,
+                "rssKb": 693824
+              },
+              {
+                "t": 9.277,
+                "pssKb": 580088,
+                "rssKb": 693864
+              },
+              {
+                "t": 9.793,
+                "pssKb": 580073,
+                "rssKb": 693860
+              },
+              {
+                "t": 10.31,
+                "pssKb": 580229,
+                "rssKb": 694004
+              },
+              {
+                "t": 10.825,
+                "pssKb": 580313,
+                "rssKb": 694088
+              },
+              {
+                "t": 11.339,
+                "pssKb": 580313,
+                "rssKb": 694088
+              },
+              {
+                "t": 11.853,
+                "pssKb": 580365,
+                "rssKb": 694140
+              },
+              {
+                "t": 12.367,
+                "pssKb": 580509,
+                "rssKb": 694284
+              },
+              {
+                "t": 12.884,
+                "pssKb": 579697,
+                "rssKb": 694336
+              },
+              {
+                "t": 13.399,
+                "pssKb": 580605,
+                "rssKb": 694380
+              },
+              {
+                "t": 13.914,
+                "pssKb": 580745,
+                "rssKb": 694520
+              },
+              {
+                "t": 14.43,
+                "pssKb": 580809,
+                "rssKb": 694584
+              },
+              {
+                "t": 14.946,
+                "pssKb": 580809,
+                "rssKb": 694584
+              },
+              {
+                "t": 14.998,
+                "pssKb": 580809,
+                "rssKb": 694584
+              }
+            ],
+            "cpuTicksStart": 298,
+            "cpuTicksEnd": 315,
+            "cpuSeconds": 0.17,
+            "cpuPercent": 1.1324273914201972,
+            "reapedChildTicksStart": 3217,
+            "reapedChildTicksEnd": 3322,
+            "reapedChildCpuSeconds": 1.05,
+            "reapedChildCpuPercent": 6.9944044764188655
+          },
+          "children": [
+            {
+              "pid": 541688,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 4752,
+              "samples": 31
+            },
+            {
+              "pid": 542161,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 12184,
+              "samples": 31
+            },
+            {
+              "pid": 542168,
+              "comm": "voxtype",
+              "arg0": "status",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 11788,
+              "samples": 31
+            },
+            {
+              "pid": 542511,
+              "comm": "sidecard",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 39,
+              "cpuLast": 51,
+              "rssLast": 29912,
+              "samples": 31
+            },
+            {
+              "pid": 542612,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4220,
+              "samples": 31
+            },
+            {
+              "pid": 542660,
+              "comm": "inotifywait",
+              "arg0": "-m",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4204,
+              "samples": 31
+            },
+            {
+              "pid": 542686,
+              "comm": "tailscale",
+              "arg0": "serve",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 26756,
+              "samples": 31
+            },
+            {
+              "pid": 543491,
+              "comm": "udevadm",
+              "arg0": "monitor",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 5592,
+              "samples": 31
+            },
+            {
+              "pid": 544002,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 31
+            },
+            {
+              "pid": 544003,
+              "comm": "wl-paste",
+              "arg0": "--type",
+              "firstSeen": 0,
+              "lastSeen": 14.998,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2168,
+              "samples": 31
+            },
+            {
+              "pid": 547765,
+              "comm": "sidecarctl",
+              "arg0": "/home/mtolhuijs/.config/omarchy/plugins/io.github.mtolhuys.sidecar/helper/sideca",
+              "firstSeen": 2.576,
+              "lastSeen": 2.576,
+              "cpuFirst": 4,
+              "cpuLast": 4,
+              "rssLast": 17256,
+              "samples": 1
+            },
+            {
+              "pid": 548687,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 12.884,
+              "lastSeen": 12.884,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 4120,
+              "samples": 1
+            },
+            {
+              "pid": 548688,
+              "comm": "omarchy-shell",
+              "arg0": "/home/mtolhuijs/Projects/omarchy/core/bin/omarchy-shell",
+              "firstSeen": 12.884,
+              "lastSeen": 12.884,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2260,
+              "samples": 1
+            },
+            {
+              "pid": 548689,
+              "comm": "timeout",
+              "arg0": "--kill-after=1s",
+              "firstSeen": 12.884,
+              "lastSeen": 12.884,
+              "cpuFirst": 0,
+              "cpuLast": 0,
+              "rssLast": 2392,
+              "samples": 1
+            },
+            {
+              "pid": 548690,
+              "comm": "qs",
+              "arg0": "ipc",
+              "firstSeen": 12.884,
+              "lastSeen": 12.884,
+              "cpuFirst": 1,
+              "cpuLast": 1,
+              "rssLast": 15656,
+              "samples": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "out": "/home/mtolhuijs/Projects/omarchy/omakit-public/docs/evidence/weigh/desktop-2026-09-19-theme-manager.json"
+}

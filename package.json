@@ -1,7 +1,7 @@
 {
   "name": "omakit",
   "version": "0.5.1",
-  "description": "Build it, check it, prove it.",
+  "description": "Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
   "keywords": [

@@ -3,7 +3,7 @@ name: omarchy-plugin-submit
 description: Submit an Omarchy Quattro plugin to the plugin marketplace on its owner's behalf. Use when asked to submit, list or publish a plugin to the Omarchy marketplace, or to check whether a plugin is ready to submit. Runs every pre-submission check, produces the exact issue title and body, and posts nothing.
 ---
 
-# Check it before submitting
+# Check before submitting
 
 Submission is the last part of the check job. The command produces the exact
 title and body after the local checks, and the owner decides what happens next.

@@ -1,4 +1,4 @@
-[2mrun[0m           20260918-191139-run
+[2mrun[0m           20260919-143209-run
 [2mrelease[0m       4.0.3
 [2mguest[0m         omarchy 4.0.3-1 on 7.2.3-arch1-3
 [2miso sha256[0m    03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
@@ -12,32 +12,32 @@
 [2m░ info[0m  ==> Staging the suite and the block files in the guest
 [2m░ info[0m  ==> Running the Run lab suite in the guest session (1 run per scenario)
 [32m▁ ok[0m    ok - the runlab job finished
-[32m▁ ok[0m    ok - producer: 1 run(s), end 160 ms (160-160), Pss after-before 237 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - producer-stream: 1 run(s), end 1101 ms (1101-1101), Pss after-before 89 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - holder: 1 run(s), end 48 ms (48-48), Pss after-before 86 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - stubborn: 1 run(s), end 3050 ms (3050-3050), Pss after-before 225 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - hostile: 1 run(s), end 54 ms (54-54), Pss after-before 82 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - destroy: 1 run(s), end 501 ms (501-501), Pss after-before 69 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - cancel: 1 run(s), end 521 ms (521-521), Pss after-before 92 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - supersede: 1 run(s), end 63 ms (63-63), Pss after-before 109 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - shell-string: 1 run(s), end 33 ms (33-33), Pss after-before 84 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - relative: 1 run(s), end 32 ms (32-32), Pss after-before 155 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - missing: 1 run(s), end 46 ms (46-46), Pss after-before 82 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - controls: 1 run(s), end 48 ms (48-48), Pss after-before 92 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - concurrency: 1 run(s), end 83 ms (83-83), Pss after-before 289 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - forge: 1 run(s), end 32 ms (32-32), Pss after-before 72 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - orphan: 1 run(s), end 29 ms (29-29), Pss after-before -56 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - stalled-supersede: 1 run(s), end 63 ms (63-63), Pss after-before 97 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - destroy-early: 1 run(s), end 301 ms (301-301), Pss after-before 72 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - shell-string-option: 1 run(s), end 31 ms (31-31), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
-[32m▁ ok[0m    ok - shell-string-wrapper: 1 run(s), end 30 ms (30-30), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - producer: 1 run(s), end 48 ms (48-48), Pss after-before 96 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - producer-stream: 1 run(s), end 1896 ms (1896-1896), Pss after-before 85 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - holder: 1 run(s), end 45 ms (45-45), Pss after-before 88 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - stubborn: 1 run(s), end 3048 ms (3048-3048), Pss after-before 225 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - hostile: 1 run(s), end 51 ms (51-51), Pss after-before 84 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - destroy: 1 run(s), end 502 ms (502-502), Pss after-before 82 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - cancel: 1 run(s), end 518 ms (518-518), Pss after-before 103 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - supersede: 1 run(s), end 52 ms (52-52), Pss after-before 116 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - shell-string: 1 run(s), end 30 ms (30-30), Pss after-before 86 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - relative: 1 run(s), end 29 ms (29-29), Pss after-before -58 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - missing: 1 run(s), end 40 ms (40-40), Pss after-before 88 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - controls: 1 run(s), end 46 ms (46-46), Pss after-before 11 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - concurrency: 1 run(s), end 69 ms (69-69), Pss after-before 293 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - forge: 1 run(s), end 29 ms (29-29), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - orphan: 1 run(s), end 27 ms (27-27), Pss after-before 76 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - stalled-supersede: 1 run(s), end 48 ms (48-48), Pss after-before 100 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - destroy-early: 1 run(s), end 301 ms (301-301), Pss after-before 67 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - shell-string-option: 1 run(s), end 27 ms (27-27), Pss after-before 75 kB, survivors 0, to empty group 0, shadow hits 0
+[32m▁ ok[0m    ok - shell-string-wrapper: 1 run(s), end 28 ms (28-28), Pss after-before -1 kB, survivors 0, to empty group 0, shadow hits 0
 [32m▁ ok[0m    ok - Run lab suite: 19 scenarios, 19 runs, document at /tmp/omakit-runlab/runlab.json
-[32m▁ ok[0m    ok - the Run block ran its lab scenarios on the stock guest, the shell untouched; document at ~/.local/state/omakit/lab/runs/20260918-191139-run/runlab.json
+[32m▁ ok[0m    ok - the Run block ran its lab scenarios on the stock guest, the shell untouched; document at ~/.local/state/omakit/lab/runs/20260919-143209-run/runlab.json
 
-[2mduration[0m      3m 11.7s
-[2moverlay[0m       449,974,272 B (0.450 GB / 0.419 GiB) allocated by the run, removed
+[2mduration[0m      2m 42.2s
+[2moverlay[0m       440,209,408 B (0.440 GB / 0.410 GiB) allocated by the run, removed
 [2mbase[0m          unchanged (size, mtime and inode of the disk and the template)
-[2mdocument[0m      ~/.local/state/omakit/lab/runs/20260918-191139-run/runlab.json
-[2mrecord[0m        ~/.local/state/omakit/lab/runs/20260918-191139-run/run.json
+[2mdocument[0m      ~/.local/state/omakit/lab/runs/20260919-143209-run/runlab.json
+[2mrecord[0m        ~/.local/state/omakit/lab/runs/20260919-143209-run/run.json
 
 [32;1m▁ PROVED[0m  run: ok over 19 scenarios; guest omarchy 4.0.3-1, skew false.

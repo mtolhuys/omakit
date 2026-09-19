@@ -3,7 +3,7 @@ name: omarchy-plugin-build
 description: Build the process and state plumbing of an Omarchy Quattro plugin with omakit's Run and Store blocks instead of a bare QML Process or a FileView write. Use whenever plugin code starts a program (a Process block, execDetached, a helper script, a poll) or keeps a file of its own (state, a cache, remembered choices), when inspect shows a process-lifecycle, unbounded-buffering, environment-trust or file-and-state-boundary row, or when a review comment names a deadline, an output cap, PATH, the environment, an orphaned process, a symlink, /tmp, an atomic write or a permission. Adds tested, versioned files the plugin owns; posts nothing.
 ---
 
-# Build it with the Run and Store blocks
+# Build with the Run and Store blocks
 
 This is the build job: copy the measured process and private-state plumbing
 into the plugin before checking, tracking or proving anything around it.

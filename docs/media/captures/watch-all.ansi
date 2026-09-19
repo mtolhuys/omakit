@@ -1,9 +1,9 @@
 [2maccount[0m       mtolhuys
-[2missues[0m        4 checked; 4 current, 0 stale, 0 unknown
-[2mreview cost[0m   4 of 4 plugin-update issue(s) on security-review-required; 2
-              docs-only validated diff(s) of 4 compared
+[2missues[0m        2 checked; 2 current, 0 stale, 0 unknown
+[2mreview cost[0m   2 of 2 plugin-update issue(s) on security-review-required; 0
+              docs-only validated diff(s) of 2 compared
 
-[32;1m▁ CURRENT[0m  #6193 [Verify]: Omarchy News Radar 0.5.9
+[32;1m▁ CURRENT[0m  #6193 [Verify]: Omarchy News Radar 0.5.10
 [2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/6193
 [2mbaseline[0m      review-required; 0 finding(s); capabilities installer
 [2mstate[0m         open; labels validated, security-review-required, plugin-update
@@ -23,16 +23,6 @@
               size check, and the initial tree/pack fetch is likewise not
               byte-bounded. A malicious mutable-catalog r…
 [2msource[0m        https://github.com/omacom/omarchy-plugin-marketplace/issues/5344#issuecomment-5685968584
-
-[32;1m▁ CURRENT[0m  #7039 [Verify]: Omarchy On-Screen Keyboard 0.9.2 — README badge only
-[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/7039
-[2mbaseline[0m      review-required; 0 finding(s); capabilities privilege, installer
-[2mstate[0m         open; labels validated, security-review-required, plugin-update
-
-[32;1m▁ CURRENT[0m  #7038 [Verify]: Sidecar 0.2.1 — README badge only
-[2missue[0m         https://github.com/omacom/omarchy-plugin-marketplace/issues/7038
-[2mbaseline[0m      review-required; 0 finding(s); capabilities privilege
-[2mstate[0m         open; labels validated, security-review-required, plugin-update
 
 Current means the validated commit matches HEAD. It does not mean review,
 approval or publication is complete. Read-only; this run posts nothing.

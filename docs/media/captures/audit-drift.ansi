@@ -1,4 +1,4 @@
-[2mcatalog[0m       live HEAD df17d0cc at 2026-09-18T16:12:56.630Z
+[2mcatalog[0m       live HEAD 684c41f2 at 2026-09-19T12:23:39.230Z
 [2minstalled[0m     56
 [2mfirst-party[0m   37 left out
 [2maudited[0m       19
@@ -16,8 +16,8 @@
           [34mc38e600ba76af0771c708cbc546154bd24aeb7e8[0m
 
 [33m▓ note[0m  [1msero.local-ai[0m
-        24 commits ahead of validated a85de0cf (2026-09-13T09:33:19.839Z); HEAD
-        fab658a8
+        32 commits ahead of validated a85de0cf (2026-09-13T09:33:19.839Z); HEAD
+        d9d2687d
         [34;1m→[0m [34mgit -C ~/.config/omarchy/plugins/sero.local-ai checkout[0m
           [34ma85de0cfadfc7380579f3326f091da82aff85995[0m
 
@@ -27,9 +27,15 @@
         [34;1m→[0m [34mgit -C ~/.config/omarchy/plugins/io.github.sirjul1337.lock-explorer[0m
           [34mcheckout ed8e8f821def4ec228ffaaf2112eda3416555799[0m
 
+[33m▓ note[0m  [1mbobbynicholas.omaland[0m
+        2 commits ahead of validated ec232b6a (2026-08-29T10:43:31.905Z); HEAD
+        44281491
+        [34;1m→[0m [34mgit -C ~/.config/omarchy/plugins/bobbynicholas.omaland checkout[0m
+          [34mec232b6aa2e31b2f089ad89b653cd706989865b9[0m
+
 [33m▓ note[0m  [1mio.github.mtolhuys.news-radar[0m
-        9 commits ahead of validated 8b07c89d (2026-09-14T09:51:46.925Z); HEAD
-        fa75b019
+        11 commits ahead of validated 8b07c89d (2026-09-14T09:51:46.925Z); HEAD
+        4b001613
         [34;1m→[0m [34mgit -C ~/.config/omarchy/plugins/io.github.mtolhuys.news-radar[0m
           [34mcheckout 8b07c89dea0d317f2ff15f55a0e971083e26022a[0m
 
@@ -73,17 +79,14 @@
 [32m▁ ok[0m    [1mexpose.window-overview[0m
         validated d5340ae4 on 2026-09-18T15:09:41.573Z
 
-[32m▁ ok[0m    [1mbobbynicholas.omaland[0m
-        validated ec232b6a on 2026-08-29T10:43:31.905Z
-
 [32m▁ ok[0m    [1mio.github.mtolhuys.onscreen-keyboard[0m
-        validated a41b45a7 on 2026-09-14T09:51:46.925Z
+        validated a41b45a7 on 2026-09-18T21:23:02.439Z
 
 [32m▁ ok[0m    [1makshar.radio-atlas[0m
         validated b290c29c on 2026-09-12T08:40:57.042Z
 
 [32m▁ ok[0m    [1mio.github.mtolhuys.sidecar[0m
-        validated 93800d2c on 2026-09-14T09:51:46.925Z
+        validated 93800d2c on 2026-09-18T21:19:49.126Z
 
 [32m▁ ok[0m    [1momadock[0m
         validated d2d355c5 on 2026-09-13T09:33:19.839Z
@@ -93,5 +96,5 @@
         Verify or update a listed plugin; choose "Verify and publish a newer
         upstream commit".
 
-[31;1m█ DRIFT[0m  7 of 19 run a commit the marketplace validated; 12 run one it never
+[31;1m█ DRIFT[0m  6 of 19 run a commit the marketplace validated; 13 run one it never
          saw.

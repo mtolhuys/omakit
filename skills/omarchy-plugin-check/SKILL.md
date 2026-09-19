@@ -3,7 +3,7 @@ name: omarchy-plugin-check
 description: Check an Omarchy Quattro plugin while building or changing it, before committing or pushing. Use whenever you create, edit, refactor or test an Omarchy plugin, when asked whether a plugin is marketplace-ready, or before any push to its default branch. Runs the marketplace's own security baseline and submission checks locally, read-only, reports what the marketplace would refuse, and lists what the tree does (processes, hosts, writes, timers) as observations beside the review classes a human reviewer raises most.
 ---
 
-# Check it while you build it
+# Check a plugin while building it
 
 This is the check job: inspect the tree, run the marketplace's own baseline,
 and run every submission check locally before a person sees the result.
