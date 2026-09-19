@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.6.0 (unreleased)
+## 0.6.1
+
+This is the first published release in the 0.6 line. The `v0.6.0` workflow
+stopped before publishing an npm package or GitHub Release, so that tag remains
+where it is and the recovery uses the next unused version. The recovery also
+makes the lab host checks independent of runner-installed commands and tests the
+same commit-stamped, Git-free archive shape that the release publishes.
 
 The Run (0.2.1) and Store (0.2.0) blocks, `omakit add run`, `omakit add
 store`, and `inspect` reading an unmodified block as one row; M13, the 1,001
@@ -11,8 +17,8 @@ track and prove. `omakit lab prove`,
 `omarchy-plugin-lab` and refactored to one driver, the pinned 4.0.3
 release verified against its SHA-256 and the Omarchy signature, one
 immutable base, every run identified by the guest's installed package,
-and the M14 record of one real run. See `docs/releases/0.6.0.md`, its
-limits included. The package names its version, 0.6.0, on the release
+and the M14 record of one real run. See `docs/releases/0.6.1.md`, its
+limits included. The package names its version, 0.6.1, on the release
 branch; the tag makes the release.
 
 After the acceptance test of 2026-09-19

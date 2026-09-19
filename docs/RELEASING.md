@@ -21,11 +21,13 @@ Release. A failure stops the release; it never reports missing authentication as
 a successful skip. An existing npm version is accepted only if its bytes match.
 
 Unreleased work goes under the next unused version in `CHANGELOG.md`, with
-the package version unchanged. The next section after 0.5.1 is 0.6.0
-(unreleased), the blocks, with its notes already drafted at
-`docs/releases/0.6.0.md`. Move the notes into `docs/releases/<version>.md` and bump the
-package only when deliberately preparing that release; an unreleased
-changelog entry does not publish anything.
+the package version unchanged. Move the notes into
+`docs/releases/<version>.md` and bump the package only when deliberately
+preparing that release; an unreleased changelog entry does not publish
+anything. A tag consumed by a failed workflow is still consumed even when
+nothing reached npm or GitHub Releases: leave it where it is and prepare the
+next unused version. That is why the failed `v0.6.0` attempt is recovered as
+`v0.6.1`.
 
 ## Authentication
 
