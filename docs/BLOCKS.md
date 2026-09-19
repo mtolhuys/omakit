@@ -2,15 +2,19 @@
 
 A block is a small set of files a plugin copies into its own tree with
 `omakit add`. Each block owns one piece of the process or private-state
-plumbing measured in M13. This page is the contract of the
-two blocks, Run 0.2.1 and Store 0.2.0: what each does, which review
-comments each line answers, the API, what it costs, what it does not do,
-and how it is added, updated and recognised. Why this plumbing is a block at all is in
-[WHY.md](WHY.md); the reasoning and the measurements behind the
-design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
-[history](history/2026-09-17-blocks-plan.md), what is still open in
-[BLOCKS_PLAN.md](BLOCKS_PLAN.md). The adversarial review of 2026-09-18 and
-what 0.2.0 changed for each of its findings is in
+plumbing measured in M13, and once it is copied the files are the plugin's
+own.
+
+This page is the contract of the two blocks, Run 0.2.1 and Store 0.2.0: what
+each does, which review comments each line answers, the API, what it costs,
+what it does not do, and how it is added, updated and recognised. Why this
+plumbing is worth taking from somewhere else at all is [WHY.md](WHY.md).
+
+The reasoning and the measurements behind the design are in
+[BLOCKS_SPIKE.md](BLOCKS_SPIKE.md), the plan and its gates in
+[history](history/2026-09-17-blocks-plan.md), and what is still open in
+[BLOCKS_PLAN.md](BLOCKS_PLAN.md). The adversarial review of 2026-09-18, and
+what 0.2.0 changed for each of its findings, is in
 [evidence/blocks/2026-09-18-review.json](evidence/blocks/2026-09-18-review.json).
 
 A block is not a marketplace rule and never presents itself as one. It
@@ -231,6 +235,14 @@ omakit add run <plugin-dir>    # into <plugin-dir>/omakit/
 omakit add run --update        # replace an unmodified older copy; refuse a modified one
 omakit add run --json          # the same, as a document
 ```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/blocks-copy-dark.svg">
+  <img alt="omakit add writes the block's files into the plugin's own directory, each with a header naming the block, its version, the licence, the omakit commit and the sha256 of the body, which is what tells an unmodified copy from one the author has edited" src="media/blocks-copy-light.svg" width="640">
+</picture>
+
+*The header is what makes a copy checkable later. It is also the whole reason
+omakit can tell its own copy from yours, and stop when it is yours.*
 
 `add` writes exactly the block's files and `omakit/NOTICE`, and nothing
 else; it refuses to overwrite a file that is already there without

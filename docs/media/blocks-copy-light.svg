@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 236" width="640" height="236" role="img" aria-labelledby="t"><title id="t">omakit add writes the block's files into the plugin's own directory, each with a header naming the block, its version, the licence, the omakit commit and the sha256 of the body, which is what tells an unmodified copy from one the author has edited</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#16202b"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#2f6fb0"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<rect x="8" y="30" width="140" height="44" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="78" y="57" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#2f6fb0">omakit add run</text>
+<line x1="148" y1="52" x2="184" y2="52" stroke="#2f6fb0" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<text x="188" y="14" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#5b6875">&lt;plugin-dir&gt;/omakit/</text>
+<rect x="188" y="20" width="230" height="88" rx="6" fill="none" stroke="#16202b" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="204" y="46" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">Run.qml</text>
+<text x="204" y="68" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">run-supervisor.py</text>
+<text x="204" y="90" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">NOTICE</text>
+
+<text x="440" y="34" font-size="11" fill="#5b6875">every file's header names</text>
+<text x="440" y="52" font-size="11" fill="#16202b">the block and its version,</text>
+<text x="440" y="68" font-size="11" fill="#16202b">the licence and the copyright,</text>
+<text x="440" y="84" font-size="11" fill="#16202b">the omakit commit it came from,</text>
+<text x="440" y="100" font-size="11" fill="#16202b">and the sha256 of the body</text>
+
+<line x1="240" y1="108" x2="150" y2="146" stroke="#16202b" stroke-width="1.2" marker-end="url(#ink)"/>
+<line x1="366" y1="108" x2="470" y2="146" stroke="#a9541c" stroke-width="1.2" marker-end="url(#ink)"/>
+
+<rect x="8" y="150" width="300" height="38" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="158" y="174" text-anchor="middle" fill="#2f6fb0">a copy omakit shipped</text>
+<text x="8" y="210" font-size="11" fill="#16202b">--update moves it on, header and all</text>
+<text x="8" y="228" font-size="11" fill="#16202b">inspect reads it as one row, raising nothing</text>
+
+<rect x="332" y="150" width="300" height="38" rx="4" fill="none" stroke="#a9541c" stroke-width="2"/>
+<text x="482" y="174" text-anchor="middle" fill="#a9541c">a copy you edited</text>
+<text x="332" y="210" font-size="11" fill="#16202b">--update refuses before a byte is written</text>
+<text x="332" y="228" font-size="11" fill="#16202b">inspect says modified, and reads it like your own code</text>
+</g>
+</svg>

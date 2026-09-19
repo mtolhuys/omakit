@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 230" width="640" height="230" role="img" aria-labelledby="t"><title id="t">inspect reads the plugin tree without running anything from it and reports what the text shows, closing on INSPECTED rather than on a verdict</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#16202b"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#2f6fb0"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<rect x="8" y="46" width="150" height="46" rx="4" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="83" y="66" text-anchor="middle" font-size="11" fill="#16202b">the plugin tree,</text>
+<text x="83" y="82" text-anchor="middle" font-size="11" fill="#16202b">at its commit</text>
+<line x1="158" y1="69" x2="190" y2="69" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<text x="192" y="16" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#2f6fb0">read, never run</text>
+<rect x="192" y="22" width="248" height="126" rx="6" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="206" y="46" font-size="11" fill="#16202b">every Process, with its argv</text>
+<text x="206" y="68" font-size="11" fill="#16202b">every host, with its timeout and cap</text>
+<text x="206" y="90" font-size="11" fill="#16202b">every write, and where it lands</text>
+<text x="206" y="112" font-size="11" fill="#16202b">every Timer, and its interval</text>
+<text x="206" y="134" font-size="11" fill="#16202b">the baseline's own capabilities</text>
+
+<line x1="440" y1="85" x2="472" y2="85" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="474" y="22" width="158" height="126" rx="6" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="488" y="46" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#2f6fb0">the report</text>
+<text x="488" y="70" font-size="11" fill="#16202b">the size score</text>
+<text x="488" y="90" font-size="11" fill="#16202b">what needs attention</text>
+<text x="488" y="110" font-size="11" fill="#16202b">the review classes</text>
+<text x="488" y="136" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#2f6fb0">INSPECTED</text>
+
+<text x="8" y="184" font-size="11" fill="#5b6875">it runs nothing from the tree, resolves no host, and writes nothing into it</text>
+<text x="8" y="202" font-size="11" fill="#5b6875">no verdict and no --fix: a class is listed where the tree shows its precondition, with its measured share</text>
+<text x="8" y="220" font-size="11" fill="#5b6875">and the report closes by naming what the method cannot see</text>
+</g>
+</svg>

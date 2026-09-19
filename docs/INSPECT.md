@@ -16,6 +16,14 @@ functions, and never a grade. Every row is an observation, and every
 observation is labelled as one, because it comes from regular expressions over
 QML and shell, not from running the plugin.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/inspect-report-dark.svg">
+  <img alt="inspect reads the plugin tree without running anything from it and reports what the text shows, closing on INSPECTED rather than on a verdict" src="media/inspect-report-light.svg" width="640">
+</picture>
+
+*It reads, and it reports what it read. The closing word is INSPECTED, not a
+pass or a fail.*
+
 ## What it is
 
 The submit preflight answers "will the marketplace's automation accept this

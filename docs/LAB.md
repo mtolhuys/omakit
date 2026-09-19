@@ -20,6 +20,14 @@ omakit lab prune                     # what the lab owns on disk, asked once, re
 omakit doctor                        # the lab lines beside the others, advisory
 ```
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/lab-run-dark.svg">
+  <img alt="A run boots a disposable guest from a read-only base through an overlay of its own, runs the suite in a session like a person's, and returns a document naming the guest it ran on; the desktop is not touched and the overlay is removed" src="media/lab-run-light.svg" width="640">
+</picture>
+
+*The base is never written to and the desktop is never touched. What a run
+leaves behind is the document, and the document names the guest it ran on.*
+
 ## The boundary
 
 Omakit ships the ability to acquire a lab. It never ships an ISO, an image,

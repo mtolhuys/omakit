@@ -11,6 +11,14 @@ omakit submit <target> --category <category> --tags <a,b> [--notes <text>]
 reviewing somebody else's commit read-only. The plugin's name and id come from
 the root `manifest.json`; `--name` overrides the name.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/submit-run-dark.svg">
+  <img alt="Sixteen checks, each naming whether its rule is the marketplace's own or this project's, ending in one of three outcomes: ready with the exact title and body, listed, or refused with no body at all" src="media/submit-run-light.svg" width="640">
+</picture>
+
+*Every check names where its rule comes from, and a run ends one of three
+ways. Nothing is posted by any of them.*
+
 ## What it refuses to do
 
 It never creates the issue. Creating it happens only after the plugin owner

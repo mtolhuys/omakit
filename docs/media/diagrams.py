@@ -231,6 +231,124 @@ RULES = """
 <text x="8" y="222" font-size="11" fill="{muted}">which ids and repositories are already listed, because the pin's copy is stale within hours</text>
 """
 
+BLOCKS_COPY = """
+<rect x="8" y="30" width="140" height="44" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="78" y="57" text-anchor="middle" font-family="{mono}" font-size="11" fill="{accent}">omakit add run</text>
+<line x1="148" y1="52" x2="184" y2="52" stroke="{accent}" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<text x="188" y="14" font-family="{mono}" font-size="11" fill="{muted}">&lt;plugin-dir&gt;/omakit/</text>
+<rect x="188" y="20" width="230" height="88" rx="6" fill="none" stroke="{ink}" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="204" y="46" font-family="{mono}" font-size="11" fill="{ink}">Run.qml</text>
+<text x="204" y="68" font-family="{mono}" font-size="11" fill="{ink}">run-supervisor.py</text>
+<text x="204" y="90" font-family="{mono}" font-size="11" fill="{ink}">NOTICE</text>
+
+<text x="440" y="34" font-size="11" fill="{muted}">every file's header names</text>
+<text x="440" y="52" font-size="11" fill="{ink}">the block and its version,</text>
+<text x="440" y="68" font-size="11" fill="{ink}">the licence and the copyright,</text>
+<text x="440" y="84" font-size="11" fill="{ink}">the omakit commit it came from,</text>
+<text x="440" y="100" font-size="11" fill="{ink}">and the sha256 of the body</text>
+
+<line x1="240" y1="108" x2="150" y2="146" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<line x1="366" y1="108" x2="470" y2="146" stroke="{warn}" stroke-width="1.2" marker-end="url(#ink)"/>
+
+<rect x="8" y="150" width="300" height="38" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="158" y="174" text-anchor="middle" fill="{accent}">a copy omakit shipped</text>
+<text x="8" y="210" font-size="11" fill="{ink}">--update moves it on, header and all</text>
+<text x="8" y="228" font-size="11" fill="{ink}">inspect reads it as one row, raising nothing</text>
+
+<rect x="332" y="150" width="300" height="38" rx="4" fill="none" stroke="{warn}" stroke-width="2"/>
+<text x="482" y="174" text-anchor="middle" fill="{warn}">a copy you edited</text>
+<text x="332" y="210" font-size="11" fill="{ink}">--update refuses before a byte is written</text>
+<text x="332" y="228" font-size="11" fill="{ink}">inspect says modified, and reads it like your own code</text>
+"""
+
+LAB_RUN = """
+<rect x="8" y="40" width="150" height="42" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="83" y="66" text-anchor="middle" font-family="{mono}" font-size="11" fill="{accent}">omakit lab prove</text>
+<line x1="158" y1="61" x2="194" y2="61" stroke="{accent}" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<rect x="198" y="16" width="434" height="140" rx="6" fill="none" stroke="{accent}" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="214" y="38" font-family="{mono}" font-size="11" fill="{accent}">a disposable Omarchy guest</text>
+
+<rect x="214" y="48" width="150" height="46" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="289" y="70" text-anchor="middle" font-family="{mono}" font-size="11" fill="{ink}">base.qcow2</text>
+<text x="289" y="86" text-anchor="middle" font-size="10" fill="{muted}">read-only, 0444</text>
+<line x1="364" y1="71" x2="394" y2="71" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="396" y="48" width="150" height="46" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="471" y="70" text-anchor="middle" font-family="{mono}" font-size="11" fill="{ink}">overlay</text>
+<text x="471" y="86" text-anchor="middle" font-size="10" fill="{muted}">this run only</text>
+
+<rect x="214" y="106" width="332" height="36" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="380" y="129" text-anchor="middle" font-size="11" fill="{ink}">the suite runs in a session the way a person gets one</text>
+
+<line x1="415" y1="156" x2="415" y2="184" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="278" y="186" width="354" height="44" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="455" y="205" text-anchor="middle" font-size="11" fill="{accent}">the document</text>
+<text x="455" y="221" text-anchor="middle" font-size="10" fill="{muted}">the guest it ran on, and what the suite did</text>
+
+<rect x="8" y="186" width="240" height="44" rx="4" fill="none" stroke="{muted}" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="128" y="205" text-anchor="middle" font-size="11" fill="{muted}">the desktop you work on</text>
+<text x="128" y="221" text-anchor="middle" font-size="10" fill="{muted}">not read, not written, not restarted</text>
+
+<text x="8" y="256" font-size="11" fill="{muted}">when the run ends the overlay is removed, and the base is the same file it was</text>
+"""
+
+SUBMIT_RUN = """
+<rect x="8" y="60" width="164" height="44" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="90" y="80" text-anchor="middle" font-size="11" fill="{ink}">your plugin,</text>
+<text x="90" y="96" text-anchor="middle" font-size="11" fill="{ink}">at one exact commit</text>
+<line x1="172" y1="82" x2="204" y2="82" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<rect x="206" y="24" width="230" height="118" rx="6" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="321" y="48" text-anchor="middle" font-family="{mono}" font-size="11" fill="{accent}">sixteen checks</text>
+<text x="222" y="76" font-family="{mono}" font-size="10" fill="{ink}">marketplace-pin</text>
+<text x="222" y="92" font-size="10" fill="{muted}">their rule, read from the pin</text>
+<text x="222" y="116" font-family="{mono}" font-size="10" fill="{warn}">omakit</text>
+<text x="222" y="132" font-size="10" fill="{muted}">this project's, from public issue data</text>
+
+<line x1="436" y1="70" x2="466" y2="46" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<line x1="436" y1="83" x2="466" y2="96" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<line x1="436" y1="96" x2="466" y2="146" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+
+<rect x="468" y="24" width="164" height="40" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="550" y="49" text-anchor="middle" font-family="{mono}" font-size="11" fill="{accent}">READY   exit 0</text>
+<rect x="468" y="76" width="164" height="40" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="550" y="101" text-anchor="middle" font-family="{mono}" font-size="11" fill="{ink}">LISTED  exit 0</text>
+<rect x="468" y="128" width="164" height="40" rx="4" fill="none" stroke="{warn}" stroke-width="2"/>
+<text x="550" y="153" text-anchor="middle" font-family="{mono}" font-size="11" fill="{warn}">REFUSED exit 1</text>
+
+<text x="8" y="196" font-size="11" fill="{accent}">ready: the exact title and body follow, for you to post</text>
+<text x="8" y="214" font-size="11" fill="{ink}">listed: already listed by this repository, so the form is not the route</text>
+<text x="8" y="232" font-size="11" fill="{warn}">refused: no body at all, because a refusal that still hands you the body is only a suggestion</text>
+"""
+
+INSPECT_REPORT = """
+<rect x="8" y="46" width="150" height="46" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="83" y="66" text-anchor="middle" font-size="11" fill="{ink}">the plugin tree,</text>
+<text x="83" y="82" text-anchor="middle" font-size="11" fill="{ink}">at its commit</text>
+<line x1="158" y1="69" x2="190" y2="69" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<text x="192" y="16" font-family="{mono}" font-size="11" fill="{accent}">read, never run</text>
+<rect x="192" y="22" width="248" height="126" rx="6" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="206" y="46" font-size="11" fill="{ink}">every Process, with its argv</text>
+<text x="206" y="68" font-size="11" fill="{ink}">every host, with its timeout and cap</text>
+<text x="206" y="90" font-size="11" fill="{ink}">every write, and where it lands</text>
+<text x="206" y="112" font-size="11" fill="{ink}">every Timer, and its interval</text>
+<text x="206" y="134" font-size="11" fill="{ink}">the baseline's own capabilities</text>
+
+<line x1="440" y1="85" x2="472" y2="85" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="474" y="22" width="158" height="126" rx="6" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="488" y="46" font-family="{mono}" font-size="11" fill="{accent}">the report</text>
+<text x="488" y="70" font-size="11" fill="{ink}">the size score</text>
+<text x="488" y="90" font-size="11" fill="{ink}">what needs attention</text>
+<text x="488" y="110" font-size="11" fill="{ink}">the review classes</text>
+<text x="488" y="136" font-family="{mono}" font-size="11" fill="{accent}">INSPECTED</text>
+
+<text x="8" y="184" font-size="11" fill="{muted}">it runs nothing from the tree, resolves no host, and writes nothing into it</text>
+<text x="8" y="202" font-size="11" fill="{muted}">no verdict and no --fix: a class is listed where the tree shows its precondition, with its measured share</text>
+<text x="8" y="220" font-size="11" fill="{muted}">and the report closes by naming what the method cannot see</text>
+"""
+
 DIAGRAMS = [
     ("why-shell", 640, 260, SHELL,
      "One shell process hosts every widget; values a plugin does not control flow in, "
@@ -249,6 +367,21 @@ DIAGRAMS = [
      "Every rule is read from a marketplace checkout pinned at an exact commit and run "
      "verbatim; only which ids are already listed comes from the marketplace's current HEAD, "
      "and this project's own checks are labelled at every line"),
+    ("blocks-copy", 640, 236, BLOCKS_COPY,
+     "omakit add writes the block's files into the plugin's own directory, each with a header "
+     "naming the block, its version, the licence, the omakit commit and the sha256 of the body, "
+     "which is what tells an unmodified copy from one the author has edited"),
+    ("lab-run", 640, 266, LAB_RUN,
+     "A run boots a disposable guest from a read-only base through an overlay of its own, runs "
+     "the suite in a session like a person's, and returns a document naming the guest it ran on; "
+     "the desktop is not touched and the overlay is removed"),
+    ("submit-run", 640, 242, SUBMIT_RUN,
+     "Sixteen checks, each naming whether its rule is the marketplace's own or this project's, "
+     "ending in one of three outcomes: ready with the exact title and body, listed, or refused "
+     "with no body at all"),
+    ("inspect-report", 640, 230, INSPECT_REPORT,
+     "inspect reads the plugin tree without running anything from it and reports what the text "
+     "shows, closing on INSPECTED rather than on a verdict"),
     ("why-store", 640, 250, STORE,
      "Store walks the directory chain by descriptor and writes through an exclusive "
      "temporary file that is renamed into place"),
