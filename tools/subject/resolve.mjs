@@ -3,7 +3,7 @@
 //   reviewer mode - <https url>@<40-char sha>, fetched read-only into
 //                   .cache/subjects/<owner>__<repo>/ and never executed.
 import { execFileSync } from "node:child_process"
-import { existsSync, statSync, mkdirSync } from "node:fs"
+import { existsSync, realpathSync, statSync, mkdirSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 
@@ -67,9 +67,17 @@ export function resolveSubject(target, options) {
     // on 2026-09-19 by a first user passing a plugin's README.md;
     // docs/evidence/ux/2026-09-19-first-user-test.json, finding 7).
     if (!statSync(parsed.path).isDirectory()) throw new SubjectError("not-a-directory", `${parsed.path} is a file; the target is the plugin's repository directory, the one with its manifest.json (${dirname(parsed.path)}?)`)
+    // The real path, once, here: git reports the top level as a real path,
+    // and a target reached through a symbolic link compared against it
+    // made a subdirectory that does not exist. Measured on 2026-09-19:
+    // `inspect /tmp/tm-link` (a link to /tmp/tm) looked for a manifest at
+    // /tmp/tm/link and exited 2 while verify and submit, which read the
+    // top level alone, resolved it (docs/evidence/ux/2026-09-19-acceptance.json,
+    // finding 5). Every command resolves its subject through this function.
+    const real = realpathSync(parsed.path)
     let top
     try {
-      top = git(parsed.path, ["rev-parse", "--show-toplevel"]).trim()
+      top = git(real, ["rev-parse", "--show-toplevel"]).trim()
     } catch {
       throw new SubjectError("not-a-git-repository", `${parsed.path} is not inside a Git repository`)
     }
@@ -95,7 +103,7 @@ export function resolveSubject(target, options) {
     return {
       mode: "author",
       dir: top,
-      subdir: resolve(parsed.path) === top ? "" : resolve(parsed.path).slice(top.length + 1),
+      subdir: real === top ? "" : real.startsWith(`${top}/`) ? real.slice(top.length + 1) : "",
       commit,
       clean,
       uncommittedFiles: status.length,
