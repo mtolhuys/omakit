@@ -1,8 +1,8 @@
 # Installing omakit
 
 The README says the one line; this page says the rest: the clone route, PATH,
-what it needs, how it updates, and what a dependency scanner sees in it and
-why.
+what it needs, what it puts on your machine, how it updates and how to remove
+it, and what a dependency scanner sees in it and why.
 
 ## Install
 
@@ -62,6 +62,48 @@ omakit setup
 fast-forward for a clone. `omakit doctor` says when a newer version is
 published. Nothing in omakit fetches and runs its own replacement, and
 `omarchy-mise-install npm:omakit` would, so it is not the way in.
+
+## What it puts on your machine
+
+Everything omakit writes is under two roots it follows XDG for, plus the
+completion script where your shell loads one from. It writes nowhere else,
+and it never edits your rc file for `PATH`.
+
+| Path | What it is | How big |
+| --- | --- | --- |
+| `~/.cache/omakit/marketplace` | the pinned marketplace checkout every rule is read from | 15 MB |
+| `~/.cache/omakit/registry` | the registry and catalog as last read | small |
+| `~/.cache/omakit/lab/` | the lab: the verified ISO, the base, staging, the lock | gigabytes, and only after `omakit lab setup` |
+| `~/.local/state/omakit/weigh/` | the documents `omakit weigh` wrote, and its per-restart timing | small |
+| `~/.local/state/omakit/lab/runs/` | one record per lab run, with its logs and screenshots | small |
+| `~/.local/share/bash-completion/completions/omakit` | the completion script, for bash | small |
+| `~/.config/fish/completions/omakit.fish` | the same, for fish | small |
+| `~/.zfunc/_omakit` | the same, for zsh | small |
+
+`$XDG_CACHE_HOME` and `$XDG_STATE_HOME` move the first two roots if you set
+them, and `$XDG_DATA_HOME`, `$XDG_CONFIG_HOME` and `$ZDOTDIR` move the
+completion script. Nothing here is written until you run the command that
+needs it: an omakit that has only ever run `submit` has the first row and no
+other.
+
+`omakit doctor` reports the pin's checkout and its size as `pin.checkout`
+and `pin.size`, the completion script as `omakit.completion`, and the
+lab's lines beside them; `omakit lab inspect` is the lab's own inventory,
+with the bytes.
+
+## Removing it
+
+```bash
+omakit lab prune                                   # the lab, asked once, with the bytes said
+npm uninstall --global omakit                      # or remove the clone and the symlink
+rm -rf ~/.cache/omakit ~/.local/state/omakit       # the pin, the registry cache, the records
+```
+
+`prune` first, while omakit is still installed: it is the only thing that
+knows what the lab owns, and the lab is the only part measured in gigabytes.
+The completion script is removed with the path from the table above; the one
+guarded block that `setup` may have added to your `~/.bashrc` or `~/.zshrc`
+is yours to delete, because omakit never edits or removes it.
 
 ## Updating
 
