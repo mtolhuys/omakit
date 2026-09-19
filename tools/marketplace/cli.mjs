@@ -184,9 +184,21 @@ function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => [], e
  * that names what is missing (`missing`: what, what it costs, the one
  * command) lists it between the sentence and the arrow.
  */
+/**
+ * The exit status of a stop asked for by a signal, the shell's convention:
+ * 128 plus the signal number, so 130 for SIGINT, 143 for SIGTERM, 129 for
+ * SIGHUP (a closed terminal). Measured on 2026-09-19 by an acceptance
+ * tester: a SIGTERM to inspect exited 143, as an unhandled signal does,
+ * while weigh and lab turned every signal into 130.
+ */
+const SIGNAL_EXIT = Object.freeze({ SIGHUP: 129, SIGINT: 130, SIGTERM: 143 })
+function signalExit(signal) {
+  return SIGNAL_EXIT[signal] ?? 130
+}
+
 function failFrom(error) {
   if (error?.code && typeof error.code === "string") {
-    const exit = error.code === "usage" || error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? 130 : 1
+    const exit = error.code === "usage" || error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? signalExit(error.signal) : 1
     const body = error.missing?.length
       ? (c) => error.missing.flatMap((item) => [`${" ".repeat(GUTTER)}${c("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), c), ...(item.command ? action(withHomeAbbreviated(item.command), c) : [])])
       : () => []
@@ -628,36 +640,42 @@ async function cmdWeigh(args) {
   // what was agreed to; the question is asked only at a terminal on both
   // ends, and --yes is the only other way past it.
   narrate.write(`${withOutputStream(narrate, () => renderPlan(plan, { colour: colourEnabled(narrate) })).join("\n")}\n`)
-  if (!parsed.options.has("--yes")) {
+  // The consent is a value handed to the measurement, not a flag it reads
+  // for itself: `--yes`, or a `y` typed at a terminal on both ends. Without
+  // it measureWeigh refuses, and so does every write under tools/weigh/.
+  let consent = parsed.options.has("--yes") ? { consented: true, how: "--yes" } : null
+  if (!consent) {
     const interactive = !json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY)
     if (!interactive) notWeighed("not-confirmed", `this restarts the shell ${plan.restarts} times and edits shell.json for the duration; a pipe, an agent or --json cannot answer for the person whose shell it is.`, REMEDY["not-confirmed"], 2)
     const agreed = await askYes({ question: confirmationQuestion(plan) })
     if (!agreed) notWeighed("not-confirmed", "not confirmed; nothing was changed.", REMEDY["not-confirmed"], 2)
+    consent = { consented: true, how: "answered y at the terminal" }
   }
   narrate.write("\n")
   // An interrupt is a request to stop, not a reason to leave the user's
   // shell on a measurement configuration: the signal aborts the run, the
   // measurement's own finally restores shell.json and restarts the shell,
-  // and only then does the process exit, 130 as an interrupted program does.
+  // and only then does the process exit, with the signal's own status (130
+  // for SIGINT, 143 for SIGTERM, 129 for SIGHUP, a terminal that closed).
   const controller = new AbortController()
-  const interrupt = () => {
-    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted: restoring shell.json before exiting\n`)
-    controller.abort()
+  let stoppedBy = null
+  const interrupt = (signal) => {
+    stoppedBy = stoppedBy || signal
+    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted (${signal}): restoring shell.json before exiting\n`)
+    controller.abort(signal)
   }
-  process.on("SIGINT", interrupt)
-  process.on("SIGTERM", interrupt)
+  for (const signal of Object.keys(SIGNAL_EXIT)) process.on(signal, interrupt)
   const spinner = spinnerFor(args)
   let document
   try {
-    document = await measureWeigh(plan, { signal: controller.signal, omakitVersion: VERSION, onPhase: spinner.phase, onLine: (line) => { spinner.done(); say(line) } })
+    document = await measureWeigh(plan, { consent, signal: controller.signal, omakitVersion: VERSION, onPhase: spinner.phase, onLine: (line) => { spinner.done(); say(line) } })
   } catch (error) {
     spinner.done()
-    if (error?.code === "interrupted") notWeighed("interrupted", "interrupted before the measurement completed.", REMEDY.interrupted, 130)
+    if (error?.code === "interrupted") notWeighed("interrupted", `interrupted by ${error.signal || stoppedBy || "a signal"} before the measurement completed.`, REMEDY.interrupted, signalExit(error.signal || stoppedBy))
     if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code])
     throw error
   } finally {
-    process.off("SIGINT", interrupt)
-    process.off("SIGTERM", interrupt)
+    for (const signal of Object.keys(SIGNAL_EXIT)) process.off(signal, interrupt)
   }
   spinner.done()
   if (json) {
@@ -687,9 +705,18 @@ async function cmdLab(args) {
   const say = (line) => narrate.write(`${line.state === "prose" ? " ".repeat(GUTTER) : mark(line.state, c)}${withHomeAbbreviated(line.text)}\n`)
   const spinner = spinnerFor(args)
   const controller = new AbortController()
-  const interrupt = () => {
-    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted: ending the guest and cleaning up before exiting\n`)
-    controller.abort()
+  let stoppedBy = null
+  const interrupt = (signal) => {
+    stoppedBy = stoppedBy || signal
+    if (!controller.signal.aborted) narrate.write(`\n${mark("advisory", c)}interrupted (${signal}): ending the guest and cleaning up before exiting\n`)
+    controller.abort(signal)
+  }
+  const listen = () => { for (const signal of Object.keys(SIGNAL_EXIT)) process.on(signal, interrupt) }
+  const unlisten = () => { for (const signal of Object.keys(SIGNAL_EXIT)) process.off(signal, interrupt) }
+  /** A lab error that stopped for a signal carries the signal, so the exit status follows it. */
+  const stopped = (error) => {
+    if (error?.code === "interrupted" && !error.signal) error.signal = stoppedBy
+    return error
   }
 
   if (what === "inspect") {
@@ -712,8 +739,7 @@ async function cmdLab(args) {
     if (!suite) fail("usage", "prove needs a suite: `omakit lab prove <run|store|weigh|weigh-evidence>`", 2, signature)
     const runs = parsed.options.has("--runs") ? Number(parsed.options.get("--runs")) : undefined
     if (parsed.options.has("--runs") && !(Number.isInteger(runs) && runs >= 1)) fail("usage", `--runs needs an integer of at least 1, not ${JSON.stringify(parsed.options.get("--runs"))}.`, 2, signature)
-    process.on("SIGINT", interrupt)
-    process.on("SIGTERM", interrupt)
+    listen()
     let record
     try {
       record = await runSuite({
@@ -735,10 +761,9 @@ async function cmdLab(args) {
       })
     } catch (error) {
       spinner.done()
-      failFrom(error)
+      failFrom(stopped(error))
     } finally {
-      process.off("SIGINT", interrupt)
-      process.off("SIGTERM", interrupt)
+      unlisten()
     }
     spinner.done()
     if (json) {
@@ -784,8 +809,7 @@ async function cmdLab(args) {
       if (!consented) failFrom(Object.assign(new Error("not confirmed; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
     }
     narrate.write("\n")
-    process.on("SIGINT", interrupt)
-    process.on("SIGTERM", interrupt)
+    listen()
     let result
     let lastProgress = 0
     try {
@@ -805,10 +829,9 @@ async function cmdLab(args) {
       })
     } catch (error) {
       spinner.done()
-      failFrom(error)
+      failFrom(stopped(error))
     } finally {
-      process.off("SIGINT", interrupt)
-      process.off("SIGTERM", interrupt)
+      unlisten()
     }
     spinner.done()
     emit(args, json ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSetupResult, result))

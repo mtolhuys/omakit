@@ -86,10 +86,14 @@ holds the tree to that one append. The other exception is below.
 with it, and edits `~/.config/omarchy/shell.json` for the duration of the
 measurement. So it is the single command that confirms before acting: it
 states the restart count and the estimated minutes, accepts `--yes`, refuses
-while the session is locked and when the plugin is not enabled, backs
-`shell.json` up to a timestamped copy, restores it on every exit path
-including an interrupt and a shell that does not come back, and prints the
-md5 before and after. It never touches the marketplace, never posts, and
+while the session is locked, when the plugin is not enabled and when a
+backup an earlier measurement left is still beside `shell.json`, backs
+`shell.json` up to a timestamped copy (a whole file renamed into place, as
+every write there is), restores it on every exit path code can run on,
+`SIGINT`, `SIGTERM` and `SIGHUP` included, and a shell that does not come
+back, and prints the md5 before and after. The consent is a value handed to
+the measurement; nothing under `tools/weigh/` writes without the lease it
+opens. It never touches the marketplace, never posts, and
 never writes into a plugin tree; `docs/WEIGH.md` says exactly what it writes.
 `tests/unit/read-only.test.mjs` holds `tools/weigh/` to a frozen list of
 Omarchy commands, and `tests/unit/self-containment.test.mjs` to the files it

@@ -15,7 +15,7 @@ import { join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 import { buildDocument, compatibility, WeighError, DEFAULTS, ipcFunctions, RESTART_SECONDS, measureWeigh, planWeigh, readmeSentence, REQUIRED_IPC, restartTiming, stockShellPath, summaryOf } from "../../tools/weigh/audit.mjs"
 import { COMMANDS, commandLine, run } from "../../tools/weigh/commands.mjs"
-import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without } from "../../tools/weigh/config.mjs"
+import { backupConfig, backupsBeside, ConsentError, configPaths, md5, restoreConfig, verifyRestore, without, writeConfig } from "../../tools/weigh/config.mjs"
 import { validateWeighDocument } from "../../tools/weigh/contract.mjs"
 import { ARG0_CHARS, childTicks, cpuTicks, descendants, pssKb, rssKb } from "../../tools/weigh/proc.mjs"
 import { figure, median, spread, stats, tickPercent, verdict } from "../../tools/weigh/stats.mjs"
@@ -171,6 +171,8 @@ function machine({ locked = false, installed = INSTALLED, effective = EFFECTIVE,
 }
 
 const FAST = { runs: 2, windowSeconds: 0.2, settleSeconds: 0 }
+/** What cli.mjs hands the measurement after --yes or a y: the value every write under tools/weigh/ requires. */
+const CONSENT = Object.freeze({ consented: true, how: "the test agreed" })
 
 /**
  * A real, quiet process for the entry-point tests to weigh: a `sleep` whose
@@ -316,14 +318,18 @@ test("the README sentence speaks about CPU and child processes, never about the 
 test("backup and restore are byte for byte, keep the mode, and verify by md5", (t) => {
   if (needsMachine(t)) return
   const m = machine()
-  const backup = backupConfig(m.configFile, "20260914120000")
+  const backup = backupConfig(m.configFile, "20260914120000", CONSENT)
   assert.equal(backup.backupFile, `${m.configFile}.omakit-backup-20260914120000`)
   assert.equal(readFileSync(backup.backupFile, "utf8"), USER_SHELL_JSON)
   assert.equal(backup.md5Before, md5(Buffer.from(USER_SHELL_JSON)))
   assert.equal(backup.md5Before, spawnSync("md5sum", [m.configFile], { timeout: 120_000, encoding: "utf8" }).stdout.split(" ")[0], "the same md5 md5sum prints")
   const mode = (path) => (statSync(path).mode & 0o777).toString(8)
   assert.equal(mode(backup.backupFile), "600", "a copy of a private file is a private file")
-  writeFileSync(m.configFile, "{}\n")
+  assert.equal(backup.consented, true, "the lease carries the consent it was opened with")
+  assert.deepEqual(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.endsWith(".part")), [], "the backup was renamed into place; no part file stays")
+  writeConfig(backup, { version: 1 })
+  assert.equal(readFileSync(m.configFile, "utf8"), '{\n  "version": 1\n}\n')
+  assert.equal(mode(m.configFile), "600", "a measurement configuration keeps the original's mode")
   restoreConfig(backup)
   assert.equal(existsSync(backup.backupFile), true, "the backup stays until the restore is verified")
   const restored = verifyRestore(backup)
@@ -333,7 +339,7 @@ test("backup and restore are byte for byte, keep the mode, and verify by md5", (
   assert.equal(existsSync(backup.backupFile), false, "the backup is removed after a verified restore")
   // A file that was not there is put back by removal.
   const none = machine({ shellJson: null })
-  const nothing = backupConfig(none.configFile, "x")
+  const nothing = backupConfig(none.configFile, "x", CONSENT)
   assert.equal(nothing.bytes, null)
   assert.equal(nothing.md5Before, null)
   assert.equal(existsSync(nothing.backupFile), false, "no bytes, no backup file")
@@ -343,7 +349,7 @@ test("backup and restore are byte for byte, keep the mode, and verify by md5", (
   assert.equal(existsSync(none.configFile), false)
   // A verification over a file the shell rewrote keeps the backup.
   const rewritten = machine()
-  const kept = backupConfig(rewritten.configFile, "x")
+  const kept = backupConfig(rewritten.configFile, "x", CONSENT)
   restoreConfig(kept)
   writeFileSync(rewritten.configFile, `${USER_SHELL_JSON}// rewritten\n`)
   const check = verifyRestore(kept)
@@ -523,7 +529,7 @@ test("a measurement restarts (1 + plugins) × runs + 1 times, writes the baselin
   const lines = []
   const phases = []
   const plan = planWeigh({ target: "fixture.poller", env: m.env, ...FAST })
-  const document = await measureWeigh(plan, { procRoot: m.proc, omakitVersion: "0.0.0-test", onLine: (line) => lines.push(line), onPhase: (text) => phases.push(text) })
+  const document = await measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, omakitVersion: "0.0.0-test", onLine: (line) => lines.push(line), onPhase: (text) => phases.push(text) })
   const restarts = m.restarts()
   assert.equal(restarts.length, (1 + 1) * 2 + 1, "baseline and plus per run, then the restore")
   assert.deepEqual(restarts[0].config.plugins, [{ id: "fixture.off" }], "baseline: the plugin is out of plugins[]")
@@ -615,7 +621,7 @@ test("--runs 1 is a quick look: no floor, every verdict a question with its reas
   if (needsMachine(t)) return
   const m = machine()
   const plan = planWeigh({ target: "fixture.poller", env: m.env, runs: 1, windowSeconds: 0.2, settleSeconds: 0 })
-  const document = await measureWeigh(plan, { procRoot: m.proc, onLine: () => {} })
+  const document = await measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: () => {} })
   assert.deepEqual(validateWeighDocument(document), [])
   assert.equal(document.noiseFloor.cpuPercent, null)
   assert.equal(document.noiseFloor.pssMb, null)
@@ -644,7 +650,7 @@ test("a restart that does not answer produces no sample, the row says how many c
   const m = machine({ restartFailsAt: 2 })
   const lines = []
   const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
-  const document = await measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
+  const document = await measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: (line) => lines.push(line) })
   assert.deepEqual(validateWeighDocument(document), [])
   assert.deepEqual(document.failedRuns, [{ label: "fixture.clean", run: 1, reason: "the shell did not answer after the restart" }])
   assert.ok(lines.some((line) => line.state === "advisory" && /run 1 of 2, fixture\.clean: the shell did not answer after the restart; no sample/.test(line.text)))
@@ -660,7 +666,7 @@ test("a restart that does not answer produces no sample, the row says how many c
   // Every restart failing leaves a row with nothing claimed.
   const none = machine()
   writeFileSync(join(none.bin, "omarchy-restart-shell"), "#!/bin/bash\nexit 1\n")
-  const empty = await measureWeigh(planWeigh({ target: "fixture.clean", env: none.env, ...FAST }), { procRoot: none.proc, onLine: () => {} })
+  const empty = await measureWeigh(planWeigh({ target: "fixture.clean", env: none.env, ...FAST }), { consent: CONSENT, procRoot: none.proc, onLine: () => {} })
   assert.deepEqual(validateWeighDocument(empty), [])
   assert.equal(empty.plugins[0].runsCompleted, 0)
   assert.deepEqual(empty.plugins[0].verdict, { memory: "unknown", cpu: "unknown", summary: "no completed run, so nothing is claimed" })
@@ -684,7 +690,7 @@ test("a thrown error mid-measurement restores shell.json, and the error keeps it
   writeFileSync(join(m.root, "a-file"), "")
   const plan = planWeigh({ target: "fixture.clean", env: m.env, out: join(m.root, "a-file", "under-a-file.json"), ...FAST })
   const lines = []
-  await assert.rejects(measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), /ENOTDIR|EEXIST/)
+  await assert.rejects(measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: (line) => lines.push(line) }), /ENOTDIR|EEXIST/)
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON, "restored on the way out")
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
   assert.equal(m.restarts().at(-1).md5, md5(Buffer.from(USER_SHELL_JSON)))
@@ -697,7 +703,7 @@ test("an aborted signal stops the run at the next wait, restores, and surfaces a
   const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
   const controller = new AbortController()
   const lines = []
-  const pending = measureWeigh(plan, { procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
+  const pending = measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
   // Abort during the first window: one restart has happened.
   while (m.restarts().length < 1) await delay(20)
   await delay(100)
@@ -718,7 +724,7 @@ test("a restore whose md5 differs keeps the backup and says so", async (t) => {
   writeFileSync(join(m.bin, "omarchy-restart-shell"), `${original.replace(/exit 0\n$/, "")}n=$(wc -l < ${m.state}/restarts.log); (( n == 5 )) && echo '// rewritten by the shell' >> "$config"; exit 0\n`)
   const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 2, windowSeconds: 0.2, settleSeconds: 0 })
   const lines = []
-  await assert.rejects(measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) }), (error) => error.code === "restore-unverified")
+  await assert.rejects(measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: (line) => lines.push(line) }), (error) => error.code === "restore-unverified")
   const kept = readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup"))
   assert.equal(kept.length, 1, "the backup is kept")
   assert.equal(readFileSync(join(m.home, ".config/omarchy", kept[0]), "utf8"), USER_SHELL_JSON)
@@ -1026,10 +1032,160 @@ test("SIGINT during a window restores shell.json, restarts the shell once more, 
   assert.equal(m.restarts().at(-1).md5, md5(Buffer.from(USER_SHELL_JSON)))
   assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
   assert.equal(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.includes("backup")).length, 0)
-  assert.match(out, /interrupted: restoring shell\.json before exiting/)
+  assert.match(out, /interrupted \(SIGINT\): restoring shell\.json before exiting/)
   assert.match(out, /restored and verified/)
-  assert.match(err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}interrupted before the measurement completed\\.`, "m"))
+  assert.match(err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}interrupted by SIGINT before the measurement completed\\.`, "m"))
   assert.match(err, /shell\.json was restored/)
+})
+
+
+// --- the incident of 2026-09-19: nothing reaches shell.json without a consented measurement ---
+//
+// Two `shell.json.omakit-backup-<stamp>` files appeared beside a person's
+// shell.json (12:23:59Z and 12:27:13Z) in an hour when they had authorised
+// no weighing; the writes came from two consented runs in another session,
+// the first of which died before its verification and left its backup
+// (docs/evidence/ux/2026-09-19-acceptance.json, finding 1). What these tests
+// hold: no write without the lease consent opens; every path that stops
+// before or without consent leaves the directory byte for byte as it was;
+// every signal a process can handle restores and removes the backup, with
+// the signal's own exit status; the one it cannot handle, SIGKILL, leaves a
+// backup whose name is the second the measurement began, and the next run
+// names that backup and refuses before touching anything.
+
+test("no write under tools/weigh happens without the lease consent opens, and the lease is refused without consent", async (t) => {
+  if (needsMachine(t)) return
+  const m = machine()
+  const before = readFileSync(m.configFile)
+  assert.throws(() => backupConfig(m.configFile, "20260919122359"), (error) => error instanceof ConsentError && error.code === "not-confirmed" && /no measurement was consented to; nothing was written/.test(error.message))
+  assert.throws(() => backupConfig(m.configFile, "20260919122359", { consented: "yes" }), ConsentError, "only the boolean true is consent")
+  assert.throws(() => writeConfig({ configFile: m.configFile, backupFile: `${m.configFile}.omakit-backup-x` }, { version: 1 }), (error) => error instanceof ConsentError && /needs the lease backupConfig\(\) returns after consent/.test(error.message))
+  assert.throws(() => restoreConfig({ configFile: m.configFile, bytes: before }), ConsentError)
+  const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
+  await assert.rejects(measureWeigh(plan, { procRoot: m.proc, onLine: () => {} }), (error) => error instanceof WeighError && error.code === "not-confirmed" && /no consented measurement is running/.test(error.message))
+  await assert.rejects(measureWeigh(plan, { consent: { consented: false }, procRoot: m.proc, onLine: () => {} }), (error) => error.code === "not-confirmed")
+  assert.deepEqual(readdirSync(join(m.home, ".config/omarchy")), ["shell.json"], "nothing beside shell.json")
+  assert.ok(readFileSync(m.configFile).equals(before), "and shell.json is byte for byte what it was")
+  assert.deepEqual(m.restarts(), [], "and the shell was not restarted")
+  // With consent, the backup's name is the UTC second the measurement began.
+  const lines = []
+  const startedAt = Date.now()
+  await measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: (line) => lines.push(line) })
+  const stamp = lines[0].text.match(/omakit-backup-(\d{14})/)[1]
+  const began = Date.UTC(Number(stamp.slice(0, 4)), Number(stamp.slice(4, 6)) - 1, Number(stamp.slice(6, 8)), Number(stamp.slice(8, 10)), Number(stamp.slice(10, 12)), Number(stamp.slice(12, 14)))
+  assert.ok(Math.abs(began - startedAt) < 2000, `the stamp ${stamp} is the second the measurement began, not the plan's or the restore's`)
+  assert.deepEqual(backupsBeside(m.configFile), [], "and a completed measurement leaves no backup to name")
+})
+
+test("every path that stops before a consented measurement leaves ~/.config/omarchy byte for byte as it was", (t) => {
+  if (needsMachine(t)) return
+  const snapshot = (m) => {
+    const dir = join(m.home, ".config/omarchy")
+    return { entries: readdirSync(dir).sort(), bytes: readFileSync(m.configFile), mtime: statSync(m.configFile).mtimeMs, mode: statSync(m.configFile).mode }
+  }
+  const cases = [
+    { name: "a pipe without --yes", args: ["weigh", "fixture.clean"], exit: 2, code: "not-confirmed" },
+    { name: "--json without --yes", args: ["weigh", "fixture.clean", "--json"], exit: 2, code: "not-confirmed" },
+    { name: "an unknown plugin with --yes", args: ["weigh", "nosuch.plugin", "--yes"], exit: 1, code: "plugin-unknown" },
+    { name: "a disabled plugin with --yes", args: ["weigh", "fixture.off", "--yes"], exit: 1, code: "plugin-disabled" },
+    { name: "a whole bar with --yes", args: ["weigh", "fixture.whole-bar", "--yes"], exit: 1, code: "plugin-is-bar" },
+    { name: "a locked session with --yes", args: ["weigh", "fixture.clean", "--yes"], exit: 1, code: "session-locked", machine: { locked: true } },
+    { name: "an Omarchy without omarchy-shell, with --yes", args: ["weigh", "fixture.clean", "--yes"], exit: 1, code: "no-omarchy-shell", env: { PATH: "/nonexistent" } },
+    { name: "a usage error beside --yes", args: ["weigh", "fixture.clean", "--wat", "--yes"], exit: 2, code: "usage" },
+    { name: "--list", args: ["weigh", "--list"], exit: 0, code: null },
+  ]
+  for (const one of cases) {
+    const m = machine(one.machine || {})
+    const before = snapshot(m)
+    const result = omakit([...one.args, "--json"].filter((arg, index, all) => all.indexOf(arg) === index), { ...m.env, ...(one.env || {}) })
+    assert.equal(result.code, one.exit, `${one.name}: exit ${result.code}\n${result.err}`)
+    if (one.code) {
+      const document = JSON.parse(result.out)
+      assert.equal(document.ok, false, one.name)
+      assert.equal(document.error.code, one.code, one.name)
+    }
+    assert.deepEqual(snapshot(m), before, `${one.name}: the directory, the bytes, the mtime and the mode are what they were`)
+    assert.deepEqual(m.restarts(), [], `${one.name}: no restart`)
+  }
+})
+
+for (const [signal, exit] of [["SIGTERM", 143], ["SIGHUP", 129]]) {
+  test(`${signal} during a window restores shell.json, restarts the shell once more, removes the backup, and exits ${exit}`, async (t) => {
+    if (needsMachine(t) || needsProc(t)) return
+    const m = machine({ shellPid: sleeper(t) })
+    const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
+      env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+    let out = ""
+    let err = ""
+    child.stdout.on("data", (chunk) => { out += chunk })
+    child.stderr.on("data", (chunk) => { err += chunk })
+    const exited = new Promise((resolve) => child.on("exit", (code, signalName) => resolve({ code, signalName })))
+    const deadline = Date.now() + 20_000
+    while (m.restarts().length < 1 && Date.now() < deadline) await delay(50)
+    await delay(300)
+    child.kill(signal)
+    const { code, signalName } = await exited
+    assert.equal(signalName, null, "the process exited on its own, after the restore")
+    assert.equal(code, exit)
+    assert.equal(m.restarts().length, 2, "one measured restart, then the restore's")
+    assert.equal(m.restarts().at(-1).md5, md5(Buffer.from(USER_SHELL_JSON)))
+    assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
+    assert.deepEqual(readdirSync(join(m.home, ".config/omarchy")), ["shell.json"], "no backup and no part file left")
+    assert.match(out, new RegExp(`interrupted \\(${signal}\\): restoring shell\\.json before exiting`))
+    assert.match(out, /restored and verified/)
+    assert.match(err, new RegExp(`^${DENSITY.full} NOT WEIGHED {2}interrupted by ${signal} before the measurement completed\\.`, "m"))
+  })
+}
+
+test("SIGKILL is the one exit nothing runs on: the backup and the measurement configuration stay, and the next weigh names the backup by the second it began and refuses before touching anything", async (t) => {
+  if (needsMachine(t) || needsProc(t)) return
+  const m = machine({ shellPid: sleeper(t) })
+  const child = spawn(process.execPath, [join(REPO_ROOT, "bin/omakit"), "weigh", "fixture.clean", "--yes", "--runs", "3", "--window", "5", "--settle", "0"], {
+    env: { ...m.env, FORCE_COLOR: undefined, NO_COLOR: undefined },
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+  const exited = new Promise((resolve) => child.on("exit", (code, signalName) => resolve({ code, signalName })))
+  const deadline = Date.now() + 20_000
+  while (m.restarts().length < 1 && Date.now() < deadline) await delay(50)
+  await delay(300)
+  child.kill("SIGKILL")
+  const { signalName } = await exited
+  assert.equal(signalName, "SIGKILL")
+  // What the incident looked like on disk: one backup, named for the
+  // second the measurement began, beside a shell.json that is the
+  // measurement's configuration and not the person's.
+  const left = backupsBeside(m.configFile)
+  assert.equal(left.length, 1, "the backup the killed measurement took")
+  assert.match(left[0].stamp, /^\d{14}$/)
+  assert.match(left[0].startedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+  assert.equal(readFileSync(left[0].file, "utf8"), USER_SHELL_JSON, "the backup is the person's bytes")
+  assert.notEqual(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON, "and shell.json is the measurement's configuration")
+  assert.deepEqual(readdirSync(join(m.home, ".config/omarchy")).filter((name) => name.endsWith(".part")), [], "no part file: every write was whole")
+  const restartsBefore = m.restarts().length
+  // The next run, consented or not, names it and stops before the plan.
+  for (const args of [["weigh", "fixture.clean", "--yes"], ["weigh", "fixture.clean", "--yes", "--json"], ["weigh", "fixture.clean"]]) {
+    const refused = omakit(args, m.env)
+    assert.equal(refused.code, 1, args.join(" "))
+    assert.match(refused.err, /NOT WEIGHED {2}/)
+    assert.ok(refused.err.replace(/\n +/g, " ").includes(`a backup a measurement started at ${left[0].startedAt} left beside`), refused.err)
+    assert.ok(refused.err.replace(/\n +/g, " ").includes(`cp ${left[0].file} ${m.configFile}`), "the remedy is the restore, spelled out")
+    if (args.includes("--json")) {
+      const document = JSON.parse(refused.out)
+      assert.equal(document.error.code, "backup-present")
+      assert.ok(document.error.remedy.includes(left[0].file))
+    }
+  }
+  assert.equal(m.restarts().length, restartsBefore, "nothing was restarted")
+  assert.equal(backupsBeside(m.configFile).length, 1, "and the backup was not touched")
+  // The person's restore, as the remedy says, and the next measurement runs.
+  writeFileSync(m.configFile, readFileSync(left[0].file), { mode: 0o600 })
+  rmSync(left[0].file)
+  const again = omakit(["weigh", "fixture.clean", "--yes", "--runs", "1", "--window", "1", "--settle", "0"], m.env)
+  assert.equal(again.code, 0, again.err)
+  assert.equal(readFileSync(m.configFile, "utf8"), USER_SHELL_JSON)
+  assert.deepEqual(backupsBeside(m.configFile), [])
 })
 
 test("the question is written whole, wrapped like every action, and ends with the prompt at 80 and at 60 columns", () => {
@@ -1185,7 +1341,7 @@ test("a shell pid that is not in /proc produces no sample: nothing is read as ze
   writeFileSync(join(m.bin, "qs"), `#!/bin/bash\nif [[ "$1" == ipc ]]; then cat ${m.state}/ipc.txt; exit 0; fi; echo '[{"pid": 4999, "path": "x"}]'\n`)
   const lines = []
   const plan = planWeigh({ target: "fixture.clean", env: m.env, ...FAST })
-  const document = await measureWeigh(plan, { procRoot: m.proc, onLine: (line) => lines.push(line) })
+  const document = await measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, onLine: (line) => lines.push(line) })
   assert.deepEqual(validateWeighDocument(document), [])
   assert.equal(document.failedRuns.length, 4, "every configuration of every run")
   for (const failed of document.failedRuns) assert.match(failed.reason, /shell \(pid 4999\) is not in /)
@@ -1208,7 +1364,7 @@ test("an interrupt whose restore does not verify is reported as the unverified r
   const plan = planWeigh({ target: "fixture.clean", env: m.env, runs: 3, windowSeconds: 2, settleSeconds: 0 })
   const controller = new AbortController()
   const lines = []
-  const pending = measureWeigh(plan, { procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
+  const pending = measureWeigh(plan, { consent: CONSENT, procRoot: m.proc, signal: controller.signal, onLine: (line) => lines.push(line) })
   while (m.restarts().length < 1) await delay(20)
   await delay(100)
   controller.abort()

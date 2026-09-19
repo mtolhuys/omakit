@@ -3,15 +3,19 @@
 // `planWeigh()` reads and decides: the shell that runs, whether the session is
 // locked, what is installed and enabled, which plugins will be measured, how
 // many restarts that is and how long it will take. It writes nothing, so the
-// confirmation is made from it and a refusal costs nothing.
+// confirmation is made from it and a refusal costs nothing; a backup an
+// earlier measurement left beside shell.json is a refusal too.
 //
 // `measureWeigh()` is the half that changes the user's machine, and the only
 // one in omakit that does. For every run: write a configuration, restart the
 // shell, wait until every installed plugin is reported, settle, sample; then
-// the next configuration. The backup is taken before the first write and
-// restored in a `finally` that every exit path passes through: a completed
-// run, a restart that did not answer, a thrown error, and an interrupt, which
-// arrives here as an aborted signal rather than a dead process.
+// the next configuration. It takes the consent as an argument and refuses
+// without it. The backup is taken before the first write and restored in a
+// `finally` that every exit path passes through: a completed run, a restart
+// that did not answer, a thrown error, and an interrupt (SIGINT, SIGTERM or
+// SIGHUP), which arrives here as an aborted signal rather than a dead
+// process. A SIGKILL is the one exit no code runs on: it leaves the backup
+// beside shell.json, and the next `planWeigh` names it.
 //
 // The method is a port of the audit described in docs/WEIGH.md, and that
 // document is the contract for what comes out; the bash it was ported from
@@ -23,7 +27,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { hostname } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { run } from "./commands.mjs"
-import { backupConfig, configPaths, md5, restoreConfig, verifyRestore, without, writeConfig } from "./config.mjs"
+import { backupConfig, backupsBeside, configPaths, md5, restoreConfig, verifyRestore, without, writeConfig } from "./config.mjs"
 import { childTicks, cpuTicks, descendants, PROC, pssKb, rssKb } from "./proc.mjs"
 import { median, stats, tickPercent, verdict } from "./stats.mjs"
 import { omakitStateDir } from "../marketplace/paths.mjs"
@@ -218,6 +222,18 @@ export function planWeigh({ target, all = false, runs = DEFAULTS.runs, windowSec
   audited = audited.map((plugin) => ({ id: plugin.id, name: plugin.name || plugin.id, kinds: plugin.kinds || [], firstParty: plugin.firstParty === true, sourceDir: sourceDirOf(plugin.id) }))
 
   const { file: configFile } = configPaths(env)
+  // A backup already beside shell.json is a measurement that never reached
+  // its verification, or one whose restore did not verify: the person has
+  // not seen it yet, and a second measurement over it would bury it. So it
+  // is named, with the restore, and nothing starts until it is gone.
+  // Measured on 2026-09-19: a second consented run started 3 m 14 s after
+  // the first had died with its backup in place, and the backup was found
+  // by a third party the next hour (docs/evidence/ux/2026-09-19-acceptance.json, finding 1).
+  const backups = backupsBeside(configFile)
+  if (backups.length) {
+    const newest = backups.at(-1)
+    throw new WeighError("backup-present", `${newest.file} is a backup a measurement started at ${newest.startedAt} left beside ${configFile}${backups.length > 1 ? ` (${backups.length} such backups)` : ""}; the measurement did not finish its restore, or the restore did not verify, and nothing is weighed over it`, `Compare it with ${configFile}; if the difference is not yours, \`cp ${newest.file} ${configFile}\` and run omarchy-restart-shell; then remove the backup${backups.length > 1 ? "s" : ""} and run weigh again.`)
+  }
   const stateDir = omakitStateDir("weigh", env)
   const timing = restartTiming(stateDir)
   const restarts = (1 + audited.length) * runs
@@ -250,10 +266,17 @@ export function planWeigh({ target, all = false, runs = DEFAULTS.runs, windowSec
   }
 }
 
+/** The stop as an error: `interrupted`, carrying the signal name the controller was aborted with (`SIGINT`, `SIGTERM`, `SIGHUP`) so the exit status can follow it. */
+function interrupted(signal) {
+  const error = new WeighError("interrupted", "interrupted")
+  error.signal = typeof signal?.reason === "string" ? signal.reason : null
+  return error
+}
+
 function sleep(ms, signal) {
   return new Promise((resolveSleep, reject) => {
     if (signal?.aborted) {
-      reject(new WeighError("interrupted", "interrupted"))
+      reject(interrupted(signal))
       return
     }
     const timer = setTimeout(() => {
@@ -262,14 +285,14 @@ function sleep(ms, signal) {
     }, ms)
     function onAbort() {
       clearTimeout(timer)
-      reject(new WeighError("interrupted", "interrupted"))
+      reject(interrupted(signal))
     }
     signal?.addEventListener("abort", onAbort, { once: true })
   })
 }
 
 function checkAbort(signal) {
-  if (signal?.aborted) throw new WeighError("interrupted", "interrupted")
+  if (signal?.aborted) throw interrupted(signal)
 }
 
 /** Wait until listPlugins reports every installed plugin, polling once a second; null when it does not within the timeout. */
@@ -306,11 +329,11 @@ function shellPid(omarchyPath, env) {
  * the sample, or `{ failed }` with the reason when the shell did not come
  * back or did not report every plugin; nothing is estimated in its place.
  */
-async function sampleConfig({ label, runIndex, config, plan, env, procRoot, signal, onPhase, restartTimes }) {
+async function sampleConfig({ label, runIndex, config, plan, lease, env, procRoot, signal, onPhase, restartTimes }) {
   const { configFile, omarchyPath, windowSeconds, settleSeconds, readyTimeoutSeconds, sampleIntervalMs, clockTicksPerSecond: clk } = plan
   const expectedCount = plan.installed.length
   onPhase(`run ${runIndex} of ${plan.runs}: ${label}, restarting the shell`)
-  writeConfig(configFile, config)
+  writeConfig(lease, config)
   const restartStarted = Date.now()
   const restart = run("restartShell", { env, timeoutMs: 120_000 })
   if (!restart.ok) return { label, run: runIndex, failed: "the shell did not answer after the restart" }
@@ -589,11 +612,19 @@ export function buildDocument(plan, samples, { started, ended, config, host = ho
  * the user's own configuration; the document records the md5 before and
  * after and whether they matched.
  *
+ * The consent is an argument, not a flag read somewhere else: `{ consented:
+ * true, how }` is what cli.mjs hands over after `--yes` or a `y` at the
+ * terminal, and without it nothing here writes; `backupConfig` refuses
+ * too, so no caller can reach shell.json around this function.
+ *
  * @param {ReturnType<typeof planWeigh>} plan
- * @param {{ env?: NodeJS.ProcessEnv, procRoot?: string, signal?: AbortSignal, omakitVersion?: string,
- *           onPhase?: (text: string) => void, onLine?: (line: { state: string, text: string }) => void }} [options]
+ * @param {{ consent: { consented: boolean, how?: string }, env?: NodeJS.ProcessEnv, procRoot?: string, signal?: AbortSignal, omakitVersion?: string,
+ *           onPhase?: (text: string) => void, onLine?: (line: { state: string, text: string }) => void }} options
  */
-export async function measureWeigh(plan, { env = plan.env || process.env, procRoot = PROC, signal, omakitVersion = "unknown", onPhase = () => {}, onLine = () => {} } = {}) {
+export async function measureWeigh(plan, { consent, env = plan.env || process.env, procRoot = PROC, signal, omakitVersion = "unknown", onPhase = () => {}, onLine = () => {} } = {}) {
+  if (consent?.consented !== true) throw new WeighError("not-confirmed", "no consented measurement is running, so shell.json is not touched", "Run it again and answer y, or pass --yes when the person whose shell it is has agreed.")
+  // The backup's name is the UTC second the measurement began: the moment
+  // shell.json was first touched, readable from the file name alone.
   const stamp = fileStamp().replace(/[-T]/g, "").replace(/Z$/, "")
   const ids = plan.audited.map((plugin) => plugin.id)
   plan.baselineConfig = without(plan.effective, ids, plan.installed)
@@ -602,7 +633,7 @@ export async function measureWeigh(plan, { env = plan.env || process.env, procRo
     configs.push({ label: plugin.id, config: without(plan.effective, ids.filter((id) => id !== plugin.id), plan.installed) })
   }
   mkdirSync(dirname(plan.configFile), { recursive: true })
-  const backup = backupConfig(plan.configFile, stamp)
+  const backup = backupConfig(plan.configFile, stamp, consent)
   onLine({ state: "info", text: backup.bytes === null
     ? `${plan.configFile} does not exist; it will be removed again afterwards`
     : `${plan.configFile} backed up to ${backup.backupFile}, md5 ${backup.md5Before}` })
@@ -622,7 +653,7 @@ export async function measureWeigh(plan, { env = plan.env || process.env, procRo
     for (let runIndex = 1; runIndex <= plan.runs; runIndex += 1) {
       for (const { label, config } of configs) {
         checkAbort(signal)
-        const sample = await sampleConfig({ label, runIndex, config, plan, env, procRoot, signal, onPhase, restartTimes })
+        const sample = await sampleConfig({ label, runIndex, config, plan, lease: backup, env, procRoot, signal, onPhase, restartTimes })
         // One line per configuration, on the record: a forty-restart run
         // in a pipe would otherwise be silent for half an hour, and the
         // figures here are the raw samples a reader can check the medians

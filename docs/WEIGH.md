@@ -168,20 +168,49 @@ except that one removed. Nothing else in the file changes. A plugin of kind
 plugin that is not enabled is refused, because there is no place to put it
 back into.
 
+Nothing touches `shell.json` without a consented measurement running. The
+consent (`--yes`, or a `y` typed at a terminal on both ends) is a value the
+entry point hands to the measurement, and every write under `tools/weigh/`
+takes the lease that value opens: the backup refuses to be taken without
+it, and a measurement configuration or a restore refuses without the lease
+the backup returned. So there is no order of calls, in `weigh` or in
+anything that imports it, in which a configuration reaches the file before
+its backup exists or before anyone agreed; `tests/unit/weigh.test.mjs`
+holds every path that stops before consent (a pipe, `--json`, a refused
+plan, a usage error, `--list`) to leaving `~/.config/omarchy` byte for
+byte, mtime and mode included, as it was.
+
 Before the first write, `shell.json` is read and its bytes written to
-`shell.json.omakit-backup-<UTC timestamp>` beside it, and the md5 of the
-backup is printed. On every exit path, a completed run, a failed restart, a
-thrown error, `SIGINT` or `SIGTERM`, the backup's bytes are written back
-over `shell.json`, the shell is restarted once more so it runs your own
-configuration, the md5 of the restored file is compared with the backup's,
-and the backup is removed only when they are equal. The md5 after the
-restore is printed beside the one before. A restore whose md5 differs keeps
-the backup and says so, and the command exits 1, also when the measurement
-had already stopped for an interrupt or an error: the restore's outcome is
-what the person is left with, so it is what is reported, with the stop as
-its context, and "shell.json was restored" is said only of a restore that
-verified. The restore writes the
+`shell.json.omakit-backup-<UTC stamp>` beside it, the stamp being the
+second the measurement began (`20260919122713` is 12:27:13Z on 19
+September 2026), and the md5 of the backup is printed. Every write is a
+whole file: the bytes go to `<name>.part` beside the target, are synced,
+and are renamed over it, with the original's mode, so a process that dies
+mid-write leaves the old file whole and never a truncated one. On every
+exit path code can run on, a completed run, a failed restart, a thrown
+error, `SIGINT`, `SIGTERM` or `SIGHUP` (a terminal that closed), the
+backup's bytes are written back over `shell.json`, the shell is restarted
+once more so it runs your own configuration, the md5 of the restored file
+is compared with the backup's, and the backup is removed only when they
+are equal. The md5 after the restore is printed beside the one before. An
+interrupted run exits with the signal's own status, 130, 143 or 129. A
+restore whose md5 differs keeps the backup and says so, and the command
+exits 1, also when the measurement had already stopped for an interrupt or
+an error: the restore's outcome is what the person is left with, so it is
+what is reported, with the stop as its context, and "shell.json was
+restored" is said only of a restore that verified. The restore writes the
 bytes it read; it does not reformat, reorder or re-serialise the file.
+
+`SIGKILL` is the one exit nothing runs on. It leaves the backup beside a
+`shell.json` that is the measurement's configuration, not yours. So a
+backup already beside `shell.json` is a refusal: `planWeigh` names it, the
+second its measurement began, and the restore (`cp <backup> shell.json`,
+then `omarchy-restart-shell`), exits 1 as `backup-present`, and weighs
+nothing over it until the backup is gone. Measured on 2026-09-19: a
+measurement was killed at run 2 of 3 and its backup stayed; a second
+measurement started 3 m 14 s later over it, completed, and removed only
+its own backup, and the first was found by a third party an hour later
+(`docs/evidence/ux/2026-09-19-acceptance.json`, finding 1).
 
 A configuration whose shell does not answer after the restart, whose
 `listPlugins` does not reach the installed count within 45 seconds, or whose

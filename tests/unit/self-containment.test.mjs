@@ -45,13 +45,18 @@ test("the agent-control check flags this repository's own files", () => {
 test("nothing in this repository writes into a plugin or subject tree", () => {
   for (const { path, text } of sources) {
     // No copying primitives at all: a tool that cannot copy cannot smuggle.
-    // The one exception is the lab's own root (tools/lab/paths.mjs): a
-    // verified ISO is renamed from its .part name and a staged base is
-    // promoted with one rename, both to a target built by inLab, which
-    // refuses a path outside the lab cache; and a stream copy into the lab
-    // (copyIntoLab) is the only way bytes enter it. Counted below.
+    // Two exceptions, both a rename of a whole file into its own place and
+    // never across a boundary: the lab's own root (tools/lab/paths.mjs),
+    // where a verified ISO is renamed from its .part name and a staged base
+    // is promoted with one rename, both to a target built by inLab, which
+    // refuses a path outside the lab cache, and a stream copy into the lab
+    // (copyIntoLab) is the only way bytes enter it; and weigh's shell.json
+    // writes (tools/weigh/config.mjs), where the backup, a measurement
+    // configuration and the restore are each written to `<target>.part`
+    // and renamed over the target, so a process killed mid-write leaves the
+    // old file whole (the incident of 2026-09-19). Both counted below.
     for (const primitive of ["cpSync", "copyFileSync", "copyFile", "renameSync", "symlinkSync", "linkSync"]) {
-      if (path === "tools/lab/paths.mjs" && primitive === "renameSync") continue
+      if ((path === "tools/lab/paths.mjs" || path === "tools/weigh/config.mjs") && primitive === "renameSync") continue
       assert.ok(!new RegExp(`\\b${primitive}\\s*\\(`).test(text), `${path} uses ${primitive}`)
     }
     if (path === "tools/lab/paths.mjs") {
@@ -76,12 +81,13 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // The capture takes the rest of the line, because a target like
     // join(dir, ".git/info/x") contains a comma of its own.
     // `omakit weigh` is the one command that writes to the user's own machine
-    // outside those: the shell configuration it measures with (configFile),
-    // the byte-for-byte backup it restores from (backupFile), and the
-    // per-restart timing its confirmation estimates from (timingFile). Only
-    // under tools/weigh/, only to those names, and docs/WEIGH.md says what each
-    // one is for.
-    const weighWrites = path.startsWith("tools/weigh/") ? /^configFile,|^backupFile,|^timingFile,/ : /$^/
+    // outside those: the shell configuration it measures with and the
+    // byte-for-byte backup it restores from, both through one descriptor in
+    // config.mjs (`fd`, a part file renamed whole into place, opened only
+    // with the consent lease), and the per-restart timing its confirmation
+    // estimates from (timingFile, in audit.mjs). Only under tools/weigh/,
+    // only to those names, and docs/WEIGH.md says what each one is for.
+    const weighWrites = path === "tools/weigh/config.mjs" ? /^fd,/ : path.startsWith("tools/weigh/") ? /^timingFile,/ : /$^/
     // completion-check.mjs writes two things: the once-a-day stamp behind the
     // stale-completion notice (stampFile, under the state directory), and the
     // one guarded block `setup` appends to an rc file after an explicit yes
@@ -129,11 +135,19 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
       assert.doesNotMatch(text, /\bblockFile\b/, `${path} writes a block file; only tools/blocks/add.mjs and stamp.mjs may`)
     }
     if (path.startsWith("tools/weigh/")) {
-      // Five writes in all, each to one of the names above or to --out, and
-      // the count is asserted so a sixth cannot appear unnoticed.
+      // Three write sites in all, each to one of the names above or to
+      // --out, and the count is asserted so a fourth cannot appear unnoticed.
       const writes = (text.match(/writeFileSync\(/g) || []).length
-      if (path === "tools/weigh/config.mjs") assert.equal(writes, 3, "config.mjs writes the backup and the configuration (once per run, once to restore)")
-      else if (path === "tools/weigh/audit.mjs") assert.equal(writes, 2, "audit.mjs writes --out and the timing file")
+      if (path === "tools/weigh/config.mjs") {
+        assert.equal(writes, 1, "config.mjs writes through one descriptor: the backup, a measurement configuration and the restore, each a whole part file renamed into place")
+        assert.match(text, /function writeWhole\(target, bytes, mode\) \{\n  const part = `\$\{target\}\.part`\n  const fd = openSync\(part, "w", mode\)/, "the descriptor is the part file's, opened with the original's mode")
+        assert.match(text, /renameSync\(part, target\)/, "and the part is renamed into place")
+        assert.equal((text.match(/renameSync\(/g) || []).length, 1)
+        // Every write takes the lease: the backup opens it with consent, the other two require it.
+        assert.match(text, /export function backupConfig\(configFile, stamp, \{ consented = false \} = \{\}\) \{\n  if \(consented !== true\) throw new ConsentError/)
+        assert.match(text, /export function writeConfig\(lease, config\) \{\n  requireLease\(lease/)
+        assert.match(text, /export function restoreConfig\(lease\) \{\n  requireLease\(lease/)
+      } else if (path === "tools/weigh/audit.mjs") assert.equal(writes, 2, "audit.mjs writes --out and the timing file")
       else assert.equal(writes, 0, `${path} writes a file`)
     } else {
       assert.doesNotMatch(text, /\b(?:configFile|backupFile)\b|writeFileSync\([^)]*shell\.json/, `${path} reaches the shell configuration; only tools/weigh/ may`)

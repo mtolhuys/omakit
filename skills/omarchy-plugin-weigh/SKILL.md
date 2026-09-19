@@ -38,7 +38,14 @@ one sentence naming what is missing, is how it refuses an Omarchy it cannot
 weigh on: no `omarchy-shell` (an install older than the Quattro shell), no
 `omarchy-restart-shell`, no readable version, a shell that does not answer
 `ping`, or an IPC target without the four methods it relies on. Report that
-sentence to the person as it is; do not work around it.
+sentence to the person as it is; do not work around it. A
+`shell.json.omakit-backup-<stamp>` already beside `shell.json` is refused
+the same way (`backup-present`): an earlier measurement did not finish its
+restore. Show the person the sentence and the restore it names; never copy,
+move or remove that backup yourself, and never run the measurement in a
+way that can be killed without notice (a tool timeout, a closing terminal):
+a `SIGKILL` is the one exit that leaves `shell.json` on the measurement's
+configuration.
 
 ## When to run it
 
