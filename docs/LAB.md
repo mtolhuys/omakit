@@ -37,7 +37,7 @@ the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 20 files under
-`tools/lab/`, 163,753 bytes unpacked, and 23 suite files, 51,479 bytes, in
+`tools/lab/`, 168,237 bytes unpacked, and 23 suite files, 51,479 bytes, in
 a package that packs to 340,899 bytes (`tests/package-assert.mjs`, the
 release-stamped artifact of 2026-09-19).
 

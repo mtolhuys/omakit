@@ -7,7 +7,9 @@ page answers which question.
 
 The expected user is a coding agent submitting a plugin on an owner's behalf,
 so the tool is zero dependencies, plain ESM, one entry point and no build
-step, and every command can end as one JSON document.
+step, and every command can end as one JSON document. The six skills that
+ship with it, and what to read from that document, are in
+[SKILLS.md](SKILLS.md).
 
 The commands fall into four jobs, and this page is ordered by them: build (the
 two blocks measured in
@@ -243,7 +245,9 @@ and `TERM`, which are everybody's.
 
 One layer, `tools/marketplace/outcome.mjs`, is the only way a command
 ends, and `tests/unit/json-outcomes.test.mjs` runs every command through
-every outcome it can reach offline and holds each row to this:
+every outcome it can reach offline and holds each row to this. Every failure
+code, what it means and the one action for it are in
+[FAILURES.md](FAILURES.md).
 
 - **Exit status.** `exit 0` is success. `exit 1` is a refusal or a failure
   the tool means: a refused submission, drift, a validation that could not

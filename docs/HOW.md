@@ -86,7 +86,7 @@ out from a human review round.** It is a warning and not a refusal, because
 the marketplace does list plugins that ship them: 6 of 34 inspected do, at
 the commit that was listed.
 
-Fifteen checks, each naming its source and, when it fails, the measured
+Sixteen checks, each naming its source and, when it fails, the measured
 reason it exists. A blocking failure produces no submission body at all,
 because a refusal that still hands you the body is only a suggestion. Every
 check and what it decides: [SUBMIT.md](SUBMIT.md).

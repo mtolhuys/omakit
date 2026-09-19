@@ -12,10 +12,13 @@ the limit is what the tool actually refuses to do.
 
 | Page | What it answers |
 | --- | --- |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | the path from a plugin to a listing, in order, with the command at each step |
 | [WHY.md](WHY.md) | why a plugin needs plumbing it did not write, and what the review spends its words on |
 | [HOW.md](HOW.md) | what the tool is built on: the numbers that made it, where its rules are read from, and what its result is not |
 | [INSTALL.md](INSTALL.md) | how to install it, how it updates, and what a dependency scanner sees in it |
 | [COMMANDS.md](COMMANDS.md) | every command, what it reads, what it prints, and what it will not do |
+| [FAILURES.md](FAILURES.md) | every way a command can stop, what the code means, and the one action for it |
+| [SKILLS.md](SKILLS.md) | the six skills that ship with the tool, and how to read omakit from a program |
 
 ## The four jobs
 

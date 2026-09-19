@@ -167,6 +167,72 @@ test("every relative link in every Markdown file resolves, and the index lists e
   }
 })
 
+test("every failure code the tool has an action for is on the failures page", () => {
+  // The remedy table is what a person is handed when a command stops. A code
+  // that is in the tool and not on the page is a state somebody meets and
+  // cannot look up, and the page cannot be kept in step by remembering to.
+  const source = readFileSync(join(REPO_ROOT, "tools/marketplace/cli.mjs"), "utf8")
+  const table = source.slice(source.indexOf("const REMEDY = Object.freeze({"))
+  const codes = [...table.slice(0, table.indexOf("})")).matchAll(/^\s*"([a-zA-Z0-9-]+)":/gm)].map(([, code]) => code)
+  assert.ok(codes.length > 20, "the remedy table must be the one being read")
+
+  const page = readFileSync(join(REPO_ROOT, "docs/FAILURES.md"), "utf8")
+  for (const code of codes) {
+    assert.ok(page.includes(`\`${code}\``), `${code} has an action in the tool and no row on docs/FAILURES.md`)
+  }
+})
+
+test("every skill omakit ships is on the skills page", () => {
+  // Same rule for the other thing that ships and is easy to forget: a skill
+  // nobody documented is one nobody chooses on purpose.
+  const page = readFileSync(join(REPO_ROOT, "docs/SKILLS.md"), "utf8")
+  const skills = new Set(files
+    .filter((path) => path.startsWith("skills/") && path.endsWith("/SKILL.md"))
+    .map((path) => path.split("/")[1]))
+  assert.ok(skills.size > 0, "the skills must be committed")
+  for (const skill of skills) {
+    assert.ok(page.includes(skill), `skills/${skill} is shipped and not on docs/SKILLS.md`)
+  }
+})
+
+test("every submission check the tool runs is in the submit page's table", () => {
+  // The page states what each check decides, and a reader counts them. A
+  // check added to the tool and not to the table makes the page wrong twice:
+  // once in the list, once in the number.
+  const ids = new Set()
+  for (const path of files.filter((entry) => entry.startsWith("tools/") && entry.endsWith(".mjs"))) {
+    const source = readFileSync(join(REPO_ROOT, path), "utf8")
+    for (const [, id] of source.matchAll(/"((?:plugin|tree|identity|submission|baseline|review)\.[a-z-]+)"/g)) ids.add(id)
+  }
+  assert.ok(ids.size > 10, "the check ids must be the ones being read")
+
+  const page = readFileSync(join(REPO_ROOT, "docs/SUBMIT.md"), "utf8")
+  for (const id of ids) {
+    assert.ok(page.includes(`\`${id}\``), `${id} is a check the tool runs and the submit page does not state`)
+  }
+  const rows = [...page.matchAll(/^\| `((?:plugin|tree|identity|submission|baseline|review)\.[a-z-]+)`/gm)].length
+  assert.equal(rows, ids.size, `the submit page lists ${rows} checks and the tool runs ${ids.size}`)
+})
+
+test("the sizes LAB.md states are the sizes on disk", () => {
+  // Measured claims go stale silently: LAB.md stated 163,753 bytes for
+  // tools/lab/ while the directory held 168,237, because a number written
+  // once is not re-measured by anybody reading it.
+  const page = readFileSync(join(REPO_ROOT, "docs/LAB.md"), "utf8")
+  const measure = (prefix) => files
+    .filter((path) => path.startsWith(prefix))
+    .reduce((total, path) => total + statSync(join(REPO_ROOT, path)).size, 0)
+  const count = (prefix) => files.filter((path) => path.startsWith(prefix)).length
+
+  const lab = measure("tools/lab/")
+  const suites = measure("tests/lab/") + measure("tests/fixtures/weigh/")
+  const stated = (bytes) => page.includes(bytes.toLocaleString("en-US"))
+
+  assert.ok(page.includes(`${count("tools/lab/")} files under`), `tools/lab/ holds ${count("tools/lab/")} files and LAB.md says otherwise`)
+  assert.ok(stated(lab), `tools/lab/ is ${lab.toLocaleString("en-US")} bytes and LAB.md does not say so`)
+  assert.ok(stated(suites), `the suite inputs are ${suites.toLocaleString("en-US")} bytes and LAB.md does not say so`)
+})
+
 test("every file is a candidate, whatever its extension", () => {
   assert.ok(files.some((path) => !/\.[a-z]+$/.test(path)), "extensionless files must be walked too")
   assert.ok(files.includes("bin/omakit"))
