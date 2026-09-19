@@ -206,7 +206,7 @@ export async function inspectLab({ env = process.env, pin = labPin(), verify = f
   const toolchain = inspectToolchain(layout, pin)
   const staging = await inspectStaging(layout)
   const lock = await inspectLock(layout)
-  const host = { run: probeRunHost({ pin, run }), verify: probeCommands(VERIFY_COMMANDS, { run }), build: probeCommands(BUILD_COMMANDS, { run }) }
+  const host = { run: probeRunHost({ pin, run, env }), verify: probeCommands(VERIFY_COMMANDS, { run, env }), build: probeCommands(BUILD_COMMANDS, { run, env }) }
   const free = freeBytesAt(layout.cache)
   const runs = existsSync(layout.runs) ? readdirSync(layout.runs).filter((name) => /^\d{8}-\d{6}/.test(name)).sort() : []
   const totals = {

@@ -218,7 +218,7 @@ export function preflightRun({ suiteName, env = process.env, pin = labPin(), rep
   const missing = []
   const base = inspectBase(layout, pin)
   if (base.state !== "ready") missing.push({ what: `a ready base (${base.state})`, cost: base.reason, command: "omakit lab setup" })
-  for (const line of probeRunHost({ pin })) if (line.state !== "ok") missing.push({ what: line.name, cost: line.reason, command: line.remedy })
+  for (const line of probeRunHost({ pin, env })) if (line.state !== "ok") missing.push({ what: line.name, cost: line.reason, command: line.remedy })
   missing.push(...suitePreflight(suite, { repoRoot, layout }))
   const free = freeBytesAt(layout.cache)
   if (free.bytes < pin.measured.overlayAfterRunBytes) missing.push({ what: "disk for one overlay", cost: `${bytesBoth(free.bytes)} free at ${free.path}; one run's overlay measured ${bytesBoth(pin.measured.overlayAfterRunBytes)} (M14)`, command: "omakit lab prune" })

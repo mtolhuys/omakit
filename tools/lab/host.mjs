@@ -51,8 +51,8 @@ export const VERIFY_COMMANDS = Object.freeze([
  * on stderr, `ssh-keygen` has no version flag and prints usage with exit
  * 1), and one that is not is ENOENT.
  */
-function versionOf(entry, run = spawnSync) {
-  const result = run(entry.command, [...(entry.versionArgs || ["--version"])], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 4000 })
+function versionOf(entry, run = spawnSync, env = process.env) {
+  const result = run(entry.command, [...(entry.versionArgs || ["--version"])], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 4000, env })
   if (result.error?.code === "ENOENT") return null
   if (entry.presenceOnly) return `${entry.command} is on PATH (${entry.package})`
   const line = `${result.stdout || ""}\n${result.stderr || ""}`.split("\n").map((l) => l.trim()).find(Boolean)
@@ -60,9 +60,9 @@ function versionOf(entry, run = spawnSync) {
 }
 
 /** One line per command: present with its first version line, or missing with the package that provides it. */
-export function probeCommands(list, { run } = {}) {
+export function probeCommands(list, { run, env = process.env } = {}) {
   return list.map((entry) => {
-    const version = versionOf(entry, run)
+    const version = versionOf(entry, run, env)
     return {
       name: entry.command,
       state: version ? "ok" : "missing",
@@ -152,10 +152,10 @@ export function memoryBytes(file = "/proc/meminfo") {
  * the guest's, and the CPU count the guest gets. `--json` carries the same
  * fields.
  */
-export function probeRunHost({ pin = labPin(), run } = {}) {
+export function probeRunHost({ pin = labPin(), run, env = process.env } = {}) {
   const memory = memoryBytes()
   const guestBytes = pin.guest.memoryMiB * 1024 * 1024
-  const lines = [probeKvm(), ...probeCommands(RUN_COMMANDS, { run }), probeOvmf()]
+  const lines = [probeKvm(), ...probeCommands(RUN_COMMANDS, { run, env }), probeOvmf()]
   lines.push({
     name: "memory",
     state: memory.total >= guestBytes * 1.5 ? "ok" : "missing",

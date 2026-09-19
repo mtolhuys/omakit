@@ -246,7 +246,7 @@ test("a base is ready only with a complete manifest for the pinned release and g
   }
 })
 
-test("the toolchain is judged by the harness's hash against the pin: patched, unpatched, or unknown", () => {
+test("the toolchain is judged by the harness's hash against the pin, even without the host's lab commands", () => {
   const { env, layout, dir, rm } = scratch()
   try {
     assert.equal(inspectToolchain(layout).state, "missing")
@@ -258,8 +258,12 @@ test("the toolchain is judged by the harness's hash against the pin: patched, un
     const unknown = inspectToolchain(layout)
     assert.equal(unknown.state, "unknown")
     assert.match(unknown.reason, /neither the pinned patched harness nor the upstream one/)
+    // Exercise the minimal GitHub runner from every development host: the
+    // toolchain check must coexist with honest host-capability blockers.
+    env.PATH = join(dir, "commands-not-installed")
     const plan = planSetup({ env, repoRoot: REPO_ROOT })
-    assert.ok(plan.blockers.some((item) => item.what === "the toolchain"))
+    assert.ok(plan.blockers.some((item) => item.what === "gpg"), "the simulated runner lacks lab commands")
+    assert.equal(plan.blockers.filter((item) => item.what === "the toolchain").length, 1)
     assert.ok(plan.steps.some((step) => step.kind === "download" && step.bytes === pin.release.bytes && step.url === pin.release.isoUrl))
     assert.ok(plan.steps.some((step) => step.kind === "build"))
     const lines = disclosureLines(plan)
@@ -271,7 +275,7 @@ test("the toolchain is judged by the harness's hash against the pin: patched, un
     assert.match(lines.find(([key]) => key === "on disk")[1], /12,442,931,200 B \(12\.443 GB \/ 11\.588 GiB\)/)
     assert.equal(CONSENT_QUESTION, "Acquire and build this verified base now?")
     assert.match(renderSetupPlan(plan, { colour: false, env }), new RegExp(`cannot start: ${plan.blockers.length} missing`))
-    assert.ok(plan.blockers.every((item) => ["the toolchain", "disk"].includes(item.what)), "the toolchain, and on a small /tmp the disk")
+    assert.ok(plan.blockers.every((item) => item.cost && item.command), "every host-specific blocker says why it blocks setup and what to do")
   } finally {
     rm()
   }

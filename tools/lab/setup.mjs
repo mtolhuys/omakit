@@ -74,7 +74,7 @@ export function planSetup({ env = process.env, pin = labPin(), from = null, plug
   const free = freeBytesAt(layout.cache)
   const steps = []
   const blockers = []
-  for (const line of probeCommands(VERIFY_COMMANDS)) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+  for (const line of probeCommands(VERIFY_COMMANDS, { env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
   if (!download.verified) {
     if (from) {
       const source = resolve(from)
@@ -88,7 +88,7 @@ export function planSetup({ env = process.env, pin = labPin(), from = null, plug
     steps.push({ kind: "sidecars", bytes: 203, urls: [pin.release.checksumUrl, pin.release.signatureUrl], to: download.dir })
   }
   if (base.state !== "ready") {
-    for (const line of probeRunHost({ pin })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+    for (const line of probeRunHost({ pin, env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
     // A base the toolchain built but a verification boot never promoted
     // (an interrupted or failed setup) is verified and promoted, not
     // rebuilt: six minutes and six gigabytes are not spent twice.
@@ -96,7 +96,7 @@ export function planSetup({ env = process.env, pin = labPin(), from = null, plug
     if (staged.length) {
       steps.push({ kind: "promote", staged: staged.at(-1), to: layout.base, replacing: base.state === "missing" ? null : base })
     } else {
-      for (const line of probeCommands(BUILD_COMMANDS)) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+      for (const line of probeCommands(BUILD_COMMANDS, { env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
       if (toolchain.state !== "ready") blockers.push({ what: "the toolchain", cost: toolchain.reason, command: toolchain.state === "unpatched" ? `git -C ${toolchain.dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${toolchain.dir}` : toolchainCommand(pin, join(layout.cache, "toolchain/omarchy-iso")) })
       steps.push({ kind: "build", toolchain: toolchain.harness, to: layout.base, replacing: base.state === "missing" ? null : base, bytes: pin.measured.baseDirectoryBytes, milliseconds: pin.measured.buildMilliseconds })
     }
