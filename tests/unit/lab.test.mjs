@@ -553,7 +553,10 @@ test("the suites are data: each names its host file, its document, its files, an
     // A checkout's remedy names the checkout's own entry point, never a global package (finding 5).
     const checkoutMissing = suitePreflight({ ...SUITES.run, needs: ["tests/lab/run/nothing-here"] }, { repoRoot: REPO_ROOT, layout })
     assert.equal(checkoutMissing.length, 1)
-    assert.ok(checkoutMissing[0].command.startsWith(`git -C ${REPO_ROOT} checkout -- tests/lab/run/nothing-here && ${join(REPO_ROOT, "bin/omakit")} lab prove run`))
+    const remedy = existsSync(join(REPO_ROOT, ".git"))
+      ? `git -C ${REPO_ROOT} checkout -- tests/lab/run/nothing-here && ${join(REPO_ROOT, "bin/omakit")} lab prove run`
+      : "npm i -g omakit, then run it again"
+    assert.equal(checkoutMissing[0].command, remedy)
     const evidence = suitePreflight(SUITES["weigh-evidence"], { repoRoot: REPO_ROOT, layout, pinDir: join(env.HOME, "nopin") })
     assert.ok(evidence.some((item) => /in the pinned catalog/.test(item.what) && item.command === "omakit pin"))
   } finally {

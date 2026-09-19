@@ -1,10 +1,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { recordCommit } from "../../tools/blocks/record-commit.mjs"
+import { clearCommit, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
 import { changedPinPaths, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
 import { MARKETPLACE_PIN, PIN_PATHS } from "../../tools/marketplace/pin.mjs"
 import { LIVE_PATHS } from "../../tools/marketplace/registry.mjs"
@@ -189,14 +189,21 @@ const versionCheck = async (latest) => (await doctor({ repoRoot: REPO_ROOT, ...q
 test("omakit.source: a checkout names HEAD, a stamped package names its record, an unstamped package is advice that names the release step", async () => {
   const checks = (await doctor({ repoRoot: REPO_ROOT, ...quiet, offline: true })).checks
   const source = checks.find((check) => check.id === "omakit.source")
-  const head = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8" }).trim()
+  const checkoutHead = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+  const head = checkoutHead.status === 0 ? checkoutHead.stdout.trim() : recordedCommit(REPO_ROOT)
   assert.equal(source.state, "ok")
-  assert.equal(source.detail, `a checkout at ${head.slice(0, 7)}; add stamps that commit`)
-  assert.deepEqual(source.evidence, { origin: "checkout", commit: head })
+  if (checkoutHead.status === 0) {
+    assert.equal(source.detail, `a checkout at ${head.slice(0, 7)}; add stamps that commit`)
+    assert.deepEqual(source.evidence, { origin: "checkout", commit: head })
+  } else {
+    assert.equal(source.detail, `a package the release step stamped with commit ${head.slice(0, 7)}; add stamps that commit`)
+    assert.deepEqual(source.evidence, { origin: "package", commit: head })
+  }
   // A package: bin, tools and package.json with no .git; unstamped first, then stamped.
   const root = mkdtempSync(join(tmpdir(), "omakit-doctor-source-"))
   try {
     for (const entry of ["bin", "tools", "package.json"]) cpSync(join(REPO_ROOT, entry), join(root, entry), { recursive: true })
+    clearCommit(root)
     const unstamped = (await doctor({ repoRoot: root, ...quiet, offline: true })).checks.find((check) => check.id === "omakit.source")
     assert.equal(unstamped.state, "advice")
     assert.match(unstamped.detail, /packed without the release step: it names no source commit, so `omakit add` refuses/)

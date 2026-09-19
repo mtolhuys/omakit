@@ -10,7 +10,7 @@
 // packed as the workflow packs it, extracted, and its own bin/omakit run.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { execFileSync, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -20,10 +20,16 @@ import { sourceCommit } from "../../tools/blocks/add.mjs"
 import { SUITES, suitePreflight } from "../../tools/lab/suites.mjs"
 import { labLayout } from "../../tools/lab/paths.mjs"
 
-const HEAD = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8" }).trim()
+const checkoutHead = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+const HEAD = checkoutHead.status === 0 ? checkoutHead.stdout.trim() : recordedCommit(REPO_ROOT)
 
-test("a checkout names HEAD, and its committed record is empty on purpose", () => {
+test("a checkout names HEAD, while a release-shaped archive names its recorded commit", () => {
+  assert.match(HEAD || "", /^[0-9a-f]{40}$/, "the source under test names one commit")
   assert.equal(sourceCommit(REPO_ROOT), HEAD)
+  if (checkoutHead.status !== 0) {
+    assert.equal(recordedCommit(REPO_ROOT), HEAD, "an archive has no Git metadata, so the release record is its source")
+    return
+  }
   assert.equal(recordedCommit(REPO_ROOT), null, "the checkout's tools/blocks/commit.json is null; the workflow fills it at pack time")
   // The release step by hand: `npm run pack:release` records, checks, packs and clears, in that order, and the clear runs whatever pack did.
   const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
@@ -70,6 +76,7 @@ test("an installed tarball with the record stamps the commit into the header, th
     writeFileSync(join(plugin, "manifest.json"), `${JSON.stringify({ schemaVersion: 1, id: "fixture.packaged", name: "packaged", version: "0.0.1" })}\n`)
     const run = (args) => spawnSync(process.execPath, [join(installed, "bin/omakit"), ...args], { timeout: 120_000, encoding: "utf8", env: { ...process.env, TERM: "dumb" } })
     // Without the record: a refusal, no file written, the cause named.
+    clearCommit(installed)
     const refused = run(["add", "run", plugin])
     assert.equal(refused.status, 1)
     assert.match(refused.stderr, /no-source-commit/)

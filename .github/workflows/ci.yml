@@ -82,14 +82,18 @@ jobs:
           echo "test-files=$test_files" >> "$GITHUB_OUTPUT"
           exit "$status"
 
-      # A release is verified from an immutable archive, which has no `.git`.
-      # Measured on 0.1.6: two tests asserted that this checkout was a clone,
-      # and the suite was red from `git archive v0.1.6`.
-      - name: Run the suite from the archive of this revision
+      # A release is verified without `.git`, with the source record the npm
+      # artifact receives. Measured on 0.6.0: the checkout suite passed while
+      # the release failed, then a bare archive contradicted `add`'s deliberate
+      # refusal of artifacts that carry no source commit.
+      - name: Run the suite from a release-shaped archive
         shell: bash
         run: |
+          node tools/blocks/record-commit.mjs
+          node tools/blocks/record-commit.mjs --check
           archive=$(mktemp -d)
           git archive HEAD | tar -x -C "$archive"
+          cp tools/blocks/commit.json "$archive/tools/blocks/commit.json"
           cd "$archive"
           npm test
 
