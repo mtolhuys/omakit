@@ -208,13 +208,15 @@ jobs:
         shell: bash
         run: |
           expected=$(cat release-assets/npm-integrity.txt)
-          for attempt in {1..6}; do
+          # 0.6.1 was still processing after six probes over 50 seconds. Give
+          # npm nearly five minutes to expose the immutable version it accepted.
+          for attempt in {1..30}; do
             actual=$(npm view "omakit@$VERSION" dist.integrity --registry https://registry.npmjs.org 2>/dev/null) || actual=""
             if [[ "$actual" == "$expected" ]]; then
               echo "Verified omakit@$VERSION on npm with the exact release tarball." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            if [[ "$attempt" -lt 6 ]]; then sleep 10; fi
+            if [[ "$attempt" -lt 30 ]]; then sleep 10; fi
           done
           echo "npm did not return the expected integrity for omakit@$VERSION" >&2
           exit 1

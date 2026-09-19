@@ -19,6 +19,8 @@ the marketplace pin, runs the tests, checks the packaged file list and size,
 publishes the exact tarball, checks its integrity on npm, and creates the GitHub
 Release. A failure stops the release; it never reports missing authentication as
 a successful skip. An existing npm version is accepted only if its bytes match.
+After npm accepts a publish, verification allows 30 probes ten seconds apart:
+`v0.6.1` was still processing after all six of the former probes over 50 seconds.
 
 Unreleased work goes under the next unused version in `CHANGELOG.md`, with
 the package version unchanged. Move the notes into

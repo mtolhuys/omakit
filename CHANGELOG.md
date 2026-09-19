@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2
+
+The terminal wordmark now carries the same `tested plumbing for plugins` line
+as the README banner GIF. Post-publish verification also gives npm 30 integrity
+probes over 290 seconds; npm accepted 0.6.1 but kept it processing beyond the
+former six probes over 50 seconds.
+
 ## 0.6.1
 
 This is the first published release in the 0.6 line. The `v0.6.0` workflow

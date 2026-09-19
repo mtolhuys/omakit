@@ -173,16 +173,16 @@ test("a short terminal gets the finished wordmark and no cursor-up at all", asyn
 })
 
 test("a tagline wider than the wordmark is wrapped as narrow as two lines allow, under the letters", async () => {
-  // Measured: the 0.6.0 tagline is 60 cells and the wordmark 28, so on one
-  // line it ran 32 cells past the rule, wider than the README's banner.
+  // A 60-cell tagline and a 28-cell wordmark used to put 32 cells past the
+  // rule. Keep long custom taglines bounded even though omakit's own fits.
   const { taglineLines } = await import("../../tools/marketplace/banner.mjs")
-  assert.deepEqual(taglineLines("the safe place to find out", 28), ["the safe place to find out"])
-  const lines = taglineLines("the plumbing plugin reviews block most, built and tested once", 28)
+  assert.deepEqual(taglineLines("tested plumbing for plugins", 28), ["tested plumbing for plugins"])
+  const lines = taglineLines("a deliberately long subtitle needs wrapping under the wordmark", 28)
   assert.equal(lines.length, 2)
-  assert.deepEqual(lines, ["the plumbing plugin reviews block", "most, built and tested once"])
+  assert.deepEqual(lines, ["a deliberately long subtitle", "needs wrapping under the wordmark"])
   assert.ok(lines.every((line) => line.length <= 33), "no line wider than the narrowest two-line wrap")
   const written = []
   await banner({ stream: { isTTY: true, rows: 40, columns: 80, write: (s) => written.push(s) }, enabled: true, colour: false, animate: false, tagline: lines.join(" ") })
-  const tail = written.join("").split("\n").filter((line) => /plumbing|tested once/.test(line))
+  const tail = written.join("").split("\n").filter((line) => /deliberately|wordmark/.test(line))
   assert.deepEqual(tail, lines, "both lines are drawn under the wordmark, neither padded past column 0")
 })

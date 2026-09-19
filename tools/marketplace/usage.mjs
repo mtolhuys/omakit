@@ -14,12 +14,12 @@ import { colourEnabled, paintProse, STEP, styler, withOutputStream, wrap } from 
 
 /**
  * The line under the wordmark says what the tool is for, and only that: the
- * plumbing the review blocks on, shipped as tested files a plugin owns. It is
- * never a claim about the security of a plugin or a submission; the
- * baseline's outcome is reported verbatim and is never restated as one, and
- * a block is described by what it does and what was measured.
+ * public README banner says: tested plumbing for plugins. It is never a claim
+ * about the security of a plugin or a submission; the baseline's outcome is
+ * reported verbatim and is never restated as one, and a block is described by
+ * what it does and what was measured.
  */
-export const TAGLINE = "the plumbing plugin reviews block most, built and tested once"
+export const TAGLINE = "tested plumbing for plugins"
 
 /** The shells `omakit setup` installs tab completion for; completion.mjs holds the scripts. */
 export const COMPLETION_SHELLS = Object.freeze(["bash", "zsh", "fish"])

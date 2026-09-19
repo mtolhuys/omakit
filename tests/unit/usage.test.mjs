@@ -6,6 +6,10 @@ import assert from "node:assert/strict"
 import { renderSummary, renderUsage, AUTHENTICATION, COMMANDS, TAGLINE, paintSignature } from "../../tools/marketplace/usage.mjs"
 import { code, paintProse, plain, styler } from "../../tools/marketplace/style.mjs"
 
+test("the runtime tagline is the README banner line", () => {
+  assert.equal(TAGLINE, "tested plumbing for plugins")
+})
+
 test("colour changes nothing about the words", () => {
   const off = renderUsage({ colour: false })
   const on = renderUsage({ colour: true })
