@@ -210,10 +210,11 @@ every outcome it can reach offline and holds each row to this:
   written as it happens, on stdout for a person and on stderr under
   `--json`, and is not the result.
 - **`--out FILE`.** The run's document, the same JSON `--json` prints, is
-  written to the file on every outcome, a failure included; with `--json`
-  stdout then carries nothing at all, and without it the text says where
-  the file went. A file that cannot be written is itself the failure, and
-  the document is then on stdout.
+  written to the file on every outcome, a failure included, except a usage
+  error, whose command line is refused whole and no option on it trusted;
+  with `--json` stdout then carries nothing at all, and without it the text
+  says where the file went. A file that cannot be written is itself the
+  failure, and the document is then on stdout.
 - **Leaving.** The text is written, both streams are drained, and only
   then does the process exit; a reader that closes early (`| head`) ends
   the command with the exit it had decided on. Nothing waits without a

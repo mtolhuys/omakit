@@ -20,9 +20,9 @@
 //             lab's suite lines) is written as it happens and is not the
 //             result: on stdout for a person, on stderr under --json.
 //   --out     the run's document, the same JSON --json prints, written to the
-//             file on every outcome, a failure included; with --json, stdout
-//             then carries nothing at all, and without it the text says
-//             where the file went.
+//             file on every outcome but a usage error, whose command line is
+//             not trusted; with --json, stdout then carries nothing at all,
+//             and without it the text says where the file went.
 //
 // Measured on 2026-09-19 by an acceptance tester: seven commands shaped
 // their documents seven ways, `lab prune --json` printed nothing, `watch`
@@ -176,7 +176,11 @@ export function conclude({ command, args, exit, document = null, error = null, h
   if (exit !== 0 && !error) throw new Error(`outcome: exit ${exit} for ${command} without an error to report`)
   let doc = envelope({ command, exit, error, document })
   let written = false
-  if (out) {
+  // A usage error refused the command line whole, so no option on it is
+  // trusted, --out included: the document stays on stdout. Measured on
+  // 2026-09-19 by the acceptance matrix: `audit --out a --out b` was refused
+  // for the repeat and still wrote the refusal to b.
+  if (out && error?.code !== "usage") {
     try {
       mkdirSync(dirname(resolve(out)), { recursive: true })
       writeFileSync(resolve(out), `${JSON.stringify(doc, null, 2)}\n`)

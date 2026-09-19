@@ -212,8 +212,11 @@ function check(row, mode, result, { outFile = null } = {}) {
   assert.equal(result.status, row.exit, `${label}: exit ${result.status}\nstdout: ${result.out}\nstderr: ${result.err}`)
   const json = mode.includes("json")
   const out = mode.includes("out")
+  // A usage error trusts no option on the refused command line: no --out is
+  // written, and the document is on stdout.
+  const fileExpected = out && row.code !== "usage"
   if (json) {
-    if (out) {
+    if (fileExpected) {
       assert.equal(result.out, "", `${label}: with --json --out stdout carries nothing`)
     } else {
       assert.ok(result.out.trim().length > 0, `${label}: a document on stdout`)
@@ -230,11 +233,13 @@ function check(row, mode, result, { outFile = null } = {}) {
     assert.ok(result.err.trim().length > 0, `${label}: the text is on stderr on exit ${row.exit}`)
     assert.doesNotMatch(result.err, /^\s+at /m, `${label}: no stack trace`)
   }
-  if (out) {
+  if (fileExpected) {
     assert.ok(existsSync(outFile), `${label}: --out is written on every outcome`)
     const document = JSON.parse(readFileSync(outFile, "utf8"))
     assertEnvelope(row, document, `${label} (file)`)
     if (!json) assert.match(row.exit === 0 ? result.out : result.err, /wrote /, `${label}: the text says where the file went`)
+  } else if (out) {
+    assert.equal(existsSync(outFile), false, `${label}: a usage error writes no --out`)
   }
 }
 

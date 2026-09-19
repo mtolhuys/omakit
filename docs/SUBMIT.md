@@ -129,7 +129,8 @@ as the default where it is on the list; Enter takes the default, an invalid
 answer is asked again with the reason, and nothing typed is written anywhere.
 In a pipe, from an agent, or with `--json`, it is a usage error: exit 2, the
 missing flag(s) named, the lists under it, and `--json` carries
-`{ "usage": { "missing", "categories", "tags", "maximumTags" } }`. Whatever
+the failure document every command prints, with the form's lists under
+`error.usage` (`missing`, `categories`, `tags`, `maximumTags`). Whatever
 the source of the values, the report ends with the command line that repeats
 the run without asking, and `--json` carries it as `reproduce`; a `listed`
 run has no such line to print, because there is no run to repeat.
