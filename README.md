@@ -6,7 +6,7 @@
 
 The three parts are the Run and Store blocks a plugin copies into its own tree, the marketplace's own checks run locally, and repository suites run in a disposable guest. Behind the first are M13's 1,001 security blocker comments from one measured week: 587 raise a Run line, 527 a Store line, and runner plus store handle 777 of 1,001 when read as an upper bound, not as a result for any plugin ([M13](docs/MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)). No reviewer has seen a ported plugin yet.
 
-[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml)
+[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket package report](https://img.shields.io/badge/Socket-package%20report-0969da?logo=socketdotio&logoColor=white)](https://socket.dev/npm/package/omakit)
 
 ## What it delivers
 
