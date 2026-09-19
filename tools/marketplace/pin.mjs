@@ -10,7 +10,7 @@
 // path outside it, because on a partial clone such a read would quietly reach
 // for the network instead of failing.
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, readdirSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { omakitCacheDir } from "./paths.mjs"
 
@@ -127,35 +127,69 @@ function hasCommit(dir) {
   }
 }
 
-/**
- * Reproducible setup: fetch exactly the pinned commit (depth 1) into
- * the XDG cache and check it out detached. Idempotent; never rewrites
- * an existing checkout that already sits at the pin.
- *
- * `log` is told what is happening as `{ state, text }`: a `pass` or `info`
- * line to keep, or `fetching` for the slow step about to start, which the CLI
- * draws as a progress line rather than a line of output.
- */
-export function ensurePin(repoRoot, log = () => {}, env = process.env) {
-  const migration = pinMigration(repoRoot, env)
-  if (migration) throw migration
-  const dir = marketplacePinDir(repoRoot, env)
-  if (existsSync(join(dir, ".git")) && hasCommit(dir)) {
-    const identity = readPinIdentity(dir)
-    if (identity.commit === MARKETPLACE_PIN.commit && !identity.dirty) {
-      log({ state: "pass", text: `marketplace pin ${identity.commit.slice(0, 7)} present at ${dir}` })
-      return { dir, identity, fetched: false }
-    }
-    if (identity.dirty) throw new PinError(`${dir} has local modifications; remove the directory and run again`)
-    log({ state: "info", text: `${dir} is at ${identity.commit}, not the pin` })
-  } else if (!existsSync(join(dir, ".git"))) {
-    mkdirSync(dir, { recursive: true })
-    execFileSync("git", ["init", "-q", dir], { timeout: 60_000, encoding: "utf8" })
-    git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
+/** Is a process alive: signal 0 asks without sending; EPERM means it is there and somebody else's. */
+function alive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === "EPERM"
   }
+}
+
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/** How long a second first run waits for the first to finish fetching before it gives up: the fetch is about 2 s on the reference network, so this is generous. */
+export const PIN_WAIT_MS = 300_000
+
+/**
+ * The lock beside the pin, `<dir>.lock/`, made atomically: `mkdir` without
+ * `recursive` fails with EEXIST when it is there, so exactly one process
+ * holds it. The holder writes its pid into it; a lock whose pid is gone is
+ * stale and is taken over. Returns `release()`, or null when another live
+ * process holds it.
+ */
+function claimLock(lockDir) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      mkdirSync(lockDir)
+      writeFileSync(join(lockDir, "holder.json"), `${JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() })}\n`)
+      return () => rmSync(lockDir, { recursive: true, force: true })
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error
+      let holder = null
+      try {
+        holder = JSON.parse(readFileSync(join(lockDir, "holder.json"), "utf8")).pid
+      } catch {
+        holder = null
+      }
+      // A lock without a holder file yet is one being written this instant; a lock whose holder is dead is stale.
+      if (holder !== null && !alive(holder)) {
+        rmSync(lockDir, { recursive: true, force: true })
+        continue
+      }
+      return null
+    }
+  }
+  return null
+}
+
+/**
+ * Fetch the pinned commit into a staging directory beside the pin, sparse
+ * and blob-filtered, and check it out detached. Written as plumbing rather
+ * than through `git sparse-checkout`, so the result does not depend on the
+ * git version's cone-mode defaults. `dir` here is the staging directory,
+ * and the sparse-checkout file is the one write beside the pin.
+ */
+function populatePin(dir, log) {
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  execFileSync("git", ["init", "-q", dir], { timeout: 60_000, encoding: "utf8" })
+  git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
   log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 15 MB` })
-  // Written as plumbing rather than through `git sparse-checkout`, so the
-  // result does not depend on the git version's cone-mode defaults.
   git(dir, ["config", "core.sparseCheckout", "true"])
   mkdirSync(join(dir, ".git/info"), { recursive: true })
   writeFileSync(join(dir, ".git/info/sparse-checkout"), `${PIN_PATHS.join("\n")}\n`)
@@ -174,8 +208,93 @@ export function ensurePin(repoRoot, log = () => {}, env = process.env) {
   git(dir, ["checkout", "-q", "--detach", MARKETPLACE_PIN.commit])
   const identity = readPinIdentity(dir)
   if (identity.commit !== MARKETPLACE_PIN.commit) throw new PinError(`checkout ended at ${identity.commit}`)
-  log({ state: "pass", text: `marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}, ${pinDiskUsage(dir)}` })
-  return { dir, identity, fetched: true }
+  return identity
+}
+
+/**
+ * Reproducible setup: fetch exactly the pinned commit (depth 1) into
+ * the XDG cache and check it out detached. Idempotent; never rewrites
+ * an existing checkout that already sits at the pin.
+ *
+ * Two first runs against one cache are serialised: the fetch goes into a
+ * staging directory (`<dir>.staging-<pid>`) under a lock (`<dir>.lock/`,
+ * made atomically), and the finished checkout is renamed into place, so
+ * the pin is either absent or whole and never a directory two `git init`s
+ * are racing in. A process that finds the lock held waits for the holder
+ * and then verifies what it left. Measured on 2026-09-19: two `omakit pin`
+ * against one empty cache ran `git init` in the same directory, and one
+ * died on "cannot copy .git/description: File exists"
+ * (docs/evidence/ux/2026-09-19-acceptance.json, finding 6).
+ *
+ * `log` is told what is happening as `{ state, text }`: a `pass` or `info`
+ * line to keep, or `fetching` for the slow step about to start, which the CLI
+ * draws as a progress line rather than a line of output. `populate` is the
+ * fetch step, injectable for the tests that prove the serialisation without
+ * a network.
+ */
+export function ensurePin(repoRoot, log = () => {}, env = process.env, { populate = populatePin, waitMs = PIN_WAIT_MS } = {}) {
+  const migration = pinMigration(repoRoot, env)
+  if (migration) throw migration
+  const dir = marketplacePinDir(repoRoot, env)
+  const present = () => {
+    if (!existsSync(join(dir, ".git")) || !hasCommit(dir)) return null
+    const identity = readPinIdentity(dir)
+    if (identity.dirty) throw new PinError(`${dir} has local modifications; remove the directory and run again`)
+    return identity
+  }
+  const found = present()
+  if (found && found.commit === MARKETPLACE_PIN.commit) {
+    log({ state: "pass", text: `marketplace pin ${found.commit.slice(0, 7)} present at ${dir}` })
+    return { dir, identity: found, fetched: false }
+  }
+  if (found) log({ state: "info", text: `${dir} is at ${found.commit}, not the pin` })
+  mkdirSync(dirname(dir), { recursive: true })
+  const lockDir = `${dir}.lock`
+  let release = claimLock(lockDir)
+  if (!release) {
+    // Another first run holds the lock: wait for it, then read what it left.
+    log({ state: "info", text: `another omakit is fetching the pin at ${dir}; waiting for it` })
+    const deadline = Date.now() + waitMs
+    while (existsSync(lockDir) && Date.now() < deadline) {
+      sleepMs(200)
+      // A holder that died mid-fetch leaves its lock; take it over.
+      release = claimLock(lockDir)
+      if (release) break
+    }
+    if (!release) {
+      const after = present()
+      if (after && after.commit === MARKETPLACE_PIN.commit) {
+        log({ state: "pass", text: `marketplace pin ${after.commit.slice(0, 7)} present at ${dir}, fetched by the other omakit` })
+        return { dir, identity: after, fetched: false, waited: true }
+      }
+      if (existsSync(lockDir)) throw new PinError(`another omakit has held the pin's lock at ${lockDir} for ${Math.round(waitMs / 1000)} s; if it is gone, remove the lock directory and run again`)
+      throw new PinError(`the other omakit left no pin at ${dir}; run \`omakit pin\` again`)
+    }
+  }
+  try {
+    // The lock is ours; the pin may have appeared while we waited for it.
+    const meanwhile = present()
+    if (meanwhile && meanwhile.commit === MARKETPLACE_PIN.commit) {
+      log({ state: "pass", text: `marketplace pin ${meanwhile.commit.slice(0, 7)} present at ${dir}, fetched by the other omakit` })
+      return { dir, identity: meanwhile, fetched: false, waited: true }
+    }
+    const staging = `${dir}.staging-${process.pid}`
+    try {
+      const identity = populate(staging, log)
+      // Into place in one rename; a checkout at another commit, or one that
+      // never got its HEAD, is moved aside first and removed after.
+      const aside = `${dir}.replaced-${process.pid}`
+      if (existsSync(dir)) renameSync(dir, aside)
+      renameSync(staging, dir)
+      rmSync(aside, { recursive: true, force: true })
+      log({ state: "pass", text: `marketplace pin ${identity.commit.slice(0, 7)} (baseline ${identity.baselineVersion}, ${identity.enforcementMode}) at ${dir}, ${pinDiskUsage(dir)}` })
+      return { dir, identity, fetched: true }
+    } finally {
+      rmSync(staging, { recursive: true, force: true })
+    }
+  } finally {
+    release()
+  }
 }
 
 /**

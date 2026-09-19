@@ -55,9 +55,18 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // configuration and the restore are each written to `<target>.part`
     // and renamed over the target, so a process killed mid-write leaves the
     // old file whole (the incident of 2026-09-19). Both counted below.
+    // A third rename: the pin (tools/marketplace/pin.mjs) is fetched into a
+    // staging directory beside itself and renamed into place, a checkout at
+    // another commit moved aside first, so two first runs cannot race in one
+    // directory; counted below.
     for (const primitive of ["cpSync", "copyFileSync", "copyFile", "renameSync", "symlinkSync", "linkSync"]) {
-      if ((path === "tools/lab/paths.mjs" || path === "tools/weigh/config.mjs") && primitive === "renameSync") continue
+      if ((path === "tools/lab/paths.mjs" || path === "tools/weigh/config.mjs" || path === "tools/marketplace/pin.mjs") && primitive === "renameSync") continue
       assert.ok(!new RegExp(`\\b${primitive}\\s*\\(`).test(text), `${path} uses ${primitive}`)
+    }
+    if (path === "tools/marketplace/pin.mjs") {
+      assert.equal((text.match(/renameSync\(/g) || []).length, 2, "pin.mjs renames twice: the old checkout aside, the staging into place")
+      assert.match(text, /renameSync\(dir, aside\)/)
+      assert.match(text, /renameSync\(staging, dir\)/)
     }
     if (path === "tools/lab/paths.mjs") {
       assert.equal((text.match(/renameSync\(/g) || []).length, 1, "paths.mjs renames in one place")
@@ -112,11 +121,15 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // (writeJson's fd, a run's host log, a build's log). tests/unit/lab.test.mjs
     // proves the guard; this holds every write to it.
     const labWrites = path.startsWith("tools/lab/") ? /^inLab\(|^fd,|^hostLog,|^log,/ : /$^/
+    // The pin's own lock (pin.mjs): `<pin>.lock/holder.json`, the pid of
+    // the process fetching, made atomically beside the pin and removed when
+    // the fetch is done, so two first runs cannot race in one directory.
+    const pinWrites = path === "tools/marketplace/pin.mjs" ? /^join\(lockDir, "holder\.json"\),/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || commitWrites.test(target) || labWrites.test(target),
-        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info, the live registry cache, the completion script, a block file, a lab path, nor one of the three files weigh may write`,
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || commitWrites.test(target) || labWrites.test(target) || pinWrites.test(target),
+        `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info or lock, the live registry cache, the completion script, a block file, a lab path, nor one of the files weigh may write`,
       )
     }
     if (path === "tools/blocks/add.mjs") {
