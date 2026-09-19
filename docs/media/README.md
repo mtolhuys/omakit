@@ -207,21 +207,30 @@ The hashes, capture counts, package facts and README word count are in
 
 ## The diagrams in WHY.md
 
-WHY.md uses four diagrams. They are drawings, not captures: nothing in them is
-measured, and none of them carries a number. `diagrams.py` holds the geometry
-once and writes the files.
+Ten diagrams, across six pages. They are drawings, not captures: nothing in
+them is measured, and none carries a number or a version, so none of them goes
+stale on a release. `diagrams.py` holds the geometry once and writes the
+files.
 
 ```
 python3 docs/media/diagrams.py           # write docs/media/why-*.svg
 python3 docs/media/diagrams.py --check   # exit 1 if a committed file is stale
 ```
 
-| Diagram | What it draws |
-| --- | --- |
-| `why-shell` | the shell's one process, the input a plugin does not control, and what it starts |
-| `why-failures` | the four ordinary endings of one unguarded child process |
-| `why-run` | how Run starts a program, reads it, and ends the whole group |
-| `why-store` | Store's descriptor walk and its write beside the file |
+| Diagram | Page | What it draws |
+| --- | --- | --- |
+| `why-shell` | [WHY.md](../WHY.md) | the shell's one process, the input a plugin does not control, and what it starts |
+| `why-failures` | [WHY.md](../WHY.md) | the four ordinary endings of one unguarded child process |
+| `why-run` | [WHY.md](../WHY.md) | how Run starts a program, reads it, and ends the whole group |
+| `why-store` | [WHY.md](../WHY.md) | Store's descriptor walk and its write beside the file |
+| `how-jobs` | [HOW.md](../HOW.md) | the four jobs in the order they happen, and which one boots anything |
+| `how-rules` | [HOW.md](../HOW.md) | every rule read from one pinned commit and run verbatim, and what comes from HEAD instead |
+| `blocks-copy` | [BLOCKS.md](../BLOCKS.md) | what `add` writes, and the header that tells a shipped copy from an edited one |
+| `lab-run` | [LAB.md](../LAB.md) | the read-only base, the overlay for one run, and the desktop that is not touched |
+| `submit-run` | [SUBMIT.md](../SUBMIT.md) | the checks, whose rule each one is, and the three outcomes |
+| `inspect-report` | [INSPECT.md](../INSPECT.md) | what is read, what is reported, and what is never done |
+| `watch-stale` | [VALIDATION_WATCH.md](../VALIDATION_WATCH.md) | the two actions that trigger nothing, and the one that does |
+| `weigh-method` | [WEIGH.md](../WEIGH.md) | two shell configurations, one run, and the difference between them |
 
 Each one is written twice, `-light` and `-dark`. A picture in Markdown is
 loaded through an `img` element, which has no page around it to inherit a

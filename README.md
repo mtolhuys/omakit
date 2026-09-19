@@ -82,6 +82,9 @@ After one `omakit lab setup`, `omakit lab prove <suite>` boots a fresh overlay f
 
 ## Documentation
 
+Every page, and which question each one answers: [the documentation
+index](docs/README.md).
+
 - [Why the blocks exist](docs/WHY.md), [the blocks themselves](docs/BLOCKS.md) and [their design spike](docs/BLOCKS_SPIKE.md)
 - [Commands](docs/COMMANDS.md), [inspect](docs/INSPECT.md), [submit](docs/SUBMIT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md) and [weigh](docs/WEIGH.md)
 - [The disposable lab](docs/LAB.md) and [every measurement](docs/MEASUREMENTS.md)
