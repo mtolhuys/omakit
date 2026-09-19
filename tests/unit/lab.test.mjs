@@ -7,7 +7,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { createServer } from "node:http"
 import { createServer as createUnixServer } from "node:net"
 import { tmpdir } from "node:os"
@@ -626,4 +626,31 @@ test("a presence-only probe says the command is there, never the error line its 
   assert.match(missing.remedy, /pacman -S --needed openssh/)
   const [versioned] = probeCommands([BUILD_COMMANDS.find((entry) => entry.command === "socat")], { run: () => ({ status: 0, stdout: "socat version 1.8.0.0 on Jan 1\n" }) })
   assert.equal(versioned.reason, "socat version 1.8.0.0 on Jan 1", "a command with a version keeps its version line")
+})
+
+test("an absent /dev/kvm in a mount namespace without the host's /dev is said to be that, through the real entry point", (t) => {
+  // The acceptance tester of 2026-09-19 could not reach this wording on a
+  // host whose /dev/kvm works. `unshare -rm` gives the process a mount
+  // namespace of its own; a directory with only null, zero, urandom and tty
+  // bound in is mounted over /dev, and omakit runs in it. Skipped where user
+  // namespaces are unavailable, never faked.
+  if (process.platform !== "linux") return t.skip("Linux-only: mount namespaces")
+  if (spawnSync("unshare", ["-rm", "true"], { timeout: 60_000 }).status !== 0) return t.skip("unshare -rm is not available here")
+  if (!existsSync("/sys/module/kvm")) return t.skip("no kvm module is loaded here, so the wording under test is another one")
+  const dir = mkdtempSync(join(tmpdir(), "omakit-no-kvm-"))
+  try {
+    const script = join(dir, "probe.sh")
+    writeFileSync(script, ["set -e", `D=${JSON.stringify(join(dir, "dev"))}`, "mkdir -p \"$D/shm\" \"$D/pts\"", "for f in null zero urandom tty; do : > \"$D/$f\"; mount --bind /dev/$f \"$D/$f\"; done", "mount --bind \"$D\" /dev", 'exec "$@"'].join("\n"))
+    chmodSync(script, 0o755)
+    const result = spawnSync("unshare", ["-rm", "bash", script, process.execPath, join(REPO_ROOT, "bin/omakit"), "lab", "inspect", "--json"], { timeout: 120_000, encoding: "utf8", env: { ...process.env, HOME: dir, XDG_CACHE_HOME: join(dir, "cache"), XDG_STATE_HOME: join(dir, "state"), TERM: "dumb" } })
+    assert.equal(result.status, 1, result.stderr)
+    const document = JSON.parse(result.stdout)
+    const kvm = document.host.run.find((line) => line.name === "kvm")
+    assert.equal(kvm.state, "missing")
+    assert.match(kvm.reason, /the kvm module is loaded \(\/sys\/module\/kvm exists\): the device node is missing, or this process runs in a mount namespace without the host's \/dev/)
+    assert.match(kvm.remedy, /run omakit outside the sandbox/)
+    assert.ok(document.error.missing.some((item) => item.what === "kvm"), "and the refusal lists it")
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

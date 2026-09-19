@@ -1,0 +1,304 @@
+{
+ "id": "acceptance-2026-09-19",
+ "measured": "2026-09-19",
+ "question": "What did the acceptance test of the 0.6.0 candidate (feature/blocks at 6c386fb) find, what of it reproduces, what changed for each finding, which test holds it, and what does the release-equivalent artifact do end to end?",
+ "inputs": [
+  "/tmp/omakit-acceptance.md",
+  "/tmp/omakit-acceptance.log",
+  "/tmp/omakit-acceptance-results/pairs.tsv",
+  "/tmp/omakit-acceptance-results/index.tsv",
+  "docs/evidence/ux/2026-09-19-first-user-test.json",
+  "the user journal and the file system of the reference host for finding 1"
+ ],
+ "method": "Every finding was reproduced before it was fixed, on the reference host, by a test that failed first where a test could be written; the report is treated as observations, not as truth, and a finding that does not reproduce says so. The candidate was then packed the way the release workflow packs it (npm run pack:release), installed with npm into a throwaway prefix and HOME, and the newcomer's commands run from it; the acceptance matrix was run over that installed artifact; the lab proved the Run suite on the stock guest; the missing-KVM wording was reached through a mount namespace without the device.",
+ "candidate": {
+  "branch": "feature/blocks",
+  "tested_at": "6c386fbacb72751ff6b322efdfa138605ef23fae",
+  "fixed_through": "5ed43d0d1fcf68e140df282408d115a2fff47c9c and the evidence commit after it"
+ },
+ "findings": [
+  {
+   "n": 1,
+   "area": "the incident: two omakit backups beside the person's shell.json",
+   "reported": "During a run in which no valid `weigh --yes` was authorised, ~/.config/omarchy/shell.json.omakit-backup-20260919122359 and ...122713 appeared, and the live shell.json differed from both (md5 f8b6ae44…, Theme Manager gone from one layout section, plugin order changed).",
+   "reproduced": "Yes, from the machine's own records. The acceptance tester's every weigh invocation ran with HOME=/tmp/omakit-home (the command log, lines 552-908), so none of them could reach ~/.config/omarchy; the only code that writes there is tools/weigh/config.mjs, called from measureWeigh, called from cmdWeigh after consent. The two files are the backups of two consented measurements run from another session on this machine, the one recording docs/media/weigh.gif: the user journal shows the shell exiting on IPC at 14:23:59 local (12:23:59Z, the first backup's stamp) and every 47 s after it until 14:26:22, four restarts of a measurement, then nothing from that process; a second measurement began at 14:27:13 (12:27:13Z, the second stamp), made its seven restarts to 14:31:56 and recorded backup ...122713, md5Before = md5After = cff48fb3…, restored: true (docs/evidence/weigh/desktop-2026-09-19-theme-manager.json), and removed that backup as a verified restore does. The live file the tester saw at 14:28:59 (md5 f8b6ae44…) is byte for byte the baseline configuration weigh writes for that plugin set, computed again from the shell's effective configuration: the tester observed a measurement in progress. The first measurement never reached verifyRestore, the only place a backup is removed, so ...122359 stayed; its bytes were the original at 14:27:13 (the second run's md5Before), so either its restore ran before it died or a hand copy did; no restart of its own appears in the journal. The one exit the code could not restore on is SIGKILL; SIGHUP (a closing terminal, which a recorder uses) was not handled and would have killed the process without a restore.",
+   "changed": "The consent is a value cli.mjs hands measureWeigh; backupConfig refuses without it and writeConfig and restoreConfig take the lease it returns, so nothing under tools/weigh/ writes to shell.json outside a consented measurement. Every write there is a whole file: bytes to <target>.part, fsynced, renamed over the target with the original's mode. SIGHUP is handled like SIGINT and SIGTERM, and each exits with its own status. planWeigh refuses (backup-present, exit 1) while a shell.json.omakit-backup-* is beside shell.json, naming the second its measurement began and the restore. The backup's name is the UTC second measureWeigh began.",
+   "held_by": [
+    "tests/unit/weigh.test.mjs: no write under tools/weigh happens without the lease consent opens",
+    "tests/unit/weigh.test.mjs: every path that stops before a consented measurement leaves ~/.config/omarchy byte for byte as it was",
+    "tests/unit/weigh.test.mjs: SIGINT, SIGTERM and SIGHUP during a window restore, remove the backup, exit 130, 143, 129",
+    "tests/unit/weigh.test.mjs: SIGKILL is the one exit nothing runs on; the next weigh names the backup by the second it began and refuses",
+    "tests/unit/self-containment.test.mjs: config.mjs writes through one descriptor, renamed into place, opened only with the lease"
+   ],
+   "machine": {
+    "what_changed_on_the_users_machine": "Two consented measurements restarted the shell 11 times between 14:23:59 and 14:31:56 local; the second restored shell.json to its original bytes (cff48fb3…) at 14:31:56, verified, and removed its own backup. Left behind: ~/.config/omarchy/shell.json.omakit-backup-20260919122359 (2,574 bytes, md5 cff48fb3…, the pre-measurement bytes) and, from a measurement of 2026-09-18, ~/.config/omarchy/shell.json.omakit-backup-20260918170017 (same md5). At 14:58:39 local shell.json changed again, by 44 bytes: one layout entry, `mtolhuys.omaboot`, added; nothing else differs from the backup, and no omakit backup was made for it, so that change is the person's own (a plugin enabled), not a measurement's. Current md5 a0dae2f9…",
+    "safe_restore": "Do not copy either backup over shell.json: the live file is the restored original plus the omaboot entry added afterwards, and a copy would remove that entry. Confirm with `diff <(python3 -m json.tool ~/.config/omarchy/shell.json.omakit-backup-20260919122359) <(python3 -m json.tool ~/.config/omarchy/shell.json)` (one added entry expected), then remove the two backups: `rm ~/.config/omarchy/shell.json.omakit-backup-20260919122359 ~/.config/omarchy/shell.json.omakit-backup-20260918170017`. Until they are gone, `omakit weigh` refuses on this machine (backup-present), by design."
+   }
+  },
+  {
+   "n": 2,
+   "area": "one JSON, stream and --out contract",
+   "reported": "The JSON envelope, stream separation and --out behaviour differed by command: success documents without the envelope; watch unknown, lab inspect unprepared, submit refused and audit drift shaped their own documents; audit ok:false with error:null; lab prune --json printed nothing; --json --out wrote a human `wrote` line to stdout for five commands and JSON for two; failed lab prove and weigh --json --out created no file; lab inspect, lab setup preflight, audit drift and an upgrade refusal wrote their result to stdout only on a nonzero exit; add on EACCES carried remedy: null.",
+   "reproduced": "Yes, each by reading cli.mjs's per-command exits and by the table test's first run against the old code (16 rows failed).",
+   "changed": "tools/marketplace/outcome.mjs is the one layer every command ends in: `conclude()` writes { command, ok, error, ...document } under --json (exactly one document, remedy never null, an errno's remedy for an OS error, one full stop per sentence), puts the text on stdout on exit 0 and on stderr otherwise, writes --out on every outcome but a usage error, and prints nothing on stdout under --json --out. Domain refusals (submit refused, watch unknown, audit drift or not-compared, lab not ready, not proved, doctor problems, upgrade refused, lab setup blocked, prune busy) carry the report and the envelope together. upgrade's text is buffered so a refusal lands on stderr. docs/COMMANDS.md states the contract once.",
+   "held_by": [
+    "tests/unit/json-outcomes.test.mjs: 51 rows over every command, each in every mode it accepts (human, --json, --out, --json --out)",
+    "tests/unit/json-outcomes.test.mjs: --out that cannot be written is the failure, in the document on stdout"
+   ]
+  },
+  {
+   "n": 3,
+   "area": "exit codes and interrupts",
+   "reported": "watch with an unknown verdict exited 2, the usage status; SIGTERM during inspect exited 143 where the documentation said 130.",
+   "reproduced": "Yes: cmdWatch mapped unknown to 2 (docs/VALIDATION_WATCH.md said so); an unhandled SIGTERM is 143 by the shell's convention.",
+   "changed": "The table is 0 success, 1 a refusal or failure the tool means (watch's unknown verdict among them), 2 usage; an interrupt exits with the signal's own status, 129/130/143, in weigh and lab (which restore first) and in every command that does not handle it. Documented in docs/COMMANDS.md, docs/VALIDATION_WATCH.md, docs/LAB.md, docs/WEIGH.md.",
+   "held_by": [
+    "tests/unit/json-outcomes.test.mjs: an unhandled signal ends inspect with the signal's own status",
+    "tests/unit/weigh.test.mjs: SIGTERM 143 and SIGHUP 129 after the restore",
+    "tests/unit/json-outcomes.test.mjs: the exit table and the signal table are what the documentation states"
+   ]
+  },
+  {
+   "n": 4,
+   "area": "audit reported 19 unknown rows as commits the marketplace never saw",
+   "reported": "Every one of 19 third-party rows was unknown (no source directory recorded), yet the close said all 19 run a commit the marketplace never saw.",
+   "reproduced": "Yes: rows with state unknown were counted as drift, and the close had one sentence for both. Reproduced with the audit stubs: an installed set whose catalog names no sourceDir.",
+   "changed": "An unknown row is never drift: counts.unknown, unknownReasons, and one shared sentence (auditSummary) that counts what was compared and names what could not be, with why; the word is NOT AUDITED (exit 1, error.code not-compared) when nothing drifted and rows could not be compared, DRIFT only when a compared row is off. On the installed artifact in a throwaway home the close reads `0 of 20 run a commit the marketplace validated; 20 could not be compared (omarchy-plugin-catalog records no source directory).`",
+   "held_by": [
+    "tests/unit/audit.test.mjs: completed audits distinguish validated from drift without claiming they were not audited",
+    "tests/unit/json-outcomes.test.mjs: audit, nothing could be compared"
+   ]
+  },
+  {
+   "n": 5,
+   "area": "inspect on a symlinked plugin directory invented a path",
+   "reported": "`inspect /tmp/tm-link` (a link to /tmp/tm) looked for a manifest at /tmp/tm/link and exited 2, while verify and submit resolved the same link.",
+   "reproduced": "Yes: resolveSubject compared the unresolved path with git's real top level and took the difference as a subdirectory.",
+   "changed": "resolveSubject takes the real path once, before the comparison; every command resolves its subject there.",
+   "held_by": [
+    "tests/unit/subject.test.mjs: a symbolic link to a repository is the repository"
+   ]
+  },
+  {
+   "n": 6,
+   "area": "two first runs raced on the pin",
+   "reported": "Two `omakit pin` against one empty cache: one died in `git init` with `cannot copy .git/description: File exists`, the other completed.",
+   "reproduced": "By construction: ensurePin ran git init in the final directory, so two processes shared it; the tester's capture is the observation.",
+   "changed": "The fetch goes into <pin>.staging-<pid> under <pin>.lock/ (mkdir, atomic; the holder's pid inside; a dead holder's lock is taken over) and is renamed into place whole; a run that finds the lock held waits for the holder and verifies what it left.",
+   "held_by": [
+    "tests/unit/pin.test.mjs: two concurrent first runs against one empty cache both succeed, and the pin is whole, sparse and alone (real fetch; skipped offline)",
+    "tests/unit/pin.test.mjs: a held lock is waited for and a stale one is taken over, without a network"
+   ]
+  },
+  {
+   "n": 7,
+   "area": "parity --count 1 ran two repositories",
+   "reported": "`parity --count 1 --offset 0` selected two repositories and reported identical 2/2.",
+   "reproduced": "Yes: ceil(1/8) + ceil(1/4) = 2.",
+   "changed": "The two ceilings are capped at the count; --count 1 is one repository, the 30-repository corpus stays 4, 8 and 18. On the installed artifact: `PARITY identical 1 of 1`.",
+   "held_by": [
+    "tests/unit/parity-output.test.mjs: the parity strata never exceed the count asked for"
+   ]
+  },
+  {
+   "n": 8,
+   "area": "an empty argument became an all-plugin audit",
+   "reported": "`omakit audit \"\" --json` silently audited every plugin.",
+   "reproduced": "Yes: checkArgs pushed the empty string as a positional and audit read it as no target.",
+   "changed": "An empty argument, and an empty value for a valued option, is a usage error in every command.",
+   "held_by": [
+    "tests/unit/options.test.mjs",
+    "tests/unit/json-outcomes.test.mjs: submit, audit and inspect with an empty target"
+   ]
+  },
+  {
+   "n": 9,
+   "area": "a repeated option took the last value silently",
+   "reported": "Repeated --out, --category, --user, --runs and --count with different values were accepted; the last won.",
+   "reproduced": "Yes.",
+   "changed": "A valued option given twice is a usage error naming both values; a repeated flag is the flag. A usage error writes no --out, since no option on the refused command line is trusted (the acceptance matrix showed `audit --out a --out b` being refused and still writing b).",
+   "held_by": [
+    "tests/unit/options.test.mjs",
+    "tests/unit/json-outcomes.test.mjs: submit with --category twice, parity --count twice, usage rows in --out mode"
+   ]
+  },
+  {
+   "n": 10,
+   "area": "wording",
+   "reported": "prune's close said `--runs removes them` (the option is --records); doctor printed `ok ssh-keygen /dev/null is not a public key file.`; audit's no-pin message ended in two full stops.",
+   "reproduced": "Yes, each at its line.",
+   "changed": "--records; a presence-only probe says `ssh-keygen is on PATH (openssh)`; every failure message passes through one `sentence()` that ends it with exactly one full stop, so the shape cannot recur in any command.",
+   "held_by": [
+    "tests/unit/lab.test.mjs: the remedy names the option that exists; a presence-only probe",
+    "tests/unit/json-outcomes.test.mjs: one sentence, one full stop, for every failure"
+   ]
+  },
+  {
+   "n": 11,
+   "area": "release identity",
+   "reported": "A candidate built from this branch called itself 0.5.1; a raw `npm pack` left commit.json null so `add` refused, and its remedy suggested reinstalling from the registry, which brings back a published 0.5.1 with neither add nor lab.",
+   "reproduced": "Yes: package.json said 0.5.1 and the remedy named the registry.",
+   "changed": "The release branch names its release: package.json is 0.6.0. A build says where its code comes from through doctor's `omakit.source` (a checkout at <sha>; a package the release step stamped with <sha>; or a package packed without the release step, advice naming the release step). add's no-source-commit remedy names the checkout and the release step, never a published version without add. `npm run pack:release` records, checks, packs and clears, so a tarball tested by hand is the one the workflow publishes.",
+   "held_by": [
+    "tests/unit/doctor.test.mjs: omakit.source",
+    "tests/unit/packaged-commit.test.mjs: pack:release, --clear, the stamped and the unstamped tarball"
+   ]
+  },
+  {
+   "n": 12,
+   "area": "lab setup in a pipe: exit 2 documented, exit 1 met",
+   "reported": "docs/LAB.md said a pipe without --yes refuses with exit 2; on the tester's host the preflight found the toolchain and the disk short first and exited 1.",
+   "reproduced": "Yes: a plan with blockers is refused before consent is asked.",
+   "changed": "The documentation says so; a blocked plan is exit 1 (lab-blocked) with the plan as the refusal's text on stderr, and a pipe without --yes on a runnable plan is exit 2 (not-confirmed) with the plan as the refusal's text.",
+   "held_by": [
+    "tests/unit/json-outcomes.test.mjs: lab setup blocked; lab prune unconfirmed in a pipe"
+   ]
+  },
+  {
+   "n": 13,
+   "area": "README skill install: five skills from main, six in the candidate",
+   "reported": "`npx skills add mtolhuys/omakit` installed five skills from the current default branch while the candidate ships six.",
+   "reproduced": "Not a defect of the candidate: the command reads the default branch, which is the released 0.5.1 until this branch is merged. Expected to resolve at the merge; nothing changed.",
+   "changed": "Nothing.",
+   "held_by": []
+  },
+  {
+   "n": 14,
+   "area": "the first-run feel: the machine's node shim",
+   "reported": "With a throwaway HOME the machine's lerd shims fail before omakit with `fnm not found`.",
+   "reproduced": "Yes, in the release rehearsal: the installed artifact's every command failed the same way until /usr/bin was first on PATH. A host toolchain artifact, not omakit's; the rehearsal records the node used (/usr/bin/node v22.23.2).",
+   "changed": "Nothing in omakit.",
+   "held_by": []
+  }
+ ],
+ "release_rehearsal": {
+  "how": "npm_config_pack_destination=<dir> npm run pack:release (record-commit, --check, npm pack --ignore-scripts, --clear); the checkout was clean of commit.json afterwards; npm install --global --prefix <dir>/prefix --ignore-scripts <tgz>; HOME, XDG_* under <dir>/home; PATH=/usr/bin:/bin:<prefix>/bin (this machine's node shim needs the real HOME)",
+  "artifact": {
+   "file": "omakit-0.6.0.tgz",
+   "bytes": 340899,
+   "files": 131,
+   "sha256": "c64717b18fd49bb042ba5cb3d1a8ff8fbf0033b496553c122e5e9ad51ea9fb18",
+   "commit": "5ed43d0d1fcf68e140df282408d115a2fff47c9c",
+   "package_assert": {
+    "fileCount": 131,
+    "packedBytes": 340899,
+    "ceilingBytes": 358400
+   }
+  },
+  "node": "/usr/bin/node v22.23.2",
+  "runs": [
+   {
+    "command": "doctor --offline --json (before setup)",
+    "exit": 1,
+    "result": "omakit.version 0.6.0; omakit.source ok, `a package the release step stamped with commit 5ed43d0`; pin.checkout problem, no pin yet"
+   },
+   {
+    "command": "setup --yes",
+    "exit": 0,
+    "result": "the pin fetched into the throwaway cache, completion installed under the throwaway data directory"
+   },
+   {
+    "command": "add run <theme-manager clone>",
+    "exit": 0,
+    "result": "Run.qml, run-supervisor.py and NOTICE written, `from omakit commit 5ed43d0d1fcf68e140df282408d115a2fff47c9c`"
+   },
+   {
+    "command": "add store <clone> --json",
+    "exit": 0,
+    "result": "Store.qml and store-helper.py written, Run kept current, NOTICE updated"
+   },
+   {
+    "command": "add run <clone> (again)",
+    "exit": 0,
+    "result": "every file current"
+   },
+   {
+    "command": "inspect <clone>; inspect --json --out",
+    "exit": 0,
+    "result": "INSPECTED; the document in the file and nothing on stdout"
+   },
+   {
+    "command": "verify <clone>; verify --json",
+    "exit": 0,
+    "result": "the official baseline over the local transport; the document under the envelope"
+   },
+   {
+    "command": "submit <clone> --offline; --json",
+    "exit": 0,
+    "result": "LISTED: the plugin is listed by its own repository; nothing posted"
+   },
+   {
+    "command": "doctor; doctor --json --out",
+    "exit": 0,
+    "result": "omakit.source ok with the stamped commit"
+   },
+   {
+    "command": "lab inspect; --json",
+    "exit": 1,
+    "result": "NOT PREPARED in a throwaway home: 3 things before a run, each with its cost and command; lab-not-ready with error.missing"
+   },
+   {
+    "command": "help",
+    "exit": 0,
+    "result": "every command listed"
+   },
+   {
+    "command": "upgrade --dry-run",
+    "exit": 1,
+    "result": "REFUSED: no npm on the rehearsal's PATH (/usr/bin:/bin); the refusal is on stderr"
+   }
+  ]
+ },
+ "acceptance_matrix": {
+  "over": "the installed artifact above, 45 cases, each bare and through `| cat`",
+  "streams_captured": 90,
+  "ansi_escape_bytes": 0,
+  "bare_vs_pipe_exit_mismatches": 0,
+  "stdout_pairs_identical": 43,
+  "stdout_pairs_differing": [
+   "lab-inspect-json and lab-setup-json: the lab's free-bytes figure moved between two invocations; the verdicts did not"
+  ],
+  "json_cases": "every --json stdout parsed as one document with { command, ok, error } first; ok equalled exit 0; remedy a non-empty string on every failure; every nonzero human exit left stdout empty",
+  "notable": [
+   "parity --count 1: identical 1 of 1",
+   "audit in a throwaway home: 20 could not be compared, not-compared, never `never saw`",
+   "lab prove run --json --out on a lab that is not ready: exit 1 and the file written",
+   "inspect through a symbolic link: ok",
+   "weigh without --yes: not-confirmed, exit 2, nothing touched",
+   "audit --out a --out b: usage, and (after the fix) no file written"
+  ]
+ },
+ "lab_prove": {
+  "run": "20260919-155115-run",
+  "suite": "run",
+  "result": "PROVED, ok over 19 scenarios",
+  "guest": "installed package omarchy 4.0.3-1, kernel 7.2.3-arch1-3, session not linked",
+  "skew": false,
+  "base_unchanged": true,
+  "duration_ms": 171290,
+  "overlay_bytes": 438964224,
+  "record": "docs/evidence/lab/20260919-155115-run/"
+ },
+ "missing_kvm": {
+  "how": "unshare -rm with a directory holding only null, zero, urandom and tty bound in and mounted over /dev, then `omakit lab inspect --json` and `omakit doctor --offline`",
+  "wording": "/dev/kvm is not there although the kvm module is loaded (/sys/module/kvm exists): the device node is missing, or this process runs in a mount namespace without the host's /dev",
+  "remedy": "check udev for /dev/kvm on the host, or run omakit outside the sandbox",
+  "held_by": "tests/unit/lab.test.mjs: an absent /dev/kvm in a mount namespace without the host's /dev"
+ },
+ "consented_weigh": {
+  "run": false,
+  "why": "Step 1 is proven by test, but on the reference host `omakit weigh` now refuses before consent (backup-present, exit 1) because the two stale backups of finding 1 are still beside shell.json; removing them is the person's decision, recorded above. Nothing was restarted: shell.json's md5 a0dae2f9… before and after the refusal, no omakit backup written."
+ },
+ "suite": {
+  "command": "npm test",
+  "tests": 534,
+  "failed": 0,
+  "skipped": 0
+ },
+ "left_open": [
+  "How the first measurement of finding 1 died between 14:26:22 and 14:27:13 is inferred, not recorded: no signal handler, and no journal entry, names it. SIGHUP from a closing recorder terminal is the one exit the old code could not restore on that fits every fact; it is handled now.",
+  "A consented weigh on the desktop after the fix was not run (above).",
+  "The pin race test needs the marketplace repository and skips offline; the lock's wait and takeover are proven offline.",
+  "`upgrade --dry-run` from the installed artifact was refused for want of npm on the rehearsal's PATH, the same refusal a person without npm gets; the fast-forward path of a checkout was not part of the rehearsal."
+ ]
+}

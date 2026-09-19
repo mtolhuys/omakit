@@ -30,13 +30,16 @@ install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 20 files under
 `tools/lab/`, 163,753 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 329,250 bytes (`tests/package-assert.mjs`).
+a package that packs to 340,899 bytes (`tests/package-assert.mjs`, the
+release-stamped artifact of 2026-09-19).
 
 Nothing is fetched implicitly. `prove`, `inspect`, `prune` and `doctor`
 never touch the network. `setup` is the one path that fetches bytes, after
 one consent that states the exact size and the destination, and `--yes` is
 that consent in the command itself for an agent; a pipe without it refuses,
-exit 2, naming `omakit lab setup --yes`.
+exit 2, naming `omakit lab setup --yes`, with the plan as the refusal's text.
+A plan that cannot run (no toolchain, too little disk) is refused before
+any consent is asked, exit 1, `lab-blocked`, and says what blocks it.
 
 Nothing here touches the daily session. Every binary the lab's modules
 spawn on the host is on a list `tests/unit/lab.test.mjs` holds them to

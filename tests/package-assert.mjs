@@ -51,7 +51,10 @@ import { pathToFileURL } from "node:url"
 // commit record and its tool under tools/blocks/, it measured 330,934 bytes
 // across 130 files, 27,466 under the same 358,400-byte ceiling, which
 // stands: still a forty-fifth of an accidental tree with the 15 MB
-// marketplace pin in it.
+// marketplace pin in it. After the acceptance test of 2026-09-19, with the
+// contract layer (tools/marketplace/outcome.mjs) and the table that holds
+// it, the release-stamped artifact measured 340,899 bytes across 131 files,
+// 17,501 under the same ceiling.
 export const MAX_PACKED_BYTES = 358_400
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
