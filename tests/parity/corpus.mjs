@@ -34,9 +34,14 @@ function registrySources(pinDir) {
 }
 
 export function strataSizes(count) {
-  const needsFixes = Math.ceil(count / 8)
-  const reviewRequired = Math.ceil(count / 4)
-  return { "needs-fixes": needsFixes, "review-required": reviewRequired, passed: Math.max(0, count - needsFixes - reviewRequired) }
+  // ceil for the two non-passed strata, so a small corpus still has one of
+  // each, and never more repositories than were asked for: at --count 1
+  // the two ceilings alone made two (measured on 2026-09-19, "identical
+  // 2/2" after --count 1). The 30-repository corpus is unchanged: 4, 8, 18.
+  const total = Math.max(0, Math.floor(count))
+  const needsFixes = Math.min(Math.ceil(total / 8), total)
+  const reviewRequired = Math.min(Math.ceil(total / 4), total - needsFixes)
+  return { "needs-fixes": needsFixes, "review-required": reviewRequired, passed: total - needsFixes - reviewRequired }
 }
 
 function sample(list, count, offset) {
