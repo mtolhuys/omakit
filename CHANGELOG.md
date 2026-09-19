@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3
+
+The README's command and documentation table is restored at the top and
+updated for every current command, so the package page again gives a visitor
+the short route from a command to what it does and where it is documented.
+The Socket image badge is removed because its endpoint serves a Cloudflare
+challenge instead of an image to automated consumers such as npm.
+
 ## 0.6.2
 
 The terminal wordmark now carries the same `tested plumbing for plugins` line

@@ -6,7 +6,24 @@
 
 The three parts are the Run and Store blocks a plugin copies into its own tree, the marketplace's own checks run locally, and repository suites run in a disposable guest. Behind the first are M13's 1,001 security blocker comments from one measured week: 587 raise a Run line, 527 a Store line, and runner plus store handle 777 of 1,001 when read as an upper bound, not as a result for any plugin ([M13](docs/MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)). No reviewer has seen a ported plugin yet.
 
-[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml) [![Socket package report](https://socket.dev/api/badge/npm/package/omakit)](https://socket.dev/npm/package/omakit)
+[![Built for Omarchy: App](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-app.svg)](https://github.com/tcballard/omarchy-badges) [![npm version](https://img.shields.io/npm/v/omakit)](https://www.npmjs.com/package/omakit) [![CI status](https://img.shields.io/github/actions/workflow/status/mtolhuys/omakit/ci.yml?branch=main)](https://github.com/mtolhuys/omakit/actions/workflows/ci.yml)
+
+## What it delivers
+
+| Command | What you get | Documentation |
+| --- | --- | --- |
+| `omakit add <block> [<plugin-dir>]` | Copy the Run or Store block into a plugin. The plugin owns the files, and an edited copy is never overwritten. | [Blocks](docs/BLOCKS.md) |
+| `omakit inspect <plugin-dir>` | See what the tree does and what deserves attention, with the file and line for each observation. | [Inspect](docs/INSPECT.md) |
+| `omakit verify <plugin-repo>` | Run the marketplace's own security baseline over the commit and see its result verbatim. | [Commands](docs/COMMANDS.md) |
+| `omakit submit <plugin-repo>` | Run every submission check and get the issue title and body ready to paste. Nothing is posted. | [Submit](docs/SUBMIT.md) |
+| `omakit watch ...` | See whether the marketplace-validated commit is still current and what to do when it is not. | [Watch](docs/VALIDATION_WATCH.md) |
+| `omakit audit [<plugin>]` | Find installed plugins running commits the marketplace never validated. | [Audit](docs/AUDIT.md) |
+| `omakit lab <command>` | Set up, inspect, prove in or prune the disposable Omarchy guest. | [Lab](docs/LAB.md) |
+| `omakit weigh <plugin>` | Measure a plugin's CPU and child processes against the shell's own baseline, then restore the shell config. | [Weigh](docs/WEIGH.md) |
+| `omakit setup`, `omakit doctor` | Prepare or check the pin, completion, tools and disposable lab. | [Install](docs/INSTALL.md) |
+| `omakit pin`, `omakit upgrade`, `omakit parity`, `omakit help --agent` | Maintain Omakit or inspect its own contract and parity proof. | [All commands](docs/COMMANDS.md) |
+
+The complete syntax, options, exit codes and JSON/output contract are in the [command reference](docs/COMMANDS.md).
 
 ## Install
 
