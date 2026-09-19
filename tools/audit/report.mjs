@@ -20,6 +20,31 @@ function catalogText(catalog) {
   return `pin ${short(catalog.commit.value)}${catalog.offline ? " (offline)" : ""}`
 }
 
+/**
+ * The closing sentence, the same one the envelope carries as the error's
+ * message when the exit is 1: what was compared and found validated, what
+ * was compared and found off (drift), and what could not be compared, with
+ * why, each clause only when its count is not zero. A row that could not
+ * be compared is never said to run a commit the marketplace "never saw".
+ */
+export function auditSummary(document) {
+  const total = document.counts.audited.value
+  const good = document.counts.validated.value
+  const drift = document.counts.drift.value
+  const unknown = document.counts.unknown?.value ?? 0
+  if (total === 0) return "no third-party plugin to audit."
+  const parts = [`${good} of ${total} run a commit the marketplace validated`]
+  if (drift) parts.push(`${drift} run one it never saw`)
+  if (unknown) parts.push(`${unknown} could not be compared (${(document.unknownReasons || []).join("; ") || "the source directory could not be read"})`)
+  return `${parts.join("; ")}.`
+}
+
+/** The closing word: AUDITED when every row was compared and validated, DRIFT when a compared row is off, NOT AUDITED when rows could not be compared and none drifted. */
+export function auditVerdict(document) {
+  if (document.ok) return AUDIT_VERDICTS.validated
+  return document.counts.drift.value > 0 ? AUDIT_VERDICTS.drift : AUDIT_VERDICTS.unavailable
+}
+
 /** A terminal report made only from the shared style vocabulary. */
 export function renderAudit(document, { colour = colourEnabled() } = {}) {
   const c = styler(colour)
@@ -43,9 +68,6 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
     }
     out.push("")
   }
-  const total = document.counts.audited.value
-  const good = document.counts.validated.value
-  const drift = document.counts.drift.value
   if (document.updateRoute) {
     out.push(...action(`To validate a newer commit: ${document.updateRoute.url}`, c))
     out.push(...wrap(`${document.updateRoute.name}; choose ${JSON.stringify(document.updateRoute.choice)}.`, { indent: GUTTER }, c))
@@ -55,6 +77,6 @@ export function renderAudit(document, { colour = colourEnabled() } = {}) {
     out.push(...wrap(`Verification route unavailable: ${document.updateRouteError}; run omakit pin.`, { indent: GUTTER }, c))
     out.push("")
   }
-  out.push(...verdict(document.ok ? "pass" : "fail", document.ok ? AUDIT_VERDICTS.validated : AUDIT_VERDICTS.drift, `${good} of ${total} run a commit the marketplace validated; ${drift} run one it never saw.`, c))
+  out.push(...verdict(document.ok ? "pass" : "fail", auditVerdict(document), auditSummary(document), c))
   return out.join("\n")
 }

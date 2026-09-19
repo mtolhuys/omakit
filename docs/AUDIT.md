@@ -173,7 +173,7 @@ an older completion script.
 | `<plugin-id-or-dir>` | Audit one installed plugin instead of every installed plugin. |
 | `--drift` | Print only rows whose primary state is not `validated`. Counts and exit status still cover the selected set. |
 | `--json` | Print the JSON document on stdout and nothing else. |
-| `--out <file>` | Write the JSON document to the file and print the human rendering. With `--json`, stdout remains the JSON document. |
+| `--out <file>` | Write the JSON document to the file and print the human rendering. With `--json`, the document is in the file and stdout carries nothing. |
 | `--offline` | Read the catalog from the exact marketplace pin and say so in the header. |
 
 Unknown options, a missing `--out` value and a second positional are usage
@@ -217,10 +217,23 @@ there was no third-party row to audit. A modified or disabled validated row
 keeps that primary state and flag.
 
 `DRIFT`, exit 1, means at least one row is `ahead`, `diverged`,
-`unverified`, `unlisted` or `unknown`.
+`unverified` or `unlisted`: a comparison was made and the installed commit
+is not one the marketplace validated. Under `--json` the document carries
+`error.code: "drift"` with the closing sentence as its message.
 
-`NOT AUDITED`, exit 1, means the shell does not answer or neither a live
-catalog nor the pin can be read. The reason is printed with the verdict.
+An `unknown` row is a comparison that could not be made (no source
+directory, not a checkout, a Git question that failed), and is never
+counted as drift or said to run a commit the marketplace "never saw". The
+closing sentence counts what was compared and names what could not be,
+with the reason: `0 of 19 run a commit the marketplace validated; 19 could
+not be compared (omarchy-plugin-catalog records no source directory)`. When
+nothing drifted and some rows are unknown the word is `NOT AUDITED`, exit
+1, `error.code: "not-compared"`. Measured on 2026-09-19: every one of 19
+rows was unknown and the close said all 19 "run one it never saw".
+
+`NOT AUDITED`, exit 1, also means the shell does not answer or neither a
+live catalog nor the pin can be read. The reason is printed with the
+verdict.
 
 Usage errors exit 2. An ahead or diverged row prints, but never runs, the exact
 `git -C <dir> checkout <validated-sha>` that returns to a reviewed commit. It

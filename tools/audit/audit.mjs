@@ -197,7 +197,16 @@ export async function auditInstalled(options = {}) {
       updateRouteError = error?.message || String(error)
     }
   }
-  const drift = rows.filter((row) => row.state !== "validated")
+  // Three kinds of row: validated, drift (a comparison that was made and
+  // found the installed commit off the validated one, or a listing without
+  // one to compare against, or no listing), and unknown (a comparison that
+  // could not be made: no source directory, not a checkout, a Git question
+  // that failed). Unknown is never counted as drift and never said to be.
+  // Measured on 2026-09-19: every one of 19 rows was unknown because the
+  // catalog named no source directory, and the close said all 19 "run one
+  // it never saw" (docs/evidence/ux/2026-09-19-acceptance.json, finding 4).
+  const drift = rows.filter((row) => row.state !== "validated" && row.state !== "unknown")
+  const unknown = rows.filter((row) => row.state === "unknown")
   return {
     command: "audit",
     catalog: {
@@ -212,12 +221,14 @@ export async function auditInstalled(options = {}) {
       selected: figure(selected.length, options.target ? "target selection" : "omarchy plugin list --json length"),
       firstPartyExcluded: figure(firstPartyCount, "sourceType builtin or omarchy plugin list --json firstParty"),
       audited: figure(rows.length, "audited row count"),
-      validated: figure(rows.length - drift.length, "rows whose state is validated"),
-      drift: figure(drift.length, "rows whose state is not validated"),
+      validated: figure(rows.length - drift.length - unknown.length, "rows whose state is validated"),
+      drift: figure(drift.length, "rows whose state is ahead, diverged, unverified or unlisted"),
+      unknown: figure(unknown.length, "rows whose state is unknown: a comparison that could not be made"),
     },
-    rows: options.drift ? drift : rows,
+    unknownReasons: [...new Set(unknown.map((row) => row.fact))],
+    rows: options.drift ? rows.filter((row) => row.state !== "validated") : rows,
     updateRoute,
     updateRouteError,
-    ok: drift.length === 0,
+    ok: drift.length === 0 && unknown.length === 0,
   }
 }

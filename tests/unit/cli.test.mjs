@@ -47,15 +47,20 @@ test("a piped run, a NO_COLOR run and a coloured run say the same words", () => 
   // The words are the contract. FORCE_COLOR stands in for a terminal here,
   // because a test has no pty; what it proves is that colour is the only thing
   // a terminal adds on stdout.
+  // The text is on stdout on exit 0 and on stderr otherwise (outcome.mjs);
+  // the refused submission is the one exit-1 case here, and its report is
+  // held to the same words on the stream the exit chooses.
   for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"], ["submit", own.dir, "--offline"], ["submit", taken.dir, "--offline"]]) {
     const piped = run(args)
     const dark = run(args, { NO_COLOR: "1" })
     const lit = run(args, { FORCE_COLOR: "1" })
-    assert.equal(dark.out, piped.out, `${args.join(" ")}: NO_COLOR changed the words`)
-    assert.equal(plain(lit.out), piped.out, `${args.join(" ")}: colour changed the words`)
-    assert.notEqual(lit.out, piped.out, `${args.join(" ")}: colour was applied`)
-    assert.equal(piped.err, "", `${args.join(" ")}: nothing on stderr when piped`)
-    assert.doesNotMatch(piped.out, /\u001b/, "a piped run carries no escape")
+    const text = (result) => (piped.code === 0 ? result.out : result.err)
+    assert.equal(text(dark), text(piped), `${args.join(" ")}: NO_COLOR changed the words`)
+    assert.equal(plain(text(lit)), text(piped), `${args.join(" ")}: colour changed the words`)
+    assert.notEqual(text(lit), text(piped), `${args.join(" ")}: colour was applied`)
+    if (piped.code === 0) assert.equal(piped.err, "", `${args.join(" ")}: nothing on stderr when piped`)
+    else assert.equal(piped.out, "", `${args.join(" ")}: nothing on stdout on exit ${piped.code}`)
+    assert.doesNotMatch(text(piped), /\u001b/, "a piped run carries no escape")
   }
 })
 
@@ -76,7 +81,8 @@ test("nothing omakit writes itself is wider than eighty columns; the two verbati
     { marker: "issue body", text: (json) => json.issue?.body?.trimEnd() },
   ]
   for (const args of [["help"], [], ["doctor", "--offline"], ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--offline"], ["submit", own.dir, "--offline"], ["submit", taken.dir, "--offline"]]) {
-    const { out } = run(args)
+    const result = run(args)
+    const out = result.code === 0 ? result.out : result.err
     const lines = out.split("\n")
     const json = args[0] === "submit" ? JSON.parse(run([...args, "--json"]).out) : {}
     const verbatim = new Set()
@@ -214,12 +220,14 @@ test("a missing pin is a failure state naming `omakit pin`, in every command tha
     assert.equal(out, "", "nothing on stdout")
     assertFailureState(err, "marketplace-unavailable", "omakit pin")
   }
-  // doctor reports it as a problem rather than stopping, with the same remedy.
-  const { code, out } = run(["doctor", "--offline"], env, nowhere)
+  // doctor reports it as a problem rather than stopping, with the same
+  // remedy; the report is on stderr, as every exit-1 text is.
+  const { code, out, err } = run(["doctor", "--offline"], env, nowhere)
   assert.equal(code, 1)
-  assert.ok(out.includes(`${DENSITY.full} FAIL  pin.checkout`))
-  assert.ok(out.includes(`${ARROW} omakit pin`))
-  assert.ok(out.includes(`${DENSITY.full} NOT READY  1 problem to fix`))
+  assert.equal(out, "")
+  assert.ok(err.includes(`${DENSITY.full} FAIL  pin.checkout`))
+  assert.ok(err.includes(`${ARROW} omakit pin`))
+  assert.ok(err.includes(`${DENSITY.full} NOT READY  1 problem to fix`))
 })
 
 test("an old install reports the one migration command instead of moving the pin", () => {
@@ -267,14 +275,18 @@ test("submit without --category or --tags is a usage error before any check runs
   assert.ok(one.err.includes("submit needs --tags"))
   assert.ok(!one.err.includes("--category and"))
 
+  // Under --json the refusal is the failure document every command emits,
+  // with the form's lists under error.usage; the sentence is on stderr too.
   const json = run(["submit", good.dir, "--json"])
   assert.equal(json.code, 2)
-  assert.equal(json.err, "")
+  assert.match(json.err, /submit needs --category and --tags/)
   const parsed = JSON.parse(json.out)
-  assert.deepEqual(parsed.usage.missing, ["--category", "--tags"])
-  assert.equal(parsed.usage.categories.length, 9)
-  assert.equal(parsed.usage.tags.length, 13)
-  assert.deepEqual(Object.keys(parsed.usage), ["missing", "categories", "tags", "maximumTags"], "the JSON shape is unchanged")
+  assert.deepEqual(Object.keys(parsed), ["command", "ok", "error"])
+  assert.equal(parsed.error.code, "usage")
+  assert.deepEqual(parsed.error.usage.missing, ["--category", "--tags"])
+  assert.equal(parsed.error.usage.categories.length, 9)
+  assert.equal(parsed.error.usage.tags.length, 13)
+  assert.deepEqual(Object.keys(parsed.error.usage), ["missing", "categories", "tags", "maximumTags"], "the form's lists, whole")
 })
 
 /** A wrapped shell command (` \\` newline, indented continuation) as one line. */
@@ -285,17 +297,21 @@ function unwrapped(text) {
 test("an id taken by another repository is refused at identity, never asked for flags, exit 1", () => {
   // Measured on 0.1.5: exit 2 asking for --category and --tags on a plugin
   // that identity.available would then have refused as already listed.
+  // A refusal exits 1, and its report is on stderr, with nothing on stdout.
   const { code, out, err } = run(["submit", taken.dir, "--offline"])
   assert.equal(code, 1)
-  assert.equal(err, "")
-  assert.ok(!out.includes("usage"))
-  assert.ok(out.includes(`${DENSITY.full} FAIL  identity.available`))
-  assert.ok(out.includes("That id is taken by mtolhuys/omarchy-disk-lens; choose another."))
-  assert.ok(out.includes(`${DENSITY.medium} ?     submission.category`))
-  assert.ok(out.includes("Fix it, then run submit again:"))
+  assert.equal(out, "")
+  assert.ok(!err.includes("usage"))
+  assert.ok(err.includes(`${DENSITY.full} FAIL  identity.available`))
+  assert.ok(err.includes("That id is taken by mtolhuys/omarchy-disk-lens; choose another."))
+  assert.ok(err.includes(`${DENSITY.medium} ?     submission.category`))
+  assert.ok(err.includes("Fix it, then run submit again:"))
   // The command wraps after 80 columns at a long tmp path; read it unwrapped.
-  assert.ok(unwrapped(out).trimEnd().endsWith(`omakit submit ${taken.dir} --offline`), "the report ends with the command line that repeats the run")
+  assert.ok(unwrapped(err).trimEnd().endsWith(`omakit submit ${taken.dir} --offline`), "the report ends with the command line that repeats the run")
   const json = JSON.parse(run(["submit", taken.dir, "--offline", "--json"]).out)
+  assert.equal(json.ok, false)
+  assert.equal(json.error.code, "refused")
+  assert.match(json.error.message, /1 blocking check failed \(identity\.available\)/)
   assert.equal(json.outcome, "refused")
   assert.equal(json.ready, false)
   assert.equal(json.listing, null)
@@ -380,8 +396,9 @@ test("no network is a failure state, not a stack trace", (t) => {
   // skips it.
   const submit = offline(["submit", good.dir, "--category", "Widgets", "--tags", "bar"])
   assert.equal(submit.code, 1)
-  assert.ok(submit.out.includes(`${DENSITY.full} FAIL  submission.validation-commit`))
-  assert.ok(submit.out.includes("--offline"))
+  assert.equal(submit.out, "", "a refusal's report is on stderr")
+  assert.ok(submit.err.includes(`${DENSITY.full} FAIL  submission.validation-commit`))
+  assert.ok(submit.err.includes("--offline"))
   assert.doesNotMatch(submit.err, /^\s+at /m)
 
   // doctor answers what it can and marks the rest unknown, with the remedy.
@@ -442,7 +459,8 @@ test("an option written as --name=value is read the same as --name value, for ev
   assert.equal(doctor.code, 0, doctor.err)
   assert.ok(existsSync(out), "--out=FILE writes the file")
   assert.ok(doctor.out.includes(`wrote ${out}`), doctor.out)
-  assert.match(readFileSync(out, "utf8"), /^. info {2}omakit\.version$/m, "the report doctor writes to --out FILE")
+  assert.match(doctor.out, /^. info {2}omakit\.version$/m, "the report stays on stdout")
+  assert.equal(JSON.parse(readFileSync(out, "utf8")).checks[0].id, "omakit.version", "the document doctor writes to --out FILE")
 
   const submit = run(["submit", good.dir, "--category=Widgets", "--tags=bar", "--offline", "--json"])
   assert.equal(submit.code, 0, submit.err)

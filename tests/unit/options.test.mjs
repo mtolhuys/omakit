@@ -48,6 +48,16 @@ test("the parser refuses what the table does not name, and reads what it does", 
   assert.equal(checkArgs(["x"], ACCEPTED.doctor).reason, '"x" is one argument more than the command takes')
   assert.equal(checkArgs(["--agent"], ACCEPTED.help).offending, null)
   assert.equal(checkArgs([], ACCEPTED.pin).offending, null)
+  // An empty argument, an empty value and a valued option given twice are
+  // refused by name (measured on 2026-09-19: `audit ""` audited everything,
+  // and a repeated --out took the last value in silence); a repeated flag
+  // is the flag.
+  assert.equal(checkArgs([""], ACCEPTED.audit).reason, "an empty argument is not a path, an id or an option")
+  assert.equal(checkArgs(["--out", ""], ACCEPTED.doctor).reason, "--out needs a value")
+  assert.equal(checkArgs(["--out=", "--json"], ACCEPTED.doctor).reason, "--out needs a value")
+  assert.equal(checkArgs(["--out", "a", "--out", "b"], ACCEPTED.doctor).reason, '--out is given twice ("a" and "b"); pass it once')
+  assert.equal(checkArgs(["--out", "a", "--out=a"], ACCEPTED.doctor).reason, '--out is given twice ("a" and "a"); pass it once')
+  assert.equal(checkArgs(["--json", "--json"], ACCEPTED.doctor).offending, null, "a repeated flag is the flag")
   assert.equal(acceptedWords("weigh"), "--runs N, --window S, --settle S, --out FILE, --all, --list, --json, --yes")
   assert.equal(acceptedWords("pin"), "")
   assert.equal(acceptedWords("audit"), "--out FILE, --drift, --json, --offline")

@@ -43,9 +43,10 @@ export function acceptedWords(name) {
 
 /**
  * Read a command line against a command's table. Every token is a known
- * option (valued or not), the value of a valued option, or a positional up
- * to the allowed count; the first token that is none of those is returned
- * as `offending` with a reason, so the command refuses before any preflight.
+ * option (valued or not, a valued one given once), the value of a valued
+ * option (never empty), or a non-empty positional up to the allowed count;
+ * the first token that is none of those is returned as `offending` with a
+ * reason, so the command refuses before any preflight.
  *
  * @param {string[]} args
  * @param {{ valued: string[], flags: string[], positionals: number }} spec
@@ -56,10 +57,18 @@ export function checkArgs(args, spec) {
   const positionals = []
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index]
+    // An empty argument is neither a path, an id nor an option, and is
+    // refused everywhere: measured on 2026-09-19, `omakit audit ""` read
+    // the empty string as no argument and audited every plugin.
+    if (token === "") return { offending: '""', reason: "an empty argument is not a path, an id or an option", options, positionals }
     const [name, inline] = token.startsWith("--") && token.includes("=") ? [token.slice(0, token.indexOf("=")), token.slice(token.indexOf("=") + 1)] : [token, undefined]
     if (spec.valued.includes(name)) {
       const value = inline !== undefined ? inline : args[index + 1]
-      if (value === undefined || (inline === undefined && value.startsWith("-"))) return { offending: token, reason: `${name} needs a value`, options, positionals }
+      if (value === undefined || value === "" || (inline === undefined && value.startsWith("-"))) return { offending: token, reason: `${name} needs a value`, options, positionals }
+      // A valued option is given once. Two values would leave one of them
+      // silently unread (measured on 2026-09-19: the last won, unsaid); a
+      // repeated flag is the flag, and is read once.
+      if (options.has(name)) return { offending: token, reason: `${name} is given twice (${JSON.stringify(options.get(name))} and ${JSON.stringify(value)}); pass it once`, options, positionals }
       options.set(name, value)
       if (inline === undefined) index += 1
     } else if (spec.flags.includes(token)) {

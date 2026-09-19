@@ -167,7 +167,7 @@ export function renderPrunePlan(plan, { colour = colourEnabled(), env = process.
     for (const line of plan.blockers) out.push(`${mark("fail", c)}${line}`)
     return out.join("\n")
   }
-  if (!plan.targets.length) return verdict("pass", "NOTHING TO PRUNE", `the lab cache holds ${bytesBoth(plan.remaining.cache)} and every byte of it is in use or kept; run records ${bytesBoth(plan.remaining.runs)} (--runs removes them).`, c).join("\n")
+  if (!plan.targets.length) return verdict("pass", "NOTHING TO PRUNE", `the lab cache holds ${bytesBoth(plan.remaining.cache)} and every byte of it is in use or kept; run records ${bytesBoth(plan.remaining.runs)} (--records removes them).`, c).join("\n")
   out.push(...section("what prune removes", c))
   for (const target of plan.targets) {
     out.push(`${mark("advisory", c)}${c("name", withHomeAbbreviated(target.path, env))}`)

@@ -41,7 +41,10 @@ replace it with `omarchy plugin update`; update moves to mutable HEAD and does
 not establish marketplace validation.
 
 `AUDITED`, exit 0, means every audited row is validated, or there was nothing
-third-party to audit. `DRIFT`, exit 1, means drift or an unknown answer.
-Exit 2 means the invocation was refused. `NOT AUDITED` because the shell or
-catalog did not answer is a
-result to report, not a reason to substitute a directory scan.
+third-party to audit. `DRIFT`, exit 1, means a compared row is off its
+validated commit. An `unknown` row could not be compared and is not drift:
+the closing sentence counts it apart, with why, and when nothing drifted the
+word is `NOT AUDITED`, exit 1. Exit 2 means the invocation was refused. `NOT
+AUDITED` because the shell or catalog did not answer is a
+result to report, not a reason to substitute a directory scan. On any
+nonzero exit the report is on stderr.

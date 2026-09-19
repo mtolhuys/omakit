@@ -5,7 +5,7 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { auditInstalled } from "../../tools/audit/audit.mjs"
-import { renderAudit } from "../../tools/audit/report.mjs"
+import { auditSummary, auditVerdict, renderAudit } from "../../tools/audit/report.mjs"
 import { plain } from "../../tools/marketplace/style.mjs"
 import { newerCommitChoice } from "../../tools/marketplace/form.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
@@ -101,7 +101,8 @@ test("--drift filters validated rows without changing the measured verdict", asy
   const document = await fixture({ drift: true })
   assert.equal(document.rows.some((row) => row.state === "validated"), false)
   assert.equal(document.counts.audited.value, 7)
-  assert.equal(document.counts.drift.value, 6)
+  assert.equal(document.counts.drift.value, 5, "the unknown row is not drift")
+  assert.equal(document.counts.unknown.value, 1)
   assert.equal(document.ok, false)
   assert.deepEqual(document.rows.map((row) => row.id), (await fixture()).rows.filter((row) => row.state !== "validated").map((row) => row.id))
   assert.match(renderAudit(document, { colour: false }), /audited +7/)
@@ -167,7 +168,24 @@ test("completed audits distinguish validated from drift without claiming they we
   assert.match(clean, /AUDITED  /)
   assert.match(drift, /DRIFT  /)
   assert.doesNotMatch(drift, /NOT AUDITED/)
-  assert.match(drift.replace(/\s+/g, " "), /1 of 7 run a commit the marketplace validated; 6 run one it never saw\./)
+  // A row that could not be compared is said as such, never as a commit
+  // the marketplace never saw (finding 4 of the acceptance test).
+  assert.match(drift.replace(/\s+/g, " "), /1 of 7 run a commit the marketplace validated; 5 run one it never saw; 1 could not be compared \(git failed: not a git repository\)\./)
+  assert.equal(auditSummary(await fixture()), "1 of 7 run a commit the marketplace validated; 5 run one it never saw; 1 could not be compared (git failed: not a git repository).")
+  assert.equal(auditVerdict(await fixture()), "DRIFT")
+  const nothingCompared = await auditInstalled({
+    installed: () => ["a", "b"].map((id) => ({ id, enabled: true, sourceDir: null })),
+    registry: async () => ({ source: "pin", commit: B, catalog: { plugins: [] } }),
+    route: async () => route,
+  })
+  assert.equal(nothingCompared.ok, false)
+  assert.equal(nothingCompared.counts.drift.value, 0)
+  assert.equal(nothingCompared.counts.unknown.value, 2)
+  assert.equal(auditSummary(nothingCompared), "0 of 2 run a commit the marketplace validated; 2 could not be compared (omarchy-plugin-catalog records no source directory).")
+  assert.equal(auditVerdict(nothingCompared), "NOT AUDITED", "nothing was compared, so nothing drifted")
+  const text = renderAudit(nothingCompared, { colour: false })
+  assert.doesNotMatch(text, /never saw/)
+  assert.match(text, /NOT AUDITED  0 of 2 run a commit the marketplace validated; 2 could not be\s+compared/)
 })
 
 test("the verification form URL and pin choice appear once in the footer, after checkout actions", async () => {
@@ -276,8 +294,11 @@ test("the CLI JSON, output file, drift view and exit codes use stubbed shell and
 
   const drift = run(["--offline", "--drift", "--json"], "f".repeat(40))
   assert.equal(drift.status, 1)
-  assert.equal(drift.stderr, "")
+  assert.match(drift.stderr, /FAIL {2}drift\n\s+0 of 1 run a commit the marketplace validated; 1 run one it never saw\./, "the sentence is on stderr, under --json too")
   const driftDocument = JSON.parse(drift.stdout)
+  assert.equal(driftDocument.ok, false)
+  assert.equal(driftDocument.error.code, "drift")
+  assert.match(driftDocument.error.remedy, /validated commit/)
   assert.equal(driftDocument.rows.length, 1)
   assert.equal(driftDocument.rows[0].state, "ahead")
   assert.equal(driftDocument.rows[0].aheadBy.value, 2)

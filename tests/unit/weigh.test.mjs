@@ -984,9 +984,13 @@ test("--yes --json puts the document alone on stdout, the narration on stderr, a
   const out = join(m.root, "doc.json")
   const result = omakit(["weigh", "fixture.poller", "--yes", "--json", "--runs", "2", "--window", "1", "--settle", "0", "--out", out], m.env)
   assert.equal(result.code, 0, result.err)
-  const document = JSON.parse(result.out)
+  // --json --out: the document is in the file and stdout carries nothing at
+  // all (docs/COMMANDS.md); the same run without --out prints it.
+  assert.equal(result.out, "")
+  const document = JSON.parse(readFileSync(out, "utf8"))
   assert.deepEqual(validateWeighDocument(document), [])
-  assert.deepEqual(JSON.parse(readFileSync(out, "utf8")), document)
+  assert.equal(document.ok, true)
+  assert.equal(document.error, null)
   assert.equal(document.omakit, JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version)
   assert.equal(document.out, out)
   assert.match(result.err, /^weighing {6}fixture\.poller$/m, "the plan is on stderr under --json")
@@ -1307,7 +1311,8 @@ test("weigh --list: every installed plugin with its last weighing, unweighed ena
   // Through the entry point: --json is the rows, no confirmation, no restart, and --list takes nothing else.
   const json = omakit(["weigh", "--list", "--json"], m.env)
   assert.equal(json.code, 0, json.err)
-  assert.equal(JSON.parse(json.out).length, 6)
+  assert.deepEqual(Object.keys(JSON.parse(json.out)), ["command", "ok", "error", "rows"], "the rows under the envelope every command carries")
+  assert.equal(JSON.parse(json.out).rows.length, 6)
   assert.equal(json.err, "")
   assert.deepEqual(m.restarts(), [])
   const human = omakit(["weigh", "--list"], m.env)

@@ -176,10 +176,13 @@ recorded one; it will not be booted), `missing`.
    `system_powerdown`, `quit`, then the signal), the overlay measured and
    removed, the base disk and the template checked unchanged by size,
    mtime and inode, the lock released, the record written; on the normal
-   path, on a failure, and on SIGINT and SIGTERM (exit 130).
+   path, on a failure, and on SIGINT, SIGTERM and SIGHUP, each exiting
+   with its own status (130, 143, 129).
 
-The closing word is `PROVED` or `NOT PROVED`, with the suite's own reason.
-`--json` prints the record; `--out` writes it.
+The closing word is `PROVED` or `NOT PROVED`, with the suite's own reason;
+a `NOT PROVED` report is on stderr, exit 1, `error.code: "not-proved"`.
+`--json` prints the record under the common envelope; `--out` writes it, on
+a failure too.
 
 ### The four suites
 
@@ -322,9 +325,11 @@ keeps a verified one), the base in whatever state, inactive staging, the
 plugin cache, a stale lock; `--records` adds the run records under the
 state root, which are otherwise never touched. It prints each path with
 its allocated bytes and the total, asks once (`--yes` for an agent; a pipe
-without it refuses, exit 2), refuses while a run holds the lock or a QEMU
-answers on a staged socket, removes only those targets, never follows a
-symbolic link, and reports the bytes recovered and the bytes remaining.
+without it refuses, exit 2, with the plan as the refusal's text), refuses
+while a run holds the lock or a QEMU answers on a staged socket, removes
+only those targets, never follows a symbolic link, and reports the bytes
+recovered and the bytes remaining. Nothing to prune is a result, exit 0,
+and under `--json` a document like every other.
 
 ## Doctor
 

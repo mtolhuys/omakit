@@ -304,10 +304,13 @@ what a quick look cannot give is the verdict.
 
 ## The JSON contract
 
-`--json` prints the document on stdout; it is always written to `--out`
-(default `$XDG_STATE_HOME/omakit/weigh/<date>.json`, or
-`~/.local/state/omakit/weigh/<date>.json`). The document is the API. New
-fields may be added; existing fields never change meaning.
+`--json` prints the document on stdout, under the envelope every command
+carries (`command`, `ok`, `error`; docs/COMMANDS.md); it is always written
+to `--out` (default `$XDG_STATE_HOME/omakit/weigh/<date>.json`, or
+`~/.local/state/omakit/weigh/<date>.json`), and with `--json --out` stdout
+carries nothing. A refused or interrupted run writes the failure document
+to `--out` too. `--list --json` carries the rows as `rows`. The document is
+the API. New fields may be added; existing fields never change meaning.
 `tools/weigh/contract.mjs` is the executable form of this section and
 `tests/unit/weigh.test.mjs` holds every produced document to it.
 

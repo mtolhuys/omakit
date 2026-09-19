@@ -31,8 +31,11 @@ export const BUILD_COMMANDS = Object.freeze([
   Object.freeze({ command: "tesseract", package: "tesseract, tesseract-data-eng", why: "the toolchain reads the installer's screens" }),
   // `-l -f /dev/null` is a read that fails; a bare `ssh-keygen` starts
   // generating a key at ~/.ssh/id_ed25519 (measured: it printed
-  // "Generating public/private ed25519 key pair." under this probe).
-  Object.freeze({ command: "ssh-keygen", versionArgs: ["-l", "-f", "/dev/null"], package: "openssh", why: "the guest's lab key" }),
+  // "Generating public/private ed25519 key pair." under this probe). The
+  // probe's output is an error sentence, not a version, so the line says
+  // the command is there and nothing it printed (measured on 2026-09-19:
+  // doctor showed "ok  ssh-keygen  /dev/null is not a public key file.").
+  Object.freeze({ command: "ssh-keygen", versionArgs: ["-l", "-f", "/dev/null"], presenceOnly: true, package: "openssh", why: "the guest's lab key" }),
   Object.freeze({ command: "python3", package: "python", why: "the toolchain's one-file bootstrap server" }),
 ])
 
@@ -51,6 +54,7 @@ export const VERIFY_COMMANDS = Object.freeze([
 function versionOf(entry, run = spawnSync) {
   const result = run(entry.command, [...(entry.versionArgs || ["--version"])], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 4000 })
   if (result.error?.code === "ENOENT") return null
+  if (entry.presenceOnly) return `${entry.command} is on PATH (${entry.package})`
   const line = `${result.stdout || ""}\n${result.stderr || ""}`.split("\n").map((l) => l.trim()).find(Boolean)
   return line || `${entry.command} is on PATH`
 }

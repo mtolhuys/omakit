@@ -16,7 +16,7 @@ import { REPO_ROOT } from "./helpers.mjs"
 import { bytesBoth, durationWords, labPin, LAB_DIR } from "../../tools/lab/pin.mjs"
 import { allocatedBytes, inLab, labLayout, writeJson } from "../../tools/lab/paths.mjs"
 import { qcodesFor, qemuArgs } from "../../tools/lab/qemu.mjs"
-import { kvmContext, probeKvm } from "../../tools/lab/host.mjs"
+import { BUILD_COMMANDS, kvmContext, probeCommands, probeKvm } from "../../tools/lab/host.mjs"
 import { GUEST_HOST, sshArgs } from "../../tools/lab/guest.mjs"
 import { judgeRelease, sha256File, verifySignature } from "../../tools/lab/verify.mjs"
 import { BASE_FILES, inspectBase, inspectDownload, inspectLab, inspectToolchain } from "../../tools/lab/inspect.mjs"
@@ -592,12 +592,38 @@ test("the entry point: an unknown suite is a usage error, a bare lab is one, run
     assert.ok(document.missing.length >= 3)
     const setup = run(["setup"])
     assert.equal(setup.status, 1, "no toolchain: blocked before consent")
-    assert.match(setup.stdout, /cannot start/)
+    assert.equal(setup.stdout, "", "a blocked plan is a failure, on stderr")
+    assert.match(setup.stderr, /cannot start/)
+    const setupJson = run(["setup", "--json"])
+    assert.equal(setupJson.status, 1)
+    assert.equal(JSON.parse(setupJson.stdout).error.code, "lab-blocked")
+    assert.ok(Array.isArray(JSON.parse(setupJson.stdout).blockers), "the plan rides in the document")
     const pruneNothing = run(["prune"])
     assert.equal(pruneNothing.status, 0)
     assert.match(pruneNothing.stdout, /NOTHING TO PRUNE/)
+    assert.match(pruneNothing.stdout, /--records removes them/, "the remedy names the option that exists")
+    assert.doesNotMatch(pruneNothing.stdout, /--runs/)
+    const pruneJson = run(["prune", "--json"])
+    assert.equal(pruneJson.status, 0)
+    assert.deepEqual(Object.keys(JSON.parse(pruneJson.stdout)).slice(0, 3), ["command", "ok", "error"], "nothing to prune is a document too")
     assert.equal(existsSync(join(env.XDG_CACHE_HOME, "omakit/lab")), false, "none of these created the lab cache")
   } finally {
     rm()
   }
+})
+
+test("a presence-only probe says the command is there, never the error line its probe printed", () => {
+  // Measured on 2026-09-19: doctor showed "ok  ssh-keygen  /dev/null is not
+  // a public key file." because the probe that avoids generating a key is
+  // a read that fails, and its first output line was taken for a version.
+  const keygen = BUILD_COMMANDS.find((entry) => entry.command === "ssh-keygen")
+  assert.equal(keygen.presenceOnly, true)
+  const [line] = probeCommands([keygen], { run: () => ({ status: 255, stdout: "", stderr: "/dev/null is not a public key file.\n" }) })
+  assert.equal(line.state, "ok")
+  assert.equal(line.reason, "ssh-keygen is on PATH (openssh)")
+  const [missing] = probeCommands([keygen], { run: () => ({ error: { code: "ENOENT" } }) })
+  assert.equal(missing.state, "missing")
+  assert.match(missing.remedy, /pacman -S --needed openssh/)
+  const [versioned] = probeCommands([BUILD_COMMANDS.find((entry) => entry.command === "socat")], { run: () => ({ status: 0, stdout: "socat version 1.8.0.0 on Jan 1\n" }) })
+  assert.equal(versioned.reason, "socat version 1.8.0.0 on Jan 1", "a command with a version keeps its version line")
 })

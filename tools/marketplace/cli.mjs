@@ -19,7 +19,7 @@
 // `add` is the one command that writes into a plugin tree: the block's own
 // files under omakit/, never over a modified copy; docs/BLOCKS.md says what.
 
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { ensurePin, requirePin } from "./pin.mjs"
@@ -39,14 +39,15 @@ import { updateCheckEnabled, updateNotice } from "./update-check.mjs"
 import { progress } from "./progress.mjs"
 import { banner, bannerEnabled } from "./banner.mjs"
 import { renderSummary, renderUsage, TAGLINE } from "./usage.mjs"
-import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, outputColumns, styler, verdict, withOutputStream, wrap } from "./style.mjs"
+import { action, AUDIT_VERDICTS, colourEnabled, GUTTER, labelled, mark, outputColumns, styler, withOutputStream, wrap } from "./style.mjs"
+import { conclude, Exit, exitFor, failure, failureBlock, leave, optionValue, SIGNAL_EXIT, signalExit, verdictBlock } from "./outcome.mjs"
 import { omakitCacheDir, withHomeAbbreviated } from "./paths.mjs"
 import { DEFAULTS as WEIGH_DEFAULTS, measureWeigh, planWeigh } from "../weigh/audit.mjs"
 import { confirmationQuestion, renderList, renderWeigh, renderPlan } from "../weigh/report.mjs"
 import { listWeighings } from "../weigh/list.mjs"
 import { askYes } from "../weigh/confirm.mjs"
 import { auditInstalled } from "../audit/audit.mjs"
-import { renderAudit } from "../audit/report.mjs"
+import { auditSummary, renderAudit } from "../audit/report.mjs"
 import { inspectPlugin, NOT_READABLE } from "../inspect/inspect.mjs"
 import { renderInspect } from "../inspect/report.mjs"
 import { addBlock } from "../blocks/add.mjs"
@@ -80,12 +81,21 @@ const REMEDY = Object.freeze({
   "login-required": "gh auth login",
   "not-confirmed": "Run it again and answer y, or pass --yes when the person whose shell it is has agreed.",
   "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
+  "refused": "Fix what the report names, then run it again.",
+  "unknown": "Read what could not be compared in the report above; each row says why.",
+  "drift": "Return each plugin to its validated commit with the git checkout printed beside it, or validate the newer commit through the form the report names.",
+  "not-compared": "Run it in the desktop session whose shell runs these plugins: omarchy-plugin-catalog named no readable source directory for them.",
+  "problems": "omakit setup",
+  "not-proved": "Read the suite's log under the run's record directory, then run it again.",
+  "lab-blocked": "omakit lab inspect names what the host lacks, with the one command for each.",
+  "setup-incomplete": "Read the lines above; each failed step names its fix, and `omakit doctor` re-checks.",
+  "backup-present": "Compare the backup with shell.json, copy it over if the difference is not yours, then remove it and run weigh again.",
   "exists": "omakit add run [<plugin-dir>] --update",
   "modified": "Keep your copy, or move it aside and run add again; omakit/NOTICE is where modifications are listed.",
   "not-a-plugin": "Pass the plugin's directory, the one with its manifest.json.",
   "plugin-dir-not-found": "Pass the plugin's directory, the one with its manifest.json.",
   "unknown-block": "omakit add run [<plugin-dir>], or omakit add store [<plugin-dir>]",
-  "no-source-commit": "Install omakit from the npm registry (`npm i -g omakit`), or run it from a checkout of the repository.",
+  "no-source-commit": "Run omakit from a checkout of the repository, or install an artifact the release step packed (`npm run pack:release` in the checkout, or the registry's release of this version once it is published); a raw `npm pack` names no commit.",
   "lab-not-ready": "omakit lab inspect",
   "lab-busy": "omakit lab inspect",
   "iso-mismatch": "omakit lab prune, then omakit lab setup",
@@ -107,72 +117,31 @@ const REMEDY = Object.freeze({
 })
 
 /*
- * A command that has written its result leaves through `process.exitCode`,
- * never `process.exit()`: stdout is an API, and on a pipe whose reader has
- * not started reading yet the exit cuts the output. Measured on 0.4.1:
+ * Every command ends in `conclude()` (outcome.mjs): the one place that
+ * writes the document under --json, the text on the stream the exit status
+ * chooses, and the --out file, and sets the exit status. A command that has
+ * written its result leaves through `process.exitCode`, never
+ * `process.exit()`: stdout is an API, and on a pipe whose reader has not
+ * started reading yet the exit cuts the output (measured on 0.4.1:
  * `omakit submit <listed plugin> --json | (sleep 2; cat)` delivered 8,192 of
- * 14,033 bytes, and a parser downstream saw invalid JSON. The failure
- * states below still exit at once: they write one short block to stderr,
- * and their callers use them the way a throw is used.
+ * 14,033 bytes). A failure state throws `Exit`, which the dispatcher at the
+ * bottom catches, drains both streams for, and only then exits with.
  */
+
+/** The command being run and its arguments, for the envelope: set by the dispatcher before anything runs. */
+const CONTEXT = { command: null, args: [] }
 
 /**
- * Every failure, in one register, on stderr. `usage` errors carry the
- * signature that was expected, so the remedy is the reference and not a
- * restatement of the message. `body` is extra labelled lines between the
- * message and the arrow, for a usage error that has values to list.
+ * A failure state: the document under --json, the block on stderr, the
+ * --out file, and the exit. `usage` errors carry the signature that was
+ * expected, so the remedy is the reference and not a restatement of the
+ * message. `body` is extra labelled lines between the message and the
+ * arrow, for a usage error that has values to list; `extra` rides in the
+ * document beside the code (`missing`, `usage`).
  */
-/**
- * How a failure state leaves: not through `process.exit()` in the middle
- * of a write. A write to a pipe is asynchronous on some platforms, and an
- * exit right behind it drops the bytes; measured on 2026-09-19 by a first
- * user whose `omakit audit --wat` came back with exit 2 and an empty
- * stderr. So every failure throws this, the dispatcher at the bottom
- * catches it, waits for both streams to drain, and exits with the code.
- */
-class Exit extends Error {
-  constructor(exit) {
-    super(`exit ${exit}`)
-    this.exit = exit
-  }
-}
-
-/** Both streams flushed, then the exit; a closed pipe on either is not an error worth a trace. */
-async function leave(exit) {
-  for (const stream of [process.stdout, process.stderr]) {
-    await new Promise((resolve) => {
-      if (stream.destroyed || stream.writableEnded) return resolve()
-      stream.write("", () => resolve())
-    }).catch(() => {})
-  }
-  process.exit(exit)
-}
-
-/**
- * Under --json every outcome is a document on stdout, a failure included:
- * `{ command, ok: false, error: { code, message, remedy } }`, with the
- * same sentence the person reads on stderr. Measured on 2026-09-19 by a
- * first user: `audit --json` with no shell, `watch --list --json` with no
- * network, `lab prove --json` with no base and `weigh --json` unconfirmed
- * all left stdout empty and a parser with nothing (finding 10). The
- * dispatcher sets this from the command line before anything runs, and
- * docs/COMMANDS.md states the rule once.
- */
-const JSON_MODE = { command: null, enabled: false }
-
-function failureDocument(code, message, remedy, extra = {}) {
-  if (!JSON_MODE.enabled) return
-  process.stdout.write(`${JSON.stringify({ command: JSON_MODE.command, ok: false, error: { code, message, remedy: remedy || null, ...extra } }, null, 2)}\n`)
-}
-
-function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => [], extra = {}) {
-  failureDocument(code, message, remedy, extra)
-  const c = styler(colourEnabled(process.stderr))
-  const lines = withOutputStream(process.stderr, () => [
-    `${mark("fail", c)}${c("name", code)}`, ...wrap(message, { indent: GUTTER }, c), ...body(c),
-    ...(remedy ? action(remedy, c) : []),
-  ])
-  process.stderr.write(`${lines.join("\n")}\n`)
+function fail(code, message, exit = exitFor(code), remedy = REMEDY[code], body = () => [], extra = {}, render = null) {
+  const error = failure({ code, message, remedy, table: REMEDY, ...extra })
+  conclude({ command: CONTEXT.command, args: CONTEXT.args, exit, error, render: render || ((problem, c) => failureBlock(problem, c, { body })) })
   throw new Exit(exit)
 }
 
@@ -180,48 +149,22 @@ function fail(code, message, exit = 1, remedy = REMEDY[code], body = () => [], e
  * A thrown error becomes a failure state when it carries a code; anything
  * else is a bug and keeps its stack. The exit status follows the code the
  * same way for every command: 2 for a usage error and for a question a
- * pipe could not answer, 130 for an interrupt, 1 for the rest. An error
- * that names what is missing (`missing`: what, what it costs, the one
- * command) lists it between the sentence and the arrow.
+ * pipe could not answer, the signal's own status for an interrupt, 1 for
+ * the rest, an error the operating system raised included, whose remedy
+ * comes from its errno. An error that names what is missing (`missing`:
+ * what, what it costs, the one command) lists it between the sentence and
+ * the arrow.
  */
-/**
- * The exit status of a stop asked for by a signal, the shell's convention:
- * 128 plus the signal number, so 130 for SIGINT, 143 for SIGTERM, 129 for
- * SIGHUP (a closed terminal). Measured on 2026-09-19 by an acceptance
- * tester: a SIGTERM to inspect exited 143, as an unhandled signal does,
- * while weigh and lab turned every signal into 130.
- */
-const SIGNAL_EXIT = Object.freeze({ SIGHUP: 129, SIGINT: 130, SIGTERM: 143 })
-function signalExit(signal) {
-  return SIGNAL_EXIT[signal] ?? 130
-}
-
-function failFrom(error) {
+function failFrom(error, render = null) {
   if (error?.code && typeof error.code === "string") {
-    const exit = error.code === "usage" || error.code === "not-confirmed" ? 2 : error.code === "interrupted" ? signalExit(error.signal) : 1
-    const body = error.missing?.length
-      ? (c) => error.missing.flatMap((item) => [`${" ".repeat(GUTTER)}${c("name", item.what)}`, ...labelled("costs", withHomeAbbreviated(item.cost), c), ...(item.command ? action(withHomeAbbreviated(item.command), c) : [])])
-      : () => []
-    fail(error.code, error.message, exit, error.remedy || REMEDY[error.code], body, error.missing?.length ? { missing: error.missing } : {})
+    fail(error.code, error.message, exitFor(error.code, error.signal), error.remedy || REMEDY[error.code], () => [], error.missing?.length ? { missing: error.missing } : {}, render)
   }
   throw error
 }
 
-/**
- * The value of a valued option, written either way the table accepts,
- * `--name value` or `--name=value`, the last occurrence winning as it does
- * in options.mjs. Measured on 0.4.1: the table accepted `--out=FILE` and the
- * value was looked up as the token after `--out`, so `doctor --out=x` wrote
- * nothing and exited 0, and `submit --category=Widgets` said the flag was
- * missing.
- */
+/** The value of a valued option, `--name value` or `--name=value`; a repeat with another value is refused by the table before this reads it. */
 function option(args, name) {
-  let value
-  for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === name) value = args[index + 1]
-    else if (args[index].startsWith(`${name}=`)) value = args[index].slice(name.length + 1)
-  }
-  return value
+  return optionValue(args, name)
 }
 
 /** The bare arguments, with every valued option's value (options.mjs, one table) left out. */
@@ -242,22 +185,14 @@ function spinnerFor(args) {
   return args.includes("--json") ? SILENT : progress()
 }
 
-function emit(args, text) {
-  const out = option(args, "--out")
-  if (out) {
-    mkdirSync(dirname(resolve(out)), { recursive: true })
-    writeFileSync(resolve(out), text.endsWith("\n") ? text : `${text}\n`)
-    const c = styler(colourEnabled())
-    process.stdout.write(`${mark("pass", c)}wrote ${resolve(out)}\n`)
-  } else {
-    process.stdout.write(text.endsWith("\n") ? text : `${text}\n`)
-  }
+/** A success: the document, the report for a person, exit 0, through the one layer. */
+function succeed(args, document, human = null) {
+  return conclude({ command: CONTEXT.command, args, exit: 0, document, human })
 }
 
-function reportText(args, render, result, options = {}) {
-  const out = option(args, "--out")
-  return withOutputStream(out ? { isTTY: false } : process.stdout,
-    () => render(result, { ...options, ...(out ? { colour: false } : {}) }))
+/** A refusal the tool means, with the report that explains it: the document and the report, exit 1, the error beside them. */
+function refuse(args, document, human, error) {
+  return conclude({ command: CONTEXT.command, args, exit: 1, document, human, error: failure({ ...error, table: REMEDY }) })
 }
 
 async function cmdSubmit(args) {
@@ -296,26 +231,26 @@ async function cmdSubmit(args) {
     spinner.done()
     if (error?.code === "usage" && error.usage) {
       const usage = error.usage
-      if (json) {
-        process.stdout.write(`${JSON.stringify({ usage }, null, 2)}\n`)
-        process.exitCode = 2
-        return
-      }
       const flags = usage.missing.join(" and ")
       fail("usage", `submit needs ${flags}: ${usage.missing.length === 1 ? "it is" : "they are"} an editorial choice nobody else can make, from the pinned form's own lists.`, 2,
         `omakit submit ${target} --category <c> --tags <a,b>`,
         (c) => [
           ...labelled("categories", usage.categories.join(", "), c),
           ...labelled(`tags, 1 to ${usage.maximumTags}`, usage.tags.join(", "), c),
-        ])
+        ], { usage })
     }
     failFrom(error)
   }
   spinner.done()
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSubmit, result))
+  const human = (colour) => renderSubmit(result, { colour })
   // Three outcomes, two exit codes: `ready` and `listed` are both healthy
   // states, and only a refusal is a 1.
-  process.exitCode = result.outcome === "refused" ? 1 : 0
+  if (result.outcome === "refused") {
+    const blocking = result.blocking || []
+    refuse(args, result, human, { code: "refused", message: `${blocking.length} blocking check${blocking.length === 1 ? "" : "s"} failed (${blocking.join(", ")}), so no body is produced` })
+    return
+  }
+  succeed(args, result, human)
 }
 
 async function cmdWatch(args) {
@@ -353,8 +288,20 @@ async function cmdWatch(args) {
   }
   spinner.done()
   const render = result.mode === "list" ? renderWatchList : result.mode === "all" ? renderWatchAll : renderWatch
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, render, result))
-  process.exitCode = result.verdict?.state === "unknown" || result.summary?.unknown > 0 ? 2 : 0
+  const human = (colour) => render(result, { colour })
+  // A comparison that could not be made is a refusal the tool means, exit
+  // 1: the validated commit is not known to be current. Stale is a fact
+  // about the marketplace, not a failure, and exits 0. Measured on
+  // 2026-09-19: an unknown verdict exited 2, the usage status.
+  if (result.verdict?.state === "unknown") {
+    refuse(args, result, human, { code: "unknown", message: result.verdict.summary, remedy: result.verdict.action || REMEDY.unknown })
+    return
+  }
+  if (result.summary?.unknown > 0) {
+    refuse(args, result, human, { code: "unknown", message: `${result.summary.unknown} of ${result.summary.total} comparison${result.summary.total === 1 ? "" : "s"} could not be made` })
+    return
+  }
+  succeed(args, result, human)
 }
 
 async function cmdFrontDoor() {
@@ -364,33 +311,48 @@ async function cmdFrontDoor() {
   const drew = bannerEnabled()
   await banner({ tagline: TAGLINE, effect: true })
   process.stdout.write(renderSummary({ heading: !drew }))
+  process.exitCode = 0
 }
 
 async function cmdSetup(args) {
   // `--completion` is the one step on its own: write the script and prove
   // it in a new shell, never the rc question. `upgrade` runs it through the
   // freshly installed omakit, so the script carries the new version.
+  // setup narrates as it goes, on stdout, and asks its one question at a
+  // terminal; what it could not do is the failure, on stderr, at the end.
   if (args.includes("--completion")) {
     const identity = requirePin(ROOT).identity
     const result = await completionStep({ repoRoot: ROOT, pin: identity.commit, version: VERSION, askRc: false })
-    process.exitCode = result.state === "ok" ? 0 : 1
+    if (result.state === "ok") return succeed(args, result)
+    refuse(args, result, null, { code: "setup-incomplete", message: `tab completion is ${result.state}${result.error ? `: ${result.error}` : ""}` })
     return
   }
   const result = await setup({ repoRoot: ROOT, entryPoint: resolve(ROOT, "bin/omakit"), yes: args.includes("--yes") })
-  process.exitCode = result.ok ? 0 : 1
+  if (result.ok) return succeed(args, result)
+  refuse(args, result, null, { code: "setup-incomplete", message: "setup did not complete every step; the lines above name the one that failed" })
 }
 
 async function cmdUpgrade(args) {
-  const result = await upgrade({ repoRoot: ROOT, dryRun: args.includes("--dry-run") })
-  process.exitCode = result.ok ? 0 : 1
+  // upgrade writes its account of the update into a buffer, so the text
+  // lands on the stream the outcome chooses: stdout when it applied or had
+  // nothing to do, stderr when it refused.
+  const buffer = { text: "", write(chunk) { this.text += chunk; return true } }
+  const result = await upgrade({ repoRoot: ROOT, stream: buffer, dryRun: args.includes("--dry-run") })
+  if (result.ok) return succeed(args, result, buffer.text.trimEnd())
+  refuse(args, result, buffer.text.trimEnd(), { code: "refused", message: result.reason || "the upgrade was refused" })
 }
 
 async function cmdDoctor(args) {
   const spinner = spinnerFor(args)
   const result = await doctor({ repoRoot: ROOT, offline: args.includes("--offline"), onPhase: spinner.phase })
   spinner.done()
-  emit(args, args.includes("--json") ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderDoctor, result))
-  process.exitCode = result.problems ? 1 : 0
+  const human = (colour) => renderDoctor(result, { colour })
+  if (result.problems) {
+    const failed = result.checks.filter((check) => check.state === "problem")
+    refuse(args, result, human, { code: "problems", message: `${failed.length} check${failed.length === 1 ? "" : "s"} found a problem: ${failed.map((check) => check.id).join(", ")}`, remedy: failed.find((check) => check.action)?.action || REMEDY.problems })
+    return
+  }
+  succeed(args, result, human)
 }
 
 async function cmdVerify(args) {
@@ -423,23 +385,19 @@ async function cmdVerify(args) {
     marketplaceBaseline: section,
   }
   // The JSON is the document itself, byte for byte what verify always
-  // printed, for --json and for --out; a person at the terminal gets the
-  // report, in the register submit uses for its checks.
-  if (args.includes("--json") || option(args, "--out")) {
-    emit(args, `${JSON.stringify(document, null, 2)}\n`)
-    return
-  }
-  const blockingRules = section.invoked && section.official && !section.official.error
+  // printed under the envelope; a person at the terminal gets the report,
+  // in the register submit uses for its checks.
+  const blockingRules = !args.includes("--json") && section.invoked && section.official && !section.official.error
     ? (await consequence(requirePin(ROOT).dir, section.official)).selectivelyBlockingRules
     : []
-  emit(args, reportText(args, renderVerify, document, { blockingRules }))
+  succeed(args, document, (colour) => renderVerify(document, { colour, blockingRules }))
 }
 
 async function cmdParity(args) {
   // The runner takes everything as arguments. Before 0.1.8 this handed over
   // four PARITY_* variables and an OMAKIT_ROOT through the process
   // environment, and OMAKIT_ROOT was the one OMAKIT_* name in the tree.
-  let ok = false
+  let run
   try {
     // Imported here, not at the top: the runner ships with the package, but
     // no other command needs it, and a copy of bin/ and tools/ alone runs
@@ -447,30 +405,33 @@ async function cmdParity(args) {
     const { runParity } = await import("../../tests/parity/run.mjs")
     const count = option(args, "--count")
     const offset = option(args, "--offset")
-    ;({ ok } = await runParity({
+    if (count !== undefined && !(/^\d+$/.test(count) && Number(count) >= 1)) fail("usage", `--count needs an integer of at least 1, not ${JSON.stringify(count)}.`, 2, "omakit parity [--count <n>] [--offset <n>] [--out FILE]")
+    if (offset !== undefined && !/^\d+$/.test(offset)) fail("usage", `--offset needs an integer of at least 0, not ${JSON.stringify(offset)}.`, 2, "omakit parity [--count <n>] [--offset <n>] [--out FILE]")
+    run = await runParity({
       repoRoot: ROOT,
       count: count ? Number(count) : undefined,
       offset: offset ? Number(offset) : undefined,
       out: option(args, "--out") || null,
-    }))
+    })
   } catch (error) {
     failFrom(error)
   }
-  process.exitCode = ok ? 0 : 1
+  // The evidence file the runner wrote is the document; with --out it is
+  // rewritten there under the envelope, the same bytes every other command
+  // puts in its --out.
+  const { summary, outFile, ok } = run
+  const document = { ...summary, evidence: outFile }
+  const words = `identical ${summary.identical} of ${summary.corpusSize}, ${summary.mismatches} mismatch${summary.mismatches === 1 ? "" : "es"}, ${summary.failures} failure${summary.failures === 1 ? "" : "s"}; evidence at ${withHomeAbbreviated(outFile)}`
+  if (ok) return succeed(args, document, (colour) => `${mark("pass", styler(colour))}PARITY  ${words}`)
+  refuse(args, document, (colour) => `${mark("fail", styler(colour))}NOT PARITY  ${words}`, { code: "parity-mismatch", message: `the local transport and the GitHub transport did not agree: ${words}`, remedy: "Read the evidence file's rows with differingKeys or an error; docs/UPSTREAM_CONTRACT.md says what a mismatch means for the pin." })
 }
 
-function notAudited(message, remedy = null, exit = 1, code = "not-audited") {
-  failureDocument(code, message, remedy)
-  const c = styler(colourEnabled(process.stderr))
-  const lines = verdict("fail", AUDIT_VERDICTS.unavailable, message, c)
-  if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
-  process.stderr.write(`${lines.join("\n")}\n`)
-  throw new Exit(exit)
-}
+/** Every way audit stops without a comparison, in its own register: `█ NOT AUDITED  sentence`, then the one action. */
+const notAuditedRegister = (error, c) => verdictBlock(AUDIT_VERDICTS.unavailable, error, c)
 
 async function cmdAudit(args) {
   const parsed = checkArgs(args, ACCEPTED.audit)
-  if (parsed.offending !== null) notAudited(`${parsed.reason}. Accepted: ${acceptedWords("audit")}.`, "omakit audit [<plugin-id-or-dir>] [--drift] [--json] [--out FILE] [--offline]", 2, "usage")
+  if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("audit")}.`, 2, "omakit audit [<plugin-id-or-dir>] [--drift] [--json] [--out FILE] [--offline]", () => [], {}, notAuditedRegister)
   let document
   try {
     document = await auditInstalled({
@@ -480,18 +441,14 @@ async function cmdAudit(args) {
       offline: parsed.options.has("--offline"),
     })
   } catch (error) {
-    if (error?.code && typeof error.code === "string") notAudited(`${error.message}.`, error.remedy || REMEDY[error.code], 1, error.code)
-    throw error
+    failFrom(error, notAuditedRegister)
   }
-  const json = `${JSON.stringify(document, null, 2)}\n`
-  const out = parsed.options.get("--out")
-  if (out) {
-    mkdirSync(dirname(resolve(out)), { recursive: true })
-    writeFileSync(resolve(out), json)
-  }
-  if (parsed.options.has("--json")) process.stdout.write(json)
-  else process.stdout.write(`${renderAudit(document)}\n`)
-  process.exitCode = document.ok ? 0 : 1
+  const human = (colour) => renderAudit(document, { colour })
+  if (document.ok) return succeed(args, document, human)
+  // Drift is a refusal the tool means; a row it could not compare is not
+  // drift, and is said as such (audit/report.mjs, one sentence for both).
+  const drifted = document.counts.drift.value > 0
+  refuse(args, document, human, { code: drifted ? "drift" : "not-compared", message: auditSummary(document) })
 }
 
 /**
@@ -500,7 +457,7 @@ async function cmdAudit(args) {
  * manifest), in the one failure register. There is no exit status for
  * "found something", because finding something is the normal outcome.
  * `--out` writes the document to a file beside whatever stdout gets, the
- * way `audit --out` does.
+ * way every command's does.
  */
 async function cmdInspect(args) {
   const parsed = checkArgs(args, ACCEPTED.inspect)
@@ -526,15 +483,7 @@ async function cmdInspect(args) {
     throw error
   }
   spinner.done()
-  const json = `${JSON.stringify(document, null, 2)}\n`
-  const out = parsed.options.get("--out")
-  if (out) {
-    mkdirSync(dirname(resolve(out)), { recursive: true })
-    writeFileSync(resolve(out), json)
-  }
-  if (parsed.options.has("--json")) process.stdout.write(json)
-  else process.stdout.write(`${renderInspect(document, { full: parsed.options.has("--full") })}\n`)
-  process.exitCode = 0
+  succeed(args, document, (colour) => renderInspect(document, { full: parsed.options.has("--full"), colour }))
 }
 
 /**
@@ -554,37 +503,32 @@ async function cmdAdd(args) {
   } catch (error) {
     failFrom(error)
   }
-  if (parsed.options.has("--json")) {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    return
-  }
-  const c = styler(colourEnabled())
-  const lines = []
-  for (const file of [...result.files, result.notice]) {
-    const state = file.state === "current" ? "info" : "pass"
-    const from = file.from ? ` (from ${file.block} ${file.from})` : ""
-    const other = file.block && file.block !== result.block ? ` (${file.block}, which ${result.block} uses)` : ""
-    lines.push(`${mark(state, c)}${c("label", file.state.padEnd(8))} ${file.path}${from}${other}`)
-  }
-  lines.push(...labelled("block", `${result.block} ${result.version}${result.requires.length ? `, with ${result.requires.join(", ")}` : ""}, from omakit commit ${result.commit}`, c))
-  lines.push(...labelled("into", withHomeAbbreviated(result.dir), c))
-  if (result.files.some((file) => file.state !== "current")) lines.push(...action(result.block === "store" ? "import \"omakit\" in the QML that keeps state, and use Store { } there; docs/BLOCKS.md is the contract" : "import \"omakit\" in the QML that starts a process, and use Run { } there; docs/BLOCKS.md is the contract", c))
-  process.stdout.write(`${lines.join("\n")}\n`)
+  succeed(args, result, (colour) => {
+    const c = styler(colour)
+    const lines = []
+    for (const file of [...result.files, result.notice]) {
+      const state = file.state === "current" ? "info" : "pass"
+      const from = file.from ? ` (from ${file.block} ${file.from})` : ""
+      const other = file.block && file.block !== result.block ? ` (${file.block}, which ${result.block} uses)` : ""
+      lines.push(`${mark(state, c)}${c("label", file.state.padEnd(8))} ${file.path}${from}${other}`)
+    }
+    lines.push(...labelled("block", `${result.block} ${result.version}${result.requires.length ? `, with ${result.requires.join(", ")}` : ""}, from omakit commit ${result.commit}`, c))
+    lines.push(...labelled("into", withHomeAbbreviated(result.dir), c))
+    if (result.files.some((file) => file.state !== "current")) lines.push(...action(result.block === "store" ? "import \"omakit\" in the QML that keeps state, and use Store { } there; docs/BLOCKS.md is the contract" : "import \"omakit\" in the QML that starts a process, and use Run { } there; docs/BLOCKS.md is the contract", c))
+    return lines.join("\n")
+  })
 }
 
 /**
  * Every way `weigh` stops without weighing, in one register: the closing
  * word a report would have ended with, negated, then the sentence naming
  * what is missing, then the one thing to do. Exit 2 for a usage error and
- * an unanswered confirmation, 130 for an interrupt, 1 for the rest.
+ * an unanswered confirmation, the signal's status for an interrupt, 1 for
+ * the rest.
  */
-function notWeighed(code, message, remedy, exit = 1) {
-  failureDocument(code, message, remedy)
-  const c = styler(colourEnabled(process.stderr))
-  const lines = verdict("fail", "NOT WEIGHED", message, c)
-  if (remedy) lines.push(...action(remedy, c, { indent: 0 }))
-  process.stderr.write(`${lines.join("\n")}\n`)
-  throw new Exit(exit)
+const notWeighedRegister = (error, c) => verdictBlock("NOT WEIGHED", error, c)
+function notWeighed(code, message, remedy, exit = exitFor(code)) {
+  fail(code, message, exit, remedy, () => [], {}, notWeighedRegister)
 }
 
 async function cmdWeigh(args) {
@@ -606,10 +550,9 @@ async function cmdWeigh(args) {
     try {
       list = listWeighings()
     } catch (error) {
-      if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code])
-      throw error
+      failFrom(error, notWeighedRegister)
     }
-    process.stdout.write(json ? `${JSON.stringify(list.rows, null, 2)}\n` : `${renderList(list)}\n`)
+    succeed(args, list.rows, (colour) => renderList(list, { colour }))
     return
   }
   if (!target && !all) notWeighed("usage", "weigh needs a plugin: `omakit weigh <plugin-id-or-dir>`, or `omakit weigh --all` for every enabled third-party plugin.", "omakit weigh <plugin-id-or-dir>", 2)
@@ -627,8 +570,7 @@ async function cmdWeigh(args) {
   try {
     plan = planWeigh({ target, all, runs, windowSeconds, settleSeconds, out: parsed.options.get("--out") })
   } catch (error) {
-    if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code], error.code === "usage" ? 2 : 1)
-    throw error
+    failFrom(error, notWeighedRegister)
   }
   // The narration: what was backed up and with which md5, and what was
   // restored. For a person it is part of the report, on stdout; under
@@ -672,17 +614,13 @@ async function cmdWeigh(args) {
   } catch (error) {
     spinner.done()
     if (error?.code === "interrupted") notWeighed("interrupted", `interrupted by ${error.signal || stoppedBy || "a signal"} before the measurement completed.`, REMEDY.interrupted, signalExit(error.signal || stoppedBy))
-    if (error?.code && typeof error.code === "string") notWeighed(error.code, `${error.message}.`, error.remedy || REMEDY[error.code])
-    throw error
+    failFrom(error, notWeighedRegister)
   } finally {
     for (const signal of Object.keys(SIGNAL_EXIT)) process.off(signal, interrupt)
   }
   spinner.done()
-  if (json) {
-    process.stdout.write(`${JSON.stringify(document, null, 2)}\n`)
-  } else {
-    process.stdout.write(`\n${renderWeigh(document)}\n`)
-  }
+  if (!json) narrate.write("\n")
+  succeed(args, document, (colour) => renderWeigh(document, { colour }))
 }
 
 /**
@@ -730,8 +668,11 @@ async function cmdLab(args) {
       failFrom(error)
     }
     spinner.done()
-    emit(args, json ? `${JSON.stringify(lab, null, 2)}\n` : reportText(args, renderLab, lab))
-    process.exitCode = lab.missing.length ? 1 : 0
+    const human = (colour) => renderLab(lab, { colour })
+    if (!lab.missing.length) return succeed(args, lab, human)
+    // The inventory is complete and the lab is not ready: the report says
+    // what is missing, and the exit says a run would refuse.
+    refuse(args, lab, human, { code: "lab-not-ready", message: `the lab is not ready: ${lab.missing.map((item) => item.what).join(", ")} missing`, remedy: lab.missing.find((item) => item.command)?.command || REMEDY["lab-not-ready"], missing: lab.missing })
     return
   }
 
@@ -766,13 +707,10 @@ async function cmdLab(args) {
       unlisten()
     }
     spinner.done()
-    if (json) {
-      emit(args, `${JSON.stringify(record, null, 2)}\n`)
-    } else {
-      narrate.write("\n")
-      emit(args, reportText(args, renderRunResult, record))
-    }
-    process.exitCode = record.ok ? 0 : 1
+    if (!json) narrate.write("\n")
+    const human = (colour) => renderRunResult(record, { colour })
+    if (record.ok) return succeed(args, record, human)
+    refuse(args, record, human, { code: "not-proved", message: `${record.suite}: ${record.assertion?.reason || "the suite did not pass"}` })
     return
   }
 
@@ -792,18 +730,23 @@ async function cmdLab(args) {
     } catch (error) {
       failFrom(error)
     }
-    narrate.write(`${withOutputStream(narrate, () => renderSetupPlan(plan, { colour: colourEnabled(narrate) }))}\n`)
+    // The plan is narrated before the question, so the record says what
+    // was agreed to; a plan that cannot run is the failure, on stderr.
     if (plan.blockers.length) {
-      process.exitCode = 1
+      refuse(args, plan, (colour) => renderSetupPlan(plan, { colour }), { code: "lab-blocked", message: `setup cannot start: ${plan.blockers.join("; ")}` })
       return
     }
-    if (!plan.steps.length) {
-      process.exitCode = 0
-      return
-    }
+    if (!plan.steps.length) return succeed(args, plan, (colour) => renderSetupPlan(plan, { colour }))
+    // A pipe without --yes is known to refuse before the plan is shown, so
+    // the plan is the refusal's text, on stderr, with the document; only a
+    // terminal sees the plan first and is then asked.
     let consented = parsed.options.has("--yes")
+    if (!consented && !interactive) {
+      conclude({ command: CONTEXT.command, args, exit: 2, document: plan, human: (colour) => renderSetupPlan(plan, { colour }), error: failure({ code: "not-confirmed", message: "not confirmed: a pipe, an agent or --json cannot answer for the person whose disk this is; nothing was fetched, nothing was built", remedy: "omakit lab setup --yes" }) })
+      return
+    }
+    narrate.write(`${withOutputStream(narrate, () => renderSetupPlan(plan, { colour: colourEnabled(narrate) }))}\n`)
     if (!consented) {
-      if (!interactive) failFrom(Object.assign(new Error("not confirmed: a pipe, an agent or --json cannot answer for the person whose disk this is; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
       narrate.write("\n")
       consented = await askYes({ question: CONSENT_QUESTION })
       if (!consented) failFrom(Object.assign(new Error("not confirmed; nothing was fetched, nothing was built"), { code: "not-confirmed", remedy: "omakit lab setup --yes" }))
@@ -834,8 +777,7 @@ async function cmdLab(args) {
       unlisten()
     }
     spinner.done()
-    emit(args, json ? `${JSON.stringify(result, null, 2)}\n` : reportText(args, renderSetupResult, result))
-    process.exitCode = 0
+    succeed(args, result, (colour) => renderSetupResult(result, { colour }))
     return
   }
 
@@ -847,18 +789,19 @@ async function cmdLab(args) {
   } catch (error) {
     failFrom(error)
   }
-  narrate.write(`${withOutputStream(narrate, () => renderPrunePlan(plan, { colour: colourEnabled(narrate) }))}\n`)
   if (plan.blockers.length) {
-    process.exitCode = 1
+    refuse(args, plan, (colour) => renderPrunePlan(plan, { colour }), { code: "lab-busy", message: `prune refuses while ${plan.blockers.join("; ")}` })
     return
   }
-  if (!plan.targets.length) {
-    process.exitCode = 0
-    return
-  }
+  // Nothing to remove is a result with a document, like every other outcome.
+  if (!plan.targets.length) return succeed(args, { targets: [], total: 0, remaining: plan.remaining }, (colour) => renderPrunePlan(plan, { colour }))
   let consented = parsed.options.has("--yes")
+  if (!consented && !interactive) {
+    conclude({ command: CONTEXT.command, args, exit: 2, document: plan, human: (colour) => renderPrunePlan(plan, { colour }), error: failure({ code: "not-confirmed", message: `not confirmed: ${plan.targets.length} target${plan.targets.length === 1 ? "" : "s"}, ${plan.total.toLocaleString("en-US")} B, and a pipe cannot answer for the person whose disk this is; nothing was removed`, remedy: "omakit lab prune --yes" }) })
+    return
+  }
+  narrate.write(`${withOutputStream(narrate, () => renderPrunePlan(plan, { colour: colourEnabled(narrate) }))}\n`)
   if (!consented) {
-    if (!interactive) failFrom(Object.assign(new Error(`not confirmed: ${plan.targets.length} target${plan.targets.length === 1 ? "" : "s"}, ${plan.total.toLocaleString("en-US")} B, and a pipe cannot answer for the person whose disk this is; nothing was removed`), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
     narrate.write("\n")
     consented = await askYes({ question: `Remove these ${plan.targets.length} lab-owned target${plan.targets.length === 1 ? "" : "s"}?` })
     if (!consented) failFrom(Object.assign(new Error("not confirmed; nothing was removed"), { code: "not-confirmed", remedy: "omakit lab prune --yes" }))
@@ -870,15 +813,14 @@ async function cmdLab(args) {
     failFrom(error)
   }
   narrate.write("\n")
-  emit(args, json ? `${JSON.stringify({ removed: result.removed, recovered: result.recovered, remaining: result.remaining }, null, 2)}\n` : reportText(args, renderPruneResult, result))
-  process.exitCode = 0
+  succeed(args, { removed: result.removed, recovered: result.recovered, remaining: result.remaining }, (colour) => renderPruneResult(result, { colour }))
 }
 
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")).version
 
 const [command, ...rest] = process.argv.slice(2)
-JSON_MODE.command = command === "lab" ? `lab ${rest.find((arg) => !arg.startsWith("-")) || ""}`.trim() : command || null
-JSON_MODE.enabled = rest.includes("--json")
+CONTEXT.command = command === "lab" && ["prove", "inspect", "setup", "prune"].includes(rest.find((arg) => !arg.startsWith("-"))) ? `lab ${rest.find((arg) => !arg.startsWith("-"))}` : command || null
+CONTEXT.args = rest
 
 // A reader that closes early (`omakit audit --json | head`) is not an
 // error worth a trace: the write fails with EPIPE and the command is over,
@@ -893,8 +835,9 @@ for (const stream of [process.stdout, process.stderr]) {
 try {
 // Every token checked against the command's table before anything runs
 // (options.mjs): an option the command does not know, an option without its
-// value, or one positional too many is a usage error naming the token and
-// the accepted list. `weigh` reports it in its own register, below.
+// value, an empty argument, a valued option given twice, or one positional
+// too many is a usage error naming the token and the accepted list. `weigh`
+// reports it in its own register, below.
 {
   const name = command === "marketplace-pin" ? "pin" : command
   const table = name === "weigh" ? null : ACCEPTED[name] || ((command === "--help" || command === "-h") ? ACCEPTED.pin : null)
@@ -902,7 +845,7 @@ try {
     const parsed = checkArgs(rest, table)
     if (parsed.offending !== null) {
       const accepted = acceptedWords(name)
-      fail("usage", `${parsed.reason}.${accepted ? ` Accepted: ${accepted}.` : ` \`omakit ${name}\` takes no options.`}`, 2, "omakit help")
+      fail("usage", `${parsed.reason}.${accepted ? ` Accepted: ${accepted}.` : ` \`omakit ${name}\` takes no options.`}`, 2, "omakit help", () => [], {}, name === "audit" ? notAuditedRegister : null)
     }
   }
 }
@@ -929,8 +872,9 @@ if (command === "setup") {
 } else if (command === "pin" || command === "marketplace-pin") {
   const c = styler(colourEnabled())
   const spinner = progress()
+  let pinned
   try {
-    ensurePin(ROOT, (line) => {
+    pinned = ensurePin(ROOT, (line) => {
       // ensurePin narrates: a state line to keep, then a fetch it is about to
       // start. The fetch is the slow part, so it gets the progress line.
       if (line.state === "fetching") spinner.phase(line.text)
@@ -941,6 +885,7 @@ if (command === "setup") {
     fail(error?.code || "marketplace-unavailable", error.message, 1, error?.remedy || REMEDY[error?.code])
   }
   spinner.done()
+  succeed(rest, { dir: pinned.dir, commit: pinned.identity.commit, fetched: pinned.fetched })
 } else if (command === "submit") {
   await cmdSubmit(rest)
 } else if (command === "upgrade") {
@@ -987,6 +932,7 @@ if (command === "setup") {
     // of the screen before anyone has read it, so it gets none.
     process.stdout.write(renderUsage())
   }
+  process.exitCode = 0
 } else {
   // The short list on a typo, not 53 lines of reference, in the same register
   // as every other failure: what happened, what it means, what to run.

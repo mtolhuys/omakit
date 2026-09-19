@@ -164,6 +164,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/path-hint.mjs",
   "tools/marketplace/parity-output.mjs",
   "tools/marketplace/options.mjs",
+  "tools/marketplace/outcome.mjs",
   "tools/marketplace/paths.mjs",
   "tools/marketplace/pin.mjs",
   "tools/marketplace/plugin.mjs",

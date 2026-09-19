@@ -97,7 +97,7 @@ test("the actual help command respects a real pseudo-terminal's narrow and wide 
   } finally { rmSync(state, { recursive: true, force: true }) }
 })
 
-test("text file output from a wide terminal matches the stable plain pipe layout", (t) => {
+test("from a wide terminal, --out writes the document --json prints and the report keeps the stable plain pipe layout", (t) => {
   const probe = spawnSync("script", ["--version"], { timeout: 120_000, encoding: "utf8" })
   if (!probe.stdout?.includes("util-linux")) return t.skip("util-linux script(1) is not installed here")
   const state = mkdtempSync(join(tmpdir(), "omakit-responsive-file-"))
@@ -108,14 +108,20 @@ test("text file output from a wide terminal matches the stable plain pipe layout
     const file = join(state, "doctor.txt")
     const piped = spawnSync(process.execPath, [entry, "doctor", "--offline"], { encoding: "utf8", timeout: 10000, env: { ...env, NO_COLOR: "1", FORCE_COLOR: "" } })
     assert.notEqual(piped.status, null, piped.stderr)
+    const json = spawnSync(process.execPath, [entry, "doctor", "--offline", "--json"], { encoding: "utf8", timeout: 10000, env: { ...env, NO_COLOR: "1", FORCE_COLOR: "" } })
     const coloredEnv = { ...env, FORCE_COLOR: "1" }
     delete coloredEnv.NO_COLOR
     const command = `stty cols 120 rows 100 && exec ${quote(process.execPath)} ${quote(entry)} doctor --offline --out ${quote(file)}`
     const result = spawnSync("script", ["-qec", command, "/dev/null"], { encoding: "utf8", timeout: 10000, env: coloredEnv })
     assert.equal(result.status, piped.status, result.stderr)
+    // --out is the document, the same --json prints on a pipe, whatever the terminal's width.
     const text = readFileSync(file, "utf8")
     assert.doesNotMatch(text, /\u001b/)
-    assert.equal(text, piped.stdout)
-    fits(text, COLUMNS)
+    assert.equal(text, json.stdout)
+    // The report on the wide terminal is the piped report, plus the line that says where the file went.
+    const shown = words(result.stdout)
+    assert.ok(shown.includes(words(piped.stdout)), "the report on the wide terminal says the pipe's words")
+    assert.match(shown, /wrote /)
+    fits(piped.stdout, COLUMNS)
   } finally { rmSync(state, { recursive: true, force: true }) }
 })

@@ -52,9 +52,12 @@ test("--json prints the document verify always printed, byte for byte, and --out
   const { code, out, err } = run(["verify", passed.dir, "--json"])
   assert.equal(code, 0)
   assert.equal(err, "")
-  assert.equal(out, `${JSON.stringify(passed.document, null, 2)}\n`, "the JSON is the document itself")
+  // The document itself, under the envelope every command carries
+  // (docs/COMMANDS.md): the three envelope keys first, then verify's own,
+  // byte for byte what it always printed.
+  assert.equal(out, `${JSON.stringify({ command: "verify", ok: true, error: null, ...passed.document }, null, 2)}\n`, "the JSON is the document itself, under the envelope")
   const parsed = JSON.parse(out)
-  assert.deepEqual(Object.keys(parsed), ["subject", "marketplaceBaseline"])
+  assert.deepEqual(Object.keys(parsed), ["command", "ok", "error", "subject", "marketplaceBaseline"])
   assert.deepEqual(Object.keys(parsed.subject), ["repository", "commit", "cleanTree", "mode"])
   assert.deepEqual(parsed.subject.cleanTree, { clean: true, proof: "git-status-porcelain-empty" })
   assert.deepEqual(Object.keys(parsed.marketplaceBaseline), ["pin", "transport", "assumedByAdapter", "invoked", "skipReason", "official", "statement"])
@@ -66,6 +69,7 @@ test("--json prints the document verify always printed, byte for byte, and --out
   const written = run(["verify", passed.dir, "--out", file])
   assert.equal(written.code, 0)
   assert.equal(readFileSync(file, "utf8"), out, "--out keeps writing the JSON")
+  assert.match(written.out, /^subject {7}/m, "and the report for a person stays on stdout")
   assert.match(written.out, /wrote /)
 })
 

@@ -86,8 +86,9 @@ check around it: the subject, the pin, the transport and what the local
 adapter assumes, then the marketplace's own outcome, each finding as a block
 with its rule id, whether it blocks publication under the pinned policy, the
 file and line, and the official text verbatim, then the marketplace's own
-statement. `--json` prints the document itself, unchanged from earlier
-releases, and `--out <file>` writes it; agents and the skills use those.
+statement. `--json` prints the document itself under the envelope every
+command carries (below), its own fields unchanged from earlier releases,
+and `--out <file>` writes it; agents and the skills use those.
 
 `omakit submit` reads the marketplace's registry first, and a run has three
 outcomes. `READY`, exit 0: every blocking check passed and the title and body
@@ -172,22 +173,61 @@ git, into the cache). omakit reads no environment variable of its own; the
 cache and the state follow XDG, and colour follows `NO_COLOR`, `FORCE_COLOR`
 and `TERM`, which are everybody's.
 
-Under `--json`, every command's every outcome is a document on stdout, a
-failure included: `{ "command": "<name>", "ok": false, "error": { "code",
-"message", "remedy" } }`, the `message` being the sentence a person reads
-on stderr, and for a refusal that lists what is missing (`lab prove`) an
-`error.missing` array with each item's `what`, `cost` and `command`. The
-exit code is the same as without `--json`. A parser therefore always has
-a document to read; `tests/unit/json-outcomes.test.mjs` holds this for
-`audit`, `watch`, `lab prove` and `weigh`, and the failure helper in
-`tools/marketplace/cli.mjs` emits it for every command.
+## The contract every command keeps
 
-Every command's failure also leaves the same way: the sentence and the
-one action are written to stderr, both streams are drained, and only then
-does the process exit. Nothing waits without a bound: every request
-carries a deadline (`GET_DEADLINE_MS`, 20 s to the first byte), every
-child process a `timeout`, and the test runner a per-test bound
-(`tests/unit/deadlines.test.mjs`).
+One layer, `tools/marketplace/outcome.mjs`, is the only way a command
+ends, and `tests/unit/json-outcomes.test.mjs` runs every command through
+every outcome it can reach offline and holds each row to this:
+
+- **Exit status.** `exit 0` is success. `exit 1` is a refusal or a failure
+  the tool means: a refused submission, drift, a validation that could not
+  be compared, a lab that is not ready or a suite not proved, a plan a
+  preflight refused, `doctor` finding a problem, an error the operating
+  system raised. `exit 2` is a usage error: an option the command does not
+  know, one without its value or given twice with two values, an empty
+  argument, one positional too many, and a question a pipe could not
+  answer (`--yes` absent where consent is needed). A stop asked for by a
+  signal exits with the signal's own status, 128 plus its number: 129 for
+  `SIGHUP`, 130 for `SIGINT`, 143 for `SIGTERM`, whether the command
+  handled the signal (`weigh`, `lab`, which restore first) or not.
+- **`--json`.** Exactly one document on stdout, whatever happened:
+  `{ "command", "ok", "error", ...the command's own document }`. `ok` is
+  true exactly when the exit is 0. `error` is null on success and
+  `{ "code", "message", "remedy" }` otherwise, `message` one sentence with
+  one full stop, the same sentence a person reads, `remedy` the one thing
+  to do and never null (an operating-system error carries the remedy for
+  its errno); a refusal that lists what is missing (`lab prove`, `lab
+  inspect`) adds `error.missing` with each item's `what`, `cost` and
+  `command`, and a submission refused for want of its editorial flags adds
+  `error.usage` with the form's lists. A document that is a list (`weigh
+  --list`) is carried as `rows`. The failure's sentence is written to
+  stderr too, and nothing else is: a piped stderr is empty on success.
+- **Streams.** The command's text (a report with its verdict, or the
+  failure block) is on stdout when the exit is 0 and on stderr on any
+  other exit, so stdout never carries a result a parser would mistake for
+  a good one. A long-running command's live narration (`weigh`'s restarts
+  and md5s, the lab's identity block and suite lines, `setup`'s steps) is
+  written as it happens, on stdout for a person and on stderr under
+  `--json`, and is not the result.
+- **`--out FILE`.** The run's document, the same JSON `--json` prints, is
+  written to the file on every outcome, a failure included; with `--json`
+  stdout then carries nothing at all, and without it the text says where
+  the file went. A file that cannot be written is itself the failure, and
+  the document is then on stdout.
+- **Leaving.** The text is written, both streams are drained, and only
+  then does the process exit; a reader that closes early (`| head`) ends
+  the command with the exit it had decided on. Nothing waits without a
+  bound: every request carries a deadline (`GET_DEADLINE_MS`, 20 s to the
+  first byte), every child process a `timeout`, and the test runner a
+  per-test bound (`tests/unit/deadlines.test.mjs`).
+
+Measured on 2026-09-19 by an acceptance tester of the packaged candidate:
+seven commands shaped their documents seven ways, `lab prune --json`
+printed nothing, `watch` exited 2 on an unknown verdict, `add` on `EACCES`
+carried `remedy: null`, `lab inspect` and `audit` wrote a failing result to
+stdout only, `SIGTERM` exited 143 where the documentation said 130, and a
+failed `lab prove --json --out` created no file
+(`docs/evidence/ux/2026-09-19-acceptance.json`, findings 2 and 3).
 
 Every colour omakit prints is an ANSI palette index, so your Omarchy theme
 decides what it looks like, and nothing is said by colour alone. What the
