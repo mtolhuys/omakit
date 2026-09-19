@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 268" width="640" height="268" role="img" aria-labelledby="t"><title id="t">The four jobs in the order they happen: build writes the blocks into the plugin, check reads the tree and produces the issue text, the person posts it, track follows it afterwards, and prove runs a suite in a disposable guest</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#16202b"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#2f6fb0"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<rect x="8" y="40" width="104" height="46" rx="4" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="60" y="68" text-anchor="middle" fill="#16202b">your plugin</text>
+<line x1="112" y1="63" x2="144" y2="63" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<rect x="148" y="40" width="104" height="46" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="200" y="68" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">build</text>
+<text x="148" y="106" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">add run</text>
+<text x="148" y="122" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">add store</text>
+<line x1="252" y1="63" x2="284" y2="63" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<rect x="288" y="40" width="104" height="46" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="340" y="68" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">check</text>
+<text x="288" y="106" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">inspect</text>
+<text x="288" y="122" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">verify</text>
+<text x="288" y="138" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">submit</text>
+<line x1="392" y1="63" x2="424" y2="63" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<text x="428" y="28" font-size="11" fill="#5b6875">you post it; omakit never does</text>
+<rect x="428" y="40" width="204" height="46" rx="4" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="530" y="68" text-anchor="middle" fill="#16202b">the marketplace issue</text>
+
+<line x1="530" y1="86" x2="530" y2="186" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="428" y="188" width="204" height="46" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="530" y="216" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">track</text>
+<text x="428" y="254" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">watch, audit, weigh</text>
+
+<line x1="380" y1="86" x2="380" y2="164" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="8" y="166" width="400" height="68" rx="6" fill="none" stroke="#2f6fb0" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="24" y="194" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">prove</text>
+<text x="24" y="218" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">lab prove run | store | weigh</text>
+<text x="230" y="190" font-size="11" fill="#5b6875">a disposable Omarchy guest,</text>
+<text x="230" y="206" font-size="11" fill="#5b6875">never the desktop you</text>
+<text x="230" y="222" font-size="11" fill="#5b6875">work on</text>
+<text x="8" y="254" font-size="11" fill="#5b6875">optional, and the only job that boots anything</text>
+</g>
+</svg>

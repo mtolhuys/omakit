@@ -1,8 +1,21 @@
 # What omakit is doing, and why
 
-The README says what each command decides; this page says what the tool is
-built on: the numbers that made it, where every rule is read from, why it is
-Node, and what the baseline result is and is not.
+[COMMANDS.md](COMMANDS.md) says what each command decides; this page says
+what the tool is built on: the numbers that made it, where every rule is read
+from, why it is Node, and what the baseline result is and is not.
+
+The commands fall into four jobs, and everything else follows that shape.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/how-jobs-dark.svg">
+  <img alt="The four jobs in the order they happen: build writes the blocks into the plugin, check reads the tree and produces the issue text, the person posts it, track follows it afterwards, and prove runs a suite in a disposable guest" src="media/how-jobs-light.svg" width="640">
+</picture>
+
+*Build and check happen before anything is posted. Track is what happens
+after. Prove is optional, and the only job that boots anything.*
+
+Each job's commands are in [COMMANDS.md](COMMANDS.md), and each has a page of
+its own, listed in [README.md](README.md).
 
 ## Why it exists
 
@@ -42,6 +55,15 @@ This is why the tool is Node: the marketplace's scanner, form parser and
 catalog builder are Node modules, and omakit runs them verbatim from the
 pinned commit instead of reimplementing their rules, where a different
 language would mean a copy that can drift.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/how-rules-dark.svg">
+  <img alt="Every rule is read from a marketplace checkout pinned at an exact commit and run verbatim; only which ids are already listed comes from the marketplace's current HEAD, and this project's own checks are labelled at every line" src="media/how-rules-light.svg" width="640">
+</picture>
+
+*The rules are not this project's to write. They are read from one exact
+commit and run unmodified; what this project does add is labelled where it
+is said.*
 
 The security baseline is the marketplace's own code, imported unmodified and run
 over a local snapshot with no network. Omakit adds no rule, renames no outcome,

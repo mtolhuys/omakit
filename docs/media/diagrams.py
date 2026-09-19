@@ -165,6 +165,72 @@ STORE = """
 <text x="8" y="220" fill="{muted}">a reader never sees half a file, and a crash never leaves one</text>
 """
 
+JOBS = """
+<rect x="8" y="40" width="104" height="46" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="60" y="68" text-anchor="middle" fill="{ink}">your plugin</text>
+<line x1="112" y1="63" x2="144" y2="63" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<rect x="148" y="40" width="104" height="46" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="200" y="68" text-anchor="middle" font-family="{mono}" fill="{accent}">build</text>
+<text x="148" y="106" font-family="{mono}" font-size="11" fill="{ink}">add run</text>
+<text x="148" y="122" font-family="{mono}" font-size="11" fill="{ink}">add store</text>
+<line x1="252" y1="63" x2="284" y2="63" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<rect x="288" y="40" width="104" height="46" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="340" y="68" text-anchor="middle" font-family="{mono}" fill="{accent}">check</text>
+<text x="288" y="106" font-family="{mono}" font-size="11" fill="{ink}">inspect</text>
+<text x="288" y="122" font-family="{mono}" font-size="11" fill="{ink}">verify</text>
+<text x="288" y="138" font-family="{mono}" font-size="11" fill="{ink}">submit</text>
+<line x1="392" y1="63" x2="424" y2="63" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<text x="428" y="28" font-size="11" fill="{muted}">you post it; omakit never does</text>
+<rect x="428" y="40" width="204" height="46" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="530" y="68" text-anchor="middle" fill="{ink}">the marketplace issue</text>
+
+<line x1="530" y1="86" x2="530" y2="186" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="428" y="188" width="204" height="46" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="530" y="216" text-anchor="middle" font-family="{mono}" fill="{accent}">track</text>
+<text x="428" y="254" font-family="{mono}" font-size="11" fill="{ink}">watch, audit, weigh</text>
+
+<line x1="380" y1="86" x2="380" y2="164" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="8" y="166" width="400" height="68" rx="6" fill="none" stroke="{accent}" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="24" y="194" font-family="{mono}" fill="{accent}">prove</text>
+<text x="24" y="218" font-family="{mono}" font-size="11" fill="{ink}">lab prove run | store | weigh</text>
+<text x="230" y="190" font-size="11" fill="{muted}">a disposable Omarchy guest,</text>
+<text x="230" y="206" font-size="11" fill="{muted}">never the desktop you</text>
+<text x="230" y="222" font-size="11" fill="{muted}">work on</text>
+<text x="8" y="254" font-size="11" fill="{muted}">optional, and the only job that boots anything</text>
+"""
+
+RULES = """
+<text x="8" y="16" font-family="{mono}" font-size="11" fill="{accent}">the pin: one exact marketplace commit</text>
+<rect x="8" y="24" width="240" height="104" rx="6" fill="none" stroke="{accent}" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="24" y="50" font-family="{mono}" font-size="11" fill="{ink}">the submission form</text>
+<text x="24" y="72" font-family="{mono}" font-size="11" fill="{ink}">the body parser</text>
+<text x="24" y="94" font-family="{mono}" font-size="11" fill="{ink}">the security scanner</text>
+<text x="24" y="116" font-family="{mono}" font-size="11" fill="{ink}">the catalog builder</text>
+<text x="8" y="146" font-size="11" fill="{muted}">every rule, read from here, and nothing restated</text>
+
+<line x1="248" y1="74" x2="314" y2="74" stroke="{accent}" stroke-width="1.5" marker-end="url(#acc)"/>
+<text x="281" y="64" text-anchor="middle" font-size="10" fill="{accent}">run verbatim</text>
+
+<text x="300" y="16" font-size="11" fill="{warn}">[omakit] this project's own checks, from public issue data,</text>
+<text x="300" y="32" font-size="11" fill="{warn}">labelled at every line, and never their policy</text>
+
+<rect x="320" y="44" width="150" height="60" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="395" y="70" text-anchor="middle" font-family="{mono}" fill="{ink}">omakit</text>
+<text x="395" y="90" text-anchor="middle" font-size="11" fill="{muted}">adds no rule of theirs</text>
+
+<line x1="470" y1="74" x2="496" y2="74" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="498" y="44" width="134" height="60" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="565" y="79" text-anchor="middle" fill="{ink}">what you read</text>
+
+<rect x="8" y="162" width="240" height="40" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="128" y="187" text-anchor="middle" font-family="{mono}" font-size="11" fill="{ink}">the marketplace's current HEAD</text>
+<line x1="248" y1="182" x2="382" y2="110" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<text x="8" y="222" font-size="11" fill="{muted}">which ids and repositories are already listed, because the pin's copy is stale within hours</text>
+"""
+
 DIAGRAMS = [
     ("why-shell", 640, 260, SHELL,
      "One shell process hosts every widget; values a plugin does not control flow in, "
@@ -175,6 +241,14 @@ DIAGRAMS = [
     ("why-run", 640, 260, RUN,
      "Run starts the program by absolute path in its own process group, counts the bytes "
      "while reading them, and ends the whole group at the deadline or when the panel closes"),
+    ("how-jobs", 640, 268, JOBS,
+     "The four jobs in the order they happen: build writes the blocks into the plugin, "
+     "check reads the tree and produces the issue text, the person posts it, track follows "
+     "it afterwards, and prove runs a suite in a disposable guest"),
+    ("how-rules", 640, 238, RULES,
+     "Every rule is read from a marketplace checkout pinned at an exact commit and run "
+     "verbatim; only which ids are already listed comes from the marketplace's current HEAD, "
+     "and this project's own checks are labelled at every line"),
     ("why-store", 640, 250, STORE,
      "Store walks the directory chain by descriptor and writes through an exclusive "
      "temporary file that is renamed into place"),
