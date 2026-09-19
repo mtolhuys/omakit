@@ -6,6 +6,12 @@ hand. All command scenes use the same terminal chrome, palette, prompt and
 DejaVu Sans Mono cells. Scene widths stop at 110 columns, and the final frame is
 the most informative screen of the command.
 
+Keep all eight README image sources absolute at
+`https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/...`. npmjs.com
+renders the packaged README outside the repository, so repository-relative
+paths are broken there. The absolute `main` URLs are deliberate and match the
+previous release; do not convert them back to relative paths.
+
 The renderer may omit captured lines for reading length. An omission is declared
 in the scene, appears visibly in the GIF, preserves the original order, and never
 changes the capture. The full capture always remains beside the scene.
