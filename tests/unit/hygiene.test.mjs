@@ -17,7 +17,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { REPO_ROOT, repositoryFiles } from "./helpers.mjs"
@@ -142,6 +142,29 @@ test("every diagram in docs/media has both themes, the script it was drawn by, a
     assert.ok(/<title[ >]/.test(svg), `${path} has no title for a reader who cannot see it`)
   }
   assert.ok(files.includes("docs/media/diagrams.py"), "the diagram script must be committed too")
+})
+
+test("every relative link in every Markdown file resolves, and the index lists every page", () => {
+  // A documentation set nobody can walk is a pile of files. Two ways it stops
+  // being walkable: a link that moved and a page the front door never mentions.
+  for (const path of files.filter((entry) => entry.endsWith(".md"))) {
+    const text = readFileSync(join(REPO_ROOT, path), "utf8")
+    const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "."
+    for (const [, target] of text.matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (/^(?:https?:|mailto:|#)/.test(target)) continue
+      const file = target.split("#")[0]
+      if (!file) continue
+      assert.ok(existsSync(join(REPO_ROOT, dir, file)), `${path} links to ${target}, which is not there`)
+    }
+  }
+
+  const index = readFileSync(join(REPO_ROOT, "docs/README.md"), "utf8")
+  for (const path of files) {
+    if (!path.startsWith("docs/") || !path.endsWith(".md")) continue
+    const name = path.slice("docs/".length)
+    if (name === "README.md" || name.includes("/")) continue
+    assert.ok(index.includes(`(${name})`), `docs/${name} is a page the index does not list`)
+  }
 })
 
 test("every file is a candidate, whatever its extension", () => {
