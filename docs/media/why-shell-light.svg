@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" width="640" height="260" role="img" aria-labelledby="t"><title id="t">One shell process hosts every widget; values a plugin does not control flow in, and what it starts runs with the person's rights</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#16202b"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#2f6fb0"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<rect x="150" y="60" width="340" height="110" rx="6" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="320" y="48" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="13" fill="#16202b">omarchy-shell, one process, your rights</text>
+
+<rect x="168" y="86" width="90" height="58" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="213" y="113" text-anchor="middle" fill="#2f6fb0">your</text>
+<text x="213" y="130" text-anchor="middle" fill="#2f6fb0">plugin</text>
+
+<rect x="275" y="86" width="90" height="58" rx="4" fill="none" stroke="#5b6875" stroke-width="1"/>
+<text x="320" y="119" text-anchor="middle" fill="#5b6875">a bar widget</text>
+
+<rect x="382" y="86" width="90" height="58" rx="4" fill="none" stroke="#5b6875" stroke-width="1"/>
+<text x="427" y="119" text-anchor="middle" fill="#5b6875">a panel</text>
+
+<text x="10" y="96" fill="#16202b">Wi-Fi names</text>
+<text x="10" y="116" fill="#16202b">window titles</text>
+<text x="10" y="136" fill="#16202b">file names</text>
+<text x="10" y="156" fill="#16202b">command output</text>
+<text x="10" y="178" fill="#5b6875">input you do not control</text>
+<line x1="112" y1="115" x2="165" y2="115" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+
+<line x1="213" y1="146" x2="213" y2="206" stroke="#2f6fb0" stroke-width="1.5" marker-end="url(#acc)"/>
+<text x="225" y="180" fill="#2f6fb0">starts programs, reads files</text>
+<rect x="123" y="208" width="180" height="34" rx="4" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="213" y="230" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#16202b">the operating system</text>
+</g>
+</svg>

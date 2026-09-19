@@ -114,6 +114,36 @@ test("every GIF in docs/media has the capture and scene it was rendered from", (
   assert.ok(files.includes("docs/media/render.py"), "the renderer must be committed too")
 })
 
+test("every diagram in docs/media has both themes, the script it was drawn by, and a page that shows it", () => {
+  // Same rule as the recordings, for the drawings: a picture nobody can
+  // regenerate stops matching the words beside it, quietly. And a diagram is
+  // read on a white page and on a black one, so a theme that is missing is a
+  // diagram that is unreadable for half of its readers.
+  const markdown = files
+    .filter((path) => path.endsWith(".md"))
+    .map((path) => readFileSync(join(REPO_ROOT, path), "utf8"))
+    .join("\n")
+  const diagrams = files.filter((path) => path.startsWith("docs/media/") && path.endsWith(".svg"))
+  assert.ok(diagrams.length > 0, "the diagrams must be committed")
+
+  for (const path of diagrams) {
+    const name = path.slice("docs/media/".length, -".svg".length)
+    const stem = name.replace(/-(?:light|dark)$/, "")
+    assert.notStrictEqual(stem, name, `${path} is not named for a theme: expected ${stem}-light.svg or ${stem}-dark.svg`)
+    for (const theme of ["light", "dark"]) {
+      assert.ok(files.includes(`docs/media/${stem}-${theme}.svg`), `${path} has no ${theme} counterpart`)
+    }
+    assert.ok(markdown.includes(`media/${name}.svg`), `${path} is a picture nothing shows`)
+    const svg = readFileSync(join(REPO_ROOT, path), "utf8")
+    // currentColor has nothing to inherit from inside an img element, so a
+    // diagram that uses it is drawn in the browser's default black, whatever
+    // the theme file it came from says.
+    assert.ok(!svg.includes("currentColor"), `${path} leaves a colour to the page it has no page`)
+    assert.ok(/<title[ >]/.test(svg), `${path} has no title for a reader who cannot see it`)
+  }
+  assert.ok(files.includes("docs/media/diagrams.py"), "the diagram script must be committed too")
+})
+
 test("every file is a candidate, whatever its extension", () => {
   assert.ok(files.some((path) => !/\.[a-z]+$/.test(path)), "extensionless files must be walked too")
   assert.ok(files.includes("bin/omakit"))

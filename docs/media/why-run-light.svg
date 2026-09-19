@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" width="640" height="260" role="img" aria-labelledby="t"><title id="t">Run starts the program by absolute path in its own process group, counts the bytes while reading them, and ends the whole group at the deadline or when the panel closes</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#16202b"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#2f6fb0"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<rect x="8" y="96" width="112" height="52" rx="4" fill="none" stroke="#16202b" stroke-width="1.5"/>
+<text x="64" y="127" text-anchor="middle" fill="#16202b">your plugin</text>
+
+<line x1="120" y1="122" x2="178" y2="122" stroke="#2f6fb0" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<rect x="180" y="86" width="112" height="72" rx="4" fill="none" stroke="#2f6fb0" stroke-width="2"/>
+<text x="236" y="112" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">Run</text>
+<text x="236" y="132" text-anchor="middle" font-size="11" fill="#2f6fb0">the block</text>
+
+<line x1="292" y1="122" x2="350" y2="122" stroke="#16202b" stroke-width="1.5" marker-end="url(#ink)"/>
+<text x="321" y="112" text-anchor="middle" font-size="11" fill="#16202b">argv</text>
+
+<rect x="352" y="70" width="270" height="104" rx="6" fill="none" stroke="#16202b" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="487" y="60" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#16202b">its own process group</text>
+<rect x="372" y="90" width="106" height="44" rx="4" fill="none" stroke="#5b6875" stroke-width="1"/>
+<text x="425" y="117" text-anchor="middle" fill="#16202b">supervisor</text>
+<line x1="478" y1="112" x2="512" y2="112" stroke="#5b6875" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="514" y="90" width="92" height="44" rx="4" fill="none" stroke="#5b6875" stroke-width="1"/>
+<text x="560" y="117" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#16202b">/usr/bin/git</text>
+<text x="487" y="156" text-anchor="middle" font-size="11" fill="#5b6875">and anything it starts</text>
+
+<text x="8" y="196" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">on the way out</text>
+<text x="8" y="214" fill="#16202b">full path, closed environment, argv only</text>
+<text x="8" y="236" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">on the way back</text>
+<text x="8" y="254" fill="#16202b">bytes counted while reading, capped</text>
+
+<text x="352" y="196" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">when time is up</text>
+<text x="352" y="214" fill="#16202b">stop, wait, kill, the whole group</text>
+<text x="352" y="236" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" fill="#2f6fb0">when the panel closes</text>
+<text x="352" y="254" fill="#16202b">the same ending, nothing survives</text>
+</g>
+</svg>
