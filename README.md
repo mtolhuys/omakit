@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/banner.gif" alt="Animated Omakit wordmark above the line tested plumbing for plugins" width="512">
+  <img src="docs/media/banner.gif" alt="Animated Omakit wordmark above the line tested plumbing for plugins" width="512">
 </p>
 
 **Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.**
@@ -21,33 +21,33 @@ Omakit needs [Node 22+](package.json) and Git. `omakit setup` prepares the pinne
 
 `omakit add run <plugin-dir>` and `omakit add store <plugin-dir>` copy versioned process and private-state plumbing into the plugin's `omakit/` directory; the plugin owns those files, and an edited copy is never overwritten. Commit the copied files before checking, because check reads committed `HEAD` unless you pass `--allow-dirty`.
 
-![Recorded terminal showing inspect before omakit add run, the copied Run files, and inspect after the fixture is ported](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/add-run.gif)
+![Recorded terminal showing inspect before omakit add run, the copied Run files, and inspect after the fixture is ported](docs/media/add-run.gif)
 
 ## Check
 
 `omakit inspect <plugin-dir>` shows what the tree does, `omakit verify <plugin-repo>` runs the marketplace's baseline, and `omakit submit <plugin-repo>` runs every submission check and prints a title and body without posting them.
 
-![Recorded terminal showing inspect ranking two long functions and listing the review class observed in a fixture](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
+![Recorded terminal showing inspect ranking two long functions and listing the review class observed in a fixture](docs/media/inspect.gif)
 
-![Recorded terminal showing submit refusing a fixture with three blocking checks and printing their remedies](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif)
+![Recorded terminal showing submit refusing a fixture with three blocking checks and printing their remedies](docs/media/submit.gif)
 
 ## Track
 
 `omakit watch --all` compares open submissions with the commits the marketplace validated, while `omakit audit` compares installed third-party plugins with their validated commits; both are read-only.
 
-![Recorded terminal showing watch-all count two current submissions and display their validation and discussion records](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/watch-all.gif)
+![Recorded terminal showing watch-all count two current submissions and display their validation and discussion records](docs/media/watch-all.gif)
 
-![Recorded terminal showing audit list installed plugin drift and close with the 13-of-19 drift summary](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/audit.gif)
+![Recorded terminal showing audit list installed plugin drift and close with the 13-of-19 drift summary](docs/media/audit.gif)
 
 ## Prove
 
 After one `omakit lab setup`, `omakit lab prove <suite>` boots a fresh overlay from the verified base, prints the guest identity, runs Run, Store or weigh in that guest, records the result, removes the overlay and checks the base unchanged.
 
-![Recorded terminal showing omakit lab prove run identify the disposable guest, complete all 19 Run scenarios, remove the overlay, verify the unchanged base and close PROVED](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/lab-prove.gif)
+![Recorded terminal showing omakit lab prove run identify the disposable guest, complete all 19 Run scenarios, remove the overlay, verify the unchanged base and close PROVED](docs/media/lab-prove.gif)
 
 `omakit weigh <plugin>` is the supporting desktop measurement: after explicit consent it restarts the shell without and with the plugin, reports CPU and child processes against the baseline's own spread, and restores `shell.json`.
 
-![Recorded terminal showing all six Theme Manager weigh samples, shell restoration, the CPU noise floor and the completed report](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/weigh.gif)
+![Recorded terminal showing all six Theme Manager weigh samples, shell restoration, the CPU noise floor and the completed report](docs/media/weigh.gif)
 
 ## Evidence
 

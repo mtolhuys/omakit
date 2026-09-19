@@ -13,11 +13,11 @@
     "description": "Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.",
     "dependencies": 0,
     "devDependencies": 0,
-    "packedBytes": 329279,
-    "unpackedBytes": 1068271,
+    "packedBytes": 329250,
+    "unpackedBytes": 1067831,
     "files": 130,
     "ceilingBytes": 358400,
-    "underCeilingBytes": 29121,
+    "underCeilingBytes": 29150,
     "keywords": [
       "omarchy",
       "quattro",
@@ -92,17 +92,17 @@
     {
       "name": "banner",
       "gif": "docs/media/banner.gif",
-      "gifSha256": "2ab70d4f6f55c91d0b39cfcb4318c2f59480af386a82a1e40a7f47d35a4371cb",
-      "bytes": 14343,
+      "gifSha256": "611f55e61438d886b743ee058abe6e9cf29e54c2dc78b8938eb7ed997318c84b",
+      "bytes": 14355,
       "durationMs": 5120,
-      "finalHoldMs": 4240,
+      "finalHoldMs": 4200,
       "dimensions": [455, 298],
       "frames": 24,
       "scene": "docs/media/banner.scene.json",
       "sceneSha256": "81d76964fdb1e8222fa4348ce0289f920e6fcbec9af34b40465f1c453ecafd04",
       "captures": [
-        {"path": "docs/media/captures/banner.out", "sha256": "6448af1f5a04e6b76844dce3d7893456bc779820627ea40b6c59d4fa38760c51", "bytes": 16491, "lines": 119},
-        {"path": "docs/media/captures/banner.tim", "sha256": "6e960e98f6c3f2e079f3a7be2a64c4ce0e74c9100f536850e77f31cf702dfe38", "bytes": 376, "lines": 29}
+        {"path": "docs/media/captures/banner.out", "sha256": "bfe01bf4c13a718fa2e09bc4315ca5aaf3c06308d4af10423b3a2a6c5ca470b9", "bytes": 16493, "lines": 119},
+        {"path": "docs/media/captures/banner.tim", "sha256": "fb848976677ebfe56db218ffc13bb5d1e2675f32b940cd6bb271cd4ec3a59823", "bytes": 388, "lines": 30}
       ]
     },
     {

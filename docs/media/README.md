@@ -31,7 +31,8 @@ expected.
 
 The banner is the one timed replay. It is recorded at the 40-column terminal
 width and 12 rows used by the banner capture rule. The scene is 29 cells wide,
-so the fixed 27-character line stays together beneath the wordmark.
+so one leading terminal cell centres the fixed 27-character line beneath the
+wordmark.
 
 ## Recipes
 
@@ -41,7 +42,7 @@ so the fixed 27-character line stays together beneath the wordmark.
 TERM=xterm-256color FORCE_COLOR=1 script -q \
   --log-out docs/media/captures/banner.out \
   --log-timing docs/media/captures/banner.tim \
-  -c "stty rows 12 cols 40; node --input-type=module -e 'import { banner } from \"./tools/marketplace/banner.mjs\"; await banner(); process.stdout.write(\"tested plumbing for plugins\\n\")'"
+  -c "stty rows 12 cols 40; node --input-type=module -e 'import { banner } from \"./tools/marketplace/banner.mjs\"; await banner(); process.stdout.write(\" tested plumbing for plugins\\n\")'"
 ```
 
 ### Add Run
@@ -179,7 +180,7 @@ cell boundaries.
 
 | GIF | Bytes | Duration | Dimensions | Final hold | Widest shown line |
 | --- | ---: | ---: | --- | ---: | ---: |
-| `banner.gif` | 14,343 | 5.12 s | 455 x 298 | 4.24 s | timed replay |
+| `banner.gif` | 14,355 | 5.12 s | 455 x 298 | 4.20 s | timed replay |
 | `add-run.gif` | 39,424 | 30.00 s | 830 x 688 | 9.16 s | 79 columns |
 | `inspect.gif` | 29,311 | 13.44 s | 830 x 592 | 8.16 s | 79 columns |
 | `submit.gif` | 959,947 | 16.32 s | 830 x 592 | 6.20 s | 80 columns |
