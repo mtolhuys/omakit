@@ -8,6 +8,9 @@ description: Build the process and state plumbing of an Omarchy Quattro plugin w
 This is the build job: copy the measured process and private-state plumbing
 into the plugin before checking, tracking or proving anything around it.
 
+The argument behind the blocks, for a reader who wants it, is
+`docs/WHY.md` in the omakit repository.
+
 ## Start every process through Run
 
 Whenever plugin code starts a program, it goes through the Run block, never

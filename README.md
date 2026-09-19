@@ -36,7 +36,7 @@ Omakit needs [Node 22+](package.json) and Git. `omakit setup` prepares the pinne
 
 ## Build
 
-`omakit add run <plugin-dir>` and `omakit add store <plugin-dir>` copy versioned process and private-state plumbing into the plugin's `omakit/` directory; the plugin owns those files, and an edited copy is never overwritten. Commit the copied files before checking, because check reads committed `HEAD` unless you pass `--allow-dirty`.
+`omakit add run <plugin-dir>` and `omakit add store <plugin-dir>` copy versioned process and private-state plumbing into the plugin's `omakit/` directory; the plugin owns those files, and an edited copy is never overwritten. Commit the copied files before checking, because check reads committed `HEAD` unless you pass `--allow-dirty`. Why that plumbing is worth taking from somewhere else is [in one page](docs/WHY.md).
 
 ![Recorded terminal showing inspect before omakit add run, the copied Run files, and inspect after the fixture is ported](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/add-run.gif)
 
@@ -82,7 +82,7 @@ After one `omakit lab setup`, `omakit lab prove <suite>` boots a fresh overlay f
 
 ## Documentation
 
-- [Blocks](docs/BLOCKS.md) and [their design spike](docs/BLOCKS_SPIKE.md)
+- [Why the blocks exist](docs/WHY.md), [the blocks themselves](docs/BLOCKS.md) and [their design spike](docs/BLOCKS_SPIKE.md)
 - [Commands](docs/COMMANDS.md), [inspect](docs/INSPECT.md), [submit](docs/SUBMIT.md), [watch](docs/VALIDATION_WATCH.md), [audit](docs/AUDIT.md) and [weigh](docs/WEIGH.md)
 - [The disposable lab](docs/LAB.md) and [every measurement](docs/MEASUREMENTS.md)
 - [Installation](docs/INSTALL.md), [media recipes](docs/media/README.md) and [repository rules](AGENTS.md)

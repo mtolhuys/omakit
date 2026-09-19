@@ -5,7 +5,8 @@ A block is a small set of files a plugin copies into its own tree with
 plumbing measured in M13. This page is the contract of the
 two blocks, Run 0.2.1 and Store 0.2.0: what each does, which review
 comments each line answers, the API, what it costs, what it does not do,
-and how it is added, updated and recognised. The reasoning and the measurements behind the
+and how it is added, updated and recognised. Why this plumbing is a block at all is in
+[WHY.md](WHY.md); the reasoning and the measurements behind the
 design are in [BLOCKS_SPIKE.md](BLOCKS_SPIKE.md); the plan and its gates in
 [history](history/2026-09-17-blocks-plan.md), what is still open in
 [BLOCKS_PLAN.md](BLOCKS_PLAN.md). The adversarial review of 2026-09-18 and
