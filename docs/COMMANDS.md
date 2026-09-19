@@ -1,35 +1,48 @@
 # The commands
 
-Every command below says what it reads, what it prints, and what it will not
-do. The short list is `omakit help`; this page is the rest, ordered by the four
-jobs: build (the two blocks measured in
+This is the reference: every command, what it reads, what it prints, and what
+it will not do. `omakit help` is the short list; each command that has a page
+of its own is linked from its section, and [README.md](README.md) says which
+page answers which question.
+
+The expected user is a coding agent submitting a plugin on an owner's behalf,
+so the tool is zero dependencies, plain ESM, one entry point and no build
+step, and every command can end as one JSON document.
+
+The commands fall into four jobs, and this page is ordered by them: build (the
+two blocks measured in
 [M13](MEASUREMENTS.md#m13-what-the-review-blocks-on-over-one-week-of-comments-and-which-of-it-a-block-can-own)),
-check, track, prove, and then the rest.
+check, track, prove, and then what keeps the tool itself current.
 
-Agent-first: the expected user is a coding agent submitting a plugin on an
-owner's behalf. Zero dependencies, plain ESM, one entry point, no build step.
+| Command | Job | What it does |
+| --- | --- | --- |
+| `omakit add run <plugin-dir>` | build | copies the Run block into the plugin's `omakit/` directory; `--update` moves an unmodified copy |
+| `omakit add store <plugin-dir>` | build | copies the Store block, with `run`, which it uses |
+| `omakit inspect <plugin-dir>` | check | what a plugin tree does, as observations, and the review classes the tree shows |
+| `omakit verify <plugin-repo>` | check | the official security baseline over the local transport; `--json` for the document |
+| `omakit submit <plugin-repo>` | check | every check, and the exact issue title and body; asks for a category and tags at a terminal |
+| `omakit watch <issue-url>` | track | the commit the marketplace validated, against the plugin's current HEAD |
+| `omakit watch --all` | track | every open marketplace issue authored by your `gh` account; `--list` lists them; bare, a terminal chooses |
+| `omakit audit [<plugin>]` | track | installed third-party commits against the commits the marketplace validated |
+| `omakit weigh <plugin>` | track | what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first |
+| `omakit lab prove <suite>` | prove | a suite in a disposable Omarchy guest, the guest's installed package printed and written: `run`, `store`, `weigh`, `weigh-evidence` |
+| `omakit lab inspect` | prove | what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing |
+| `omakit lab setup` | prove | one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; `--toolchain`, `--from`, `--plugins` |
+| `omakit lab prune` | prove | what the lab owns on disk, asked once, removed, the bytes said |
+| `omakit doctor` | current | what is installed, what is pinned, what has moved, and what the lab has |
+| `omakit setup` | current | the environment, the pin, tab completion, and what to try first |
+| `omakit pin` | current | what `setup` does for the pin, on its own |
+| `omakit upgrade` | current | updates omakit through its own installer: npm, or a fast-forward |
+| `omakit parity` | current | the baseline over GitHub versus the local transport, on real listings; writes the evidence |
+| `omakit help --agent` | current | the operating instructions, for the agent running this |
 
-```bash
-omakit add run <plugin-dir>    # build: the Run block into the plugin's omakit/ directory; --update moves an unmodified copy
-omakit add store <plugin-dir>  # build: the Store block, with run, which it uses
-omakit inspect <plugin-dir>    # check: what a plugin tree does, as observations, and the review classes the tree shows
-omakit verify <plugin-repo>    # check: the official security baseline over the local transport; --json for the document
-omakit submit <plugin-repo>    # check: every check, the issue title and body; asks for a category and tags at a terminal
-omakit watch <issue-url>       # track: the commit the marketplace validated, against the plugin's current HEAD
-omakit watch --all             # track: every open marketplace issue authored by your gh account; --list lists them; bare, a terminal chooses
-omakit lab prove <suite>         # prove: a suite in a disposable Omarchy guest, the guest's installed package printed and written; run, store, weigh, weigh-evidence
-omakit lab inspect             # prove: what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing
-omakit lab setup               # prove: one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; --toolchain, --from, --plugins
-omakit lab prune               # prove: what the lab owns on disk, asked once, removed, the bytes said
-omakit audit [<plugin>]        # installed third-party commits against the commits the marketplace validated
-omakit weigh <plugin>          # what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first
-omakit doctor                  # what is installed, what is pinned, what has moved, and what the lab has
-omakit setup                   # the environment, the pin, tab completion, and what to try first
-omakit pin                     # what setup does for the pin, on its own
-omakit upgrade                 # updates omakit through its own installer: npm, or a fast-forward
-omakit parity                  # the baseline over GitHub versus the local transport, on real listings; writes the evidence
-omakit help --agent            # the operating instructions, for the agent running this
-```
+## Build
+
+One command writes into a plugin tree, and this is it. What it copies and why
+that plumbing is worth taking from somewhere else are
+[BLOCKS.md](BLOCKS.md) and [WHY.md](WHY.md).
+
+### `omakit add`
 
 `omakit add <block> [<plugin-dir>]` copies a block ([BLOCKS.md](BLOCKS.md))
 into the plugin's `omakit/` directory: `run` is `Run.qml` and
@@ -47,6 +60,14 @@ has to carry a `manifest.json`. After it, `omakit inspect` lists each block
 as one row, each `Run {` site as a process whose deadline the block holds,
 and each `Store {` site as a write under the plugin's own state or cache
 directory at mode 0600; a modified copy is reported as modified.
+
+## Check
+
+Three commands, read-only, in the order a submission is prepared: what the
+tree is observed to do, what the official baseline says about it, and what
+would be posted.
+
+### `omakit inspect`
 
 ![Recorded terminal showing inspect ranking two long functions and listing the review class observed in a fixture](media/inspect.gif)
 
@@ -81,6 +102,8 @@ document of [INSPECT.md](INSPECT.md), `--out` writes it to a file as well,
 `--offline` skips the baseline section. Exit 0 with a report, whatever it observed; 2
 when the target could not be read.
 
+### `omakit verify`
+
 `omakit verify` prints the official baseline result alone, with no Omakit
 check around it: the subject, the pin, the transport and what the local
 adapter assumes, then the marketplace's own outcome, each finding as a block
@@ -89,6 +112,8 @@ file and line, and the official text verbatim, then the marketplace's own
 statement. `--json` prints the document itself under the envelope every
 command carries (below), its own fields unchanged from earlier releases,
 and `--out <file>` writes it; agents and the skills use those.
+
+### `omakit submit`
 
 `omakit submit` reads the marketplace's registry first, and a run has three
 outcomes. `READY`, exit 0: every blocking check passed and the title and body
@@ -117,7 +142,40 @@ is the usage error with the same lists, exit 2. A listed plugin is asked for
 neither. A `READY` or `REFUSED` report ends with the command line that repeats
 the run without asking, and `--json` carries it as `reproduce`.
 
-Account-wide watch without `--user` requires `gh auth login` so it can discover your account. `--user <login>` can discover a public author's issues without a login. An individual issue URL still works unauthenticated. Discovery reads open authored issues, excludes pull requests, follows pagination, and refuses an incomplete list. JSON, `--out` and pipes never prompt: pass `--all`, `--list` or an issue URL. See [VALIDATION_WATCH.md](VALIDATION_WATCH.md) for batch output and exit codes.
+## Track
+
+A submission is not the end of it. These three answer what happened after: to
+the submission, to the plugins already installed, and to the shell they run
+in.
+
+### `omakit watch`
+
+Account-wide watch without `--user` requires `gh auth login` so it can
+discover your account. `--user <login>` can discover a public author's issues
+without a login. An individual issue URL still works unauthenticated.
+Discovery reads open authored issues, excludes pull requests, follows
+pagination, and refuses an incomplete list. JSON, `--out` and pipes never
+prompt: pass `--all`, `--list` or an issue URL. See
+[VALIDATION_WATCH.md](VALIDATION_WATCH.md) for batch output and exit codes.
+
+### `omakit audit`
+
+`omakit audit` compares every installed third-party plugin's running commit
+with the exact commits the marketplace records as validated, and changes
+nothing. The states, the flags, the verdict and the JSON contract are in
+[AUDIT.md](AUDIT.md).
+
+### `omakit weigh`
+
+`omakit weigh` measures what a plugin costs the shell from outside the
+process, by restarting the shell without the plugin and with it. It asks
+before it touches a running desktop. What it measures, what it does to
+`shell.json` while it runs, and what the numbers do not say are in
+[WEIGH.md](WEIGH.md).
+
+## Prove
+
+### `omakit lab`
 
 `omakit lab <prove|inspect|setup|prune>` proves a suite in a disposable
 Omarchy guest ([LAB.md](LAB.md)). `prove <suite>` boots nothing until the
@@ -139,7 +197,13 @@ plugins the weigh evidence suite needs. `prune` lists what the lab owns
 with its bytes, asks once, removes only that, and says what it recovered.
 `omakit doctor` gains the lab's lines, advisory.
 
+## Keeping the tool current
+
+### `omakit doctor`
+
 `omakit doctor` names the credential source it found, or that it found none.
+
+### `omakit setup`
 
 `omakit setup` checks the environment, fetches the marketplace checkout that
 every rule is read from, installs tab completion for the shell you run it from
@@ -160,6 +224,8 @@ something to put between a keystroke and its answer, and the ids are the
 shell's to report, not a list to bake into a script that would go stale
 the next time a plugin is added. The same pipeline is in the bash, zsh and
 fish scripts, and `tests/unit/completion.test.mjs` runs its jq expression.
+
+### Credentials and the network
 
 If you have `gh auth login` done, omakit
 reads that credential for GET requests and stores nothing; a token in
