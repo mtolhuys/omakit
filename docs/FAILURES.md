@@ -32,7 +32,7 @@ state nobody has written a fix for yet. The envelope itself, the streams and
 | `usage` | an option the command does not know, one without its value or given twice, an empty argument, one positional too many, or a question a pipe could not answer | `omakit help` |
 | `not-confirmed` | consent was needed and the answer was not yes, or nothing could answer: a pipe, an agent or `--json` | Run it again and answer `y`, or pass `--yes` when the person whose shell it is has agreed. |
 | `interrupted` | a signal stopped the run; what it had changed was put back first | `shell.json` was restored; run it again when the desktop is yours to restart. |
-| `out-unwritable` | `--out` named a file that could not be written; the document is then on stdout | Name a path you can write. |
+| `out-unwritable` | `--out` named a file that could not be written; the document is then on stdout | the operating system's own action for what it raised, below, or the general one |
 
 An error the operating system raised carries the errno as the code, and its
 own action: `EACCES` and `EPERM` say to make the directory writable, `EROFS`
@@ -125,6 +125,8 @@ is missing and the one command for each.
 | `plugin-fetch-failed` | a plugin the weigh evidence suite needs could not be fetched | Connect to the network, then `omakit lab setup --plugins` again. |
 | `prune-refused` | a path under the lab is a symbolic link, and the lab wrote none | Remove the symbolic link by hand; nothing under it is removed. |
 
-Every code here is a key of the tool's own remedy table, and
-`tests/unit/hygiene.test.mjs` fails when one is added to the tool and not to
-this page.
+Every code in the tool's own remedy table has a row here, and
+`tests/unit/hygiene.test.mjs` fails when a code is added to that table and
+not to this page. A few codes on this page are not in it: they carry their
+own action from where they are raised, which is why the action is stated
+beside them.
