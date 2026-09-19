@@ -241,7 +241,10 @@ omakit commit it came from (the checkout's HEAD; in a package, the commit
 the release workflow recorded in `tools/blocks/commit.json` before it
 packed, since a package has no checkout and `npm pack` records no
 `gitHead` in the tarball; a package with neither refuses to write a header
-it cannot name, `no-source-commit`) and the sha256 of the body after the
+it cannot name, `no-source-commit`, and `omakit doctor` says so as
+`omakit.source`; `npm run pack:release` in a checkout records, checks,
+packs and clears, so a tarball tested by hand is the one the workflow
+publishes) and the sha256 of the body after the
 header line, so
 `sha256sum <(tail -n +7 omakit/Run.qml)` is the whole check. A file whose
 body is the shipped one under an older header (a version that did not

@@ -37,12 +37,14 @@
 // nothing the tool uses.
 
 import { execFileSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinShape, requirePin } from "./pin.mjs"
 import { LIVE_PATHS } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
+import { sourceCommit } from "../blocks/add.mjs"
+import { recordedCommit } from "../blocks/record-commit.mjs"
 import { pathHint } from "./path-hint.mjs"
 import { completionStatus } from "./completion-check.mjs"
 import { inspectLab } from "../lab/inspect.mjs"
@@ -222,6 +224,21 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     } else {
       versionCheck("unknown", `${self.version}; could not read the npm registry (${published.error?.code || "error"})`)
     }
+  }
+
+  // Where this omakit's code comes from, and whether `add` can name it: a
+  // checkout (git is the source), a package the release step stamped
+  // (tools/blocks/commit.json), or a package packed without that step,
+  // which names no commit and refuses `add`. Measured on 2026-09-19: a
+  // candidate packed with a raw `npm pack` called itself the published
+  // version and nothing said it could not add a block.
+  {
+    const commit = sourceCommit(repoRoot)
+    const checkout = existsSync(join(repoRoot, ".git"))
+    const recorded = recordedCommit(repoRoot)
+    if (checkout && commit) add("omakit.source", "ok", `a checkout at ${commit.slice(0, 7)}; add stamps that commit`, null, { origin: "checkout", commit })
+    else if (commit) add("omakit.source", "ok", `a package the release step stamped with commit ${commit.slice(0, 7)}${recorded ? "" : " (npm's gitHead)"}; add stamps that commit`, null, { origin: "package", commit })
+    else add("omakit.source", "advice", "a package packed without the release step: it names no source commit, so `omakit add` refuses (no-source-commit)", "install an artifact the release step packed (`npm run pack:release` in a checkout, or the registry's release of this version once published)", { origin: "unstamped", commit: null })
   }
 
   // Reachable as a bare command, or the one line that makes it so for this

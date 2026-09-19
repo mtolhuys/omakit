@@ -1,8 +1,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync } from "node:fs"
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { recordCommit } from "../../tools/blocks/record-commit.mjs"
 import { changedPinPaths, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
 import { MARKETPLACE_PIN, PIN_PATHS } from "../../tools/marketplace/pin.mjs"
 import { LIVE_PATHS } from "../../tools/marketplace/registry.mjs"
@@ -183,6 +185,32 @@ const REGISTRY = "https://registry.npmjs.org"
 const installed = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version
 const quiet = { onPhase: () => {}, env: { ...process.env }, resolveHead: async () => ({ commit: MARKETPLACE_PIN.commit, branch: "main" }) }
 const versionCheck = async (latest) => (await doctor({ repoRoot: REPO_ROOT, ...quiet, latest })).checks.find((check) => check.id === "omakit.version")
+
+test("omakit.source: a checkout names HEAD, a stamped package names its record, an unstamped package is advice that names the release step", async () => {
+  const checks = (await doctor({ repoRoot: REPO_ROOT, ...quiet, offline: true })).checks
+  const source = checks.find((check) => check.id === "omakit.source")
+  const head = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeout: 60_000, encoding: "utf8" }).trim()
+  assert.equal(source.state, "ok")
+  assert.equal(source.detail, `a checkout at ${head.slice(0, 7)}; add stamps that commit`)
+  assert.deepEqual(source.evidence, { origin: "checkout", commit: head })
+  // A package: bin, tools and package.json with no .git; unstamped first, then stamped.
+  const root = mkdtempSync(join(tmpdir(), "omakit-doctor-source-"))
+  try {
+    for (const entry of ["bin", "tools", "package.json"]) cpSync(join(REPO_ROOT, entry), join(root, entry), { recursive: true })
+    const unstamped = (await doctor({ repoRoot: root, ...quiet, offline: true })).checks.find((check) => check.id === "omakit.source")
+    assert.equal(unstamped.state, "advice")
+    assert.match(unstamped.detail, /packed without the release step: it names no source commit, so `omakit add` refuses/)
+    assert.match(unstamped.action, /npm run pack:release/)
+    assert.deepEqual(unstamped.evidence, { origin: "unstamped", commit: null })
+    recordCommit(root, head)
+    const stamped = (await doctor({ repoRoot: root, ...quiet, offline: true })).checks.find((check) => check.id === "omakit.source")
+    assert.equal(stamped.state, "ok")
+    assert.equal(stamped.detail, `a package the release step stamped with commit ${head.slice(0, 7)}; add stamps that commit`)
+    assert.deepEqual(stamped.evidence, { origin: "package", commit: head })
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
 
 test("omakit.version: current and newest is ok, behind is a note with the upgrade, unreachable is unknown, and both facts are in the JSON", async () => {
   const current = await versionCheck(async () => ({ version: installed, error: null }))

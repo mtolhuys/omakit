@@ -1,6 +1,6 @@
 {
   "name": "omakit",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Tested plumbing, the marketplace's own checks, and a disposable Omarchy to test in.",
   "license": "MIT",
   "author": "Maarten Tolhuijs",
@@ -27,7 +27,8 @@
     "pin": "node tools/marketplace/cli.mjs pin",
     "test": "node --test --test-timeout=180000 tests/unit/*.test.mjs",
     "parity": "node tools/marketplace/cli.mjs parity --count 30",
-    "doctor": "node tools/marketplace/cli.mjs doctor"
+    "doctor": "node tools/marketplace/cli.mjs doctor",
+    "pack:release": "node tools/blocks/record-commit.mjs && node tools/blocks/record-commit.mjs --check && npm pack --ignore-scripts; node tools/blocks/record-commit.mjs --clear"
   },
   "repository": {
     "type": "git",

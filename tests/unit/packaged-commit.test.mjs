@@ -15,7 +15,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { REPO_ROOT } from "./helpers.mjs"
-import { COMMIT_FILE, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
+import { clearCommit, COMMIT_FILE, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
 import { sourceCommit } from "../../tools/blocks/add.mjs"
 import { SUITES, suitePreflight } from "../../tools/lab/suites.mjs"
 import { labLayout } from "../../tools/lab/paths.mjs"
@@ -25,6 +25,25 @@ const HEAD = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { timeo
 test("a checkout names HEAD, and its committed record is empty on purpose", () => {
   assert.equal(sourceCommit(REPO_ROOT), HEAD)
   assert.equal(recordedCommit(REPO_ROOT), null, "the checkout's tools/blocks/commit.json is null; the workflow fills it at pack time")
+  // The release step by hand: `npm run pack:release` records, checks, packs and clears, in that order, and the clear runs whatever pack did.
+  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
+  assert.equal(pkg.scripts["pack:release"], "node tools/blocks/record-commit.mjs && node tools/blocks/record-commit.mjs --check && npm pack --ignore-scripts; node tools/blocks/record-commit.mjs --clear")
+  assert.equal(pkg.version, "0.6.0", "the release branch names the release it makes")
+  // --clear on a copy: the record is null again, the explanation kept.
+  const copy = mkdtempSync(join(tmpdir(), "omakit-record-"))
+  try {
+    mkdirSync(join(copy, "tools/blocks"), { recursive: true })
+    writeFileSync(join(copy, COMMIT_FILE), readFileSync(join(REPO_ROOT, COMMIT_FILE)))
+    recordCommit(copy, HEAD)
+    assert.equal(recordedCommit(copy), HEAD)
+    clearCommit(copy)
+    assert.equal(recordedCommit(copy), null)
+    const record = JSON.parse(readFileSync(join(copy, COMMIT_FILE), "utf8"))
+    assert.equal(record.recordedAt, null)
+    assert.match(record.how, /release workflow/)
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
+  }
   const workflow = readFileSync(join(REPO_ROOT, ".github/workflows/release.yml"), "utf8")
   const record = workflow.indexOf("node tools/blocks/record-commit.mjs\n")
   const pack = workflow.indexOf("npm pack --ignore-scripts")
