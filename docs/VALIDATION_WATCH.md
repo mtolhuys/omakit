@@ -78,6 +78,14 @@ issue body**.
 So pushing a fix does nothing, and commenting "fixed in `abc123`" does nothing.
 Both feel like progress and neither is.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/watch-stale-dark.svg">
+  <img alt="Pushing a fix and commenting on the issue trigger nothing; editing the issue body is the only action that makes the marketplace validate a newer commit" src="media/watch-stale-light.svg" width="640">
+</picture>
+
+*Two of the three things an author reaches for change nothing at all. This is
+what the command exists to notice.*
+
 ## Why this is the centre of the tool
 
 On 2026-09-15, all 583 open submissions labelled `needs-fixes` or

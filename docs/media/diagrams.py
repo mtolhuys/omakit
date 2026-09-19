@@ -349,6 +349,75 @@ INSPECT_REPORT = """
 <text x="8" y="220" font-size="11" fill="{muted}">and the report closes by naming what the method cannot see</text>
 """
 
+WATCH_STALE = """
+<text x="8" y="16" font-family="{mono}" font-size="11" fill="{muted}">after the marketplace validated one commit</text>
+
+<rect x="8" y="26" width="196" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="106" y="50" text-anchor="middle" font-size="11" fill="{ink}">you push the fix</text>
+<line x1="204" y1="45" x2="286" y2="45" stroke="{muted}" stroke-width="1.2"/>
+<line x1="290" y1="28" x2="290" y2="62" stroke="{warn}" stroke-width="3"/>
+<text x="302" y="49" font-size="11" fill="{muted}">nothing runs</text>
+
+<rect x="8" y="76" width="196" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="106" y="100" text-anchor="middle" font-size="11" fill="{ink}">you comment "fixed in abc123"</text>
+<line x1="204" y1="95" x2="286" y2="95" stroke="{muted}" stroke-width="1.2"/>
+<line x1="290" y1="78" x2="290" y2="112" stroke="{warn}" stroke-width="3"/>
+<text x="302" y="99" font-size="11" fill="{muted}">nothing runs</text>
+
+<rect x="8" y="126" width="196" height="38" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="106" y="150" text-anchor="middle" font-size="11" fill="{accent}">you edit the issue body</text>
+<line x1="204" y1="145" x2="316" y2="145" stroke="{accent}" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<rect x="318" y="124" width="314" height="44" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="332" y="143" font-family="{mono}" font-size="11" fill="{accent}">route-issue-automation.yml</text>
+<text x="332" y="159" font-size="10" fill="{muted}">types: opened, edited, reopened, labeled, unlabeled</text>
+
+<line x1="475" y1="168" x2="475" y2="192" stroke="{accent}" stroke-width="1.5" marker-end="url(#acc)"/>
+<text x="318" y="210" font-size="11" fill="{accent}">the newer commit is the one validated, and reviewed</text>
+
+<text x="8" y="240" font-size="11" fill="{muted}">no workflow anywhere in the marketplace triggers on a comment, and the daily</text>
+<text x="8" y="256" font-size="11" fill="{muted}">catalog refresh covers plugins that are already listed, not open submissions</text>
+"""
+
+WEIGH_METHOD = """
+<text x="8" y="16" font-family="{mono}" font-size="11" fill="{accent}">two shell configurations, three runs each</text>
+
+<rect x="8" y="24" width="300" height="52" rx="4" fill="none" stroke="{ink}" stroke-width="1.5"/>
+<text x="158" y="46" text-anchor="middle" font-family="{mono}" font-size="11" fill="{ink}">baseline</text>
+<text x="158" y="64" text-anchor="middle" font-size="10" fill="{muted}">your enabled set, minus the plugin</text>
+<rect x="332" y="24" width="300" height="52" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="482" y="46" text-anchor="middle" font-family="{mono}" font-size="11" fill="{accent}">baseline plus one</text>
+<text x="482" y="64" text-anchor="middle" font-size="10" fill="{muted}">the same set, with that plugin enabled</text>
+
+<line x1="158" y1="76" x2="158" y2="112" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<line x1="482" y1="76" x2="482" y2="112" stroke="{accent}" stroke-width="1.2" marker-end="url(#acc)"/>
+<text x="320" y="98" text-anchor="middle" font-size="10" fill="{muted}">each run, the same way</text>
+
+<rect x="7" y="116" width="114" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="64" y="139" text-anchor="middle" font-size="10" fill="{ink}">write shell.json</text>
+<line x1="121" y1="135" x2="133" y2="135" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="135" y="116" width="114" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="192" y="139" text-anchor="middle" font-size="10" fill="{ink}">restart the shell</text>
+<line x1="249" y1="135" x2="261" y2="135" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="263" y="116" width="114" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="320" y="139" text-anchor="middle" font-size="10" fill="{ink}">wait for the plugins</text>
+<line x1="377" y1="135" x2="389" y2="135" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="391" y="116" width="114" height="38" rx="4" fill="none" stroke="{ink}" stroke-width="1.2"/>
+<text x="448" y="139" text-anchor="middle" font-size="10" fill="{ink}">settle, 30 s</text>
+<line x1="505" y1="135" x2="517" y2="135" stroke="{ink}" stroke-width="1.2" marker-end="url(#ink)"/>
+<rect x="519" y="116" width="114" height="38" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="576" y="139" text-anchor="middle" font-size="10" fill="{accent}">window, 15 s</text>
+
+<text x="8" y="176" font-size="11" fill="{muted}">sampled at the end of the window: the shell's Pss, its CPU over the window, and the CPU of every child it reaped</text>
+
+<line x1="320" y1="186" x2="320" y2="210" stroke="{ink}" stroke-width="1.5" marker-end="url(#ink)"/>
+<rect x="170" y="212" width="300" height="46" rx="4" fill="none" stroke="{accent}" stroke-width="2"/>
+<text x="320" y="234" text-anchor="middle" font-size="11" fill="{accent}">run i with, minus run i without</text>
+<text x="320" y="250" text-anchor="middle" font-size="10" fill="{muted}">the median, and the spread</text>
+
+<text x="8" y="280" font-size="11" fill="{muted}">measured from outside the process: nothing is read from the plugin's source, and no declared interval is believed</text>
+"""
+
 DIAGRAMS = [
     ("why-shell", 640, 260, SHELL,
      "One shell process hosts every widget; values a plugin does not control flow in, "
@@ -382,6 +451,12 @@ DIAGRAMS = [
     ("inspect-report", 640, 230, INSPECT_REPORT,
      "inspect reads the plugin tree without running anything from it and reports what the text "
      "shows, closing on INSPECTED rather than on a verdict"),
+    ("watch-stale", 640, 268, WATCH_STALE,
+     "Pushing a fix and commenting on the issue trigger nothing; editing the issue body is "
+     "the only action that makes the marketplace validate a newer commit"),
+    ("weigh-method", 640, 292, WEIGH_METHOD,
+     "A plugin's weight is the difference between two shells started clean, one without it "
+     "and one with it, each run the same way and sampled at the end of a window"),
     ("why-store", 640, 250, STORE,
      "Store walks the directory chain by descriptor and writes through an exclusive "
      "temporary file that is renamed into place"),

@@ -33,6 +33,14 @@ For the plugin under measurement, two shell configurations:
 - **baseline plus one**: the same set with that one plugin enabled, placed
   where you had it.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/weigh-method-dark.svg">
+  <img alt="A plugin's weight is the difference between two shells started clean, one without it and one with it, each run the same way and sampled at the end of a window" src="media/weigh-method-light.svg" width="640">
+</picture>
+
+*The number is a difference between two shells, not a reading taken from one.
+Everything either configuration does, the other does too.*
+
 For each configuration, `--runs` runs (default 3). A run is: write the
 configuration to `shell.json`, `omarchy-restart-shell`, wait until
 `listPlugins` reports every installed plugin, then a settle period
@@ -243,13 +251,23 @@ had that name is not listed.
 
 ## Options, checked first
 
-Every token on the command line is checked before anything else: an option
+Every token on the command line is checked before anything else. An option
 `weigh` does not know (`-n 1`, `-n=1`, `--run 1`), an option without its
 value, or one positional beyond the plugin is refused as `█ NOT WEIGHED`
-with the offending token and the accepted list, `--runs N`, `--window S`,
-`--settle S`, `--out FILE`, `--all`, `--list`, `--json`, `--yes`, exit 2, before the
-preflight. `--runs=3` is read as `--runs 3`. Measured before this: `-n 1`
-ran three runs as if nothing had been passed.
+with the offending token and the accepted list, exit 2, before the preflight.
+`--runs=3` is read as `--runs 3`. Measured before this: `-n 1` ran three runs
+as if nothing had been passed.
+
+| Option | Default | What it changes |
+| --- | --- | --- |
+| `--runs N` | 3 | how many runs of each configuration the difference is taken over |
+| `--settle S` | 30 | the seconds between the shell answering and the window opening |
+| `--window S` | 15 | the seconds the CPU is measured over, and at whose end memory is sampled |
+| `--out FILE` | | writes the run's document to a file as well |
+| `--all` | | every enabled third-party plugin, one after another |
+| `--list` | | every installed plugin, and when it was last weighed |
+| `--json` | | the document on stdout, and nothing else |
+| `--yes` | | the confirmation, given in the command line, for an agent |
 
 ## Compatibility, before the confirmation
 

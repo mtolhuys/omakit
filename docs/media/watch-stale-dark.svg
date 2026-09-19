@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 268" width="640" height="268" role="img" aria-labelledby="t"><title id="t">Pushing a fix and commenting on the issue trigger nothing; editing the issue body is the only action that makes the marketplace validate a newer commit</title>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#e5ecf3"/></marker>
+<marker id="acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#72a9dd"/></marker>
+</defs>
+<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<text x="8" y="16" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#94a2b1">after the marketplace validated one commit</text>
+
+<rect x="8" y="26" width="196" height="38" rx="4" fill="none" stroke="#e5ecf3" stroke-width="1.2"/>
+<text x="106" y="50" text-anchor="middle" font-size="11" fill="#e5ecf3">you push the fix</text>
+<line x1="204" y1="45" x2="286" y2="45" stroke="#94a2b1" stroke-width="1.2"/>
+<line x1="290" y1="28" x2="290" y2="62" stroke="#d68a4b" stroke-width="3"/>
+<text x="302" y="49" font-size="11" fill="#94a2b1">nothing runs</text>
+
+<rect x="8" y="76" width="196" height="38" rx="4" fill="none" stroke="#e5ecf3" stroke-width="1.2"/>
+<text x="106" y="100" text-anchor="middle" font-size="11" fill="#e5ecf3">you comment "fixed in abc123"</text>
+<line x1="204" y1="95" x2="286" y2="95" stroke="#94a2b1" stroke-width="1.2"/>
+<line x1="290" y1="78" x2="290" y2="112" stroke="#d68a4b" stroke-width="3"/>
+<text x="302" y="99" font-size="11" fill="#94a2b1">nothing runs</text>
+
+<rect x="8" y="126" width="196" height="38" rx="4" fill="none" stroke="#72a9dd" stroke-width="2"/>
+<text x="106" y="150" text-anchor="middle" font-size="11" fill="#72a9dd">you edit the issue body</text>
+<line x1="204" y1="145" x2="316" y2="145" stroke="#72a9dd" stroke-width="1.5" marker-end="url(#acc)"/>
+
+<rect x="318" y="124" width="314" height="44" rx="4" fill="none" stroke="#72a9dd" stroke-width="2"/>
+<text x="332" y="143" font-family="ui-monospace, SFMono-Regular, Menlo, DejaVu Sans Mono, monospace" font-size="11" fill="#72a9dd">route-issue-automation.yml</text>
+<text x="332" y="159" font-size="10" fill="#94a2b1">types: opened, edited, reopened, labeled, unlabeled</text>
+
+<line x1="475" y1="168" x2="475" y2="192" stroke="#72a9dd" stroke-width="1.5" marker-end="url(#acc)"/>
+<text x="318" y="210" font-size="11" fill="#72a9dd">the newer commit is the one validated, and reviewed</text>
+
+<text x="8" y="240" font-size="11" fill="#94a2b1">no workflow anywhere in the marketplace triggers on a comment, and the daily</text>
+<text x="8" y="256" font-size="11" fill="#94a2b1">catalog refresh covers plugins that are already listed, not open submissions</text>
+</g>
+</svg>

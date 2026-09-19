@@ -1,5 +1,11 @@
 # Marketplace boundary and integration
 
+This page is the boundary: what the Omarchy Plugin Marketplace already does,
+what this tool does instead, and where the two meet. It exists so that no
+claim in the other pages can be read as a claim about the marketplace, and so
+that anyone weighing whether this tool is worth anything can see the honest
+answer rather than the flattering one.
+
 ## Why this matters, stated honestly
 
 The Omarchy Plugin Marketplace (`omacom/omarchy-plugin-marketplace`, served at
