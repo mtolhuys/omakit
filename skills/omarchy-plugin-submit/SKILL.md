@@ -162,5 +162,41 @@ words, and so should you.
 Tell the owner the one thing nobody tells them: the marketplace validated one
 exact commit, and **editing the issue body** is the only action that makes it
 validate a newer one. Pushing a fix does nothing. Commenting "fixed in `abc123`" does nothing.
-Then use `omakit watch <issue-url>` to check it later, and see
-`skills/omarchy-plugin-validation-watch/SKILL.md`.
+Then use `omakit watch <issue-url> <path-to-the-plugin-repo>` to check it
+later, and see `skills/omarchy-plugin-validation-watch/SKILL.md`.
+
+When the issue has to be edited, whether to retry after a push or because the
+marketplace refused it, follow the protocol below. It is the same protocol
+the validation-watch skill names, under the same name.
+
+## Retry edit protocol
+
+A retry edit is never typed. It is the body `omakit submit` renders, and
+`omakit watch` verifies afterwards that the issue says what `origin` says.
+The reason is omacom/omarchy-plugin-marketplace#7787, 2026-09-20: an agent
+following a skill retyped the whole body for a retry, the Repository URL
+came out as `mtolhuijs/omacrunch` where origin says `mtolhuys/omacrunch`,
+the Maintainer notes were wiped, and the marketplace refused the issue as
+`repository-unreachable` 40 seconds after the edit.
+
+1. Re-run `omakit submit` with the same `--category`, `--tags` and `--notes`
+   as the original submission, plus `--body-out <file>`. The Repository URL
+   in that body comes from `origin`; you never type it.
+2. Read the current issue body (`gh issue view <url> --json body`). Diff it
+   against the new body. The only lines allowed to differ are under
+   "### Maintainer notes". Any other difference means you are about to change
+   the submission; stop and show the owner the diff.
+3. With the owner's explicit approval: `gh issue edit <url> --body-file <file>`.
+4. Run `omakit watch <url> <path-to-the-plugin-repo>`. Expect `current` within
+   two minutes. `wrong-repository` or `refused` means step 2 was skipped; fix
+   it now, by the same steps.
+
+Never retype the body. Never write the Repository URL by hand. Never edit a
+`current` issue to bump it: a fresh validation clears the reviewer's human
+decision and costs a complete re-read of the plugin.
+
+`submission.issue-repository-url` is the check that catches the typo before
+the next run: when you have an open submission issue for this plugin and its
+Repository URL is not `origin`, `submit` is refused and the remedy names the
+issue and the URL to put back. Put it back with the protocol above, not by
+editing the field by hand.

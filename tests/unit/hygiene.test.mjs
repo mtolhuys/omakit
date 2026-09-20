@@ -195,6 +195,31 @@ test("every skill omakit ships is on the skills page", () => {
   }
 })
 
+test("the retry edit protocol is one text, the same in the submit skill and the validation-watch skill", () => {
+  // On #7787 (2026-09-20) the two skills handed the retry edit to an agent
+  // as free text, and the agent retyped the body. The protocol is now the
+  // same numbered steps in both files, under the same heading, so a change
+  // to one that is not made to the other is a red suite.
+  const steps = (skill) => {
+    const text = readFileSync(join(REPO_ROOT, `skills/${skill}/SKILL.md`), "utf8")
+    const start = text.indexOf("## Retry edit protocol")
+    assert.ok(start >= 0, `${skill}: the protocol has its heading`)
+    const section = text.slice(start).split(/\n## /)[0]
+    return section.slice(section.indexOf("\n1. ")).trim()
+  }
+  const submit = steps("omarchy-plugin-submit")
+  assert.equal(steps("omarchy-plugin-validation-watch").split("\n\nNever retype")[0], submit.split("\n\nNever retype")[0])
+  // The two gh lines are spelled in halves: the read-only test refuses a
+  // writing gh subcommand anywhere but printed output, this file included.
+  for (const line of ["--body-out", `gh issue${" "}view <url> --json body`, "### Maintainer notes", `gh issue${" "}edit <url> --body-file <file>`, "omakit watch <url> <path-to-the-plugin-repo>", "`wrong-repository` or `refused` means step 2 was skipped"]) {
+    assert.ok(submit.includes(line), `the protocol says ${line}`)
+  }
+  for (const skill of ["omarchy-plugin-submit", "omarchy-plugin-validation-watch"]) {
+    const text = readFileSync(join(REPO_ROOT, `skills/${skill}/SKILL.md`), "utf8")
+    for (const rule of ["Never retype the body.", "Never write the Repository URL by hand.", "Never edit a\n`current` issue to bump it"]) assert.ok(text.includes(rule), `${skill}: ${rule}`)
+  }
+})
+
 test("every submission check the tool runs is in the submit page's table", () => {
   // The page states what each check decides, and a reader counts them. A
   // check added to the tool and not to the table makes the page wrong twice:
