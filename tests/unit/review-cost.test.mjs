@@ -67,6 +67,34 @@ test("repository issue count reuses watch discovery, filters accounts and normal
   assert.deepEqual(calls.sort(), [1, 2, 3])
 })
 
+test("discovery also finds the author's submission for this plugin by its name or id when the Repository URL does not match", async () => {
+  // #7787: the typed URL named a repository that does not exist, so a
+  // match on the URL alone made the author's own issue invisible.
+  const body = (url, id = "") => `### Repository URL\n\n${url}\n\n### Category\n\nWidgets\n\n### Tags\n\nBar\n\n### Suggest a missing tag\n\n_No response_\n\n### Maintainer notes\n\n${id || "_No response_"}\n\n### Submission checklist\n\n- [X] x\n`
+  const subjects = [
+    { number: 1, state: "open", title: "[Plugin]: Test", user: { login: "author" }, labels: [], body: body(repository) },
+    { number: 2, state: "open", title: "[Plugin]: Test", user: { login: "author" }, labels: [], body: body("https://github.com/exampel/plugin") },
+    { number: 3, state: "open", title: "[Plugin]: Other", user: { login: "author" }, labels: [], body: body("https://github.com/other/plugin", "the id io.example.test is mine") },
+    { number: 4, state: "open", title: "[Plugin]: Unrelated", user: { login: "author" }, labels: [], body: body("https://github.com/other/unrelated") },
+  ]
+  const result = await openIssuesForRepository({ repoRoot: REPO_ROOT, repository, pluginName: "test", pluginId: "io.example.test", github: {
+    token: () => "fixture", authenticatedUser: async () => "author", repositoryIssues: async () => subjects,
+    issue: async (_, __, number) => subjects.find((subject) => subject.number === number),
+  } })
+  assert.equal(result.count, 3)
+  assert.equal(result.account, "author")
+  assert.deepEqual(result.issues.map((row) => [row.number, row.sameRepository, row.matchedBy]), [[1, true, "repository"], [2, false, "name"], [3, false, "id"]])
+  assert.equal(result.issues[1].repositoryUrl, "https://github.com/exampel/plugin")
+  assert.equal(result.issues[1].url, `${MARKETPLACE_PIN.repository}/issues/2`)
+  assert.match(result.reason, /3 open issue\(s\) for this plugin, 2 of them naming another repository/)
+  // Without a name or an id to match on, the URL is all there is, as before.
+  const bare = await openIssuesForRepository({ repoRoot: REPO_ROOT, repository, github: {
+    token: () => "fixture", authenticatedUser: async () => "author", repositoryIssues: async () => subjects,
+    issue: async (_, __, number) => subjects.find((subject) => subject.number === number),
+  } })
+  assert.equal(bare.count, 1)
+})
+
 test("no credential, offline, network failure and incomplete discovery never become zero open issues", async () => {
   for (const options of [{ offline: true }, { github: { token: () => null } },
     { github: { token: () => "fixture", authenticatedUser: async () => { throw Object.assign(new Error("network down"), { code: "network-unavailable" }) } } },

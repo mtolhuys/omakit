@@ -178,9 +178,13 @@ export function renderSubmit(result, { colour = colourEnabled() } = {}) {
     : `${result.validationCommit.local} is the local commit; the marketplace validates the default-branch HEAD it resolves when the issue is opened.`
   // A skipped check is said on the READY line itself, so the one line an
   // agent quotes does not read as "everything passed" when one check never
-  // ran. The count is the whole `skipped` list; today only --offline skips.
+  // ran. The count is the whole `skipped` list; --offline skips, and the
+  // open-issue check also skips without a credential or an open issue, and
+  // then the reason is on its own row.
+  const skippedChecks = (result.checks || []).filter((entry) => entry.verdict === "skipped")
   const skipped = (result.skipped || []).length
-  const skippedNote = skipped ? ` ${skipped === 1 ? "1 check" : `${skipped} checks`} skipped (--offline).` : ""
+  const offlineOnly = skippedChecks.length > 0 && skippedChecks.every((entry) => /\(--offline\)/.test(entry.detail))
+  const skippedNote = skipped ? ` ${skipped === 1 ? "1 check" : `${skipped} checks`} skipped (${offlineOnly ? "--offline" : "each says why"}).` : ""
   out.push(...verdict("pass", "READY", `every blocking check passed.${skippedNote} ${validation}`, c))
   out.push("")
   out.push(...section("issue title", c))

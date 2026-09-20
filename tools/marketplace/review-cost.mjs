@@ -6,6 +6,7 @@ import { requirePin } from "./pin.mjs"
 import { token, issue, parseIssueUrl, compareCommits } from "./github.mjs"
 import { discoverWatchIssues, repositoryFor } from "./watch.mjs"
 import { repositorySlug } from "./registry.mjs"
+import { submissionContract } from "./form.mjs"
 
 /** Outcome and update label names come from the pin, rather than a second policy. */
 export async function reviewPolicy(repoRoot) {
@@ -18,26 +19,52 @@ export async function reviewPolicy(repoRoot) {
   return { automated: policy.securityBaselineOutcome([], []), manual, updateLabel, reviewLabel: `security-${manual}` }
 }
 
-/** The same discovery as watch --all; no credential or incomplete reads are not zero issues. */
-export async function openIssuesForRepository({ repoRoot, repository, offline = false, github = {} }) {
+/**
+ * The same discovery as watch --all; no credential or incomplete reads are
+ * not zero issues. An issue is the author's for this plugin when its
+ * Repository URL is the repository, or, for a `[Plugin]:` submission whose
+ * URL is another repository, when its title carries the manifest's name or
+ * its body names the manifest's id: on #7787 (2026-09-20) the retyped URL
+ * made the author's own issue invisible to a match on the URL alone, and
+ * the one check that could have named the typo had nothing to look at.
+ * Each matched issue is returned with `sameRepository`, so a caller can
+ * tell the two apart.
+ *
+ * @returns {{ count: number|null, reason: string, account?: string, issues?: { number: number, url: string, repositoryUrl: string|null, sameRepository: boolean, matchedBy: "repository"|"name"|"id" }[] }}
+ */
+export async function openIssuesForRepository({ repoRoot, repository, pluginName = "", pluginId = "", offline = false, github = {} }) {
   if (offline) return { count: null, reason: "not checked (--offline)" }
   if (!(github.token || token)()) return { count: null, reason: "not checked: no GitHub credential" }
   try {
     const discovery = await discoverWatchIssues({ github })
     const { dir } = requirePin(repoRoot)
-    let count = 0
+    const { titleTemplate } = await submissionContract({ pinDir: dir })
+    const name = String(pluginName || "").trim().toLowerCase()
+    const id = String(pluginId || "").trim()
+    const matched = []
     let next = 0
     async function worker() {
       while (next < discovery.issues.length) {
-        const target = parseIssueUrl(discovery.issues[next++].url)
+        const entry = discovery.issues[next++]
+        const target = parseIssueUrl(entry.url)
         const subject = await (github.issue || issue)(target.owner, target.repository, target.number)
         const parsed = await repositoryFor(dir, subject)
         if (!parsed.url) throw new Error(`repository unknown on issue #${target.number}: ${parsed.error}`)
-        if (repositorySlug(parsed.url) === repositorySlug(repository)) count += 1
+        const row = { number: target.number, url: entry.url, repositoryUrl: parsed.url, sameRepository: repositorySlug(parsed.url) === repositorySlug(repository), matchedBy: null }
+        if (row.sameRepository) row.matchedBy = "repository"
+        else if (parsed.kind === "submission" && titleTemplate && String(subject.title || "").startsWith(titleTemplate)) {
+          const titled = String(subject.title).slice(titleTemplate.length).trim().toLowerCase()
+          if (name && titled === name) row.matchedBy = "name"
+          else if (id && String(subject.body || "").includes(id)) row.matchedBy = "id"
+        }
+        if (row.matchedBy) matched.push(row)
       }
     }
     await Promise.all(Array.from({ length: Math.min(4, discovery.issues.length) }, worker))
-    return { count, reason: `watch --all discovery: ${count} open issue(s) for this repository` }
+    matched.sort((a, b) => a.number - b.number)
+    const other = matched.filter((row) => !row.sameRepository).length
+    return { count: matched.length, account: discovery.account, issues: matched,
+      reason: `watch --all discovery: ${matched.length} open issue(s) for this plugin${other ? `, ${other} of them naming another repository` : ""}` }
   } catch (error) {
     return { count: null, reason: `not checked (${error.code || "issue-discovery-unavailable"}): ${error.message}` }
   }

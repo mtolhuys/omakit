@@ -429,7 +429,7 @@ test("the offline flag makes the validation-commit check skipped: advisory, neve
   assert.equal(check.verdict, "skipped")
   assert.equal(check.remedy, null)
   assert.match(check.detail, /^not checked \(--offline\)\. Local commit [0-9a-f]{40}\.$/)
-  assert.deepEqual(result.skipped, ["submission.validation-commit"], "counted as skipped")
+  assert.deepEqual(result.skipped, ["submission.validation-commit", "submission.issue-repository-url"], "counted as skipped, with the open-issue check that needs the network too")
   assert.deepEqual(result.unknown, [], "not as unknown: nothing was waited on")
   assert.deepEqual(result.advisory, [], "not as an advisory failure: nothing failed")
   assert.equal(result.ready, true, "a skipped advisory check does not block READY")
@@ -439,7 +439,7 @@ test("the offline flag makes the validation-commit check skipped: advisory, neve
   const text = renderSubmit(result, { colour: false })
   assert.ok(text.includes(`${STATUS.skipped.glyph} ${STATUS.skipped.word}  submission.validation-commit`), "drawn with the skipped mark")
   assert.ok(!text.includes(`${STATUS.pass.glyph} ${STATUS.pass.word}    submission.validation-commit`), "not drawn as a pass")
-  assert.ok(text.includes(`${STATUS.pass.glyph} READY  every blocking check passed. 1 check skipped (--offline).`), "the READY line says so")
+  assert.ok(text.includes(`${STATUS.pass.glyph} READY  every blocking check passed. 2 checks skipped (--offline).`), "the READY line says so")
 })
 
 test("without an origin, the validation-commit check waits on the repository URL instead of failing as an unreadable HEAD", async () => {
@@ -469,4 +469,78 @@ test("without an origin, the validation-commit check waits on the repository URL
   // With --offline the flag still wins: skipped, not unknown.
   const offline = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: true })
   assert.equal(offline.checks.find((check) => check.id === "submission.validation-commit").verdict, "skipped")
+})
+
+// --- submission.issue-repository-url ------------------------------------------
+//
+// omacom/omarchy-plugin-marketplace#7787, 2026-09-20 19:18 UTC: a retry edit
+// typed by an agent put mtolhuijs/omacrunch where origin says
+// mtolhuys/omacrunch, and the marketplace refused it as
+// repository-unreachable 40 seconds later. `submit` matched the author's
+// open issues by Repository URL alone, so the issue with the typo was not
+// "yours" and nothing compared it with origin.
+
+const ORIGIN = "https://github.com/example/omarchy-plugin-fixture-good"
+const submissionIssue = (number, url, extra = {}) => ({ number, state: "open", title: "[Plugin]: Fixture Good", user: { login: "author" }, labels: [],
+  body: `### Repository URL\n\n${url}\n\n### Category\n\nWidgets\n\n### Tags\n\nBar\n\n### Suggest a missing tag\n\n_No response_\n\n### Maintainer notes\n\n_No response_\n\n### Submission checklist\n\n- [X] x\n`, ...extra })
+
+async function submitWithIssues(issues, { credential = "fixture", offline = false } = {}) {
+  const fixture = materialise(GOOD, { origin: ORIGIN })
+  return submitPreflight({
+    repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline,
+    readRegistry: async () => ({ source: "pin", commit: requirePinForTests() && "0".repeat(40),
+      registry: JSON.parse(readFileSync(join(requirePinForTests(), "registry.json"))),
+      catalog: JSON.parse(readFileSync(join(requirePinForTests(), "site/catalog.json"))) }),
+    github: { token: () => credential, defaultBranchHead: async () => ({ commit: fixture.commit, branch: "main" }),
+      authenticatedUser: async () => "author", repositoryIssues: async () => issues, issue: async (_, __, number) => issues.find((entry) => entry.number === number) },
+  })
+}
+
+test("the author's open issue whose Repository URL is origin passes the issue-repository-url check", async () => {
+  const result = await submitWithIssues([submissionIssue(1, "https://github.com/EXAMPLE/omarchy-plugin-fixture-good.git")])
+  const check = result.checks.find((entry) => entry.id === "submission.issue-repository-url")
+  assert.equal(check.source, "omakit")
+  assert.equal(check.severity, "blocking")
+  assert.equal(check.verdict, "pass")
+  assert.equal(check.detail, "issue #1 matches origin")
+  assert.equal(check.remedy, null)
+  assert.match(check.why, /#7787/)
+  assert.match(check.why, /27 of the 646/)
+  assert.match(check.why, /2026-09-20/)
+  assert.equal(result.ready, true)
+})
+
+test("the author's open issue for this plugin with another Repository URL is a blocking failure that names both URLs", async () => {
+  // The title carries the manifest's name and the URL does not match: that
+  // is #7787 at 19:19, and the check says which issue, what it says, and
+  // what origin says.
+  const result = await submitWithIssues([submissionIssue(7787, "https://github.com/exampel/omarchy-plugin-fixture-good"), submissionIssue(8, "https://github.com/someone/else", { title: "[Plugin]: Another" })])
+  const check = result.checks.find((entry) => entry.id === "submission.issue-repository-url")
+  assert.equal(check.verdict, "fail")
+  assert.equal(check.detail, `issue #7787 says https://github.com/exampel/omarchy-plugin-fixture-good, origin says ${ORIGIN}`)
+  assert.deepEqual(check.remedy, [`Edit issue #7787 and set the Repository URL field to ${ORIGIN}. Change nothing else.`])
+  assert.equal(result.outcome, "refused")
+  assert.deepEqual(result.blocking, ["submission.issue-repository-url"])
+  const text = renderSubmit(result, { colour: false })
+  assert.match(text, /issue #7787 says https:\/\/github\.com\/exampel\/omarchy-plugin-fixture-good,\s+origin says/)
+  assert.match(text, /Edit issue #7787 and set the Repository URL field to/)
+})
+
+test("the issue-repository-url check is skipped offline, without a credential, and with no open issue for this plugin, and never blocks then", async () => {
+  for (const [options, detail] of [[{ offline: true }, /^not checked \(--offline\)$/], [{ credential: null }, /^not checked: no GitHub credential$/]]) {
+    const result = await submitWithIssues([submissionIssue(7787, "https://github.com/exampel/omarchy-plugin-fixture-good")], options)
+    const check = result.checks.find((entry) => entry.id === "submission.issue-repository-url")
+    assert.equal(check.verdict, "skipped", JSON.stringify(options))
+    assert.match(check.detail, detail)
+    assert.equal(check.remedy, null)
+    assert.ok(result.skipped.includes("submission.issue-repository-url"))
+    assert.equal(result.ready, true)
+  }
+  const none = await submitWithIssues([submissionIssue(8, "https://github.com/someone/else", { title: "[Plugin]: Another" })])
+  const check = none.checks.find((entry) => entry.id === "submission.issue-repository-url")
+  assert.equal(check.verdict, "skipped")
+  assert.equal(check.detail, "no open submission issue by author for this plugin")
+  assert.equal(none.ready, true)
+  const text = renderSubmit(none, { colour: false })
+  assert.match(text, /1 check skipped \(each says why\)/)
 })

@@ -53,6 +53,7 @@ public issue text; it is not marketplace policy and never claims to be.
 | `submission.checklist` | pin | All five checklist items, exact text, checked. |
 | `submission.official-parser` | pin | The marketplace's own `parseCurrentSubmission` accepts the rendered title and body. |
 | `submission.validation-commit` | omakit | The local commit is the repository's current default-branch HEAD, because that is what the marketplace will actually validate. |
+| `submission.issue-repository-url` | omakit | Your open submission issue for this plugin, found by its Repository URL, or by the manifest's name in the title or its id in the body when the URL does not match, says the same Repository URL as `origin`. Skipped with `--offline`, without a credential, and when there is no such issue. Blocking: on #7787 a retyped retry edit put `mtolhuijs` where origin says `mtolhuys` and was refused as `repository-unreachable` 40 seconds later (M15). The remedy is the retry edit protocol in the submit skill: never the URL typed by hand. |
 | `baseline.preflight` | pin | The official security baseline over a local snapshot, verbatim, plus what its outcome will cause. |
 | `review.cost` | omakit | Advisory, immediately after the baseline: whether the update needs manual baseline review and whether this account already has open issues for the same repository. M4 and M9 measure the reason. |
 

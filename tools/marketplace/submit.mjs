@@ -437,6 +437,33 @@ export async function submitPreflight(options) {
         : null,
   }))
 
+  // --- the author's own open issue --------------------------------------------
+  // Discovered once, here, for two readers: the check below, and review.cost.
+  // On the subject's own listing the check is omitted with the other body
+  // checks: there is no submission to retry.
+
+  if (!options.offline) phase("reading your open marketplace issues")
+  const openIssues = await openIssuesForRepository({ repoRoot, repository: subject.repository.url, pluginName, pluginId: tree.pluginId,
+    offline: options.offline === true, github: options.github })
+  const ownIssues = openIssues.issues || []
+  const mismatched = ownIssues.filter((row) => !row.sameRepository)
+  const originForIssue = subject.repository.url || "the plugin's origin"
+  if (!listing) checks.push(check("submission.issue-repository-url", {
+    source: "omakit",
+    why: "The marketplace validates the Repository URL in the issue, and a retry is an edit to that issue. On omacom/omarchy-plugin-marketplace#7787 (2026-09-20, 19:18 UTC) a retry edit typed by hand put mtolhuijs where origin says mtolhuys, and the marketplace refused it as repository-unreachable 40 seconds after the edit event. M15, measured 2026-09-20 over all 651 open submission issues: 27 of the 646 with a readable URL name an owner other than the issue's author, so the URL is compared with the plugin's own origin, never with the author's login. Not a marketplace rule; an Omakit check that the issue says what origin says.",
+    severity: "blocking",
+    skipped: openIssues.count === null || ownIssues.length === 0,
+    verdict: mismatched.length === 0,
+    detail: openIssues.count === null
+      ? openIssues.reason
+      : ownIssues.length === 0
+        ? `no open submission issue by ${openIssues.account} for this plugin`
+        : mismatched.length
+          ? mismatched.map((row) => `issue #${row.number} says ${row.repositoryUrl}, origin says ${originForIssue}`).join("; ")
+          : ownIssues.map((row) => `issue #${row.number} matches origin`).join("; "),
+    remedy: mismatched.length ? mismatched.map((row) => `Edit issue #${row.number} and set the Repository URL field to ${originForIssue}. Change nothing else.`) : null,
+  }))
+
   // --- the baseline preflight ----------------------------------------------
 
   phase("running the official security baseline over a local snapshot")
@@ -470,8 +497,7 @@ export async function submitPreflight(options) {
 
   const policy = await reviewPolicy(repoRoot)
   const review = reviewCostVerdict({ baseline: consequence, policy,
-    openIssues: consequence?.outcome === policy.manual ? await openIssuesForRepository({ repoRoot, repository: subject.repository.url,
-      offline: options.offline === true, github: options.github }) : { count: null, reason: consequence?.outcome === policy.automated ? "open issue count not checked: automated baseline" : preflight.skipReason || preflight.refusal?.message || "baseline outcome needs findings resolved" },
+    openIssues: consequence?.outcome === policy.manual ? openIssues : { count: null, reason: consequence?.outcome === policy.automated ? "open issue count not checked: automated baseline" : preflight.skipReason || preflight.refusal?.message || "baseline outcome needs findings resolved" },
     why: `MEASUREMENTS.md M4: ${figure(figures.outcomes[policy.manual] || 0)} of ${figure(figures.withBaseline)} recorded listing baselines required review at the pin. M9: on 2026-09-15, 140 of 307 open update issues carried the manual-review label; 4 of 139 compared validated diffs were docs-only, with 1 unavailable. The baseline scans the whole snapshot, not the update diff, so unchanged capabilities also require another review. Sources and exact marketplace HEAD are recorded in MEASUREMENTS.md.`,
   })
   checks.push(review.check)
