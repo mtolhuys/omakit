@@ -20,10 +20,13 @@
 
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { readFileSync } from "node:fs"
 import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
 import { authenticatedUser, repositoryIssues, defaultBranchHead, issue, issueComments, parseIssueUrl, token, GitHubError } from "./github.mjs"
 import { liveRegistry } from "./registry.mjs"
 import { reviewPolicy, validatedDocumentationDiff } from "./review-cost.mjs"
+import { parseGitHubUrl, resolveSubject, SubjectError } from "../subject/resolve.mjs"
+import { omakitCacheDir } from "./paths.mjs"
 
 export class WatchError extends Error {
   constructor(code, message) {
@@ -198,13 +201,50 @@ export function validationCommentCommit(comments) {
 }
 
 /**
+ * The origin a watch compares the issue with. A github.com URL is taken as
+ * given; a path is a Git checkout whose `origin` is read the way `submit`
+ * reads it, and the working tree may be dirty, since only the remote is
+ * read. With no argument the current directory is the subject when it is
+ * such a checkout, and there is no subject otherwise.
+ *
+ * @returns {{ origin: string, source: "url"|"path"|"cwd" }|null}
+ */
+export function resolveWatchSubject(target, { cwd = process.cwd(), cacheRoot = omakitCacheDir() } = {}) {
+  if (target !== undefined) {
+    const gh = /^(?:https:\/\/|git@)/.test(String(target)) ? parseGitHubUrl(target) : null
+    if (gh) return { origin: gh.url, source: "url" }
+    if (/^https?:\/\//.test(String(target))) throw new WatchError("usage", `the subject is a github.com repository URL or a local checkout, got ${target}`)
+    const subject = resolveSubject(target, { cacheRoot, allowDirty: true })
+    if (!subject.repository.url) throw new SubjectError("no-origin", `${subject.dir} has no github.com origin remote, so there is no repository to compare the issue with`)
+    return { origin: subject.repository.url, source: "path" }
+  }
+  try {
+    const subject = resolveSubject(cwd, { cacheRoot, allowDirty: true })
+    return subject.repository.url ? { origin: subject.repository.url, source: "cwd" } : null
+  } catch {
+    return null
+  }
+}
+
+/** Two github.com repository URLs name the same repository: https, no `.git`, no trailing slash, owner and name case-insensitively. */
+export function sameRepository(a, b) {
+  const left = parseGitHubUrl(a)
+  const right = parseGitHubUrl(b)
+  if (!left || !right) return null
+  return left.owner.toLowerCase() === right.owner.toLowerCase() && left.repository.toLowerCase() === right.repository.toLowerCase()
+}
+
+/**
  * @param {{ repoRoot: string, issueUrl: string, onPhase?: (name: string) => void,
+ *           subject?: { origin: string, source?: string }|null,
  *           github?: { issue?: typeof issue, issueComments?: typeof issueComments, defaultBranchHead?: typeof defaultBranchHead } }} options
  *   `github` is injectable for tests, so the whole path from an issue body to
  *   a verdict can be run on data that never left the machine; the default is
- *   the read-only GitHub access in `github.mjs`.
+ *   the read-only GitHub access in `github.mjs`. `subject` is the plugin's
+ *   own origin, from resolveWatchSubject(); with one, the issue's Repository
+ *   URL is compared with it, and without one (`watch --all`) it is not.
  */
-export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {} }) {
+export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}, subject: watchSubject = null }) {
   // Optional: told the name of the step about to run, so a terminal can say
   // what is happening while the network answers. Never affects the result.
   const phase = onPhase || (() => {})
@@ -229,6 +269,14 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
   const repositoryUrl = repository.url
   const repositoryError = repository.error
   const issueKind = repository.kind
+  // #7787, 2026-09-20 19:18 UTC: a retry edit typed the Repository URL as
+  // mtolhuijs/omacrunch on an issue whose plugin lives at mtolhuys/omacrunch.
+  // The marketplace validates the URL in the issue, so it validated a
+  // repository that does not exist and refused within 40 seconds. The issue
+  // is compared with origin here, so the typo is named as what it is rather
+  // than reported as a HEAD that could not be read.
+  const origin = watchSubject?.origin || null
+  const repositoryMatches = origin && repositoryUrl ? sameRepository(repositoryUrl, origin) : null
 
   let validated = null
   let baselineError = null
@@ -311,7 +359,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
       lastMaintainerCommentAt: maintainerComments.at(-1)?.created_at || null,
       authenticated: Boolean(token()),
     },
-    plugin: { repository: repositoryUrl, repositoryError, form: issueKind },
+    plugin: { repository: repositoryUrl, repositoryError, form: issueKind, origin, repositoryMatches },
     validated,
     previousValidated,
     validationCommentFallback: fallback,
@@ -324,7 +372,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
       createdAt: maintainerComments.at(-1).created_at || null,
       authorAssociation: maintainerComments.at(-1).author_association || null,
     } : null,
-    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl }),
+    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin, repositoryMatches }),
   }
 }
 
@@ -333,7 +381,17 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
 // truthy string "unknown", so an issue whose body named no repository was
 // reported as a HEAD that could not be read, and the branch below that names
 // the real cause was reachable from the unit test alone.
-export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl }) {
+export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null }) {
+  // The state that says the issue itself is wrong comes first: a
+  // comparison of commits on the wrong repository describes nothing the
+  // marketplace is looking at.
+  if (repositoryMatches === false) {
+    return {
+      state: "wrong-repository",
+      summary: `The issue's Repository URL is ${repositoryUrl}, the plugin's origin is ${origin}. The marketplace validates the URL in the issue, so it is validating the wrong repository, or none.`,
+      action: `Edit the issue and set the Repository URL field to ${origin}. Change nothing else.`,
+    }
+  }
   if (baselineError) {
     return {
       state: "unknown",

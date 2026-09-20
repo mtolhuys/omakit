@@ -21,7 +21,7 @@ export const ACCEPTED = Object.freeze({
   setup: Object.freeze({ valued: [], flags: ["--yes", "--completion"], positionals: 0 }),
   pin: Object.freeze({ valued: [], flags: [], positionals: 0 }),
   submit: Object.freeze({ valued: ["--category", "--tags", "--notes", "--suggest-tag", "--name", "--out"], flags: ["--offline", "--allow-dirty", "--json"], positionals: 1 }),
-  watch: Object.freeze({ valued: ["--out", "--user"], flags: ["--json", "--all", "--list"], positionals: 1 }),
+  watch: Object.freeze({ valued: ["--out", "--user"], flags: ["--json", "--all", "--list"], positionals: 2 }),
   verify: Object.freeze({ valued: ["--out"], flags: ["--allow-dirty", "--json"], positionals: 1 }),
   help: Object.freeze({ valued: [], flags: ["--agent"], positionals: 0 }),
   upgrade: Object.freeze({ valued: [], flags: ["--dry-run"], positionals: 0 }),

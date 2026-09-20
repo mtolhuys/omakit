@@ -89,13 +89,16 @@ export const COMMANDS = Object.freeze([
   },
   {
     signature: [
-      "omakit watch <issue-url> [--json] [--out <file>]",
+      "omakit watch <issue-url> [<subject>] [--json] [--out <file>]",
       "omakit watch [--all | --list] [--user <login>] [--json] [--out <file>]",
     ],
     lines: [
       "Compare the commit the marketplace validated on a submission issue with",
       "the plugin repository's current default-branch HEAD, and say what makes",
-      "it validate a newer one. Read-only.",
+      "it validate a newer one. Read-only. <subject> is the plugin's checkout",
+      "or its github.com URL (default: the current directory when it is one):",
+      "the issue's Repository URL is compared with that origin, and a failed",
+      "validation is read back as the marketplace's own code.",
       "--all checks your open marketplace issues; --list lists them first.",
       "Without a URL or either flag, a terminal asks which issues to check.",
       "Uses your gh account, or --user to read another public account. JSON",

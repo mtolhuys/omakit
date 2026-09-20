@@ -214,6 +214,11 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
   out.push(...field("state", `${result.read.state}${result.read.labels.length ? `; labels ${result.read.labels.join(", ")}` : ""}`, c))
   out.push(...field("title", result.read.title, c))
   out.push(...field("plugin repo", result.plugin.repository || `unreadable: ${result.plugin.repositoryError}`, c, { wrapValue: false }))
+  if (result.plugin.origin) {
+    const origin = result.plugin.repositoryMatches === false ? c("fail", result.plugin.origin) : result.plugin.origin
+    out.push(...field("origin", origin, c, { wrapValue: false }))
+    out.push(...continuation(result.plugin.repositoryMatches === false ? "the issue names a different repository" : result.plugin.repositoryMatches ? "the issue names this repository" : "not compared: the issue names no repository", c))
+  }
   if (result.plugin.form === "verify" || result.plugin.form === "verify-legacy") {
     out.push(...field("form", "plugin update request, read with the marketplace's verification parser", c))
   }
@@ -234,7 +239,7 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
     out.push(...field("current HEAD", `unreadable: ${result.headError.message}`, c))
   }
   out.push("")
-  const state = { current: "pass", stale: "fail", unknown: "unknown" }[result.verdict.state] || "unknown"
+  const state = { current: "pass", stale: "fail", "wrong-repository": "fail", unknown: "unknown" }[result.verdict.state] || "unknown"
   out.push(...verdict(state, `VALIDATION ${result.verdict.state.toUpperCase()}`, result.verdict.summary, c))
   if (result.verdict.action) {
     out.push("")
@@ -275,7 +280,7 @@ export function renderWatchAll(result, { colour = colourEnabled() } = {}) {
   out.push("")
   for (const row of result.issues) {
     const state = row.report?.verdict.state || "unknown"
-    const style = { current: "pass", stale: "fail", unknown: "unknown" }[state]
+    const style = { current: "pass", stale: "fail", "wrong-repository": "fail", unknown: "unknown" }[state] || "unknown"
     out.push(...verdict(style, state.toUpperCase(), `#${row.issue.number} ${watchIssueTitle(row.report?.read.title || row.issue.title)}`, c))
     out.push(...field("issue", row.issue.url, c, { wrapValue: false }))
     if (row.documentationDiff?.docsOnly === null) out.push(...field("diff skipped", watchIssueTitle(row.documentationDiff.reason), c))

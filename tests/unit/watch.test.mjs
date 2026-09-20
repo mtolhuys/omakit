@@ -3,7 +3,7 @@
 // by the two real runs recorded in docs/VALIDATION_WATCH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { validationWatch, validationVerdict, validationCommentCommit, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
+import { validationWatch, validationVerdict, validationCommentCommit, sameRepository, resolveWatchSubject, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { readFileSync } from "node:fs"
@@ -159,7 +159,7 @@ ${marker}`, created_at: "2026-09-01T00:00:00Z" }],
   assert.doesNotMatch(result.verdict.summary, /HEAD could not be read/)
   // The helper has no truthy default to fall back on: called the way the
   // command calls it, with the URL left out, it does not invent one.
-  assert.match(readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8"), /pushedAfterReview, repositoryUrl \}\) \{/)
+  assert.match(readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8"), /pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null \}\) \{/)
 })
 
 test("the two marketplace issue forms are read by their own parser", () => {
@@ -207,4 +207,83 @@ test("a bot account's comment is neither the discussion nor a reviewer, and does
   assert.equal(result.discussion.body, "Please rename the id.")
   assert.equal(result.verdict.state, "stale")
   assert.match(result.verdict.summary, /after the last human review comment/)
+})
+
+// --- the subject, and a failed validation -----------------------------------
+//
+// omacom/omarchy-plugin-marketplace#7787, 2026-09-20 (UTC). 13:37 opened from
+// `omakit submit`, validated. 16:12 body edited by hand to retry, validated
+// again, marker checkedAt 16:12. 19:18 body retyped by an agent: the
+// Repository URL became mtolhuijs/omacrunch (an existing account, no such
+// repository) and the Maintainer notes were wiped. 19:19:13 the marketplace
+// edited its validation comment to "Validation failed: The repository could
+// not be reached." and labelled needs-fixes. `omakit watch` reported the 404
+// as `unknown`, "HEAD could not be read": the symptom, not the cause, because
+// it never saw the plugin's origin and never read a failed validation.
+
+const ISSUE_BODY = (url) => `### Repository URL\n\n${url}\n\n### Category\n\nDesktop\n\n### Tags\n\nBar\n\n### Suggest a missing tag\n\n_No response_\n\n### Maintainer notes\n\n_No response_\n\n### Submission checklist\n\n- [X] x\n`
+
+async function markerComment(commit, checkedAt) {
+  const pinDir = requirePinForTests()
+  const policy = await import(pathToFileURL(join(pinDir, "scripts/security-baseline-policy.mjs")).href)
+  const payload = { schemaVersion: 2, baselineVersion: policy.securityBaselineVersion, repository: "mtolhuys/omacrunch", pluginIds: ["io.github.mtolhuys.omacrunch"], commitSha: commit, checkedAt, outcome: "passed", enforcementMode: policy.securityBaselineEnforcementMode, findings: [], capabilities: [] }
+  return { user: { login: "github-actions[bot]", type: "Bot" }, body: `validated\n${policy.securityBaselineMarkerPrefix}${Buffer.from(JSON.stringify(payload)).toString("base64url")} -->`, created_at: checkedAt, updated_at: checkedAt }
+}
+
+async function watch({ issueUrl = "https://github.com/mtolhuys/omacrunch", subject, comments, labels = [], head = { commit: A, branch: "main" } }) {
+  const heads = []
+  const report = await validationWatch({
+    repoRoot: REPO_ROOT,
+    issueUrl: `${MARKETPLACE_PIN.repository}/issues/7787`,
+    subject,
+    github: {
+      issue: async () => ({ title: "[Plugin]: Omacrunch", body: ISSUE_BODY(issueUrl), state: "open", user: { login: "mtolhuys" }, labels }),
+      issueComments: async () => comments,
+      defaultBranchHead: async (url) => { heads.push(url); if (head instanceof Error) throw head; return head },
+    },
+  })
+  return { report, heads }
+}
+
+test("two repository URLs are the same repository across https, .git, a trailing slash and case; a different owner is not", () => {
+  assert.equal(sameRepository("https://github.com/MTolhuys/Omacrunch.git", "https://github.com/mtolhuys/omacrunch/"), true)
+  assert.equal(sameRepository("git@github.com:mtolhuys/omacrunch.git", "https://github.com/mtolhuys/omacrunch"), true)
+  assert.equal(sameRepository("https://github.com/mtolhuijs/omacrunch", "https://github.com/mtolhuys/omacrunch"), false)
+  assert.equal(sameRepository("not a url", "https://github.com/mtolhuys/omacrunch"), null)
+})
+
+test("the subject is a github.com URL as given, or the origin of a checkout, and nothing when there is neither", () => {
+  assert.deepEqual(resolveWatchSubject("https://github.com/mtolhuys/omacrunch.git"), { origin: "https://github.com/mtolhuys/omacrunch", source: "url" })
+  assert.deepEqual(resolveWatchSubject(REPO_ROOT), { origin: "https://github.com/mtolhuys/omakit", source: "path" })
+  assert.equal(resolveWatchSubject(undefined, { cwd: "/" }), null, "a directory that is no checkout is no subject")
+  assert.throws(() => resolveWatchSubject("https://example.com/x/y"), /github\.com repository URL or a local checkout/)
+})
+
+test("an issue whose Repository URL names another owner than the plugin's origin is wrong-repository, over every other state", async () => {
+  // #7787 at 19:19: the issue said mtolhuijs, origin said mtolhuys, the
+  // marketplace's 404 came back as "HEAD could not be read (not-found)".
+  const notFound = Object.assign(new GitHubError("not-found", "GET ... returned 404"), {})
+  const { report } = await watch({ issueUrl: "https://github.com/mtolhuijs/omacrunch", subject: { origin: "https://github.com/mtolhuys/omacrunch" },
+    comments: [await markerComment(A, "2026-09-20T16:12:00Z")], head: notFound })
+  assert.equal(report.plugin.origin, "https://github.com/mtolhuys/omacrunch")
+  assert.equal(report.plugin.repositoryMatches, false)
+  assert.equal(report.verdict.state, "wrong-repository")
+  assert.match(report.verdict.summary, /Repository URL is https:\/\/github\.com\/mtolhuijs\/omacrunch, the plugin's origin is https:\/\/github\.com\/mtolhuys\/omacrunch/)
+  assert.match(report.verdict.summary, /validating the wrong repository, or none/)
+  assert.equal(report.verdict.action, "Edit the issue and set the Repository URL field to https://github.com/mtolhuys/omacrunch. Change nothing else.")
+  assert.doesNotMatch(report.verdict.summary, /HEAD could not be read/)
+})
+
+test("a .git suffix and a case difference are the same repository: the issue matches, and the verdict is the commit comparison", async () => {
+  const { report } = await watch({ issueUrl: "https://github.com/MTolhuys/Omacrunch.git", subject: { origin: "https://github.com/mtolhuys/omacrunch" },
+    comments: [await markerComment(A, "2026-09-20T16:12:00Z")] })
+  assert.equal(report.plugin.repositoryMatches, true)
+  assert.equal(report.verdict.state, "current")
+})
+
+test("without a subject nothing is compared: repositoryMatches is null and the verdict is what it was", async () => {
+  const { report } = await watch({ issueUrl: "https://github.com/mtolhuijs/omacrunch", comments: [await markerComment(A, "2026-09-20T16:12:00Z")] })
+  assert.equal(report.plugin.origin, null)
+  assert.equal(report.plugin.repositoryMatches, null)
+  assert.equal(report.verdict.state, "current")
 })

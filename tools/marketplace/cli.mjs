@@ -27,7 +27,7 @@ import { marketplaceBaselineSection } from "./verify.mjs"
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { submitPreflight } from "./submit.mjs"
 import { askChoices, askWatchIssues } from "./ask.mjs"
-import { validationWatch, discoverWatchIssues, validationWatchAll } from "./watch.mjs"
+import { validationWatch, discoverWatchIssues, validationWatchAll, resolveWatchSubject } from "./watch.mjs"
 import { renderSubmit, renderWatch, renderWatchList, renderWatchAll, renderDoctor, renderVerify } from "./report.mjs"
 import { consequence } from "./preflight.mjs"
 import { doctor } from "./doctor.mjs"
@@ -83,6 +83,8 @@ const REMEDY = Object.freeze({
   "interrupted": "shell.json was restored; run it again when the desktop is yours to restart.",
   "refused": "Fix what the report names, then run it again.",
   "unknown": "Read what could not be compared in the report above; each row says why.",
+  "wrong-repository": "Edit the issue and set the Repository URL field to the plugin's origin, printed in the report. Change nothing else.",
+  "no-origin": "Give the checkout a github.com origin remote, or pass the repository URL as the subject.",
   "drift": "Return each plugin to its validated commit with the git checkout printed beside it, or validate the newer commit through the form the report names.",
   "not-compared": "Run it in the desktop session whose shell runs these plugins: omarchy-plugin-catalog named no readable source directory for them.",
   "problems": "omakit setup",
@@ -254,7 +256,7 @@ async function cmdSubmit(args) {
 }
 
 async function cmdWatch(args) {
-  const issueUrl = positionals(args)[0]
+  const [issueUrl, subjectTarget] = positionals(args)
   const all = args.includes("--all")
   const list = args.includes("--list")
   const user = option(args, "--user")
@@ -265,11 +267,18 @@ async function cmdWatch(args) {
   if (!issueUrl && !all && !list && !interactive) {
     fail("usage", "watch needs an issue or a mode: `omakit watch <issue-url>`, `omakit watch --all`, or `omakit watch --list`. A terminal can pick issues with `omakit watch`.", 2)
   }
+  if (subjectTarget !== undefined && !issueUrl) {
+    fail("usage", "a subject belongs to one issue: `omakit watch <issue-url> <subject>`.", 2)
+  }
   const spinner = spinnerFor(args)
   let result
   try {
     if (issueUrl) {
-      result = await validationWatch({ repoRoot: ROOT, issueUrl, onPhase: spinner.phase })
+      // The subject is the plugin's own origin: a path or a github.com URL
+      // given after the issue, or the current directory when it is a
+      // checkout with one. The issue's Repository URL is compared with it.
+      const subject = resolveWatchSubject(subjectTarget)
+      result = await validationWatch({ repoRoot: ROOT, issueUrl, subject, onPhase: spinner.phase })
     } else {
       const discovery = await discoverWatchIssues({ user, onPhase: spinner.phase })
       if (list) {
@@ -292,9 +301,11 @@ async function cmdWatch(args) {
   // A comparison that could not be made is a refusal the tool means, exit
   // 1: the validated commit is not known to be current. Stale is a fact
   // about the marketplace, not a failure, and exits 0. Measured on
-  // 2026-09-19: an unknown verdict exited 2, the usage status.
-  if (result.verdict?.state === "unknown") {
-    refuse(args, result, human, { code: "unknown", message: result.verdict.summary, remedy: result.verdict.action || REMEDY.unknown })
+  // 2026-09-19: an unknown verdict exited 2, the usage status. An issue
+  // that names the wrong repository is the same kind of refusal: nothing
+  // on it is being validated, and the verdict's own action is the remedy.
+  if (["unknown", "wrong-repository"].includes(result.verdict?.state)) {
+    refuse(args, result, human, { code: result.verdict.state, message: result.verdict.summary, remedy: result.verdict.action || REMEDY[result.verdict.state] })
     return
   }
   if (result.summary?.unknown > 0) {

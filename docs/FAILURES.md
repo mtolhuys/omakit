@@ -52,6 +52,7 @@ Every check reads the tree at an exact commit, never the working copy.
 | `not-a-git-repository` | the path is not inside a Git repository | Pass a local Git repository path, or `<https url>@<40-char sha>`. |
 | `commit-not-found` | the repository has no commit yet, or the named commit is not offered | Commit first; the checks read the tree at an exact commit, never the working copy. |
 | `dirty-worktree` | the tree has uncommitted changes, and they would not be read | Commit the changes, or pass `--allow-dirty` to read `HEAD` as committed. |
+| `no-origin` | `watch` was given a checkout as its subject, and it has no github.com `origin` to compare the issue with | Give the checkout a github.com origin remote, or pass the repository URL as the subject. |
 
 ## The marketplace, and the network
 
@@ -73,6 +74,7 @@ refusal.
 | --- | --- | --- | --- |
 | `refused` | `submit` | a blocking check failed, so no body was produced | Fix what the report names, then run it again. |
 | `unknown` | `watch` | there was nothing to compare, or the baseline was incomplete, or `HEAD` would not read | Read what could not be compared in the report; each row says why. |
+| `wrong-repository` | `watch` | the issue's Repository URL is not the plugin's origin, so the marketplace is validating another repository, or none | Edit the issue and set the Repository URL field to the origin printed in the report. Change nothing else. |
 | `drift` | `audit` | an installed plugin is running a commit the marketplace never validated | Return each plugin to its validated commit with the `git checkout` printed beside it, or validate the newer commit through the form the report names. |
 | `not-compared` | `audit` | nothing could be compared at all | Run it in the desktop session whose shell runs these plugins. |
 | `not-proved` | `lab prove` | the suite ran and did not prove what it asserts | Read the suite's log under the run's record directory, then run it again. |
