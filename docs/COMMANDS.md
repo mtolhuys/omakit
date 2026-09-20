@@ -23,7 +23,7 @@ check, track, prove, and then what keeps the tool itself current.
 | `omakit inspect <plugin-dir>` | check | what a plugin tree does, as observations, and the review classes the tree shows |
 | `omakit verify <plugin-repo>` | check | the official security baseline over the local transport; `--json` for the document |
 | `omakit submit <plugin-repo>` | check | every check, and the exact issue title and body; asks for a category and tags at a terminal |
-| `omakit watch <issue-url>` | track | the commit the marketplace validated, against the plugin's current HEAD |
+| `omakit watch <issue-url> [<subject>]` | track | the commit the marketplace validated, against the plugin's current HEAD; with the plugin's checkout or URL as the subject, the issue's Repository URL against its `origin` first |
 | `omakit watch --all` | track | every open marketplace issue authored by your `gh` account; `--list` lists them; bare, a terminal chooses |
 | `omakit audit [<plugin>]` | track | installed third-party commits against the commits the marketplace validated |
 | `omakit weigh <plugin>` | track | what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first |
@@ -114,6 +114,10 @@ file and line, and the official text verbatim, then the marketplace's own
 statement. `--json` prints the document itself under the envelope every
 command carries (below), its own fields unchanged from earlier releases,
 and `--out <file>` writes it; agents and the skills use those.
+`submit --body-out <file>` writes the rendered issue body, and nothing
+else, to a file: the retry edit protocol in the skills passes that file to
+`gh issue edit --body-file` so the body posted is the one rendered, never
+one retyped. A refusal renders no body and writes nothing.
 
 ### `omakit submit`
 
@@ -152,7 +156,13 @@ in.
 
 ### `omakit watch`
 
-Account-wide watch without `--user` requires `gh auth login` so it can
+The optional second argument is the subject: the plugin's checkout or its
+github.com URL, the current directory by default when it is such a
+checkout. With one, the issue's Repository URL is compared with the
+plugin's `origin` and a mismatch is `wrong-repository`, exit 1, before any
+commit is compared. A failed marketplace validation newer than the last
+baseline marker is `refused`, exit 1, with the marketplace's own code and
+action. Account-wide watch without `--user` requires `gh auth login` so it can
 discover your account. `--user <login>` can discover a public author's issues
 without a login. An individual issue URL still works unauthenticated.
 Discovery reads open authored issues, excludes pull requests, follows

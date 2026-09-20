@@ -1,11 +1,46 @@
 # `omakit watch`: the validated commit
 
 ```
-omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number>
+omakit watch https://github.com/omacom/omarchy-plugin-marketplace/issues/<number> [<subject>]
 ```
 
 Reads one submission issue and answers one question: is the commit the
-marketplace validated still the commit the repository is on?
+marketplace validated still the commit the repository is on? With a
+subject, the plugin's checkout or its github.com URL (the current
+directory when it is such a checkout and nothing is given), it answers a
+question that comes before that one: does the issue name this repository
+at all?
+
+## The subject
+
+The marketplace validates the Repository URL in the issue, whatever it
+says. On omacom/omarchy-plugin-marketplace#7787 (2026-09-20, 19:18 UTC) a
+retry edit typed by hand put `mtolhuijs/omacrunch` where origin says
+`mtolhuys/omacrunch`, the marketplace refused it as
+`repository-unreachable` 40 seconds after the edit, and `omakit watch`
+reported the 404 as `unknown`, "HEAD could not be read": the symptom, with
+the cause hidden behind it, because the watch had never seen the plugin's
+own origin. With a subject the issue's URL is compared with `origin`
+(https, no `.git`, no trailing slash, owner and name case-insensitively),
+and a mismatch is the verdict `wrong-repository`, over every other state,
+with the origin to put back. `--json` carries `plugin.origin` and
+`plugin.repositoryMatches` (`true`, `false`, or `null` when there is no
+subject or the issue names no repository); `--all` has no subject and
+compares nothing.
+
+A failed validation is read as well. The last `<!-- marketplace-validation
+-->` comment is either passed, with the short commit, or failed, and a
+failed one is mapped back to the marketplace's own code through the pinned
+`submission-feedback` table (37 codes at the pin; a reason the table does
+not know is reported verbatim as `unrecognised`). The marketplace edits
+that comment in place on every run, so the time of a refusal is the
+comment's `updated_at`. A refusal newer than the last baseline marker is
+the verdict `refused`; a marker newer than the refusal is the state again.
+On #7787 the marker said 16:12 and the refusal 19:19:13; at 19:34:52 the
+corrected retry wrote a newer marker. The labels the marketplace uses
+(`needs-fixes`, `security-needs-fixes`, `validated`,
+`security-review-required`, all read from the pin) are reported under
+`labelState`.
 
 ## Your account's issues
 
@@ -24,7 +59,7 @@ The batch checks at most four issues concurrently and shares the default-branch 
 
 The text report shows each issue's commit verdict, baseline outcome and capabilities, current state and labels, and the latest human discussion other than the author's (up to 240 characters, with a source link). A bot account (GitHub's `type: "Bot"`, or a `<name>[bot]` login) is neither discussion nor a reviewer, and does not date the "after the last human review comment" clause. That discussion is not classified as an authorized maintainer decision. A current commit may still need fixes, review, approval or publication; `current` is only the commit comparison. Single-issue JSON adds the full `discussion` record or null, preserving the original text.
 
-List JSON has `mode: "list"`, `account`, `marketplace` and `issues` (number, URL, title, state, labels and update time). Batch JSON has `mode: "all"`, `account`, `marketplace`, `summary` (total/current/stale/unknown), and `issues` with each discovered issue, its full single-issue `report` or null, and its read `error` or null. An empty account or cancelling the picker returns an empty batch. Exit 0 means the list or comparisons completed, including stale results. Exit 1 means at least one comparison is unknown (the document carries `error.code: "unknown"` beside the batch), or discovery failed, which cannot be mistaken for an empty account. Exit 2 means the invocation is invalid.
+List JSON has `mode: "list"`, `account`, `marketplace` and `issues` (number, URL, title, state, labels and update time). Batch JSON has `mode: "all"`, `account`, `marketplace`, `summary` (total/current/stale/refused/unknown), and `issues` with each discovered issue, its full single-issue `report` or null, and its read `error` or null. An empty account or cancelling the picker returns an empty batch. Exit 0 means the list or comparisons completed, including stale results. Exit 1 means at least one comparison is unknown (the document carries `error.code: "unknown"` beside the batch), or at least one issue is refused (`error.code: "refused"` when none is unknown), or discovery failed, which cannot be mistaken for an empty account. Exit 2 means the invocation is invalid.
 
 Regression proof: [watch-all.test.mjs](../tests/unit/watch-all.test.mjs) covers account selection, filtering, pagination, incomplete lists, shared HEAD reads, independent failures, multi-selection, cancellation, EOF, output wrapping and noninteractive mode conflicts.
 
@@ -198,4 +233,6 @@ to read the review comments rather than to touch the issue.
 | --- | --- | --- |
 | `current` | The validated commit is the current default-branch HEAD. Nothing to do. | 0 |
 | `stale` | The marketplace has not seen the newer commit. Editing the issue body is what refreshes it. | 0 |
+| `wrong-repository` | The issue's Repository URL is not the subject's `origin`, so the marketplace is validating another repository, or none. Wins over every other state. The action is the retry edit protocol in the skills, with the origin to put back; `error.code: "wrong-repository"` under `--json`. | 1 |
+| `refused` | The marketplace's last validation failed, and that refusal is newer than the last baseline marker. The report carries the marketplace's own code, reason and action, read from the pin; ranks below `wrong-repository` and above `unknown`; `error.code: "refused"` under `--json`. | 1 |
 | `unknown` | No validated commit to compare, an incomplete baseline, or an unreadable HEAD. Never reported as `current`; a refusal the tool means, with the report on stderr and `error.code: "unknown"` under `--json`. | 1 |

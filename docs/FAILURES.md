@@ -128,6 +128,16 @@ is missing and the one command for each.
 | `plugin-fetch-failed` | a plugin the weigh evidence suite needs could not be fetched | Connect to the network, then `omakit lab setup --plugins` again. |
 | `prune-refused` | a path under the lab is a symbolic link, and the lab wrote none | Remove the symbolic link by hand; nothing under it is removed. |
 
+## Measured cases
+
+Incidents that a code on this page now names, with the figures they were
+measured by. One row each; the measurement behind it is in
+[MEASUREMENTS.md](MEASUREMENTS.md).
+
+| Date (UTC) | Issue | Code | Seconds from edit to refusal | Cause |
+| --- | --- | --- | ---: | --- |
+| 2026-09-20 | omacom/omarchy-plugin-marketplace#7787 | `repository-unreachable` (the marketplace's), now `wrong-repository` and `refused` (`watch`), `submission.issue-repository-url` (`submit`) | 40 | A retry edit typed by an agent retyped the whole body: the Repository URL became `mtolhuijs/omacrunch` (another account, no such repository) for a plugin at `mtolhuys/omacrunch`, and the Maintainer notes were wiped. The `issues` workflow run started 19:18:33, `needs-fixes` was labelled 19:19:13. Nothing in omakit compared the issue with `origin`, read the failed validation, or found the issue as the author's once its URL was wrong (M15). |
+
 Every code in the tool's own remedy table has a row here, and
 `tests/unit/hygiene.test.mjs` fails when a code is added to that table and
 not to this page. A few codes on this page are not in it: they carry their
