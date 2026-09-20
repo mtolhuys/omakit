@@ -20,7 +20,7 @@
 export const ACCEPTED = Object.freeze({
   setup: Object.freeze({ valued: [], flags: ["--yes", "--completion"], positionals: 0 }),
   pin: Object.freeze({ valued: [], flags: [], positionals: 0 }),
-  submit: Object.freeze({ valued: ["--category", "--tags", "--notes", "--suggest-tag", "--name", "--out"], flags: ["--offline", "--allow-dirty", "--json"], positionals: 1 }),
+  submit: Object.freeze({ valued: ["--category", "--tags", "--notes", "--suggest-tag", "--name", "--out", "--body-out"], flags: ["--offline", "--allow-dirty", "--json"], positionals: 1 }),
   watch: Object.freeze({ valued: ["--out", "--user"], flags: ["--json", "--all", "--list"], positionals: 2 }),
   verify: Object.freeze({ valued: ["--out"], flags: ["--allow-dirty", "--json"], positionals: 1 }),
   help: Object.freeze({ valued: [], flags: ["--agent"], positionals: 0 }),
@@ -37,7 +37,7 @@ export const ACCEPTED = Object.freeze({
 /** The accepted options of a command in the words a refusal prints: `--runs N, --all, ...`. */
 export function acceptedWords(name) {
   const spec = ACCEPTED[name]
-  const value = (option) => ({ "--out": "FILE", "--runs": "N", "--count": "N", "--offset": "N", "--window": "S", "--settle": "S", "--category": "C", "--tags": "A,B", "--from": "FILE", "--toolchain": "DIR" }[option] || "TEXT")
+  const value = (option) => ({ "--out": "FILE", "--body-out": "FILE", "--runs": "N", "--count": "N", "--offset": "N", "--window": "S", "--settle": "S", "--category": "C", "--tags": "A,B", "--from": "FILE", "--toolchain": "DIR" }[option] || "TEXT")
   return [...spec.valued.map((option) => `${option} ${value(option)}`), ...spec.flags].join(", ")
 }
 

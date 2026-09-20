@@ -294,6 +294,33 @@ function unwrapped(text) {
   return text.replace(/ \\\n\s+/g, " ")
 }
 
+test("--body-out writes the rendered body and nothing else, byte for byte the body in --json, and nothing on a refusal", () => {
+  // The retry edit on #7787 (2026-09-20) was typed, and the Repository URL
+  // came out as another account. The file is the body submit renders, so
+  // `gh issue edit <url> --body-file <file>` posts exactly that, and the
+  // person, not this tool, does the posting.
+  const dir = mkdtempSync(join(tmpdir(), "omakit-body-out-"))
+  const file = join(dir, "nested", "body.md")
+  const args = ["submit", good.dir, "--category", "Widgets", "--tags", "bar", "--notes", "No privileges needed.", "--offline"]
+  const json = JSON.parse(run([...args, "--json"]).out)
+  assert.ok(json.issue.body.length > 100)
+  mkdirSync(join(dir, "nested"))
+  const { code, out } = run([...args, "--body-out", file])
+  assert.equal(code, 0)
+  assert.equal(readFileSync(file, "utf8"), json.issue.body, "the file is the body, unchanged")
+  assert.ok(out.includes(`wrote the body to ${file}`))
+  const document = JSON.parse(run([...args, "--body-out", file, "--json"]).out)
+  assert.equal(document.bodyFile, file)
+  assert.equal(document.issue.body, readFileSync(file, "utf8"))
+  // A refusal renders no body and writes no file.
+  const refused = join(dir, "refused.md")
+  const result = run(["submit", taken.dir, "--offline", "--body-out", refused])
+  assert.equal(result.code, 1)
+  assert.equal(existsSync(refused), false)
+  assert.ok(result.err.includes("no body was rendered, so --body-out wrote nothing"))
+  assert.equal(JSON.parse(run(["submit", taken.dir, "--offline", "--body-out", refused, "--json"]).out).bodyFile, null)
+})
+
 test("an id taken by another repository is refused at identity, never asked for flags, exit 1", () => {
   // Measured on 0.1.5: exit 2 asking for --category and --tags on a plugin
   // that identity.available would then have refused as already listed.

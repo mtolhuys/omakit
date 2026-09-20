@@ -257,6 +257,19 @@ test("no git verb that writes to a remote", () => {
   }
 })
 
+test("the one local file submit writes is the rendered body, to the path --body-out names, and it is never posted", () => {
+  // `--body-out` exists so a retry edit is the body submit rendered and not
+  // a body retyped (#7787, 2026-09-20). Writing a local file is not a
+  // marketplace write: the file is handed to a person, who runs `gh issue
+  // edit --body-file` themselves. cli.mjs has exactly that one write, its
+  // target is the resolved option, and no source spawns gh to post it.
+  const cli = sources.find((source) => source.path === "tools/marketplace/cli.mjs")
+  const writes = [...cli.text.matchAll(/writeFileSync\(\s*(.+)$/gm)].map((match) => match[1].trim())
+  assert.deepEqual(writes, ["resolve(out), body)"], "cli.mjs writes the body to --body-out and nothing else")
+  assert.match(cli.text, /function writeBodyOut\(out, body\) \{\n  writeFileSync\(resolve\(out\), body\)/)
+  assert.match(cli.text, /writeBodyOut\(bodyOut, result\.issue\.body\)/, "and the bytes are the rendered body, not a document around it")
+})
+
 test("nothing creates an issue, comment, label or pull request", () => {
   for (const { path, text } of sources) {
     for (const pattern of [

@@ -19,7 +19,7 @@
 // `add` is the one command that writes into a plugin tree: the block's own
 // files under omakit/, never over a modified copy; docs/BLOCKS.md says what.
 
-import { readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { ensurePin, requirePin } from "./pin.mjs"
@@ -197,6 +197,20 @@ function refuse(args, document, human, error) {
   return conclude({ command: CONTEXT.command, args, exit: 1, document, human, error: failure({ ...error, table: REMEDY }) })
 }
 
+/**
+ * `--body-out`: the rendered issue body, byte for byte and nothing else,
+ * so a retry edit is the body `submit` renders and never a body retyped.
+ * On #7787 (2026-09-20) the retry was typed, and the Repository URL came
+ * out as another account. A person passes the file to `gh`'s
+ * `issue edit --body-file`; this tool writes a local file and posts
+ * nothing. A body that was not rendered (a refusal, a
+ * listing) writes no file and says so.
+ */
+function writeBodyOut(out, body) {
+  writeFileSync(resolve(out), body)
+  return resolve(out)
+}
+
 async function cmdSubmit(args) {
   const target = positionals(args)[0]
   if (!target) fail("usage", "submit needs a target: `omakit submit <target> --category <c> --tags <a,b>`", 2)
@@ -244,7 +258,22 @@ async function cmdSubmit(args) {
     failFrom(error)
   }
   spinner.done()
-  const human = (colour) => renderSubmit(result, { colour })
+  const bodyOut = option(args, "--body-out")
+  if (bodyOut && result.issue?.body) {
+    try {
+      result.bodyFile = writeBodyOut(bodyOut, result.issue.body)
+    } catch (error) {
+      failFrom(Object.assign(error, { message: `--body-out ${resolve(bodyOut)} could not be written: ${error.message}` }))
+    }
+  } else if (bodyOut) {
+    result.bodyFile = null
+  }
+  const human = (colour) => {
+    const text = renderSubmit(result, { colour })
+    if (!bodyOut) return text
+    const c = styler(colour)
+    return `${text.replace(/\n+$/, "")}\n${result.bodyFile ? `${mark("pass", c)}wrote the body to ${withHomeAbbreviated(result.bodyFile)}` : `${mark("skipped", c)}no body was rendered, so --body-out wrote nothing`}\n`
+  }
   // Three outcomes, two exit codes: `ready` and `listed` are both healthy
   // states, and only a refusal is a 1.
   if (result.outcome === "refused") {

@@ -74,10 +74,13 @@ export const COMMANDS = Object.freeze([
       "omakit submit <target> --category <c> --tags <a,b> [--notes <text>]",
       "                      [--suggest-tag <t>] [--name <n>] [--offline]",
       "                      [--allow-dirty] [--json] [--out <file>]",
+      "                      [--body-out <file>]",
     ],
     lines: [
       "Every check that is knowable before submitting, the resolved commit, and",
       "the exact issue title and body. Prints them. Never posts anything.",
+      "--body-out writes the rendered body, and nothing else, to a file, for a",
+      "retry edit a person makes with `gh`'s `issue edit --body-file`.",
       "Three outcomes: READY (exit 0, the body), REFUSED (exit 1, no body), and",
       "LISTED (exit 0): the plugin is already listed by its own repository, so",
       "the submission form is not the route and nothing is asked. An id taken",
