@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.6.4
+
+The retry edit is no longer free text. On omacom/omarchy-plugin-marketplace#7787
+(2026-09-20, UTC) an agent following the validation-watch skill retyped the
+issue body to retry after a push: the Repository URL became
+`mtolhuijs/omacrunch` for a plugin at `mtolhuys/omacrunch`, the Maintainer
+notes were wiped, and the marketplace refused the issue as
+`repository-unreachable` 40 seconds after the edit event. Nothing in omakit
+caught it; four things now do.
+
+`omakit watch <issue-url> [<subject>]` takes the plugin's checkout or its
+github.com URL (the current directory by default when it is such a checkout)
+and compares the issue's Repository URL with `origin`; a mismatch is the
+verdict `wrong-repository`, over every other state, with the origin to put
+back. `watch` also reads a failed marketplace validation: the last validation
+comment's "Validation failed" reason is mapped to the marketplace's own code
+through the pinned feedback table (37 codes; unmatched text is verbatim, code
+`unrecognised`), the labels are read from the pin, and a refusal newer than
+the last baseline marker is the verdict `refused` with the marketplace's own
+action. Both exit 1. `--all` counts `refused` rows.
+
+`omakit submit` finds your open submission issue for the plugin by its
+Repository URL, or by the manifest's name in the title or its id in the body
+when the URL does not match, and the new blocking check
+`submission.issue-repository-url` holds that issue's Repository URL to
+`origin`; it is skipped offline, without a credential, and with no such
+issue. M15 measures the population: on 2026-09-20, 27 of the 646 open
+submission issues with a readable URL named an owner other than their
+author, so the comparison is with `origin`, never with the author's login.
+`submit --body-out <file>` writes the rendered body, and nothing else, to a
+file, byte for byte the body in `--json`, so a retry edit is made with
+`gh issue edit --body-file` from that file.
+
+The submit and validation-watch skills carry one "Retry edit protocol" under
+the same heading, held to each other by the suite: re-run `submit` with the
+original flags plus `--body-out`, diff against the current body with only
+Maintainer notes allowed to differ, edit with the owner's explicit approval,
+then `watch` with the subject. Never retype the body, never write the
+Repository URL by hand. The incident is recorded on `docs/FAILURES.md` as a
+measured case and in `docs/MEASUREMENTS.md` M15. See `docs/releases/0.6.4.md`.
+
 ## 0.6.3
 
 The README's command and documentation table is restored at the top and
