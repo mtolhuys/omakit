@@ -238,8 +238,12 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
   } else if (result.headError) {
     out.push(...field("current HEAD", `unreadable: ${result.headError.message}`, c))
   }
+  if (result.refusal) {
+    out.push(...field("refused", `${result.refusal.code} at ${result.refusal.at || "an unrecorded time"}`, c))
+    out.push(...continuation(result.refusal.reason, c))
+  }
   out.push("")
-  const state = { current: "pass", stale: "fail", "wrong-repository": "fail", unknown: "unknown" }[result.verdict.state] || "unknown"
+  const state = { current: "pass", stale: "fail", refused: "fail", "wrong-repository": "fail", unknown: "unknown" }[result.verdict.state] || "unknown"
   out.push(...verdict(state, `VALIDATION ${result.verdict.state.toUpperCase()}`, result.verdict.summary, c))
   if (result.verdict.action) {
     out.push("")
@@ -271,7 +275,7 @@ export function renderWatchList(result, { colour = colourEnabled() } = {}) {
 /** Compact batch report; exact commits and full discussion remain in JSON. */
 export function renderWatchAll(result, { colour = colourEnabled() } = {}) {
   const c = styler(colour)
-  const out = [...field("account", result.account, c), ...field("issues", `${result.summary.total} checked; ${result.summary.current} current, ${result.summary.stale} stale, ${result.summary.unknown} unknown`, c)]
+  const out = [...field("account", result.account, c), ...field("issues", `${result.summary.total} checked; ${result.summary.current} current, ${result.summary.stale} stale, ${result.summary.refused || 0} refused, ${result.summary.unknown} unknown`, c)]
   if (result.reviewCostSummary) {
     const cost = result.reviewCostSummary
     const skipped = cost.skipped.length ? `; ${cost.skipped.length} diff(s) skipped (reasons on issue rows)` : ""
@@ -280,7 +284,7 @@ export function renderWatchAll(result, { colour = colourEnabled() } = {}) {
   out.push("")
   for (const row of result.issues) {
     const state = row.report?.verdict.state || "unknown"
-    const style = { current: "pass", stale: "fail", "wrong-repository": "fail", unknown: "unknown" }[state] || "unknown"
+    const style = { current: "pass", stale: "fail", refused: "fail", "wrong-repository": "fail", unknown: "unknown" }[state] || "unknown"
     out.push(...verdict(style, state.toUpperCase(), `#${row.issue.number} ${watchIssueTitle(row.report?.read.title || row.issue.title)}`, c))
     out.push(...field("issue", row.issue.url, c, { wrapValue: false }))
     if (row.documentationDiff?.docsOnly === null) out.push(...field("diff skipped", watchIssueTitle(row.documentationDiff.reason), c))

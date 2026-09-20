@@ -74,6 +74,7 @@ refusal.
 | --- | --- | --- | --- |
 | `refused` | `submit` | a blocking check failed, so no body was produced | Fix what the report names, then run it again. |
 | `unknown` | `watch` | there was nothing to compare, or the baseline was incomplete, or `HEAD` would not read | Read what could not be compared in the report; each row says why. |
+| `refused` | `watch` | the marketplace's last validation of the issue failed, and that refusal is newer than the last baseline marker; the report carries the marketplace's own code, reason and action | The marketplace's own action for that code, printed as the arrow. |
 | `wrong-repository` | `watch` | the issue's Repository URL is not the plugin's origin, so the marketplace is validating another repository, or none | Edit the issue and set the Repository URL field to the origin printed in the report. Change nothing else. |
 | `drift` | `audit` | an installed plugin is running a commit the marketplace never validated | Return each plugin to its validated commit with the `git checkout` printed beside it, or validate the newer commit through the form the report names. |
 | `not-compared` | `audit` | nothing could be compared at all | Run it in the desktop session whose shell runs these plugins. |

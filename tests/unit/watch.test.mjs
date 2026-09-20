@@ -3,7 +3,7 @@
 // by the two real runs recorded in docs/VALIDATION_WATCH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { validationWatch, validationVerdict, validationCommentCommit, sameRepository, resolveWatchSubject, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
+import { validationWatch, validationVerdict, validationCommentCommit, validationComment, submissionFeedback, sameRepository, resolveWatchSubject, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { readFileSync } from "node:fs"
@@ -159,7 +159,7 @@ ${marker}`, created_at: "2026-09-01T00:00:00Z" }],
   assert.doesNotMatch(result.verdict.summary, /HEAD could not be read/)
   // The helper has no truthy default to fall back on: called the way the
   // command calls it, with the URL left out, it does not invent one.
-  assert.match(readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8"), /pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null \}\) \{/)
+  assert.match(readFileSync(new URL("../../tools/marketplace/watch.mjs", import.meta.url), "utf8"), /pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null, refusal = null \}\) \{/)
 })
 
 test("the two marketplace issue forms are read by their own parser", () => {
@@ -230,6 +230,12 @@ async function markerComment(commit, checkedAt) {
   return { user: { login: "github-actions[bot]", type: "Bot" }, body: `validated\n${policy.securityBaselineMarkerPrefix}${Buffer.from(JSON.stringify(payload)).toString("base64url")} -->`, created_at: checkedAt, updated_at: checkedAt }
 }
 
+const FAILED_COMMENT = (updatedAt, reason = "The repository could not be reached.", action = "Confirm that it is public and available, then edit the issue to retry.") => ({
+  user: { login: "github-actions[bot]", type: "Bot" },
+  body: `<!-- marketplace-validation -->\n## Marketplace validation\n\n❌ **Validation failed:** ${reason}\n\n${action}`,
+  created_at: "2026-09-20T13:38:35Z", updated_at: updatedAt,
+})
+
 async function watch({ issueUrl = "https://github.com/mtolhuys/omacrunch", subject, comments, labels = [], head = { commit: A, branch: "main" } }) {
   const heads = []
   const report = await validationWatch({
@@ -272,6 +278,11 @@ test("an issue whose Repository URL names another owner than the plugin's origin
   assert.match(report.verdict.summary, /validating the wrong repository, or none/)
   assert.equal(report.verdict.action, "Edit the issue and set the Repository URL field to https://github.com/mtolhuys/omacrunch. Change nothing else.")
   assert.doesNotMatch(report.verdict.summary, /HEAD could not be read/)
+  // And it wins over a refusal on the same issue.
+  const refused = await watch({ issueUrl: "https://github.com/mtolhuijs/omacrunch", subject: { origin: "https://github.com/mtolhuys/omacrunch" },
+    comments: [await markerComment(A, "2026-09-20T16:12:00Z"), FAILED_COMMENT("2026-09-20T19:19:13Z")], head: notFound })
+  assert.equal(refused.report.verdict.state, "wrong-repository")
+  assert.equal(refused.report.refusal.code, "repository-unreachable", "the refusal is still in the document")
 })
 
 test("a .git suffix and a case difference are the same repository: the issue matches, and the verdict is the commit comparison", async () => {
@@ -286,4 +297,73 @@ test("without a subject nothing is compared: repositoryMatches is null and the v
   assert.equal(report.plugin.origin, null)
   assert.equal(report.plugin.repositoryMatches, null)
   assert.equal(report.verdict.state, "current")
+})
+
+test("a failed validation comment is mapped back to the marketplace's own code through the pinned feedback table", async () => {
+  const feedback = await submissionFeedback(requirePinForTests())
+  assert.ok(feedback.length >= 30, "the pinned table has its codes")
+  const read = validationComment([FAILED_COMMENT("2026-09-20T19:19:13Z")], feedback)
+  assert.equal(read.kind, "failed")
+  assert.equal(read.code, "repository-unreachable")
+  assert.equal(read.reason, "The repository could not be reached.")
+  assert.equal(read.action, "Confirm that it is public and available, then edit the issue to retry.")
+  assert.equal(read.at, "2026-09-20T19:19:13Z", "the time of a refusal is updated_at: the marketplace edits its comment in place")
+  // Without the bold markers, as the incident report quoted it, the same.
+  const plain = validationComment([{ body: "<!-- marketplace-validation -->\n❌ Validation failed: The repository could not be reached\n\nConfirm that it is public and available, then edit the issue to retry.", created_at: "2026-09-20T13:38:35Z", updated_at: "2026-09-20T19:19:13Z" }], feedback)
+  assert.equal(plain.code, "repository-unreachable")
+  // A passed comment is the passed kind, with the short commit.
+  const passed = validationComment([{ body: "<!-- marketplace-validation -->\n✅ Quattro compatibility passed at commit `0bb9beb`\n", created_at: "2026-09-20T13:38:35Z", updated_at: "2026-09-20T19:41:00Z" }], feedback)
+  assert.deepEqual(passed, { kind: "passed", short: "0bb9beb", at: "2026-09-20T19:41:00Z", createdAt: "2026-09-20T13:38:35Z" })
+  assert.equal(validationComment([{ body: "no marker" }], feedback), null)
+})
+
+test("a reason the pinned table does not know is reported verbatim with code unrecognised", async () => {
+  const feedback = await submissionFeedback(requirePinForTests())
+  const read = validationComment([FAILED_COMMENT("2026-09-20T19:19:13Z", "A reason nobody wrote down.", "Do the one thing.")], feedback)
+  assert.equal(read.code, "unrecognised")
+  assert.equal(read.reason, "A reason nobody wrote down.")
+  assert.equal(read.action, "Do the one thing.")
+  const { report } = await watch({ subject: { origin: "https://github.com/mtolhuys/omacrunch" }, comments: [read && FAILED_COMMENT("2026-09-20T19:19:13Z", "A reason nobody wrote down.", "Do the one thing.")] })
+  assert.equal(report.verdict.state, "refused")
+  assert.match(report.verdict.summary, /unrecognised, A reason nobody wrote down\./)
+  assert.equal(report.verdict.action, "Do the one thing.")
+})
+
+test("a refusal newer than the baseline marker is the current state, and carries the marketplace's own action", async () => {
+  // #7787: marker checkedAt 16:12, validation comment updated 19:19:13.
+  const { report } = await watch({ subject: { origin: "https://github.com/mtolhuys/omacrunch" }, labels: ["submission", "needs-fixes"],
+    comments: [await markerComment(A, "2026-09-20T16:12:00Z"), FAILED_COMMENT("2026-09-20T19:19:13Z")] })
+  assert.equal(report.plugin.repositoryMatches, true)
+  assert.deepEqual(report.refusal, { code: "repository-unreachable", reason: "The repository could not be reached.", action: "Confirm that it is public and available, then edit the issue to retry.", at: "2026-09-20T19:19:13Z" })
+  assert.deepEqual(report.labelState, { blocking: ["needs-fixes"], validated: false, reviewRequired: false })
+  assert.equal(report.verdict.state, "refused")
+  assert.equal(report.verdict.summary, "The marketplace refused this issue at 2026-09-20T19:19:13Z: repository-unreachable, The repository could not be reached. Confirm that it is public and available, then edit the issue to retry.")
+  assert.equal(report.verdict.action, "Confirm that it is public and available, then edit the issue to retry.")
+  assert.equal(report.validated.commit, A, "the stale marker is still reported")
+  // With no marker at all, the refusal is the state as well.
+  const bare = await watch({ subject: { origin: "https://github.com/mtolhuys/omacrunch" }, comments: [FAILED_COMMENT("2026-09-20T19:19:13Z")] })
+  assert.equal(bare.report.verdict.state, "refused")
+})
+
+test("a baseline marker newer than the refusal wins: the refusal is history, and the commits are compared", async () => {
+  // #7787 at 19:34:52: the corrected retry validated, and the marker moved
+  // past the 19:19:13 refusal; the validation comment was rewritten too,
+  // but a comment that still read "failed" with an older updated_at would
+  // not be the state either.
+  const { report } = await watch({ subject: { origin: "https://github.com/mtolhuys/omacrunch" }, labels: ["submission", "validated"],
+    comments: [FAILED_COMMENT("2026-09-20T19:19:13Z"), await markerComment(A, "2026-09-20T19:34:52.537Z")] })
+  assert.equal(report.refusal, null)
+  assert.equal(report.validationComment.kind, "failed", "the comment is still read")
+  assert.deepEqual(report.labelState, { blocking: [], validated: true, reviewRequired: false })
+  assert.equal(report.verdict.state, "current")
+})
+
+test("the verdict order is wrong-repository, refused, then the rest", () => {
+  const base = { comparable: true, stale: false, validated: { commit: A }, head: { commit: A, branch: "main" }, fallback: null, baselineError: null, headError: null, pushedAfterReview: false, repositoryUrl: REPOSITORY }
+  const refusal = { code: "readme-missing", reason: "A README file is required in the repository root.", action: "Add the root README and edit the issue to retry.", at: "2026-09-20T19:19:13Z" }
+  assert.equal(validationVerdict({ ...base, origin: "https://github.com/other/repo", repositoryMatches: false, refusal }).state, "wrong-repository")
+  assert.equal(validationVerdict({ ...base, refusal, baselineError: { code: "x" } }).state, "refused")
+  assert.equal(validationVerdict({ ...base, refusal }).action, refusal.action)
+  assert.equal(validationVerdict({ ...base, repositoryMatches: true }).state, "current")
+  assert.equal(validationVerdict({ ...base }).state, "current")
 })

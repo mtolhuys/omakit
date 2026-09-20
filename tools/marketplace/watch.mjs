@@ -100,7 +100,9 @@ export async function validationWatchAll({ repoRoot, discovery, github = {}, rea
     }
   }
   await Promise.all(Array.from({ length: Math.min(4, discovery.issues.length) }, worker))
-  const summary = { total: results.length, current: 0, stale: 0, unknown: 0 }
+  // No subject in a batch, so no row can be wrong-repository; a refused
+  // row is one the marketplace answered with a failure, and is counted.
+  const summary = { total: results.length, current: 0, stale: 0, refused: 0, unknown: 0 }
   for (const result of results) summary[result.report?.verdict.state || "unknown"] += 1
   // M9: count labels on the listed issues, then compare only updates in the manual queue.
   const manual = results.filter((row) => {
@@ -190,14 +192,84 @@ export async function repositoryFor(pinDir, subject) {
   return { url: null, kind: null, error: errors.join("; ") }
 }
 
+/** The last marketplace validation comment on the issue, or null. */
+function lastValidationComment(comments) {
+  return (comments || [])
+    .filter((comment) => String(comment.body || "").includes("<!-- marketplace-validation -->"))
+    .at(-1) || null
+}
+
 /** The short commit the validation comment reports, as a fallback when no baseline marker exists. */
 export function validationCommentCommit(comments) {
-  const validation = (comments || [])
-    .filter((comment) => String(comment.body || "").includes("<!-- marketplace-validation -->"))
-    .at(-1)
+  const validation = lastValidationComment(comments)
   if (!validation) return null
   const short = String(validation.body).match(/passed at commit `([0-9a-f]{7,40})`/i)?.[1]
   return short ? { short: short.toLowerCase(), createdAt: validation.created_at || null } : null
+}
+
+/**
+ * The marketplace's own failure table, read from the pin: every code
+ * `publicSubmissionFailure` can answer with, and the reason and action it
+ * prints for each. The table itself is not exported by the pinned module,
+ * so the codes are read out of its text and each is put through the
+ * exported function, which is the same path the failure comment took.
+ */
+export async function submissionFeedback(pinDir) {
+  const path = join(pinDir, "scripts/submission-feedback.mjs")
+  const { publicSubmissionFailure } = await import(pathToFileURL(path).href)
+  const codes = [...readFileSync(path, "utf8").matchAll(/^  "([a-z][a-z0-9-]*)": \{$/gm)].map((match) => match[1])
+  return codes.map((code) => ({ code, ...publicSubmissionFailure({ code }) }))
+}
+
+/**
+ * What the last validation comment says: `passed` with the short commit, or
+ * `failed` with the reason mapped back to the marketplace's code through
+ * the pinned feedback table. The marketplace edits its validation comment
+ * in place on every run (measured on #7787: the comment created at
+ * 13:38:35 carried `updated_at` 19:41:00 after three validations), so the
+ * time of a refusal is the comment's `updated_at`, not its `created_at`.
+ *
+ * @param {object[]} comments
+ * @param {{ code: string, reason: string, action: string }[]} feedback from submissionFeedback()
+ */
+export function validationComment(comments, feedback = []) {
+  const validation = lastValidationComment(comments)
+  if (!validation) return null
+  const body = String(validation.body)
+  const at = validation.updated_at || validation.created_at || null
+  const passed = body.match(/passed at commit `([0-9a-f]{7,40})`/i)?.[1]
+  if (passed) return { kind: "passed", short: passed.toLowerCase(), at, createdAt: validation.created_at || null }
+  // `❌ **Validation failed:** <reason>` then a blank line and the action;
+  // the bold markers are the marketplace's Markdown and are not part of
+  // the reason. A comment that is neither is reported as it is.
+  const failed = body.match(/Validation failed:\*{0,2}\s*(.+)/)
+  if (!failed) return { kind: "unrecognised", at, createdAt: validation.created_at || null, text: body.replace(/<!--.*?-->/gs, "").trim().slice(0, 500) }
+  const reason = failed[1].replace(/\*+/g, "").trim()
+  const rest = body.slice(failed.index + failed[0].length).replace(/\*+/g, "").trim()
+  const known = feedback.find((entry) => entry.reason === reason || entry.reason.replace(/\.$/, "") === reason.replace(/\.$/, ""))
+  return {
+    kind: "failed",
+    code: known ? known.code : "unrecognised",
+    reason,
+    action: known ? known.action : rest.split(/\n\s*\n/)[0] || null,
+    at,
+    createdAt: validation.created_at || null,
+  }
+}
+
+/**
+ * The labels the marketplace puts on a submission, read from the pin: the
+ * two blocking labels from the baseline policy, `validated` from the label
+ * set the approval script requires, and the manual-review label from the
+ * review policy.
+ */
+export async function marketplaceLabels(pinDir) {
+  const policy = await import(pathToFileURL(join(pinDir, "scripts/security-baseline-policy.mjs")).href)
+  const approval = readFileSync(join(pinDir, "scripts/approve-submission.mjs"), "utf8")
+  const validated = approval.match(/for \(const required of \["submission", "([^"]+)"/)?.[1]
+  if (!validated) throw new Error("cannot read the validated label from the pin")
+  const manual = policy.currentSecurityBaselinePolicy.maintainerVerificationOutcome
+  return { blocking: [...policy.securityBaselineBlockingLabels], validated, reviewRequired: `security-${manual}` }
 }
 
 /**
@@ -297,6 +369,18 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
     baselineError = { code: error.code || "baseline-unreadable", message: error.message }
   }
   const fallback = validated ? null : validationCommentCommit(comments)
+  const validation = validationComment(comments, await submissionFeedback(pinDir))
+  const labelNames = await marketplaceLabels(pinDir)
+  // A refusal is the current state when it is newer than the baseline
+  // marker, and the marker wins when it is newer. On #7787 the marker said
+  // checkedAt 16:12 (the hand-edited retry that still validated) and the
+  // validation comment said "Validation failed" with updated_at 19:19:13
+  // (the typed retry); the marker was three hours stale and the refusal
+  // was the state of the issue. The next validation at 19:34 wrote a newer
+  // marker, and from then on the marker was the state again.
+  const refusal = validation?.kind === "failed" && (!validated || Date.parse(validation.at || "") > Date.parse(validated.checkedAt || ""))
+    ? { code: validation.code, reason: validation.reason, action: validation.action, at: validation.at }
+    : null
   let previousValidated = null
   if (validated) {
     // Revalidation on an existing issue may precede the latest marker. Ignore
@@ -313,6 +397,11 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
   }
 
   const labels = (subject.labels || []).map((label) => (typeof label === "string" ? label : label?.name)).filter(Boolean)
+  const labelState = {
+    blocking: labels.filter((label) => labelNames.blocking.includes(label)),
+    validated: labels.includes(labelNames.validated),
+    reviewRequired: labels.includes(labelNames.reviewRequired),
+  }
   const authorComments = comments.filter((comment) => comment?.user?.login === subject.user?.login)
   // The discussion is a person's: the marketplace's own bot and any other
   // automation (GitHub marks an app's account `type: "Bot"`, and names it
@@ -362,7 +451,10 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
     plugin: { repository: repositoryUrl, repositoryError, form: issueKind, origin, repositoryMatches },
     validated,
     previousValidated,
+    validationComment: validation,
     validationCommentFallback: fallback,
+    refusal,
+    labelState,
     baselineError,
     head,
     headError,
@@ -372,7 +464,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
       createdAt: maintainerComments.at(-1).created_at || null,
       authorAssociation: maintainerComments.at(-1).author_association || null,
     } : null,
-    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin, repositoryMatches }),
+    verdict: validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin, repositoryMatches, refusal }),
   }
 }
 
@@ -381,15 +473,22 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
 // truthy string "unknown", so an issue whose body named no repository was
 // reported as a HEAD that could not be read, and the branch below that names
 // the real cause was reachable from the unit test alone.
-export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null }) {
-  // The state that says the issue itself is wrong comes first: a
-  // comparison of commits on the wrong repository describes nothing the
-  // marketplace is looking at.
+export function validationVerdict({ comparable, stale, validated, head, fallback, baselineError, headError, pushedAfterReview, repositoryUrl, origin = null, repositoryMatches = null, refusal = null }) {
+  // The two states that say the issue itself is wrong come first: a
+  // comparison of commits on the wrong repository, or after a refusal,
+  // describes nothing the marketplace is looking at.
   if (repositoryMatches === false) {
     return {
       state: "wrong-repository",
       summary: `The issue's Repository URL is ${repositoryUrl}, the plugin's origin is ${origin}. The marketplace validates the URL in the issue, so it is validating the wrong repository, or none.`,
       action: `Edit the issue and set the Repository URL field to ${origin}. Change nothing else.`,
+    }
+  }
+  if (refusal) {
+    return {
+      state: "refused",
+      summary: `The marketplace refused this issue at ${refusal.at || "an unrecorded time"}: ${refusal.code}, ${refusal.reason}${refusal.action ? ` ${refusal.action}` : ""}`,
+      action: refusal.action || REFRESH_ACTION,
     }
   }
   if (baselineError) {

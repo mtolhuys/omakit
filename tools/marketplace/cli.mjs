@@ -302,14 +302,16 @@ async function cmdWatch(args) {
   // 1: the validated commit is not known to be current. Stale is a fact
   // about the marketplace, not a failure, and exits 0. Measured on
   // 2026-09-19: an unknown verdict exited 2, the usage status. An issue
-  // that names the wrong repository is the same kind of refusal: nothing
-  // on it is being validated, and the verdict's own action is the remedy.
-  if (["unknown", "wrong-repository"].includes(result.verdict?.state)) {
+  // that names the wrong repository, or one the marketplace refused, is
+  // the same kind of refusal: nothing on it is being validated, and the
+  // verdict's own action is the remedy.
+  if (["unknown", "wrong-repository", "refused"].includes(result.verdict?.state)) {
     refuse(args, result, human, { code: result.verdict.state, message: result.verdict.summary, remedy: result.verdict.action || REMEDY[result.verdict.state] })
     return
   }
-  if (result.summary?.unknown > 0) {
-    refuse(args, result, human, { code: "unknown", message: `${result.summary.unknown} of ${result.summary.total} comparison${result.summary.total === 1 ? "" : "s"} could not be made` })
+  if (result.summary?.unknown > 0 || result.summary?.refused > 0) {
+    const counts = [result.summary.unknown > 0 && `${result.summary.unknown} could not be compared`, result.summary.refused > 0 && `${result.summary.refused} refused by the marketplace`].filter(Boolean).join(", ")
+    refuse(args, result, human, { code: result.summary.unknown > 0 ? "unknown" : "refused", message: `${counts} of ${result.summary.total} issue${result.summary.total === 1 ? "" : "s"}`, remedy: result.summary.unknown > 0 ? REMEDY.unknown : "Read each refused row: the marketplace's own reason and action are printed beside it." })
     return
   }
   succeed(args, result, human)

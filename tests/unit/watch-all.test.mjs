@@ -74,7 +74,7 @@ test("an empty account performs no issue or plugin reads", async () => {
   const result = await validationWatchAll({ repoRoot: REPO_ROOT, discovery, github: {
     issue: async () => { throw new Error("unexpected read") },
   } })
-  assert.deepEqual(result.summary, { total: 0, current: 0, stale: 0, unknown: 0 })
+  assert.deepEqual(result.summary, { total: 0, current: 0, stale: 0, refused: 0, unknown: 0 })
   assert.deepEqual(result.issues, [])
 })
 
@@ -126,10 +126,26 @@ test("batch watches retain failures, preserve discovery order, and share HEAD re
     defaultBranchHead: async () => { heads += 1; return { commit: A, branch: "main" } },
   } })
   assert.equal(heads, 1)
-  assert.deepEqual(result.summary, { total: 3, current: 1, stale: 1, unknown: 1 })
+  assert.deepEqual(result.summary, { total: 3, current: 1, stale: 1, refused: 0, unknown: 1 })
   assert.deepEqual(result.issues.map((row) => row.issue.number), [1, 2, 3])
   assert.equal(result.issues[1].error.code, "github-unavailable")
   assert.equal(result.issues[0].report.discussion.body, "Please inspect the installer")
+})
+
+test("a batch counts a row the marketplace refused, and the report draws it as a failure with the marketplace's reason", async () => {
+  const result = await validationWatchAll({ repoRoot: REPO_ROOT, discovery: await discover([subjects[0]]), github: {
+    issue: async () => ({ ...subjects[0], labels: ["submission", "needs-fixes"], body: "### Repository URL\n\nhttps://github.com/example/plugin\n\n### Category\n\n" }),
+    issueComments: async () => [{ user: { login: "github-actions[bot]" }, body: "<!-- marketplace-validation -->\n## Marketplace validation\n\n❌ **Validation failed:** A README file is required in the repository root.\n\nAdd the root README and edit the issue to retry.", created_at: "2026-09-20T13:38:35Z", updated_at: "2026-09-20T19:19:13Z" }],
+    defaultBranchHead: async () => ({ commit: A, branch: "main" }),
+  } })
+  assert.deepEqual(result.summary, { total: 1, current: 0, stale: 0, refused: 1, unknown: 0 })
+  assert.equal(result.issues[0].report.refusal.code, "readme-missing")
+  assert.equal(result.issues[0].report.plugin.repositoryMatches, null, "a batch has no subject")
+  const text = renderWatchAll(result, { colour: false })
+  assert.match(text, /1 refused/)
+  assert.match(text, /REFUSED\s+#1/)
+  assert.match(text, /readme-missing, A README file is required/)
+  assert.equal(plain(renderWatchAll(result, { colour: true })), text)
 })
 
 function terminal(answer) {
@@ -151,7 +167,7 @@ test("the picker selects multiple issues, retries invalid choices, and handles a
 
 test("batch and list reports share colour/plain output, wrap titles, and keep issue text inert", async () => {
   const discovery = await discover([{ ...subjects[0], title: `Long ${"word ".repeat(60)}` }])
-  const batch = { ...discovery, mode: "all", summary: { total: 1, current: 0, stale: 0, unknown: 1 },
+  const batch = { ...discovery, mode: "all", summary: { total: 1, current: 0, stale: 0, refused: 0, unknown: 1 },
     issues: [{ issue: discovery.issues[0], report: null, error: { message: "network unavailable" } }],
   }
   for (const [render, value] of [[renderWatchList, discovery], [renderWatchAll, batch]]) {
