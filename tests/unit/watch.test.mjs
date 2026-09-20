@@ -3,7 +3,7 @@
 // by the two real runs recorded in docs/VALIDATION_WATCH.md.
 import test from "node:test"
 import assert from "node:assert/strict"
-import { validationWatch, validationVerdict, validationCommentCommit, validationComment, submissionFeedback, sameRepository, resolveWatchSubject, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
+import { validationWatch, validationVerdict, validationCommentCommit, validationComment, submissionFeedback, sameRepository, resolveWatchSubject, subjectApplies, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { readFileSync } from "node:fs"
@@ -236,14 +236,14 @@ const FAILED_COMMENT = (updatedAt, reason = "The repository could not be reached
   created_at: "2026-09-20T13:38:35Z", updated_at: updatedAt,
 })
 
-async function watch({ issueUrl = "https://github.com/mtolhuys/omacrunch", subject, comments, labels = [], head = { commit: A, branch: "main" } }) {
+async function watch({ issueUrl = "https://github.com/mtolhuys/omacrunch", subject, comments, labels = [], head = { commit: A, branch: "main" }, bodySuffix = "" }) {
   const heads = []
   const report = await validationWatch({
     repoRoot: REPO_ROOT,
     issueUrl: `${MARKETPLACE_PIN.repository}/issues/7787`,
     subject,
     github: {
-      issue: async () => ({ title: "[Plugin]: Omacrunch", body: ISSUE_BODY(issueUrl), state: "open", user: { login: "mtolhuys" }, labels }),
+      issue: async () => ({ title: "[Plugin]: Omacrunch", body: ISSUE_BODY(issueUrl) + bodySuffix, state: "open", user: { login: "mtolhuys" }, labels }),
       issueComments: async () => comments,
       defaultBranchHead: async (url) => { heads.push(url); if (head instanceof Error) throw head; return head },
     },
@@ -263,6 +263,47 @@ test("the subject is a github.com URL as given, or the origin of a checkout, and
   assert.deepEqual(resolveWatchSubject(REPO_ROOT), { origin: "https://github.com/mtolhuys/omakit", source: "path" })
   assert.equal(resolveWatchSubject(undefined, { cwd: "/" }), null, "a directory that is no checkout is no subject")
   assert.throws(() => resolveWatchSubject("https://example.com/x/y"), /github\.com repository URL or a local checkout/)
+  // The current directory carries its manifest, or null when it has none:
+  // this repository is a checkout without a plugin manifest.
+  assert.deepEqual(resolveWatchSubject(undefined, { cwd: REPO_ROOT }), { origin: "https://github.com/mtolhuys/omakit", source: "cwd", manifest: null })
+})
+
+test("an implicit subject applies only when the issue is that plugin, by title name or body id; an explicit one always does", () => {
+  // Found in review: run from the omakit checkout, `omakit watch <omacrunch
+  // issue>` compared the issue with omakit's origin and told the reader to
+  // put omakit's URL into omacrunch's issue.
+  const issue = { title: "[Plugin]: Omacrunch", body: ISSUE_BODY("https://github.com/mtolhuys/omacrunch") + "\nio.github.mtolhuys.omacrunch" }
+  const cwd = (manifest) => ({ origin: "https://github.com/mtolhuys/omakit", source: "cwd", manifest })
+  assert.equal(subjectApplies(cwd(null), issue, "[Plugin]: "), false, "no manifest, no comparison")
+  assert.equal(subjectApplies(cwd({ name: "Omakit", id: "io.github.mtolhuys.omakit" }), issue, "[Plugin]: "), false, "another plugin's checkout")
+  assert.equal(subjectApplies(cwd({ name: "omacrunch", id: "" }), issue, "[Plugin]: "), true, "same name, case aside")
+  assert.equal(subjectApplies(cwd({ name: "Other", id: "io.github.mtolhuys.omacrunch" }), issue, "[Plugin]: "), true, "same id in the body")
+  assert.equal(subjectApplies(cwd({ name: "Omacrunch", id: "" }), { ...issue, title: "[Verify]: Omacrunch" }, "[Plugin]: "), false, "a name match needs the submission title")
+  assert.equal(subjectApplies({ origin: "https://github.com/mtolhuys/omakit", source: "path" }, issue, "[Plugin]: "), true, "an explicit path is asserted")
+  assert.equal(subjectApplies({ origin: "https://github.com/mtolhuys/omakit", source: "url" }, issue, "[Plugin]: "), true, "an explicit URL is asserted")
+  assert.equal(subjectApplies(null, issue, "[Plugin]: "), false)
+})
+
+test("the current directory being another plugin's checkout is not compared: the verdict stands, the report says why", async () => {
+  const elsewhere = { origin: "https://github.com/mtolhuys/omakit", source: "cwd", manifest: { name: "Omakit", id: "io.github.mtolhuys.omakit" } }
+  const { report } = await watch({ subject: elsewhere, comments: [await markerComment(A, "2026-09-20T16:12:00Z")] })
+  assert.equal(report.plugin.origin, null)
+  assert.equal(report.plugin.repositoryMatches, null)
+  assert.equal(report.verdict.state, "current", "a correct issue stays current")
+  assert.equal(report.plugin.subjectSkipped.origin, "https://github.com/mtolhuys/omakit")
+  assert.match(report.plugin.subjectSkipped.reason, /the current directory is https:\/\/github\.com\/mtolhuys\/omakit, not this plugin; pass the plugin checkout or URL as the second argument/)
+  // The same directory as the same plugin, by name, with the #7787 typo in the issue: wrong-repository.
+  const same = { origin: "https://github.com/mtolhuys/omacrunch", source: "cwd", manifest: { name: "omacrunch", id: "" } }
+  const typo = await watch({ issueUrl: "https://github.com/mtolhuijs/omacrunch", subject: same, comments: [await markerComment(A, "2026-09-20T16:12:00Z")] })
+  assert.equal(typo.report.verdict.state, "wrong-repository")
+  assert.equal(typo.report.plugin.subjectSkipped, null)
+  // And by id alone, when the title does not carry the name.
+  const byId = { origin: "https://github.com/mtolhuys/omacrunch", source: "cwd", manifest: { name: "Something Else", id: "io.github.mtolhuys.omacrunch" } }
+  const idMatch = await watch({ issueUrl: "https://github.com/mtolhuijs/omacrunch", subject: byId, comments: [await markerComment(A, "2026-09-20T16:12:00Z")], bodySuffix: "\nPlugin id: io.github.mtolhuys.omacrunch\n" })
+  assert.equal(idMatch.report.verdict.state, "wrong-repository")
+  // An explicit path to another plugin is asserted, and compared.
+  const asserted = await watch({ subject: { origin: "https://github.com/mtolhuys/omakit", source: "path" }, comments: [await markerComment(A, "2026-09-20T16:12:00Z")] })
+  assert.equal(asserted.report.verdict.state, "wrong-repository")
 })
 
 test("an issue whose Repository URL names another owner than the plugin's origin is wrong-repository, over every other state", async () => {

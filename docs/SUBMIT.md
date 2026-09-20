@@ -201,7 +201,9 @@ baseline. This does not promise approval or publication. M4 and M9 in
 
 The extra discovery reads the signed-in account and the fresh bodies of the
 same open issues that `watch --all` finds, matching repository owner and name
-case-insensitively and ignoring `.git`. No comments, labels or issues are
+case-insensitively and ignoring `.git`. Since 0.6.4 it runs on every online
+`submit`, not only when the baseline lands in the manual queue, because
+`submission.issue-repository-url` reads the same issues; one read serves both. No comments, labels or issues are
 written. Under `--offline`, without a credential, or if the reads fail or are
 incomplete, the count is silently omitted from the text advice. JSON keeps
 `openIssuesForRepository: null` and the source-honest reason, never zero.

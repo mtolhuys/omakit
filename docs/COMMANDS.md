@@ -158,7 +158,9 @@ in.
 
 The optional second argument is the subject: the plugin's checkout or its
 github.com URL, the current directory by default when it is such a
-checkout. With one, the issue's Repository URL is compared with the
+checkout and its root `manifest.json` is the plugin the issue names (a
+directory that is another plugin is reported as not compared, never as a
+mismatch). With one, the issue's Repository URL is compared with the
 plugin's `origin` and a mismatch is `wrong-repository`, exit 1, before any
 commit is compared. A failed marketplace validation newer than the last
 baseline marker is `refused`, exit 1, with the marketplace's own code and

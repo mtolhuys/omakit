@@ -27,6 +27,7 @@ import { liveRegistry } from "./registry.mjs"
 import { reviewPolicy, validatedDocumentationDiff } from "./review-cost.mjs"
 import { parseGitHubUrl, resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { omakitCacheDir } from "./paths.mjs"
+import { submissionContract } from "./form.mjs"
 
 export class WatchError extends Error {
   constructor(code, message) {
@@ -277,9 +278,11 @@ export async function marketplaceLabels(pinDir) {
  * given; a path is a Git checkout whose `origin` is read the way `submit`
  * reads it, and the working tree may be dirty, since only the remote is
  * read. With no argument the current directory is the subject when it is
- * such a checkout, and there is no subject otherwise.
+ * such a checkout, and there is no subject otherwise. A cwd subject also
+ * carries its root manifest's name and id, because it was not asserted by
+ * anyone: validationWatch() compares it only when the issue is that plugin.
  *
- * @returns {{ origin: string, source: "url"|"path"|"cwd" }|null}
+ * @returns {{ origin: string, source: "url"|"path"|"cwd", manifest?: { name: string, id: string }|null }|null}
  */
 export function resolveWatchSubject(target, { cwd = process.cwd(), cacheRoot = omakitCacheDir() } = {}) {
   if (target !== undefined) {
@@ -292,10 +295,44 @@ export function resolveWatchSubject(target, { cwd = process.cwd(), cacheRoot = o
   }
   try {
     const subject = resolveSubject(cwd, { cacheRoot, allowDirty: true })
-    return subject.repository.url ? { origin: subject.repository.url, source: "cwd" } : null
+    return subject.repository.url ? { origin: subject.repository.url, source: "cwd", manifest: rootManifest(subject.dir) } : null
   } catch {
     return null
   }
+}
+
+/** The name and id of the root manifest.json, or null when there is none or it does not parse. */
+function rootManifest(dir) {
+  try {
+    const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"))
+    return { name: String(manifest?.name || "").trim(), id: String(manifest?.id || "").trim() }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Whether an implicit (cwd) subject is the plugin the issue is about: the
+ * issue title carries the manifest's name after the pinned title template,
+ * or the body names the manifest's id. An explicit subject is the caller's
+ * assertion and always applies. Reviewed on the branch before release: run
+ * from the omakit checkout itself, `omakit watch <omacrunch issue>` compared
+ * the issue with omakit's origin, reported wrong-repository, and printed an
+ * action to put omakit's URL into omacrunch's issue; the #7787 mistake with
+ * the tool's authority behind it.
+ *
+ * @returns {boolean}
+ */
+export function subjectApplies(watchSubject, issue, titleTemplate) {
+  if (!watchSubject) return false
+  if (watchSubject.source !== "cwd") return true
+  const manifest = watchSubject.manifest
+  if (!manifest) return false
+  const title = String(issue?.title || "")
+  if (manifest.name && titleTemplate && title.startsWith(titleTemplate)) {
+    if (title.slice(titleTemplate.length).trim().toLowerCase() === manifest.name.toLowerCase()) return true
+  }
+  return Boolean(manifest.id) && String(issue?.body || "").includes(manifest.id)
 }
 
 /** Two github.com repository URLs name the same repository: https, no `.git`, no trailing slash, owner and name case-insensitively. */
@@ -347,7 +384,15 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
   // repository that does not exist and refused within 40 seconds. The issue
   // is compared with origin here, so the typo is named as what it is rather
   // than reported as a HEAD that could not be read.
-  const origin = watchSubject?.origin || null
+  // A subject nobody named (the current directory) is compared only when
+  // it is this plugin; otherwise it is reported as not compared, with the
+  // directory's origin, so a person sees why and can pass the plugin.
+  const titleTemplate = watchSubject?.source === "cwd" ? (await submissionContract({ pinDir })).titleTemplate : ""
+  const applies = subjectApplies(watchSubject, subject, titleTemplate)
+  const origin = applies ? watchSubject.origin : null
+  const subjectSkipped = watchSubject && !applies
+    ? { origin: watchSubject.origin, reason: `the current directory is ${watchSubject.origin}, not this plugin; pass the plugin checkout or URL as the second argument` }
+    : null
   const repositoryMatches = origin && repositoryUrl ? sameRepository(repositoryUrl, origin) : null
 
   let validated = null
@@ -448,7 +493,7 @@ export async function validationWatch({ repoRoot, issueUrl, onPhase, github = {}
       lastMaintainerCommentAt: maintainerComments.at(-1)?.created_at || null,
       authenticated: Boolean(token()),
     },
-    plugin: { repository: repositoryUrl, repositoryError, form: issueKind, origin, repositoryMatches },
+    plugin: { repository: repositoryUrl, repositoryError, form: issueKind, origin, repositoryMatches, subjectSkipped },
     validated,
     previousValidated,
     validationComment: validation,

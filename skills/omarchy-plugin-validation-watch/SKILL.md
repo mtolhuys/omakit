@@ -36,11 +36,14 @@ omakit watch --list --json
 
 Give the plugin's checkout (or its github.com URL) as the second argument
 whenever you have it; without one, the current directory is the subject
-when it is such a checkout. With a subject, the issue's Repository URL is
-compared with the plugin's `origin`, and the verdict `wrong-repository`
-names a mismatch before anything else is compared. `--json` carries it as
-`plugin.origin` and `plugin.repositoryMatches` (`null` when there is no
-subject, as in `--all`).
+when it is such a checkout and its `manifest.json` is the plugin the issue
+names. A directory that is another plugin is not compared, and the report
+says so (`plugin.subjectSkipped` in `--json`): pass the plugin then, do not
+read the origin it prints as the one to put in the issue. With a subject,
+the issue's Repository URL is compared with the plugin's `origin`, and the
+verdict `wrong-repository` names a mismatch before anything else is
+compared. `--json` carries it as `plugin.origin` and
+`plugin.repositoryMatches` (`null` when there is no subject, as in `--all`).
 
 If `omakit` is not installed: `npm install --global omakit` (Omarchy ships Node
 and npm through mise), then `omakit doctor`; if the command is not found after

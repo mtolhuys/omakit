@@ -11,7 +11,9 @@ notes were wiped, and the marketplace refused the issue as
 caught it; four things now do.
 
 `omakit watch <issue-url> [<subject>]` takes the plugin's checkout or its
-github.com URL (the current directory by default when it is such a checkout)
+github.com URL (the current directory by default when it is such a checkout
+and its `manifest.json` is the plugin the issue names; another plugin's
+directory is reported as not compared, never as a mismatch)
 and compares the issue's Repository URL with `origin`; a mismatch is the
 verdict `wrong-repository`, over every other state, with the origin to put
 back. `watch` also reads a failed marketplace validation: the last validation

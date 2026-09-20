@@ -28,6 +28,20 @@ with the origin to put back. `--json` carries `plugin.origin` and
 subject or the issue names no repository); `--all` has no subject and
 compares nothing.
 
+A subject nobody named is compared only when it is this plugin. Without a
+second argument the current directory is the subject when it is a checkout
+with a github.com origin, and then its root `manifest.json` must be the
+plugin the issue is about: its `name` after the pinned title template
+(`[Plugin]: `, case aside) or its `id` in the issue body. Otherwise nothing
+is compared, `plugin.origin` is `null`, `plugin.subjectSkipped` names the
+directory's origin and the reason, and the report says "not compared: the
+current directory is <origin>, not this plugin; pass the plugin checkout or
+URL as the second argument". Found in review before release: run from the
+omakit checkout itself, a watch on an omacrunch issue reported
+`wrong-repository` and printed an action to put omakit's URL into that
+issue. An explicit path or URL is the caller's assertion and is always
+compared.
+
 A failed validation is read as well. The last `<!-- marketplace-validation
 -->` comment is either passed, with the short commit, or failed, and a
 failed one is mapped back to the marketplace's own code through the pinned

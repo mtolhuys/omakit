@@ -222,6 +222,9 @@ export function renderWatch(result, { colour = colourEnabled() } = {}) {
     const origin = result.plugin.repositoryMatches === false ? c("fail", result.plugin.origin) : result.plugin.origin
     out.push(...field("origin", origin, c, { wrapValue: false }))
     out.push(...continuation(result.plugin.repositoryMatches === false ? "the issue names a different repository" : result.plugin.repositoryMatches ? "the issue names this repository" : "not compared: the issue names no repository", c))
+  } else if (result.plugin.subjectSkipped) {
+    out.push(...field("origin", "not compared", c))
+    out.push(...continuation(result.plugin.subjectSkipped.reason, c))
   }
   if (result.plugin.form === "verify" || result.plugin.form === "verify-legacy") {
     out.push(...field("form", "plugin update request, read with the marketplace's verification parser", c))
