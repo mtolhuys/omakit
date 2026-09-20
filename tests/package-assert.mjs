@@ -54,7 +54,10 @@ import { pathToFileURL } from "node:url"
 // marketplace pin in it. After the acceptance test of 2026-09-19, with the
 // contract layer (tools/marketplace/outcome.mjs) and the table that holds
 // it, the release-stamped artifact measured 340,899 bytes across 131 files,
-// 17,501 under the same ceiling.
+// 17,501 under the same ceiling. With the M15 measurement script
+// (tools/marketplace/measure-repository-owner.mjs) and the retry-edit fix
+// of 0.6.4, `npm pack --dry-run` measured 345,896 bytes across 132 files,
+// 12,504 under the same ceiling.
 export const MAX_PACKED_BYTES = 358_400
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
@@ -162,6 +165,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/github.mjs",
   "tools/marketplace/issue.mjs",
   "tools/marketplace/local-transport.mjs",
+  "tools/marketplace/measure-repository-owner.mjs",
   "tools/marketplace/measure-review-cost.mjs",
   "tools/marketplace/measure-staleness.mjs",
   "tools/marketplace/path-hint.mjs",

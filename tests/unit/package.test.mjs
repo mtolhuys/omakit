@@ -7,7 +7,7 @@ import { assertPackageArtifact, EXPECTED_PACKAGE_PATHS, MAX_PACKED_BYTES } from 
 test("the reviewed package shape reports its measured baseline and chosen ceiling", () => {
   const files = EXPECTED_PACKAGE_PATHS.map((path) => ({ path }))
   const result = assertPackageArtifact([{ files, size: 81_351 }])
-  assert.equal(result.fileCount, 131)
+  assert.equal(result.fileCount, 132)
   assert.equal(result.packedBytes, 81_351)
   assert.equal(result.ceilingBytes, MAX_PACKED_BYTES)
 })

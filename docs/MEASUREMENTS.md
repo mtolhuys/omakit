@@ -1253,3 +1253,64 @@ the time and are printed, not pinned. The download itself was not
 measured over the network on this host: the ISO came from a local copy
 (`--from`), and the resumable GET is proven against a local origin in
 `tests/unit/lab.test.mjs`.
+
+## M15. Open submissions whose Repository URL owner is not the issue's author
+
+Measured on 2026-09-20, 20:48:38.905 to 20:48:44.421 UTC, against the
+marketplace's open issues, with the pin at
+`38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6`. Command used, from the
+repository root:
+
+```bash
+node tools/marketplace/measure-repository-owner.mjs > docs/evidence/repository-owner/2026-09-20.json
+```
+
+The [machine-readable capture](evidence/repository-owner/2026-09-20.json)
+records every open issue labelled `submission`, its author, the Repository
+URL read from its body with the pinned submission parser, that URL's owner,
+and whether the owner is the author. Its population counts are:
+
+```json
+{
+  "measurement": "M15",
+  "date": "2026-09-20",
+  "sample": false,
+  "total": 651,
+  "readable": 646,
+  "unreadable": 5,
+  "ownerDiffers": 27,
+  "ownerMatches": 619,
+  "differsShareOfReadable": 0.04179566563467492
+}
+```
+
+Of 651 open submission issues, 646 had a readable github.com Repository
+URL; 5 did not (three not a repository root URL, two with the field
+missing). Of the 646, 619 (95.8%) name the author's own account and 27
+(4.2%) name another owner. 21 of the 27 carry `needs-fixes`, against 533
+of all 651 (81.9% and 81.6%): an owner that is not the author is not,
+by itself, a sign that the URL is wrong. Organisations, forks and
+co-maintainers exist, and the marketplace does not require the two to
+match.
+
+The case that made this worth measuring is
+omacom/omarchy-plugin-marketplace#7787, 2026-09-20 (UTC): opened 13:37:58
+from `omakit submit`, validated at 13:38; body edited by hand at 16:12 to
+retry, validated again; body retyped by an agent at 19:18, with the
+Repository URL as `mtolhuijs/omacrunch` (an existing account, no such
+repository) where origin says `mtolhuys/omacrunch`, and the Maintainer
+notes wiped. The `issues` workflow run for the edit started 19:18:33 and
+the marketplace labelled `needs-fixes` at 19:19:13, 40 seconds later, with
+`repository-unreachable`, "The repository could not be reached." The
+corrected edit at 19:34 validated at 19:34:52 (`validated` at 19:35:13,
+`needs-fixes` removed at 19:41:05). The timestamps are the issue's label
+events and the two workflow runs, read through the GitHub API.
+
+What this measures and what it does not. The 27 is the size of the
+population in which `submission.issue-repository-url` has to tell a typo
+apart from a legitimate other owner, so the check compares the issue's URL
+with the plugin's own `origin`, not with the author's login: an author
+submitting an organisation's repository from that repository's checkout
+matches, and #7787 at 19:19 does not. The measurement does not say how
+many of the 27 are typos; that would need each author's checkout, which
+the marketplace does not have and this tool did not read.
