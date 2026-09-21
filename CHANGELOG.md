@@ -19,9 +19,12 @@ The figures the tool prints and the docs cite are the new pin's, recomputed
 by `tests/unit/registry-figures.test.mjs`: 3,653 listed sources, 3,608 with a
 recorded baseline (2,025 passed, 1,557 review-required, 26 needs-fixes),
 3,691 catalog ids; 854 sources (23.4%) revalidated at least once. Parity is
-re-proved at the new pin over the 30-repository corpus in
-`docs/evidence/parity/2026-09-21-local-vs-github.json`. The pinned checkout
-is 22 MB sparse; `omakit pin` re-fetches it on first use.
+re-proved at the new pin over the 30-repository corpus: 30 of 30 identical
+at offset 1 (`docs/evidence/parity/2026-09-21-local-vs-github-2.json`); at
+offset 0, 29 of 30 with 0 mismatches and one listing that no longer exists
+on github.com (modoterra/omabench, listed as passed at `6ef8e49`; the site
+answers 404), recorded in `2026-09-21-local-vs-github.json`. The pinned
+checkout is 22 MB sparse; `omakit pin` re-fetches it on first use.
 
 ## 0.6.4
 

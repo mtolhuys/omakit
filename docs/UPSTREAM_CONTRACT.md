@@ -36,7 +36,7 @@ Relevant symbol/section:
 Omakit reliance: run the official baseline on a local commit through a local Git
   transport; read the submission contract from the form; verify the rendered body
   with the official parser; read the validated commit from the official marker.
-Executable proof/test: tests/parity/run.mjs (30 of 30 identical, docs/evidence/parity/);
+Executable proof/test: tests/parity/run.mjs (30 of 30 identical at 70dcc454, offset 1, docs/evidence/parity/);
   tests/parity/offline.mjs (no network during a local run, docs/evidence/offline/);
   tests/unit/*.test.mjs
 Verified result: VERIFIED
@@ -76,7 +76,7 @@ Two modules at the pin are deliberately *not* imported:
 | Pin | Marketplace date | Omakit releases | What moved in the pinned paths since the previous pin |
 | --- | --- | --- | --- |
 | `38060f89` | 2026-09-11 | 0.1.0 to 0.6.4 | first pin |
-| `70dcc454` | 2026-09-21 | 0.6.5 | 863 commits, two in `scripts/` or `.github/ISSUE_TEMPLATE/`: 7dd6e56 adds the tag `vpn` to `allowedTags` and to the form's Tags list (read from the pin, so `submit` accepts it without a code change); 40315f2 lets a standard-installation verification reuse a valid installer-only maintainer review (`plugin-verification.mjs`, a new `securityBaselineEligibleForReviewedStandardInstallation` in the policy module, `verify-plugin.yml` wording; the maintainer's flow after listing, nothing the preflight reads). `securityBaselineVersion`, `securityBaselineEnforcementMode`, the rule and capability catalogs, the limits, the feedback table (37 codes) and the label set are byte-identical. Parity re-proved: `docs/evidence/parity/2026-09-21-local-vs-github.json` |
+| `70dcc454` | 2026-09-21 | 0.6.5 | 863 commits, two in `scripts/` or `.github/ISSUE_TEMPLATE/`: 7dd6e56 adds the tag `vpn` to `allowedTags` and to the form's Tags list (read from the pin, so `submit` accepts it without a code change); 40315f2 lets a standard-installation verification reuse a valid installer-only maintainer review (`plugin-verification.mjs`, a new `securityBaselineEligibleForReviewedStandardInstallation` in the policy module, `verify-plugin.yml` wording; the maintainer's flow after listing, nothing the preflight reads). `securityBaselineVersion`, `securityBaselineEnforcementMode`, the rule and capability catalogs, the limits, the feedback table (37 codes) and the label set are byte-identical. Parity re-proved 30 of 30 at offset 1 (`docs/evidence/parity/2026-09-21-local-vs-github-2.json`); offset 0 is 29 of 30, 0 mismatches, modoterra/omabench gone from github.com (`2026-09-21-local-vs-github.json`) |
 
 ## GitHub account-wide issue discovery
 
