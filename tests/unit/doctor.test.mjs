@@ -5,12 +5,12 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { clearCommit, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
-import { changedPinPaths, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
-import { MARKETPLACE_PIN, PIN_PATHS } from "../../tools/marketplace/pin.mjs"
+import { comparePin, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, pinnedReadSet } from "../../tools/marketplace/pin.mjs"
 import { LIVE_PATHS } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
-const pinned = { commit: "1".repeat(40) }
+const pinned = { commit: "1".repeat(40), baselineVersion: "3", enforcementMode: "selective" }
 
 test("freshness JSON carries both full commits without changing the human detail", () => {
   const head = { commit: "2".repeat(40), branch: "main" }
@@ -46,24 +46,27 @@ test("a current pin is explicit machine evidence", () => {
 // behind in nothing the tool uses. The split below uses that same list.
 
 const head = { commit: "2".repeat(40), branch: "main" }
-const issues = "https://github.com/mtolhuys/omakit"
+const same = { baselineVersion: "3", enforcementMode: "selective" }
+/** A comparePin() answer: nothing moved unless said. */
+const compared = (changedPaths = [], extra = {}) => ({ changedPaths, reads: 16, moved: [], missing: [], policyAtHead: null, ...extra })
 
 test("only the data files moved, or nothing did: ok, no action, and the detail says they are read live", () => {
-  const both = pinFreshness(pinned, head, ["/registry.json", "/site/catalog.json"], { issues })
+  const both = pinFreshness(pinned, head, compared(["/registry.json", "/site/catalog.json"]))
   assert.equal(both.state, "ok")
   assert.equal(both.action, null)
   assert.equal(both.detail, "pin 1111111; marketplace main at 2222222; only registry.json and site/catalog.json moved, and those are read live")
   assert.deepEqual(both.evidence, {
     pinCommit: pinned.commit, marketplaceHead: head.commit, branch: "main",
     changedPaths: ["/registry.json", "/site/catalog.json"], readLive: ["/registry.json", "/site/catalog.json"], pinned: [],
+    reads: 16, moved: [], missing: [], policy: { pin: same, head: same },
   })
   assert.deepEqual([...LIVE_PATHS], ["registry.json", "site/catalog.json"], "the split is registry.mjs's list, not a second one")
 
-  const one = pinFreshness(pinned, head, ["/registry.json"], { issues })
+  const one = pinFreshness(pinned, head, compared(["/registry.json"]))
   assert.equal(one.state, "ok")
   assert.equal(one.detail, "pin 1111111; marketplace main at 2222222; only registry.json moved, and that is read live")
 
-  const nothing = pinFreshness(pinned, head, [], { issues })
+  const nothing = pinFreshness(pinned, head, compared())
   assert.equal(nothing.state, "ok")
   assert.equal(nothing.action, null)
   assert.equal(nothing.detail, "pin 1111111; marketplace main at 2222222; nothing omakit reads moved")
@@ -71,39 +74,99 @@ test("only the data files moved, or nothing did: ok, no action, and the detail s
   assert.deepEqual(nothing.evidence.readLive, [])
   assert.deepEqual(nothing.evidence.pinned, [])
 
-  const current = pinFreshness(pinned, { commit: pinned.commit, branch: "main" }, [], { issues })
+  const current = pinFreshness(pinned, { commit: pinned.commit, branch: "main" }, compared())
   assert.equal(current.state, "ok")
   assert.equal(current.detail, "the pin is the marketplace's current main-branch HEAD")
   assert.deepEqual(current.evidence.changedPaths, [])
 })
 
-test("a pinned path moved: note, the paths named, and an action for a user, never the maintainer's procedure", () => {
-  const code = pinFreshness(pinned, head, ["/scripts/", "/registry.json"], { issues })
-  assert.equal(code.state, "advice")
-  assert.equal(code.detail, "pin 1111111; marketplace main at 2222222; changed since the pin: /scripts/ (registry.json moved too, and that is read live)")
-  assert.equal(code.action, "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue at https://github.com/mtolhuys/omakit/issues naming the paths above.")
-  assert.deepEqual(code.evidence.changedPaths, ["/scripts/", "/registry.json"])
-  assert.deepEqual(code.evidence.readLive, ["/registry.json"])
-  assert.deepEqual(code.evidence.pinned, ["/scripts/"])
-  assert.doesNotMatch(`${code.detail} ${code.action}`, /UPSTREAM_CONTRACT|parity|evidence/, "the procedure is the maintainer's and stays in the docs")
+// --- graded by what the difference can do to a verdict ---------------------------
+// Measured on 2026-09-21 (docs/MEASUREMENTS.md M7): of the three marketplace
+// commits that touched scripts/ since the first pin 38060f89, 5e401552
+// changed only repository-identity.mjs, which nothing omakit reads reaches,
+// and the tree comparison graded it advice; the pin moved for a verdict
+// that could not change. Under scripts/ the comparison is now by blob over
+// the files pinnedReadSet() names, and the grade says what the difference
+// can do: ok, info (verdicts unchanged), advice (a verdict may differ).
 
-  const forms = pinFreshness(pinned, head, ["/.github/ISSUE_TEMPLATE/"], { issues })
+test("scripts/ moved in a file omakit does not read: ok, and the detail says how many it does read", () => {
+  const outside = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json"]))
+  assert.equal(outside.state, "ok")
+  assert.equal(outside.action, null)
+  assert.equal(outside.detail, "pin 1111111; marketplace main at 2222222; scripts/ moved in none of the 16 files omakit reads (registry.json moved too, and that is read live)")
+  assert.deepEqual(outside.evidence.pinned, ["/scripts/"], "the tree-level answer stays in the evidence")
+  assert.deepEqual(outside.evidence.moved, [])
+})
+
+test("a read file moved and both policy constants read the same: info, the files named, verdicts unchanged, nothing to do", () => {
+  const moved = pinFreshness(pinned, head, compared(["/scripts/"], { moved: ["scripts/github-repository.mjs", "scripts/submission.mjs"] }))
+  assert.equal(moved.state, "info")
+  assert.equal(moved.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/github-repository.mjs and scripts/submission.mjs; baseline 3 (selective) at both")
+  assert.equal(moved.action, "Verdicts are unchanged, and a newer omakit will carry the pin; nothing to do.")
+  assert.deepEqual(moved.evidence.moved, ["scripts/github-repository.mjs", "scripts/submission.mjs"])
+  assert.deepEqual(moved.evidence.policy, { pin: same, head: same })
+  assert.doesNotMatch(`${moved.detail} ${moved.action}`, /issue|UPSTREAM_CONTRACT|parity|evidence/, "no issue to open, and the procedure stays the maintainer's")
+
+  // The policy module moved, and its constants at HEAD still read the same: info.
+  const policy = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json"], { moved: [POLICY_MODULE], policyAtHead: { ...same } }))
+  assert.equal(policy.state, "info")
+  assert.equal(policy.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs; baseline 3 (selective) at both (registry.json moved too, and that is read live)")
+})
+
+test("a policy constant differs, a read file is gone, or the form moved: advice, and the action is upgrade or that the maintainer is notified", () => {
+  const version = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [POLICY_MODULE], policyAtHead: { baselineVersion: "4", enforcementMode: "selective" } }))
+  assert.equal(version.state, "advice")
+  assert.equal(version.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs; baseline 3 (selective) at the pin, baseline 4 (selective) at HEAD")
+  assert.equal(version.action, "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin, and until then every verdict here is the pin's.")
+  assert.deepEqual(version.evidence.policy, { pin: same, head: { baselineVersion: "4", enforcementMode: "selective" } })
+
+  const mode = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [POLICY_MODULE], policyAtHead: { baselineVersion: "3", enforcementMode: "strict" } }))
+  assert.equal(mode.state, "advice")
+  assert.match(mode.detail, /baseline 3 \(selective\) at the pin, baseline 3 \(strict\) at HEAD$/)
+
+  const gone = pinFreshness(pinned, head, compared(["/scripts/"], { missing: ["scripts/submission-feedback.mjs"] }))
+  assert.equal(gone.state, "advice")
+  assert.equal(gone.detail, "pin 1111111; marketplace main at 2222222; gone at HEAD: scripts/submission-feedback.mjs; baseline 3 (selective) at both")
+  assert.deepEqual(gone.evidence.missing, ["scripts/submission-feedback.mjs"])
+
+  const forms = pinFreshness(pinned, head, compared(["/.github/ISSUE_TEMPLATE/"]))
   assert.equal(forms.state, "advice")
-  assert.equal(forms.detail, "pin 1111111; marketplace main at 2222222; changed since the pin: /.github/ISSUE_TEMPLATE/")
+  assert.equal(forms.detail, "pin 1111111; marketplace main at 2222222; the form moved (.github/ISSUE_TEMPLATE/); baseline 3 (selective) at both")
   assert.deepEqual(forms.evidence.readLive, [])
   assert.deepEqual(forms.evidence.pinned, ["/.github/ISSUE_TEMPLATE/"])
 
-  // Without a repository URL to read, the issue is still asked for, nowhere in particular.
-  const nowhere = pinFreshness(pinned, head, ["/scripts/"])
-  assert.equal(nowhere.action, "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue naming the paths above.")
+  // 70dcc454 against 38060f89 as measured: submission.mjs and the policy
+  // module moved, the form moved, the constants read the same. Advice, for
+  // the form; and with a newer omakit published, the action is the upgrade.
+  const upgrade = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json", "/site/catalog.json", "/.github/ISSUE_TEMPLATE/"], { moved: [POLICY_MODULE, "scripts/submission.mjs"], policyAtHead: { ...same } }), { upgrade: "omakit upgrade" })
+  assert.equal(upgrade.state, "advice")
+  assert.equal(upgrade.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs and scripts/submission.mjs; the form moved (.github/ISSUE_TEMPLATE/); baseline 3 (selective) at both (registry.json and site/catalog.json moved too, and those are read live)")
+  assert.equal(upgrade.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`.")
+  for (const check of [version, mode, gone, forms, upgrade]) {
+    assert.doesNotMatch(`${check.detail} ${check.action}`, /open an issue|UPSTREAM_CONTRACT|parity|evidence/, "no issue to open: the weekly run opens the one there is")
+  }
 })
 
-test("doctor reads the issues URL from package.json and HEAD unreadable stays unknown", async () => {
-  // The URL is read, never typed: package.json's repository field is the one home.
-  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
-  assert.match(pkg.repository.url, /github\.com\/mtolhuys\/omakit/)
+test("doctor passes the upgrade it found to pin.freshness, and HEAD unreadable stays unknown", async () => {
   const source = readFileSync(join(REPO_ROOT, "tools/marketplace/doctor.mjs"), "utf8")
   assert.doesNotMatch(source, /github\.com\/mtolhuys/, "doctor.mjs does not type the repository")
+  assert.doesNotMatch(source, /open an issue/i, "doctor never asks a user to open an issue; pin-freshness.yml does that")
+
+  // The form moved and 9.9.9 is published: the version check's upgrade
+  // command is pin.freshness's action too. With nothing newer, the
+  // maintainer is named instead.
+  const freshness = async (latest) => (await doctor({
+    repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env },
+    resolveHead: async () => ({ commit: "2".repeat(40), branch: "main" }),
+    compare: async () => compared(["/.github/ISSUE_TEMPLATE/"]),
+    latest: async () => ({ version: latest, error: null }),
+  })).checks.find((entry) => entry.id === "pin.freshness")
+  const newer = await freshness("9.9.9")
+  assert.equal(newer.state, "advice")
+  assert.equal(newer.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`.")
+  const newest = await freshness(JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version)
+  assert.equal(newest.state, "advice")
+  assert.match(newest.action, /^The maintainer is notified by the weekly pin-freshness run/)
 
   // Unreachable HEAD: unknown, as before, and no paths are named.
   const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }) })
@@ -118,23 +181,33 @@ function pinId(pinDir, path) {
   return execFileSync("git", ["-C", pinDir, "rev-parse", `${MARKETPLACE_PIN.commit}:${path}`], { timeout: 120_000, encoding: "utf8" }).trim()
 }
 
-test("each path in PIN_PATHS is compared by object id between the pin and HEAD, through the trees API at the exact commit", async () => {
+test("each path in PIN_PATHS is compared by object id, and each file omakit reads by blob id, through the trees API at the exact commit", async () => {
   const pinDir = requirePinForTests()
+  const reads = pinnedReadSet(pinDir)
   const HEAD = "d4321b5b".padEnd(40, "0")
   const OTHER = "f".repeat(40)
+  const SCRIPTS = "4".repeat(40)
   const SITE = "5".repeat(40)
   const GITHUB = "6".repeat(40)
+  const API = "https://api.github.com/repos/omacom/omarchy-plugin-marketplace/git/trees"
+  const RAW = "https://raw.githubusercontent.com/omacom/omarchy-plugin-marketplace"
   const urls = []
   // HEAD's trees: scripts and registry.json moved; site/catalog.json and
-  // .github/ISSUE_TEMPLATE carry the pin's own ids, so they did not.
+  // .github/ISSUE_TEMPLATE carry the pin's own ids, so they did not. Under
+  // scripts/, submission.mjs and the policy module carry other blobs,
+  // submission-feedback.mjs is gone, and every other read file is the pin's.
+  const scripts = reads
+    .filter((read) => read.path !== "scripts/submission-feedback.mjs")
+    .map((read) => ({ path: read.path.slice("scripts/".length), type: "blob", sha: ["scripts/submission.mjs", POLICY_MODULE].includes(read.path) ? OTHER : pinId(pinDir, read.path) }))
   const trees = {
     [HEAD]: [
-      { path: "scripts", type: "tree", sha: OTHER },
+      { path: "scripts", type: "tree", sha: SCRIPTS },
       { path: "registry.json", type: "blob", sha: OTHER },
       { path: "site", type: "tree", sha: SITE },
       { path: ".github", type: "tree", sha: GITHUB },
       { path: "README.md", type: "blob", sha: OTHER },
     ],
+    [SCRIPTS]: [...scripts, { path: "repository-identity.mjs", type: "blob", sha: OTHER }],
     [SITE]: [{ path: "catalog.json", type: "blob", sha: pinId(pinDir, "site/catalog.json") }],
     [GITHUB]: [{ path: "ISSUE_TEMPLATE", type: "tree", sha: pinId(pinDir, ".github/ISSUE_TEMPLATE") }, { path: "workflows", type: "tree", sha: OTHER }],
   }
@@ -144,36 +217,59 @@ test("each path in PIN_PATHS is compared by object id between the pin and HEAD, 
     assert.ok(trees[sha], `read an unexpected tree: ${url}`)
     return { sha, tree: trees[sha], truncated: false }
   }
+  const fetchText = async (url) => {
+    urls.push(url)
+    return 'export const securityBaselineVersion = 4;\nexport const securityBaselineEnforcementMode = "selective";\n'
+  }
 
-  const changed = await changedPinPaths({ pinDir, headCommit: HEAD, fetchJson })
-  assert.deepEqual(changed, ["/scripts/", "/registry.json"])
+  const result = await comparePin({ pinDir, headCommit: HEAD, fetchJson, fetchText })
+  assert.deepEqual(result, {
+    changedPaths: ["/scripts/", "/registry.json"],
+    reads: 16,
+    moved: [POLICY_MODULE, "scripts/submission.mjs"],
+    missing: ["scripts/submission-feedback.mjs"],
+    policyAtHead: { baselineVersion: "4", enforcementMode: "selective" },
+  })
   assert.deepEqual(urls, [
-    `https://api.github.com/repos/omacom/omarchy-plugin-marketplace/git/trees/${HEAD}`,
-    `https://api.github.com/repos/omacom/omarchy-plugin-marketplace/git/trees/${SITE}`,
-    `https://api.github.com/repos/omacom/omarchy-plugin-marketplace/git/trees/${GITHUB}`,
-  ], "one read per tree on the way, at the exact commit, never at a branch")
-  assert.ok(changed.every((path) => PIN_PATHS.includes(path)))
+    `${API}/${HEAD}`,
+    `${API}/${SITE}`,
+    `${API}/${GITHUB}`,
+    `${API}/${SCRIPTS}`,
+    `${RAW}/${HEAD}/${POLICY_MODULE}`,
+  ], "one read per tree on the way, the scripts tree once its id moved, the policy text once its blob moved; at the exact commit, never at a branch")
+  assert.ok(result.changedPaths.every((path) => PIN_PATHS.includes(path)))
 
-  // HEAD identical to the pin in every path omakit reads: nothing moved.
-  const same = Object.fromEntries(PIN_PATHS.map((pattern) => [pattern, pattern.replace(/^\/|\/$/g, "")]))
+  // The scripts tree moved in a file omakit does not read: one more tree
+  // read, no blob moved, no text read.
+  const sameBlobs = { ...trees, [SCRIPTS]: [...reads.map((read) => ({ path: read.path.slice("scripts/".length), type: "blob", sha: pinId(pinDir, read.path) })), { path: "repository-identity.mjs", type: "blob", sha: OTHER }] }
+  urls.length = 0
+  const outside = await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => { urls.push(url); return { tree: sameBlobs[url.split("/git/trees/")[1]] } }, fetchText: async () => { throw new Error("no policy read when its blob is the pin's") } })
+  assert.deepEqual(outside, { changedPaths: ["/scripts/", "/registry.json"], reads: 16, moved: [], missing: [], policyAtHead: null })
+  assert.equal(urls.length, 4)
+
+  // HEAD identical to the pin in every path omakit reads: nothing moved, and
+  // the scripts tree is not read at all.
+  const asPath = Object.fromEntries(PIN_PATHS.map((pattern) => [pattern, pattern.replace(/^\/|\/$/g, "")]))
   const identical = {
     [HEAD]: [
-      { path: "scripts", type: "tree", sha: pinId(pinDir, same["/scripts/"]) },
-      { path: "registry.json", type: "blob", sha: pinId(pinDir, same["/registry.json"]) },
+      { path: "scripts", type: "tree", sha: pinId(pinDir, asPath["/scripts/"]) },
+      { path: "registry.json", type: "blob", sha: pinId(pinDir, asPath["/registry.json"]) },
       { path: "site", type: "tree", sha: SITE },
       { path: ".github", type: "tree", sha: GITHUB },
     ],
     [SITE]: trees[SITE],
     [GITHUB]: trees[GITHUB],
   }
-  assert.deepEqual(await changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async (url) => ({ tree: identical[url.split("/git/trees/")[1]] }) }), [])
+  urls.length = 0
+  assert.deepEqual(await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => { urls.push(url); return { tree: identical[url.split("/git/trees/")[1]] } } }), { changedPaths: [], reads: 16, moved: [], missing: [], policyAtHead: null })
+  assert.equal(urls.length, 3, "three reads for PIN_PATHS as it stands")
 
   // A path that HEAD no longer has counts as changed, and a HEAD that does not
   // read as a tree is an error for doctor to report as unknown.
   const gone = { ...identical, [SITE]: [] }
-  assert.deepEqual(await changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async (url) => ({ tree: gone[url.split("/git/trees/")[1]] }) }), ["/site/catalog.json"])
-  await assert.rejects(() => changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async () => ({ message: "Not Found" }) }), /did not read as a tree/)
-  await assert.rejects(() => changedPinPaths({ pinDir, headCommit: HEAD, fetchJson: async () => { throw Object.assign(new Error("no"), { code: "network-unavailable" }) } }), /no/)
+  assert.deepEqual((await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => ({ tree: gone[url.split("/git/trees/")[1]] }) })).changedPaths, ["/site/catalog.json"])
+  await assert.rejects(() => comparePin({ pinDir, headCommit: HEAD, fetchJson: async () => ({ message: "Not Found" }) }), /did not read as a tree/)
+  await assert.rejects(() => comparePin({ pinDir, headCommit: HEAD, fetchJson: async () => { throw Object.assign(new Error("no"), { code: "network-unavailable" }) } }), /no/)
 })
 
 // --- one version check ----------------------------------------------------------

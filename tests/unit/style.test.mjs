@@ -296,7 +296,7 @@ const doctor = {
     { id: "omakit.version", state: "unknown", detail: "0.1.0; could not read the npm registry (network-unavailable)", action: null },
     { id: "node", state: "ok", detail: "node 22.23.2 (needs >=22)", action: null },
     { id: "pin.checkout", state: "problem", detail: "no pinned marketplace checkout at /home/someone/.cache/omakit/marketplace. Every rule omakit checks is read from that checkout.", action: "omakit pin" },
-    { id: "pin.freshness", state: "advice", detail: "pin 38060f8; marketplace main at 692f90b; changed since the pin: /scripts/ (registry.json moved too, and that is read live)", action: "A newer omakit may already carry the new pin: run `omakit upgrade`. If it does not, open an issue at https://github.com/mtolhuys/omakit/issues naming the paths above." },
+    { id: "pin.freshness", state: "advice", detail: "pin 38060f8; marketplace main at 692f90b; moved since the pin: scripts/submission.mjs; the form moved (.github/ISSUE_TEMPLATE/); baseline 3 (selective) at both (registry.json moved too, and that is read live)", action: "A newer omakit is published and may carry the pin: run `omakit upgrade`." },
     { id: "github.auth", state: "info", detail: "no `gh` login was found. `submit` and `verify` need none at all; `watch` and `parity` are capped without one", action: "`gh auth login` is enough. omakit reads that login for GET requests only and never copies it anywhere." },
   ],
   problems: 1,

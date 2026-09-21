@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.6.7 (unreleased)
+
+`pin.freshness` in `omakit doctor` compares what omakit reads, and grades
+what it finds. Before this it compared `scripts/` between the pin and the
+marketplace's HEAD by tree id, so any change under that directory was a
+note, a user read "run `omakit upgrade`", and the maintainer moved the pin.
+Measured on 2026-09-21 (`docs/MEASUREMENTS.md` M7): of the three
+marketplace commits that touched `scripts/` since the first pin `38060f89`,
+one (5e401552, `repository-identity.mjs`) changed a file nothing omakit
+reads reaches, and the pin moved for it with no verdict changed. omakit
+opens ten files under `scripts/` (`PIN_READS` in `pin.mjs`, seven
+imported and three read as text); with what the imported ones import,
+followed by regex over the pinned text and never by loading a module,
+`pinnedReadSet()` names 16 of the 34 files there, and
+`tests/unit/pin.test.mjs` derives the ten from the sources and pins the
+sixteen, so a new read is a visible diff. `doctor` now compares those 16
+by blob id (the `scripts/` tree is read only when its id moved; the form
+directory is still compared by tree id), and when the policy module's blob
+moved it reads that module's text at HEAD once, through the raw file host
+at the exact commit like the registry files, takes
+`securityBaselineVersion` and `securityBaselineEnforcementMode` out of it
+the way the pin's identity does, and drops it. Three verdicts: `ok` when
+no read file moved (a `scripts/` change elsewhere is said as "in none of
+the 16 files omakit reads"); `info` when one moved and both constants
+read the same at HEAD, the files named, verdicts unchanged, nothing to
+do; `advice` when a constant differs, a read file is gone at HEAD, or the
+form moved, with `omakit upgrade` as the action when a newer omakit is
+published and otherwise that the maintainer is notified. The "open an
+issue" instruction is gone: the weekly pin-freshness workflow opens the
+one there is, on `advice` or `info`, and its body names the files, the
+constants at both ends and doctor's line. Offline stays `unknown`. The
+`--json` evidence keeps `changedPaths`, `readLive` and `pinned` and adds
+`reads`, `moved`, `missing` and `policy.{pin,head}`. Measured with
+`b7b29654` as the pin: `70dcc454` taken as HEAD grades `ok` in 4 GETs,
+`38060f89` grades `advice` for the forms in 5, and today's HEAD `ok` in
+the same 3 as before.
+
 ## 0.6.6
 
 The marketplace pin moves from `70dcc454` (2026-09-21 05:35 UTC) to

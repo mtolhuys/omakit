@@ -366,6 +366,30 @@ Measured on 2026-09-13 against `omacom/omarchy-plugin-marketplace` at
 | Last change to `scripts/build-catalog.mjs` | 2026-09-03 |
 | Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none at the time; by 2026-09-21, two of 863 commits (7dd6e56: the tag `vpn`; 40315f2: standard-installation verification reuses an installer-only review), carried by the pin `70dcc454`; one more by 18:18 UTC that day (5e401552: `repository-identity.mjs`, a migration chain may end at fully retired plugins, a module omakit does not import), carried by the pin `b7b29654` |
 
+And, measured on 2026-09-21 through the commits API (`GET
+/repos/omacom/omarchy-plugin-marketplace/commits?path=scripts`, then each
+commit's file list) against the read set `pinnedReadSet()` resolves at
+`b7b29654`:
+
+| Measurement | Value |
+| --- | --- |
+| Files under `scripts/` at the pin | 34 |
+| Of those, files omakit reads: opened by an omakit module, plus what the imported ones import | 16 (10 opened: 7 imported, 3 read as text; 6 imported by those) |
+| Commits touching `scripts/` since `38060f89` | 3 (7dd6e56, 40315f2, 5e401552) |
+| Of those, touching a file in the read set | 2: 7dd6e56 (`submission.mjs`, and the form), 40315f2 (`security-baseline-policy.mjs` and `plugin-verification.mjs`, and the verify form) |
+| Of those, touching no file in the read set | 1: 5e401552 (`repository-identity.mjs` only) |
+| `securityBaselineVersion` and `securityBaselineEnforcementMode` at `38060f89`, `70dcc454`, `b7b29654` | `3`, `selective` at all three |
+| Pin bumps since `38060f89` | 2 (`70dcc454`, `b7b29654`) |
+| Of those, made for a change outside the read set, with no verdict changed | 1 (`b7b29654`, for 5e401552) |
+| Graded by the blob comparison, with `b7b29654` as the pin and the earlier commit as HEAD | `38060f89`: `advice` (the forms moved; `submission.mjs` and the policy module moved, constants equal), 5 GETs; `70dcc454`: `ok` ("scripts/ moved in none of the 16 files omakit reads"), 4 GETs; HEAD `ff12983b` at 19:21 UTC: `ok` (only the two data files moved), 3 GETs |
+
+Under the tree comparison, every one of the three commits was a note, a
+user read "run `omakit upgrade`", and one of the two pin bumps was made for
+a change nothing omakit reads reaches. Under the blob comparison the
+`scripts/` tree is read only when its id moved and the policy text only
+when that blob moved, so the run against today's HEAD costs the same three
+requests it did.
+
 So one pin is right for the code and the rules, which move slowly and must
 never be fetched and executed unreviewed, and wrong for the registry, which is
 stale within hours of any pin. `identity.available` judges "is this id listed,
@@ -387,8 +411,10 @@ are the pin's by design: they are cited in prose that
 moved between two runs could not be cited.
 
 Used by: `identity.available`, and by `pin.freshness` in `omakit doctor`, which
-names which of the paths omakit reads changed between the pin and HEAD rather
-than only that HEAD moved, because at this rate HEAD has always moved. Not by
+names which of the files omakit reads changed between the pin and HEAD rather
+than only that HEAD moved, because at this rate HEAD has always moved, and
+grades the difference by what it can do to a verdict (`ok`, `info`, `advice`)
+rather than by whether a directory's tree id moved. Not by
 `baseline.preflight`, whose figures stay the pin's.
 
 ## M8. Tab completion was written, never proven, and the proof is not `complete -p`

@@ -31,7 +31,7 @@ check, track, prove, and then what keeps the tool itself current.
 | `omakit lab inspect` | prove | what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing |
 | `omakit lab setup` | prove | one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; `--toolchain`, `--from`, `--plugins` |
 | `omakit lab prune` | prove | what the lab owns on disk, asked once, removed, the bytes said |
-| `omakit doctor` | current | what is installed, what is pinned, what has moved, and what the lab has |
+| `omakit doctor` | current | what is installed, what is pinned, which of the files omakit reads moved at the marketplace's HEAD and whether a verdict can differ for it, and what the lab has |
 | `omakit setup` | current | the environment, the pin, tab completion, and what to try first |
 | `omakit pin` | current | what `setup` does for the pin, on its own |
 | `omakit upgrade` | current | updates omakit through its own installer: npm, or a fast-forward |
@@ -217,6 +217,23 @@ with its bytes, asks once, removes only that, and says what it recovered.
 
 `omakit doctor` names the credential source it found, or that it found none.
 
+Its `pin.freshness` line compares what omakit reads between the pin and the
+marketplace's current HEAD, not whether HEAD moved: at about 140 registry
+commits a day it always has. The 16 files omakit reads under `scripts/`
+(`pinnedReadSet()`, see `docs/UPSTREAM_CONTRACT.md`) are compared by blob
+id, the form directory by tree id, and the two policy constants by the
+module's text at HEAD. The grade says what the difference can do to a
+verdict: `ok` when nothing in that set moved, `info` when a read file moved
+and both constants read the same (the files are named; verdicts are
+unchanged; there is nothing to do), `advice` when a constant differs, a read
+file is gone at HEAD, or the form moved, with `omakit upgrade` as the
+action when a newer omakit is published and otherwise that the maintainer
+is notified. It never asks you to open an issue: this repository's weekly
+workflow opens the one there is. Measured (M7): of the three `scripts/`
+commits since the first pin, one changed a file omakit does not read, and
+the earlier tree comparison graded it advice. Offline, or when HEAD cannot
+be read, the line is `unknown`.
+
 ### `omakit setup`
 
 `omakit setup` checks the environment, fetches the marketplace checkout that
@@ -225,7 +242,7 @@ and proves it in a new shell (`docs/INSTALL.md` says what it asks when the
 shell has no loader)
 (bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
 idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
-seven files omakit reads out of that repository rather than the 325 MB it is at
+four paths omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the
 pin's submission form actually has. For `omakit weigh <TAB>` it offers the

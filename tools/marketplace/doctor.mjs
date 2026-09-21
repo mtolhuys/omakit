@@ -13,12 +13,13 @@
 // contract is read from, and the procedure in docs/UPSTREAM_CONTRACT.md requires
 // re-proving transport parity and committing the evidence afterwards. An
 // `upgrade` that quietly advanced the pin would break the one guarantee this
-// tool sells. So doctor reports that the pin is behind, and that is all it
-// does: the procedure is the maintainer's, it lives in that document and in
-// this comment, and it is never printed, because the person running doctor
-// is a user of a package that does not even ship docs/. What a user can do
-// is run `omakit upgrade`, since a newer omakit may already carry the new
-// pin, and otherwise open an issue naming the paths that moved.
+// tool sells. So doctor reports what moved, graded, and that is all it does:
+// the procedure is the maintainer's, it lives in that document and in this
+// comment, and it is never printed, because the person running doctor is a
+// user of a package that does not even ship docs/. What a user can do is run
+// `omakit upgrade` when a newer omakit is published, since it may carry the
+// new pin; otherwise the weekly pin-freshness workflow in this repository
+// has already told the maintainer, and there is nothing to open.
 //
 // That the pin goes stale unnoticed is, of course, exactly the defect class
 // `omakit watch` exists to report. It would be poor form not to apply it here.
@@ -35,13 +36,27 @@
 // only registry.json and site/catalog.json moved, doctor said `note` and
 // pointed a user at docs/UPSTREAM_CONTRACT.md, though the pin was behind in
 // nothing the tool uses.
+//
+// Nor is "scripts/ moved" the same as "a file omakit reads moved". Measured
+// on 2026-09-21 (M7): of the three marketplace commits that touched
+// scripts/ since the first pin 38060f89, one (5e401552) changed only
+// repository-identity.mjs, a file none of omakit's reads reach, and doctor
+// graded the tree id's change as advice, a user read "run omakit upgrade",
+// and the maintainer moved the pin for a verdict that could not change.
+// So under scripts/ the comparison is by blob, over the 16 files
+// pinnedReadSet() names, and the verdict is graded: `ok` when none of them
+// moved, `info` when one did but both policy constants read the same at
+// HEAD, `advice` when a constant differs, a read file is gone at HEAD, or
+// the form directory moved, which is the contract itself. The other two
+// commits (7dd6e56, 40315f2) touched submission.mjs and the policy module,
+// both read, and the forms, so they grade advice either way.
 
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { MARKETPLACE_PIN, PIN_PATHS, marketplacePinDir, pinDiskUsage, pinShape, requirePin } from "./pin.mjs"
-import { LIVE_PATHS } from "./registry.mjs"
-import { credential, defaultBranchHead, getJson, GitHubError } from "./github.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, marketplacePinDir, pinDiskUsage, pinShape, pinnedReadSet, policyConstants, requirePin } from "./pin.mjs"
+import { LIVE_PATHS, headTextUrl } from "./registry.mjs"
+import { credential, defaultBranchHead, getJson, getText, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
 import { sourceCommit } from "../blocks/add.mjs"
 import { recordedCommit } from "../blocks/record-commit.mjs"
@@ -50,19 +65,12 @@ import { completionStatus } from "./completion-check.mjs"
 import { inspectLab } from "../lab/inspect.mjs"
 import { labDoctorChecks } from "../lab/report.mjs"
 
-/** "git+https://github.com/owner/name.git" in package.json -> "https://github.com/owner/name", or null. */
-function repositoryPage(repository) {
-  const url = typeof repository === "string" ? repository : repository?.url
-  const match = String(url || "").match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/)
-  return match ? `https://github.com/${match[1]}/${match[2]}` : null
-}
-
 export function tool(repoRoot) {
   try {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
-    return { name: pkg.name, version: pkg.version, engines: pkg.engines?.node || null, repository: repositoryPage(pkg.repository) }
+    return { name: pkg.name, version: pkg.version, engines: pkg.engines?.node || null }
   } catch {
-    return { name: "omakit", version: "unknown", engines: null, repository: null }
+    return { name: "omakit", version: "unknown", engines: null }
   }
 }
 
@@ -80,17 +88,36 @@ function pinObjectId(pinDir, commit, path) {
   return execFileSync("git", ["-C", pinDir, "rev-parse", `${commit}:${path}`], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 }
 
+/** A PIN_PATHS pattern as a path: "/site/catalog.json" -> "site/catalog.json". */
+const asPath = (pattern) => pattern.replace(/^\/|\/$/g, "")
+
+/** The form directory: the whole contract, compared by tree id and graded advice when it moved. */
+const FORMS = "/.github/ISSUE_TEMPLATE/"
+
 /**
- * Which of PIN_PATHS differ between the pin and `headCommit`. The pin side is
- * read from the local checkout; the HEAD side walks the git-trees API from the
- * exact commit, one read per tree on the way (three for PIN_PATHS as it
- * stands), so a directory compares by its tree id and a file by its blob id,
- * which is what "the blob at HEAD versus the blob at the pin" means for a
- * directory that omakit reads whole. A path missing at HEAD counts as changed.
+ * The pin against `headCommit`, path by path and, under scripts/, file by
+ * file. The pin side is read from the local checkout; the HEAD side walks
+ * the git-trees API from the exact commit, one read per tree on the way:
+ * three for PIN_PATHS as it stands, a fourth for the scripts/ tree only
+ * when its id moved, since an identical tree has identical blobs. Each
+ * PIN_PATHS entry compares by its own object id (a directory by tree id, a
+ * file by blob id) into `changedPaths`; each file in `reads`
+ * (pinnedReadSet by default) compares by blob id into `moved`, or
+ * `missing` when HEAD no longer has it. A PIN_PATHS entry missing at HEAD
+ * counts as changed.
  *
- * `fetchJson` is injectable for tests; the default is the one GET call site.
+ * When the policy module is among `moved`, its text at HEAD is read once
+ * through `fetchText` (the raw file host at the exact commit, the one GET
+ * call site; a fifth request) and its two constants are returned as
+ * `policyAtHead`; otherwise `policyAtHead` is null, because an identical
+ * blob has identical constants. The text is never imported.
+ *
+ * `fetchJson` and `fetchText` are injectable for tests.
+ *
+ * @returns {Promise<{ changedPaths: string[], reads: number, moved: string[], missing: string[],
+ *                     policyAtHead: { baselineVersion: string, enforcementMode: string }|null }>}
  */
-export async function changedPinPaths({ pinDir, headCommit, pinCommit = MARKETPLACE_PIN.commit, fetchJson = getJson }) {
+export async function comparePin({ pinDir, headCommit, pinCommit = MARKETPLACE_PIN.commit, fetchJson = getJson, fetchText = getText, reads = pinnedReadSet(pinDir) }) {
   const match = MARKETPLACE_PIN.repository.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)$/)
   const trees = new Map()
   const tree = async (sha) => {
@@ -118,73 +145,132 @@ export async function changedPinPaths({ pinDir, headCommit, pinCommit = MARKETPL
     }
     return id
   }
-  const changed = []
+  const changedPaths = []
   for (const pattern of PIN_PATHS) {
-    const path = pattern.replace(/^\/|\/$/g, "")
-    if (pinObjectId(pinDir, pinCommit, path) !== await headObjectId(path)) changed.push(pattern)
+    if (pinObjectId(pinDir, pinCommit, asPath(pattern)) !== await headObjectId(asPath(pattern))) changedPaths.push(pattern)
   }
-  return changed
+  const moved = []
+  const missing = []
+  if (changedPaths.includes("/scripts/")) {
+    for (const { path } of reads) {
+      const atHead = await headObjectId(path)
+      if (atHead === null) missing.push(path)
+      else if (atHead !== pinObjectId(pinDir, pinCommit, path)) moved.push(path)
+    }
+  }
+  const policyAtHead = moved.includes(POLICY_MODULE) ? policyConstants(await fetchText(headTextUrl(headCommit, POLICY_MODULE))) : null
+  return { changedPaths, reads: reads.length, moved, missing, policyAtHead }
 }
-
-/** A PIN_PATHS pattern as a path: "/site/catalog.json" -> "site/catalog.json". */
-const asPath = (pattern) => pattern.replace(/^\/|\/$/g, "")
 
 /** "a", "a and b", "a, b and c". */
 function list(items) {
   return items.length < 3 ? items.join(" and ") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
 }
 
+/** "baseline 3 (selective)". */
+const policyText = (policy) => `baseline ${policy.baselineVersion} (${policy.enforcementMode})`
+
 /**
- * The pin against the marketplace's HEAD, for a user. `changedPaths` is the
- * answer from changedPinPaths(), split by LIVE_PATHS into `readLive`, the
+ * The pin against the marketplace's HEAD, for a user, graded by what the
+ * difference can do to a verdict. `comparison` is the answer from
+ * comparePin(): its `changedPaths` split by LIVE_PATHS into `readLive`, the
  * data files a moved HEAD cannot make stale because registry.mjs reads them
- * from HEAD, and `pinned`, everything only a new pin can carry. Only the
- * second set is worth a note; the action for it is a user's, not the
- * maintainer's. Null when the comparison was not made, and then the detail
- * says only that HEAD moved. Full commits in the evidence; short ones in
- * the detail. `issues` is where a user reports a pinned path that moved,
- * read from package.json by the caller.
+ * from HEAD, and `pinned`, everything only a new pin can carry; its `moved`
+ * and `missing` name the files omakit reads under scripts/ whose blob
+ * differs at HEAD; its `policyAtHead` carries the two policy constants
+ * there when the policy module moved.
+ *
+ *   ok      nothing omakit reads moved: HEAD moved elsewhere, or only in
+ *           the live-read data files, or scripts/ moved in none of the
+ *           files omakit reads.
+ *   info    a read file moved, and `securityBaselineVersion` and
+ *           `securityBaselineEnforcementMode` read the same at HEAD as at
+ *           the pin: the verdicts omakit gives are unchanged, and a newer
+ *           omakit will carry the pin. Nothing for a user to do.
+ *   advice  a policy constant differs, a read file is gone at HEAD, or the
+ *           form directory moved (the contract itself): a verdict may
+ *           differ at HEAD. The action is `upgrade` (the command, when the
+ *           caller found a newer omakit published), else that the
+ *           maintainer is notified; never an issue to open, since the
+ *           weekly pin-freshness workflow opens the one there is.
+ *
+ * Null for `comparison` means the comparison was not made, which stays
+ * advice: HEAD moved and nothing here can say the pin is fine. Full commits
+ * in the evidence; short ones in the detail.
  */
-export function pinFreshness(identity, head, changedPaths = null, { issues = null } = {}) {
+export function pinFreshness(identity, head, comparison = null, { upgrade = null } = {}) {
   const current = head.commit === identity.commit
   const branch = head.branch || "default"
-  const changed = current ? [] : changedPaths || []
+  const compared = !current && comparison !== null
+  const changed = compared ? comparison.changedPaths : []
   const readLive = changed.filter((pattern) => LIVE_PATHS.includes(asPath(pattern)))
   const pinned = changed.filter((pattern) => !LIVE_PATHS.includes(asPath(pattern)))
+  const moved = compared ? comparison.moved : []
+  const missing = compared ? comparison.missing : []
+  const pinPolicy = { baselineVersion: identity.baselineVersion, enforcementMode: identity.enforcementMode }
+  const headPolicy = (compared && comparison.policyAtHead) || pinPolicy
+  const policyDiffers = headPolicy.baselineVersion !== pinPolicy.baselineVersion || headPolicy.enforcementMode !== pinPolicy.enforcementMode
+  const formMoved = pinned.includes(FORMS)
+  const graded = moved.length > 0 || missing.length > 0 || formMoved
+  const state = current ? "ok"
+    : comparison === null || policyDiffers || formMoved || missing.length ? "advice"
+      : moved.length ? "info"
+        : "ok"
+
   const where = `pin ${identity.commit.slice(0, 7)}; marketplace ${branch} at ${head.commit.slice(0, 7)}`
-  const moved = changedPaths === null
-    ? "; the paths omakit reads were not compared"
-    : pinned.length
-      ? `; changed since the pin: ${pinned.join(", ")}${readLive.length ? ` (${list(readLive.map(asPath))} moved too, and ${readLive.length === 1 ? "that is" : "those are"} read live)` : ""}`
-      : readLive.length
-        ? `; only ${list(readLive.map(asPath))} moved, and ${readLive.length === 1 ? "that is" : "those are"} read live`
-        : "; nothing omakit reads moved"
-  const stale = !current && (changedPaths === null || pinned.length > 0)
+  const clauses = []
+  if (comparison === null) clauses.push("the paths omakit reads were not compared")
+  else if (!changed.length) clauses.push("nothing omakit reads moved")
+  else {
+    if (moved.length) clauses.push(`moved since the pin: ${list(moved)}`)
+    if (missing.length) clauses.push(`gone at HEAD: ${list(missing)}`)
+    if (formMoved) clauses.push(`the form moved (${asPath(FORMS)}/)`)
+    if (pinned.includes("/scripts/") && !moved.length && !missing.length) clauses.push(`scripts/ moved in none of the ${comparison.reads} files omakit reads`)
+    if (graded) clauses.push(policyDiffers ? `${policyText(pinPolicy)} at the pin, ${policyText(headPolicy)} at HEAD` : `${policyText(pinPolicy)} at both`)
+  }
+  const live = readLive.length ? `${list(readLive.map(asPath))} moved${clauses.length ? " too" : ""}, and ${readLive.length === 1 ? "that is" : "those are"} read live` : ""
+  const tail = !live ? "" : clauses.length ? ` (${live})` : `only ${live}`
+  const detail = current ? `the pin is the marketplace's current ${branch}-branch HEAD` : `${where}; ${clauses.join("; ")}${tail}`
+
+  const action = state === "info"
+    ? "Verdicts are unchanged, and a newer omakit will carry the pin; nothing to do."
+    : state === "advice"
+      ? upgrade
+        ? `A newer omakit is published and may carry the pin: run \`${upgrade}\`.`
+        : "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin, and until then every verdict here is the pin's."
+      : null
+
   return {
     id: "pin.freshness",
-    state: stale ? "advice" : "ok",
-    detail: current ? `the pin is the marketplace's current ${branch}-branch HEAD` : `${where}${moved}`,
-    action: stale
-      ? `A newer omakit may already carry the new pin: run \`omakit upgrade\`. If it does not, open an issue${issues ? ` at ${issues}/issues` : ""} naming the paths above.`
-      : null,
+    state,
+    detail,
+    action,
     evidence: {
       pinCommit: identity.commit,
       marketplaceHead: head.commit,
       branch,
-      ...(changedPaths === null ? {} : { changedPaths: changed, readLive, pinned }),
+      ...(comparison === null ? {} : {
+        changedPaths: changed,
+        readLive,
+        pinned,
+        reads: comparison.reads,
+        moved,
+        missing,
+        policy: { pin: pinPolicy, head: headPolicy },
+      }),
     },
   }
 }
 
 /**
  * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null,
- *           resolveHead?: typeof defaultBranchHead, latest?: typeof registryLatest }} options
+ *           resolveHead?: typeof defaultBranchHead, latest?: typeof registryLatest, compare?: typeof comparePin }} options
  *   `env` and `npmPrefix` are injectable for tests of the PATH check;
- *   `resolveHead` and `latest` for tests of the two checks that read the
- *   network, whose defaults are the tool's one HEAD resolver and its one
- *   registry read.
+ *   `resolveHead`, `latest` and `compare` for tests of the two checks that
+ *   read the network, whose defaults are the tool's one HEAD resolver, its
+ *   one registry read and the pin comparison above.
  */
-export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = registryLatest }) {
+export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = registryLatest, compare = comparePin }) {
   // Optional: told what is being read while the network answers. Never
   // affects the result.
   const phase = onPhase || (() => {})
@@ -201,7 +287,9 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
   // What is installed and what is published, one check: the two facts are
   // one question, "is this the current omakit", and were two lines before.
   // Offline, the first fact alone, as information. The evidence carries both
-  // and where the second came from.
+  // and where the second came from. `upgrade` is the command when a newer
+  // omakit is published, for pin.freshness to name below.
+  let upgrade = null
   const versionCheck = (state, detail, action = null, latest = null, source = null) =>
     add("omakit.version", state, detail, action, { installed: self.version, latest, source })
   if (offline) {
@@ -214,11 +302,12 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
       if (comparison === null) {
         versionCheck("unknown", `${self.version}; the installed or published version is invalid`)
       } else {
+        if (comparison > 0) upgrade = upgradeCommand(repoRoot, self.name)
         versionCheck(comparison > 0 ? "advice" : "ok",
           comparison === 0 ? `${self.version}, the newest published version`
             : comparison < 0 ? `${self.version}; ahead of the newest published version ${published.version}`
               : `${self.version}; ${published.version} is published`,
-          comparison > 0 ? `run \`${upgradeCommand(repoRoot, self.name)}\`` : null,
+          comparison > 0 ? `run \`${upgrade}\`` : null,
           published.version, NPM_REGISTRY)
       }
     } else {
@@ -293,12 +382,12 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     phase("reading the marketplace's current default-branch HEAD")
     try {
       const head = await resolveHead(MARKETPLACE_PIN.repository)
-      let changedPaths = []
+      let comparison = { changedPaths: [], reads: pinnedReadSet(dir).length, moved: [], missing: [], policyAtHead: null }
       if (head.commit !== identity.commit) {
-        phase("comparing each path omakit reads between the pin and HEAD")
-        changedPaths = await changedPinPaths({ pinDir: dir, headCommit: head.commit, pinCommit: identity.commit })
+        phase("comparing each file omakit reads between the pin and HEAD")
+        comparison = await compare({ pinDir: dir, headCommit: head.commit, pinCommit: identity.commit })
       }
-      checks.push(pinFreshness(identity, head, changedPaths, { issues: self.repository }))
+      checks.push(pinFreshness(identity, head, comparison, { upgrade }))
     } catch (error) {
       add("pin.freshness", "unknown", `could not read the marketplace's HEAD (${error.code || "error"})`,
         error.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the two checks that need it." : null,
