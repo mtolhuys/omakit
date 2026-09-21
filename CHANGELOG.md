@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.6 (unreleased)
+
+The weekly pin-freshness workflow reads `doctor`'s verdict as `doctor` gives
+it: `ok` with unequal commits when only the live-read data files moved, and
+`advice` naming the pinned paths that did. It had failed on every scheduled
+run since 2026-09-14 by demanding equal commits for `ok`. The 0.6.5 notes
+said the pinned checkout is 22 MB; a fresh `omakit pin` at 70dcc454 measures
+19 MB, the 22 MB was a cache that still held the previous pin's objects.
+
 ## 0.6.5
 
 The marketplace pin moves from `38060f89` (2026-09-11) to `70dcc454`
@@ -24,7 +33,8 @@ at offset 1 (`docs/evidence/parity/2026-09-21-local-vs-github-2.json`); at
 offset 0, 29 of 30 with 0 mismatches and one listing that no longer exists
 on github.com (modoterra/omabench, listed as passed at `6ef8e49`; the site
 answers 404), recorded in `2026-09-21-local-vs-github.json`. The pinned
-checkout is 22 MB sparse; `omakit pin` re-fetches it on first use.
+checkout is 19 MB sparse on a fresh fetch; `omakit pin` re-fetches it on
+first use.
 
 ## 0.6.4
 
