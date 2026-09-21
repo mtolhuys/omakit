@@ -15,7 +15,8 @@ and the form are byte-identical, so no verdict changes. The figures follow
 the pin: 3,664 listed sources, 3,619 with a recorded baseline (2,031 passed,
 1,562 review-required, 26 needs-fixes), 3,702 catalog ids, 23 retired; 854
 sources (23.3%) revalidated at least once. Parity is re-proved at the new
-pin over the 30-repository corpus.
+pin over the 30-repository corpus, 30 of 30 at offset 0
+(`docs/evidence/parity/2026-09-21-local-vs-github-3.json`).
 
 The weekly pin-freshness workflow reads `doctor`'s verdict as `doctor` gives
 it: `ok` with unequal commits when only the live-read data files moved, and
