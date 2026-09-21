@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
+import { GOOD, materialise } from "../fixtures/plugins.mjs"
 
 const A = "a".repeat(40)
 const B = "b".repeat(40)
@@ -259,13 +260,19 @@ test("two repository URLs are the same repository across https, .git, a trailing
 })
 
 test("the subject is a github.com URL as given, or the origin of a checkout, and nothing when there is neither", () => {
+  // Two checkouts made here, not this repository: the suite also runs from
+  // a release-shaped archive without `.git` (CI, "Run the suite from a
+  // release-shaped archive"), where the repository root is no checkout.
+  // Measured on c521617: the checkout suite passed and the archive run failed.
+  const plugin = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
+  const bare = materialise({ "README.md": "# Not a plugin\n" }, { origin: "https://github.com/example/not-a-plugin" })
   assert.deepEqual(resolveWatchSubject("https://github.com/mtolhuys/omacrunch.git"), { origin: "https://github.com/mtolhuys/omacrunch", source: "url" })
-  assert.deepEqual(resolveWatchSubject(REPO_ROOT), { origin: "https://github.com/mtolhuys/omakit", source: "path" })
+  assert.deepEqual(resolveWatchSubject(plugin.dir), { origin: "https://github.com/example/omarchy-plugin-fixture-good", source: "path" })
   assert.equal(resolveWatchSubject(undefined, { cwd: "/" }), null, "a directory that is no checkout is no subject")
   assert.throws(() => resolveWatchSubject("https://example.com/x/y"), /github\.com repository URL or a local checkout/)
-  // The current directory carries its manifest, or null when it has none:
-  // this repository is a checkout without a plugin manifest.
-  assert.deepEqual(resolveWatchSubject(undefined, { cwd: REPO_ROOT }), { origin: "https://github.com/mtolhuys/omakit", source: "cwd", manifest: null })
+  // The current directory carries its manifest, or null when it has none.
+  assert.deepEqual(resolveWatchSubject(undefined, { cwd: plugin.dir }), { origin: "https://github.com/example/omarchy-plugin-fixture-good", source: "cwd", manifest: { name: "Fixture Good", id: "omakit-fixture.good" } })
+  assert.deepEqual(resolveWatchSubject(undefined, { cwd: bare.dir }), { origin: "https://github.com/example/not-a-plugin", source: "cwd", manifest: null })
 })
 
 test("an implicit subject applies only when the issue is that plugin, by title name or body id; an explicit one always does", () => {
