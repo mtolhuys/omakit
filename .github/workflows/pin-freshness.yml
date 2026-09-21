@@ -24,6 +24,7 @@ jobs:
       pinned: ${{ steps.freshness.outputs.pinned }}
       head: ${{ steps.freshness.outputs.head }}
       branch: ${{ steps.freshness.outputs.branch }}
+      moved: ${{ steps.freshness.outputs.moved }}
 
     steps:
       - name: Check out the exact revision without credentials
@@ -59,6 +60,13 @@ jobs:
       - name: Fetch or verify the marketplace pin
         run: ./bin/omakit pin
 
+      # doctor compares the paths omakit reads between the pin and HEAD by
+      # tree id (docs/UPSTREAM_CONTRACT.md, "What moved since the pin"): `ok`
+      # when nothing it reads moved or only the live-read data files did, and
+      # `advice` when a pinned path (scripts/, the issue templates) moved.
+      # Unequal commits are therefore normal under `ok`. Measured on the run
+      # of 2026-09-14: this step failed on "doctor called unequal commits
+      # current" every week, because the registry moves about 140 times a day.
       - name: Read structured freshness evidence
         id: freshness
         shell: bash
@@ -75,6 +83,9 @@ jobs:
           pinned=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.pinCommit // empty' "$RUNNER_TEMP/doctor.json")
           head=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.marketplaceHead // empty' "$RUNNER_TEMP/doctor.json")
           branch=$(jq -r '.checks[] | select(.id == "pin.freshness") | .evidence.branch // empty' "$RUNNER_TEMP/doctor.json")
+          moved=$(jq -r '.checks[] | select(.id == "pin.freshness") | (.evidence.pinned // []) | join(", ")' "$RUNNER_TEMP/doctor.json")
+          detail=$(jq -r '.checks[] | select(.id == "pin.freshness") | .detail' "$RUNNER_TEMP/doctor.json")
+          echo "pin.freshness: $state; $detail"
           if [[ "$state" != "ok" && "$state" != "advice" ]]; then
             echo "pin freshness is $state; refusing to change an issue without a measured HEAD" >&2
             exit 1
@@ -83,8 +94,8 @@ jobs:
             echo "pin freshness evidence is missing or malformed" >&2
             exit 1
           fi
-          if [[ "$state" == "ok" && "$pinned" != "$head" ]]; then
-            echo "doctor called unequal commits current" >&2
+          if [[ "$state" == "ok" && -n "$moved" ]]; then
+            echo "doctor called the pin current while a pinned path moved: $moved" >&2
             exit 1
           fi
           if [[ "$state" == "advice" && "$pinned" == "$head" ]]; then
@@ -96,6 +107,7 @@ jobs:
             echo "pinned=$pinned"
             echo "head=$head"
             echo "branch=$branch"
+            echo "moved=$moved"
           } >> "$GITHUB_OUTPUT"
 
   reconcile-issue:
@@ -115,6 +127,7 @@ jobs:
           PINNED: ${{ needs.inspect.outputs.pinned }}
           HEAD_COMMIT: ${{ needs.inspect.outputs.head }}
           HEAD_BRANCH: ${{ needs.inspect.outputs.branch }}
+          MOVED: ${{ needs.inspect.outputs.moved }}
         run: |
           title="[automation] Marketplace pin differs from HEAD"
           gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" > "$RUNNER_TEMP/issues.json"
@@ -125,10 +138,11 @@ jobs:
             exit 1
           fi
           cat > "$RUNNER_TEMP/issue-body.md" <<EOF
-          The immutable Omakit marketplace pin differs from the marketplace's current \`${HEAD_BRANCH}\`-branch HEAD.
+          A path Omakit reads only from its immutable marketplace pin has changed on the marketplace's current \`${HEAD_BRANCH}\`-branch HEAD.
 
           - Omakit pin: \`${PINNED}\`
           - Marketplace HEAD: \`${HEAD_COMMIT}\`
+          - Pinned paths that moved: \`${MOVED}\`
 
           Updating the pin is deliberate work. Follow [docs/UPSTREAM_CONTRACT.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/UPSTREAM_CONTRACT.md), including the 30-repository parity proof and committed evidence. This workflow reports the difference; it never advances the pin.
           EOF
@@ -146,7 +160,7 @@ jobs:
           elif [[ "$STATE" == "ok" ]]; then
             if [[ "$count" -eq 1 && "$(jq -r '.[0].state' "$RUNNER_TEMP/matches.json")" == "open" ]]; then
               number=$(jq -r '.[0].number' "$RUNNER_TEMP/matches.json")
-              gh issue close "$number" --repo "$GITHUB_REPOSITORY" --comment "The pin and marketplace ${HEAD_BRANCH}-branch HEAD now both resolve to \`${PINNED}\`."
+              gh issue close "$number" --repo "$GITHUB_REPOSITORY" --comment "Nothing Omakit reads from the pin has moved: pin \`${PINNED}\`, marketplace ${HEAD_BRANCH}-branch HEAD \`${HEAD_COMMIT}\`."
             fi
           else
             echo "unexpected freshness state $STATE; refusing to mutate an issue" >&2
