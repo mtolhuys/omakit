@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.7 (unreleased)
+## 0.6.7
 
 `pin.freshness` in `omakit doctor` compares what omakit reads, and grades
 what it finds. Before this it compared `scripts/` between the pin and the
