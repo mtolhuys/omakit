@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.5
+
+The marketplace pin moves from `38060f89` (2026-09-11) to `70dcc454`
+(2026-09-21, "Add LookAway plugin (#7750)"). `omakit doctor` had reported
+`pin.freshness` as a note since 2026-09-20: of the 863 marketplace commits
+since the old pin, two touched the paths omakit reads code and rules from.
+7dd6e56 adds the tag `vpn` to `allowedTags` and to the form's Tags list, so
+`omakit submit --tags vpn` is now accepted, and the form's list is fourteen
+tags. 40315f2 lets a standard-installation verification reuse a valid
+installer-only maintainer review; that is the maintainer's flow after
+listing, and nothing the preflight reads. `securityBaselineVersion` 3,
+`selective` enforcement, the rule and capability catalogs, the limits, the
+feedback table and the label set are byte-identical at both commits, so no
+verdict changes.
+
+The figures the tool prints and the docs cite are the new pin's, recomputed
+by `tests/unit/registry-figures.test.mjs`: 3,653 listed sources, 3,608 with a
+recorded baseline (2,025 passed, 1,557 review-required, 26 needs-fixes),
+3,691 catalog ids; 854 sources (23.4%) revalidated at least once. Parity is
+re-proved at the new pin over the 30-repository corpus in
+`docs/evidence/parity/2026-09-21-local-vs-github.json`. The pinned checkout
+is 22 MB sparse; `omakit pin` re-fetches it on first use.
+
 ## 0.6.4
 
 The retry edit is no longer free text. On omacom/omarchy-plugin-marketplace#7787

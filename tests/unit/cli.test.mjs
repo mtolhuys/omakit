@@ -285,7 +285,7 @@ test("submit without --category or --tags is a usage error before any check runs
   assert.equal(parsed.error.code, "usage")
   assert.deepEqual(parsed.error.usage.missing, ["--category", "--tags"])
   assert.equal(parsed.error.usage.categories.length, 9)
-  assert.equal(parsed.error.usage.tags.length, 13)
+  assert.equal(parsed.error.usage.tags.length, 14)
   assert.deepEqual(Object.keys(parsed.error.usage), ["missing", "categories", "tags", "maximumTags"], "the form's lists, whole")
 })
 
@@ -372,7 +372,7 @@ test("the author's own listed plugin is LISTED, exit 0: no failure, no refusal, 
   assert.equal(json.listing.source, "pin")
   assert.equal(json.listing.sameCommit, false)
   assert.equal(json.listing.localCommit, own.commit)
-  assert.equal(json.listing.verificationCommit, "5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b")
+  assert.equal(json.listing.verificationCommit, "7f0ea22aee80a4f7f23ade4dede500f61eedba75")
 })
 
 test("a usage error says what was expected and exits 2", () => {

@@ -119,11 +119,11 @@ holds every `submit` check to a `why` with a figure is extended to hold every
 | `file-and-state-boundary` | a write row with `controlledDirectory: "not-observed"`, or a temp path without `mktemp`, or `mkdir` without a mode | about 15% | M11 |
 | `environment-trust` | a process row whose tool word (after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted, or `curl` without `-q` | about 7% | M11 |
 | `secrets` | an argv element or `console.log` argument matching the secret-shaped list | about 7% | M11 |
-| `supply-chain` | a finding the baseline recorded and does not list as selectively blocking at the pin, which at pin `38060f89` is exactly `remote-git-execution-unpinned`, `curl-pipe-shell` and `cargo-git-unpinned`; the set is read from the pinned policy through `verify`, so no rule id is written into `tools/inspect/` | about 7% of findings; 21 findings ever recorded across 2,916 baselined listings, 11 and 10 of them these two rules | M11, M4 |
+| `supply-chain` | a finding the baseline recorded and does not list as selectively blocking at the pin, which at pin `70dcc454` is exactly `remote-git-execution-unpinned`, `curl-pipe-shell` and `cargo-git-unpinned`; the set is read from the pinned policy through `verify`, so no rule id is written into `tools/inspect/` | about 7% of findings; 21 findings ever recorded across 2,916 baselined listings, 11 and 10 of them these two rules | M11, M4 |
 | `network-egress` | a host row with scheme `http`, or `-L` without `--proto`, or a private literal address | about 5% | M11 |
 | `untrusted-text-to-display` | a `Text` bound to a collector's `text` without `textFormat: Text.PlainText` | about 5% | M11 |
 | `argument-grammar` | a process row with an interpolated or concatenated argv element | about 4% | M11 |
-| `privilege-disclosure` | `sudo`, `pkexec`, `docker`, `/dev/input` in argv; whether the README names it | about 3% of findings; `privilege` recorded on 485 listings | M11, M4 |
+| `privilege-disclosure` | `sudo`, `pkexec`, `docker`, `/dev/input` in argv; whether the README names it | about 3% of findings; `privilege` recorded on 639 listings | M11, M4 |
 
 What is deliberately not a pattern, because no number exists for it: code
 style, naming, missing states, hard-coded colours, missing README sections.

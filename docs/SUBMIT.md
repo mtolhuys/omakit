@@ -146,7 +146,7 @@ run has no such line to print, because there is no run to repeat.
 
 ## Nothing about the format is written down here
 
-The title prefix, the six headings, the nine categories, the thirteen tags and
+The title prefix, the six headings, the nine categories, the fourteen tags and
 the exact text of the five checklist items are all read from
 `.github/ISSUE_TEMPLATE/submit-plugin.yml` in the pinned checkout. The maximum
 tag count comes from the pinned `scripts/submission.mjs`. The reserved plugin-id

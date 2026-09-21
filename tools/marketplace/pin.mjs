@@ -26,8 +26,8 @@ export class PinError extends Error {
 
 export const MARKETPLACE_PIN = Object.freeze({
   repository: "https://github.com/omacom/omarchy-plugin-marketplace",
-  commit: "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
-  commitSubject: "Add Plugin updates plugin (#6374)",
+  commit: "70dcc454e9178b8a12e4ebf1be928621fd3e7735",
+  commitSubject: "Add LookAway plugin (#7750)",
   baselineVersion: "3",
   enforcementMode: "selective",
 })

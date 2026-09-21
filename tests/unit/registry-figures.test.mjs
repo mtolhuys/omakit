@@ -13,27 +13,27 @@ const pinDir = requirePinForTests()
 const figures = baselineFigures({ pinDir })
 
 test("the baseline outcomes at the pin are the ones the docs cite", () => {
-  assert.equal(figures.sources, 2963)
-  assert.equal(figures.withBaseline, 2916)
-  assert.deepEqual(figures.outcomes, { passed: 1681, "review-required": 1215, "needs-fixes": 20 })
-  assert.equal(figures.findingsTotal, 21)
-  assert.deepEqual(figures.findings, { "curl-pipe-shell": 11, "remote-git-execution-unpinned": 10 })
+  assert.equal(figures.sources, 3653)
+  assert.equal(figures.withBaseline, 3608)
+  assert.deepEqual(figures.outcomes, { passed: 2025, "review-required": 1557, "needs-fixes": 26 })
+  assert.equal(figures.findingsTotal, 27)
+  assert.deepEqual(figures.findings, { "curl-pipe-shell": 12, "remote-git-execution-unpinned": 15 })
   assert.deepEqual(figures.capabilities, {
-    installer: 514,
-    privilege: 485,
-    "package-manager": 468,
-    "service-management": 382,
-    "remote-build": 366,
-    "bundled-executable-binary": 31,
-    "sudoers-modification": 23,
+    installer: 702,
+    privilege: 639,
+    "package-manager": 622,
+    "service-management": 514,
+    "remote-build": 476,
+    "bundled-executable-binary": 34,
+    "sudoers-modification": 29,
   })
   assert.equal(figures.retiredIds, 22)
-  assert.equal(figures.catalogPlugins, 3001)
+  assert.equal(figures.catalogPlugins, 3691)
 })
 
 test("revalidation is a normal part of a listing's life, measured at the pin", () => {
-  assert.deepEqual(figures.superseded, { sources: 749, commits: 1108, most: 9 })
-  assert.equal(((749 / 2963) * 100).toFixed(1), "25.3")
+  assert.deepEqual(figures.superseded, { sources: 854, commits: 1270, most: 9 })
+  assert.equal(((854 / 3653) * 100).toFixed(1), "23.4")
 })
 
 test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figures, formatted the way figure() prints them", () => {
@@ -44,8 +44,8 @@ test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figu
       assert.ok(text.includes(figure(n)), `${figure(n)} is missing from a document that cites the registry`)
     }
   }
-  assert.equal(figure(1681), "1,681")
-  assert.equal(figure(20), "20")
+  assert.equal(figure(2025), "2,025")
+  assert.equal(figure(26), "26")
 })
 
 test("the presentation the marketplace derives from a manifest's kinds is what build-catalog.mjs says at the pin", () => {

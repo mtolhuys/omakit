@@ -25,7 +25,7 @@ limits and the rest of the figures: [MEASUREMENTS.md](MEASUREMENTS.md).
 | Measured | Consequence |
 | --- | --- |
 | 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
-| 1,215 of the 2,916 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
+| 1,557 of the 3,608 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
 | 103 issues mention agent-control files, which no automated check reports | submit names every one with its remedy, before a reviewer has to |
 | The 2026-09-12 sample found stale validation in 68/93 readable issues; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
 
@@ -40,7 +40,7 @@ review writing. The rest of the benefit is the submitter's.
 ## What it is doing
 
 Nothing about the submission format is written down in this repository. The
-title prefix, the six form headings in order, the nine categories, the thirteen
+title prefix, the six form headings in order, the nine categories, the fourteen
 tags and the exact text of the five checklist items are all read from
 `.github/ISSUE_TEMPLATE/submit-plugin.yml` in a marketplace checkout pinned to an
 exact commit. The rendered body is then handed to the marketplace's own

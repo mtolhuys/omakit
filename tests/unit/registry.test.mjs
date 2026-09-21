@@ -145,7 +145,7 @@ test("--offline reads the pin and says so; a HEAD that cannot be read falls back
   assert.equal(offline.fetchedAt, null)
   assert.equal(offline.reason, "--offline")
   assert.equal(offline.registry.sources.length, pinned.sources.length)
-  assert.equal(registrySourceDetail(offline), "registry at the pin 38060f89 (offline)")
+  assert.equal(registrySourceDetail(offline), "registry at the pin 70dcc454 (offline)")
 
   // The JSON keeps the whole story; the rendered detail is one clause, with
   // the transport's own parenthetical and its "while reading" tail replaced
@@ -154,13 +154,13 @@ test("--offline reads the pin and says so; a HEAD that cannot be read falls back
   const noHead = await liveRegistry({ pinDir, cacheRoot, ...fakes({ fail: "head" }) })
   assert.equal(noHead.source, "pin")
   assert.equal(noHead.reason, "HEAD unreadable (network-unavailable): api.github.com did not answer (EAI_AGAIN) while reading /repos/omacom/omarchy-plugin-marketplace/commits.atom")
-  assert.equal(registrySourceDetail(noHead), "registry at the pin 38060f89; HEAD unreadable: api.github.com did not answer (network-unavailable)")
+  assert.equal(registrySourceDetail(noHead), "registry at the pin 70dcc454; HEAD unreadable: api.github.com did not answer (network-unavailable)")
   assert.ok(!/\(.*\(/.test(registrySourceDetail(noHead)), "no nested parentheses")
 
   const noFile = await liveRegistry({ pinDir, cacheRoot, ...fakes({ fail: "fetch" }) })
   assert.equal(noFile.source, "pin")
   assert.match(noFile.reason, new RegExp(`^registry at ${HEAD} unreadable \\(github-unavailable\\): GET ${RAW}/${HEAD}/registry.json returned 503$`))
-  assert.equal(registrySourceDetail(noFile), `registry at the pin 38060f89; HEAD ${HEAD.slice(0, 7)} unreadable: GET ${RAW}/${HEAD}/registry.json returned 503 (github-unavailable)`)
+  assert.equal(registrySourceDetail(noFile), `registry at the pin 70dcc454; HEAD ${HEAD.slice(0, 7)} unreadable: GET ${RAW}/${HEAD}/registry.json returned 503 (github-unavailable)`)
   assert.ok(!existsSync(liveCacheDir(HEAD, cacheRoot)), "a failed read caches nothing")
 
   const atPin = await liveRegistry({ pinDir, cacheRoot, ...fakes({ commit: MARKETPLACE_PIN.commit }), now: () => "2026-09-13T15:00:00.000Z" })
@@ -199,13 +199,13 @@ test("identity.available judges against HEAD's registry and names it; the pin's 
   assert.match(identity.why, /4,201 of the marketplace's 4,293 commits/)
   assert.match(identity.why, /MEASUREMENTS\.md M7/)
   const baseline = result.checks.find((check) => check.id === "baseline.preflight")
-  assert.match(baseline.why, /2,916 listed sources/, "the documented figure is the pin's by design")
+  assert.match(baseline.why, /3,608 listed sources/, "the documented figure is the pin's by design")
 
   const offline = await submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", tags: "bar", offline: true })
   assert.deepEqual(offline.registry, { source: "pin", commit: MARKETPLACE_PIN.commit, fetchedAt: null, reason: "--offline" })
   const pinned = offline.checks.find((check) => check.id === "identity.available")
   assert.equal(pinned.verdict, "pass")
-  assert.ok(pinned.detail.endsWith("; registry at the pin 38060f89 (offline)"), pinned.detail)
+  assert.ok(pinned.detail.endsWith("; registry at the pin 70dcc454 (offline)"), pinned.detail)
 })
 
 // --- the subject's own listing -------------------------------------------------

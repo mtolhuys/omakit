@@ -203,7 +203,7 @@ test("missing --category or --tags is known before any check runs, with the form
   assert.deepEqual(both.categories, contract.categories)
   assert.equal(both.categories.length, 9)
   assert.deepEqual(both.tags, contract.tagLabels)
-  assert.equal(both.tags.length, 13)
+  assert.equal(both.tags.length, 14)
   assert.equal(both.maximumTags, 3)
   assert.deepEqual(missingSubmitFlags(contract, { category: "Widgets", tags: " , " }).missing, ["--tags"])
   assert.deepEqual(missingSubmitFlags(contract, { tags: ["bar"] }).missing, ["--category"])
@@ -258,7 +258,7 @@ test("a plugin listed by its own repository is not a failed check: it is listed,
   const { result, check } = await identityOf(withId(LISTED_ID), LISTED_REPO)
   assert.equal(check.verdict, "pass")
   assert.equal(check.remedy, null)
-  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b (verified, checked 2026-09-10T17:40:18.858Z); registry at the pin 38060f89 (offline)")
+  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 7f0ea22aee80a4f7f23ade4dede500f61eedba75 (verified, checked 2026-09-16T18:18:57.073Z); registry at the pin 70dcc454 (offline)")
   assert.equal(result.outcome, "listed")
   assert.equal(result.ready, false)
   assert.deepEqual(result.blocking, [])
@@ -277,7 +277,7 @@ test("a plugin listed by its own repository is not a failed check: it is listed,
   assert.ok(!rendered.includes("Choose an unused plugin id"), "the old remedy is gone")
   const tail = rendered.slice(rendered.indexOf("LISTED"))
   assert.match(tail, /^LISTED  io\.github\.mtolhuys\.disk-lens is already listed by this repository, so\n {10}the submission form is not the route\./)
-  assert.match(tail, /\nlisted {8}5b98b315cf1bf8ab1a8b5250a0c493dda8b6fa4b\n {14}verified, checked 2026-09-10T17:40:18\.858Z, read from the pin\n/)
+  assert.match(tail, /\nlisted {8}7f0ea22aee80a4f7f23ade4dede500f61eedba75\n {14}verified, checked 2026-09-16T18:18:57\.073Z, read from the pin\n/)
   assert.match(tail, new RegExp(`\\nlocal HEAD {4}${result.subject.commit}\\n {14}not the listed commit\\n`))
   assert.match(tail, new RegExp(`To get it listed, open the marketplace's "Verify or update a listed plugin" form\\nand choose "${NEWER_COMMIT}"\\.\\nomakit watch <the submission issue> shows which commit is listed now\\.$`))
 
@@ -349,7 +349,7 @@ test("an unlisted plugin without flags and without a chooser is the usage error,
   const fixture = materialise(GOOD, { origin: "https://github.com/example/omarchy-plugin-fixture-good" })
   await assert.rejects(
     () => submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, offline: true }),
-    (error) => error.code === "usage" && error.usage.missing.join(",") === "--category,--tags" && error.usage.categories.length === 9 && error.usage.tags.length === 13 && error.usage.maximumTags === 3,
+    (error) => error.code === "usage" && error.usage.missing.join(",") === "--category,--tags" && error.usage.categories.length === 9 && error.usage.tags.length === 14 && error.usage.maximumTags === 3,
   )
   await assert.rejects(
     () => submitPreflight({ repoRoot: REPO_ROOT, target: fixture.dir, category: "Widgets", offline: true }),

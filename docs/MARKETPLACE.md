@@ -67,9 +67,10 @@ Full figures and method: [MEASUREMENTS.md](MEASUREMENTS.md).
 
 ## Verified integration seam
 
-At marketplace commit `38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6`
-(`Add Plugin updates plugin (#6374)`, baseline version 3, enforcement mode
-`selective`, marker protocol 4):
+At marketplace commit `70dcc454e9178b8a12e4ebf1be928621fd3e7735`
+(`Add LookAway plugin (#7750)`, baseline version 3, enforcement mode
+`selective`, marker protocol 4; first verified at `38060f89`, re-verified at
+this commit on 2026-09-21):
 
 - `scripts/security-baseline-scanner.mjs` exports
   `runSecurityBaseline(repoUrl, commitSha, options)`.
