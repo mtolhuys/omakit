@@ -93,6 +93,20 @@ test("freshness separates the GET-only inspection from this-repository issue wri
   assert.match(source, /\.\/bin\/omakit doctor --json/)
   assert.match(source, /\.evidence\.pinCommit/)
   assert.match(source, /\.evidence\.marketplaceHead/)
+  // The three graded states doctor gives (docs/UPSTREAM_CONTRACT.md, "What
+  // moved since the pin"): an issue on advice or info, closed on ok, and
+  // anything else refused before an issue is touched. The body names the
+  // files omakit reads that moved, the ones gone, the form, and the two
+  // policy constants at both ends.
+  assert.match(source, /\.evidence\.moved/)
+  assert.match(source, /\.evidence\.missing/)
+  assert.match(source, /\.evidence\.policy\.pin/)
+  assert.match(source, /\.evidence\.policy\.head/)
+  assert.match(source, /"\$state" != "ok" && "\$state" != "info" && "\$state" != "advice"/)
+  assert.match(source, /"\$STATE" == "advice" \|\| "\$STATE" == "info"/)
+  assert.match(source, /elif \[\[ "\$STATE" == "ok" \]\]/)
+  assert.match(source, /Files omakit reads under \\`scripts\/\\` that moved/)
+  assert.match(source, /Policy constants: \$\{POLICY_PIN\} at the pin, \$\{POLICY_HEAD\} at HEAD/)
   assert.match(source, /reconcile-issue:[\s\S]*issues: write/)
   assert.match(source, /\[automation\] Marketplace pin differs from HEAD/)
   assert.match(source, /gh\s+issue\s+create/)
