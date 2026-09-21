@@ -25,7 +25,7 @@ limits and the rest of the figures: [MEASUREMENTS.md](MEASUREMENTS.md).
 | Measured | Consequence |
 | --- | --- |
 | 39 submissions fell out on the title prefix alone, and 11 more are malformed in the body, one by a single word | the format is generated from the pinned form and judged by the marketplace's own parser |
-| 1,557 of the 3,608 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
+| 1,562 of the 3,619 listings with a recorded baseline needed a human to look, because of a capability | the official baseline runs locally on the exact commit first, and names the capability |
 | 103 issues mention agent-control files, which no automated check reports | submit names every one with its remedy, before a reviewer has to |
 | The 2026-09-12 sample found stale validation in 68/93 readable issues; 46% of the maintainer's own revalidation requests never produced one | a validation watch that names the one action which re-runs validation |
 

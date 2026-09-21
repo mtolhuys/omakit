@@ -220,21 +220,23 @@ policy and does not claim to be; its verdict is labelled `omakit`, not
 
 ## M4. The baseline decides whether a human has to look at all
 
-From `registry.json` at the pin (`70dcc454`, 2026-09-21; at the previous pin
-`38060f89` of 2026-09-11 the same counts were 2,963 sources, 2,916 with a
-baseline, 1,681 passed, 1,215 review-required, 20 needs-fixes): 3,653 listed
-sources, of which 3,608 carry a recorded baseline (the rest were listed before the baseline existed or have
+From `registry.json` at the pin (`b7b29654`, 2026-09-21 18:18 UTC; at pin
+`70dcc454` earlier that day: 3,653 sources, 3,608 with a baseline, 2,025
+passed, 1,557 review-required, 26 needs-fixes; at the first pin `38060f89` of
+2026-09-11: 2,963 sources, 2,916 with a baseline, 1,681 passed, 1,215
+review-required, 20 needs-fixes): 3,664 listed
+sources, of which 3,619 carry a recorded baseline (the rest were listed before the baseline existed or have
 no record):
 
 | Outcome | Count |
 | --- | --- |
-| `passed` | 2,025 |
-| `review-required` | 1,557 |
+| `passed` | 2,031 |
+| `review-required` | 1,562 |
 | `needs-fixes` | 26 |
 | Findings ever recorded, total | 27 (`curl-pipe-shell` 12, `remote-git-execution-unpinned` 15) |
 
-Capabilities recorded: installer 702, privilege 639, package-manager 622,
-service-management 514, remote-build 476, bundled-executable-binary 34,
+Capabilities recorded: installer 705, privilege 641, package-manager 624,
+service-management 515, remote-build 478, bundled-executable-binary 34,
 sudoers-modification 29. Sections are numbered M2, M3, M4 and M6 because M1
 and M5 were population figures that no check cites; their numbers were folded
 into M2 and M6 and the ids were not reused, since checks cite them by number.
@@ -277,7 +279,7 @@ and default-branch `commits.atom`, with per-issue sources and unknowns.
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |
-| Listed sources whose validated commit was superseded at least once | 854 of 3,653 (23.4%) at pin `70dcc454`, 1,270 superseded commits, one source revalidated 9 times (at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
+| Listed sources whose validated commit was superseded at least once | 854 of 3,664 (23.3%) at pin `b7b29654`, 1,270 superseded commits, one source revalidated 9 times (at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
 
 The last row is this repository's own measurement, recomputed from
 `registry.json` at the pin by `tests/unit/registry-figures.test.mjs`; it
@@ -362,7 +364,7 @@ Measured on 2026-09-13 against `omacom/omarchy-plugin-marketplace` at
 | Changes to each of the eleven files omakit reads rules and code from | 1 to 8 in the month |
 | Last change to `submit-plugin.yml` and `scripts/submission.mjs` | 2026-08-30 |
 | Last change to `scripts/build-catalog.mjs` | 2026-09-03 |
-| Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none at the time; by 2026-09-21, two of 863 commits (7dd6e56: the tag `vpn`; 40315f2: standard-installation verification reuses an installer-only review), carried by the pin `70dcc454` |
+| Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none at the time; by 2026-09-21, two of 863 commits (7dd6e56: the tag `vpn`; 40315f2: standard-installation verification reuses an installer-only review), carried by the pin `70dcc454`; one more by 18:18 UTC that day (5e401552: `repository-identity.mjs`, a migration chain may end at fully retired plugins, a module omakit does not import), carried by the pin `b7b29654` |
 
 So one pin is right for the code and the rules, which move slowly and must
 never be fetched and executed unreviewed, and wrong for the registry, which is

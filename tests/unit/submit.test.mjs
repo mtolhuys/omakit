@@ -258,7 +258,7 @@ test("a plugin listed by its own repository is not a failed check: it is listed,
   const { result, check } = await identityOf(withId(LISTED_ID), LISTED_REPO)
   assert.equal(check.verdict, "pass")
   assert.equal(check.remedy, null)
-  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 7f0ea22aee80a4f7f23ade4dede500f61eedba75 (verified, checked 2026-09-16T18:18:57.073Z); registry at the pin 70dcc454 (offline)")
+  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 7f0ea22aee80a4f7f23ade4dede500f61eedba75 (verified, checked 2026-09-16T18:18:57.073Z); registry at the pin b7b29654 (offline)")
   assert.equal(result.outcome, "listed")
   assert.equal(result.ready, false)
   assert.deepEqual(result.blocking, [])

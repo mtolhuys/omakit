@@ -13,27 +13,27 @@ const pinDir = requirePinForTests()
 const figures = baselineFigures({ pinDir })
 
 test("the baseline outcomes at the pin are the ones the docs cite", () => {
-  assert.equal(figures.sources, 3653)
-  assert.equal(figures.withBaseline, 3608)
-  assert.deepEqual(figures.outcomes, { passed: 2025, "review-required": 1557, "needs-fixes": 26 })
+  assert.equal(figures.sources, 3664)
+  assert.equal(figures.withBaseline, 3619)
+  assert.deepEqual(figures.outcomes, { passed: 2031, "review-required": 1562, "needs-fixes": 26 })
   assert.equal(figures.findingsTotal, 27)
   assert.deepEqual(figures.findings, { "curl-pipe-shell": 12, "remote-git-execution-unpinned": 15 })
   assert.deepEqual(figures.capabilities, {
-    installer: 702,
-    privilege: 639,
-    "package-manager": 622,
-    "service-management": 514,
-    "remote-build": 476,
+    installer: 705,
+    privilege: 641,
+    "package-manager": 624,
+    "service-management": 515,
+    "remote-build": 478,
     "bundled-executable-binary": 34,
     "sudoers-modification": 29,
   })
-  assert.equal(figures.retiredIds, 22)
-  assert.equal(figures.catalogPlugins, 3691)
+  assert.equal(figures.retiredIds, 23)
+  assert.equal(figures.catalogPlugins, 3702)
 })
 
 test("revalidation is a normal part of a listing's life, measured at the pin", () => {
   assert.deepEqual(figures.superseded, { sources: 854, commits: 1270, most: 9 })
-  assert.equal(((854 / 3653) * 100).toFixed(1), "23.4")
+  assert.equal(((854 / 3664) * 100).toFixed(1), "23.3")
 })
 
 test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figures, formatted the way figure() prints them", () => {
@@ -44,7 +44,7 @@ test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figu
       assert.ok(text.includes(figure(n)), `${figure(n)} is missing from a document that cites the registry`)
     }
   }
-  assert.equal(figure(2025), "2,025")
+  assert.equal(figure(2031), "2,031")
   assert.equal(figure(26), "26")
 })
 

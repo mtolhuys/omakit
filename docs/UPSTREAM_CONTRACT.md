@@ -15,7 +15,7 @@ deliberately not harvested; they remain in the archive.
 Dependency: Omarchy Plugin Marketplace security baseline and submission format
 Canonical source: https://github.com/omacom/omarchy-plugin-marketplace
 Branch/ref: main
-Commit/version: 70dcc454e9178b8a12e4ebf1be928621fd3e7735 (baseline v3, selective, marker protocol 4)
+Commit/version: b7b2965431c52fc6311fdb389bd9f0d6275235c4 (baseline v3, selective, marker protocol 4)
 Relevant symbol/section:
   - scripts/security-baseline-scanner.mjs: runSecurityBaseline(repoUrl, commitSha, options)
   - scripts/security-baseline-scope.mjs: resolveSecuritySnapshot(repoUrl, commitSha, { fetchImpl, token, requiredPaths, listedPlugins })
@@ -36,11 +36,11 @@ Relevant symbol/section:
 Omakit reliance: run the official baseline on a local commit through a local Git
   transport; read the submission contract from the form; verify the rendered body
   with the official parser; read the validated commit from the official marker.
-Executable proof/test: tests/parity/run.mjs (30 of 30 identical at 70dcc454, offset 1, docs/evidence/parity/);
+Executable proof/test: tests/parity/run.mjs (30 of 30 identical at b7b29654, docs/evidence/parity/);
   tests/parity/offline.mjs (no network during a local run, docs/evidence/offline/);
   tests/unit/*.test.mjs
 Verified result: VERIFIED
-Verified on: 2026-09-21 (Europe/Amsterdam); first verified 2026-09-12 at 38060f89
+Verified on: 2026-09-21 (Europe/Amsterdam) at 70dcc454 and again at b7b29654; first verified 2026-09-12 at 38060f89
 ```
 
 Two modules at the pin are deliberately *not* imported:
@@ -63,13 +63,13 @@ Two modules at the pin are deliberately *not* imported:
 | Location | `$XDG_CACHE_HOME/omakit/marketplace`, defaulting to `~/.cache/omakit/marketplace`; nothing else moves it |
 | Setup | `omakit pin`: `git fetch --depth 1 origin <commit>` then a detached checkout; idempotent; refuses a modified checkout |
 | Identity constant | `tools/marketplace/pin.mjs` (`MARKETPLACE_PIN`), the only home of the commit |
-| Commit | `70dcc454e9178b8a12e4ebf1be928621fd3e7735` ("Add LookAway plugin (#7750)", 2026-09-21); before it `38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6` ("Add Plugin updates plugin (#6374)", 2026-09-11 to 2026-09-21) |
+| Commit | `b7b2965431c52fc6311fdb389bd9f0d6275235c4` ("Add OmaStudio plugin (#6843)", 2026-09-21 18:18 UTC); before it `70dcc454` (2026-09-21, one day) and `38060f89` ("Add Plugin updates plugin (#6374)", 2026-09-11 to 2026-09-21); see the pin history below |
 | Policy read from the checkout | `securityBaselineVersion` `3`, `securityBaselineEnforcementMode` `selective` |
 | Official limits at the pin | file 512 KiB, snapshot 8 MiB / 1000 files, binary probe 4 KiB, asset probe 256 files / 1 MiB (`scripts/security-baseline-limits.mjs`) |
 | Scope facts the adapter relies on | symlink entries (`120000`) are skipped; executables (`100755`) over the file limit are probed with `Range: bytes=0-4095` and expect `206` with `content-range`; setup-named binary assets are probed with a 1 MiB range and a complete image makes the scan `security-baseline-unavailable`; `.txt` is not a scanned extension |
 | What moved since the pin | `omakit doctor` compares each path in `PIN_PATHS` between the pin and the marketplace's HEAD by tree or blob id (the pin side from the local checkout, the HEAD side through the git-trees API at the exact commit), splits the ones that differ by `LIVE_PATHS` into `readLive` and `pinned` (with `changedPaths`, in `--json`), and is `ok` when only the live-read data files moved and `note` when a pinned path did; offline or on any error it says `unknown`. Its output speaks to a user (`omakit upgrade`, then an issue); the procedure below is the maintainer's and is not printed |
 | Read live, read pinned | `registry.json` and `site/catalog.json` are read from the marketplace's current default-branch HEAD when the network is there (at the exact commit `defaultBranchHead()` resolved, cached under `$XDG_CACHE_HOME/omakit/registry/<commit>/`, never written into the checkout) and from the pin with `--offline` or when HEAD cannot be read; everything under `scripts/` and `.github/ISSUE_TEMPLATE/` is only ever read from the pin. Measured reason in `docs/MEASUREMENTS.md` M7: 4,201 of 4,293 commits in 30 days touched only `registry.json` |
-| Registry facts | 3,653 sources with `listingValidatedCommit`; 3,608 with an `automatedSecurityBaseline` record (2,025 passed, 1,557 review-required, 26 needs-fixes); 3,691 catalog plugin ids; 22 retired ids; 854 sources (23.4%) with at least one superseded validated commit, 1,270 superseded commits in all |
+| Registry facts | 3,664 sources with `listingValidatedCommit`; 3,619 with an `automatedSecurityBaseline` record (2,031 passed, 1,562 review-required, 26 needs-fixes); 3,702 catalog plugin ids; 23 retired ids; 854 sources (23.3%) with at least one superseded validated commit, 1,270 superseded commits in all |
 
 ## Pin history
 
@@ -77,6 +77,7 @@ Two modules at the pin are deliberately *not* imported:
 | --- | --- | --- | --- |
 | `38060f89` | 2026-09-11 | 0.1.0 to 0.6.4 | first pin |
 | `70dcc454` | 2026-09-21 | 0.6.5 | 863 commits, two in `scripts/` or `.github/ISSUE_TEMPLATE/`: 7dd6e56 adds the tag `vpn` to `allowedTags` and to the form's Tags list (read from the pin, so `submit` accepts it without a code change); 40315f2 lets a standard-installation verification reuse a valid installer-only maintainer review (`plugin-verification.mjs`, a new `securityBaselineEligibleForReviewedStandardInstallation` in the policy module, `verify-plugin.yml` wording; the maintainer's flow after listing, nothing the preflight reads). `securityBaselineVersion`, `securityBaselineEnforcementMode`, the rule and capability catalogs, the limits, the feedback table (37 codes) and the label set are byte-identical. Parity re-proved 30 of 30 at offset 1 (`docs/evidence/parity/2026-09-21-local-vs-github-2.json`); offset 0 is 29 of 30, 0 mismatches, modoterra/omabench gone from github.com (`2026-09-21-local-vs-github.json`) |
+| `b7b29654` | 2026-09-21 18:18 UTC | 0.6.6 | 14 commits, one in `scripts/`: 5e401552 ("Delist multi-monitor.workspaces and preserve retired migration history (#7954)") lets `validateRegistryRepositoryMigrations` in `scripts/repository-identity.mjs` accept a migration chain that ends at fully retired plugins. Omakit does not import that module (it validates the marketplace's own registry on their side); the retired-id count moves from 22 to 23. Policy constants, catalogs, limits, feedback table, labels and the form are byte-identical. Parity re-proved: `docs/evidence/parity/` for this date |
 
 ## GitHub account-wide issue discovery
 

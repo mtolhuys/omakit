@@ -152,7 +152,7 @@ act on sat under 750 lines of argv.
 
 ```text
 subject       ~/plugins/fixture-example at a3bf9e2d
-baseline      review-required at pin 70dcc454: installer, privilege,
+baseline      review-required at pin b7b29654: installer, privilege,
               package-manager
 size score    10.00 of 10; 0% of its function lines sit in functions over the
               measured size, no heavier than 49 of 49 listed trees (M12)
@@ -209,7 +209,7 @@ ten preconditions says so.
 | file and state boundary | a write whose canonical path is not under `$XDG_STATE_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME/omarchy/plugins/<id>` or `$XDG_RUNTIME_DIR`, `mktemp` excepted; a `mkdir` with no mode | about 15% |
 | environment trust | a process whose tool word (the first argv word after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted; `curl` reaching a host without `-q` | about 7% |
 | secrets | an argv element, or a `console.log` argument, matching `Authorization`, `Bearer`, `token=`, `api_key`, `password` or `secret=`; `wl-copy` with a computed argv element | about 7% |
-| supply chain | a finding the baseline recorded and does not list as selectively blocking at the pin (at pin `70dcc454`: `remote-git-execution-unpinned`, `curl-pipe-shell`, `cargo-git-unpinned`, read from the pinned policy, never named in the code); `inspect` prints the baseline's evidence sites and adds nothing | about 7% |
+| supply chain | a finding the baseline recorded and does not list as selectively blocking at the pin (at pin `b7b29654`: `remote-git-execution-unpinned`, `curl-pipe-shell`, `cargo-git-unpinned`, read from the pinned policy, never named in the code); `inspect` prints the baseline's evidence sites and adds nothing | about 7% |
 | network egress | an `http:` literal; `curl` with `-L` and no `--proto`; a loopback, link-local or private-range literal | about 5% |
 | untrusted text to display | a `Text`, `Label` or `TextEdit` whose `text` binds to a `StdioCollector` or `SplitParser` id's `.text` and whose `textFormat` is not `Text.PlainText` | about 5% |
 | argument grammar | an argv array with an element that is an expression rather than a literal (`"--user=" + name`, a template with `${...}`, a property) | about 4% |
@@ -432,7 +432,7 @@ argv, no hosts, no written paths and no timer intervals, and it does not run
 the marketplace baseline. `forge check` is the tool to run for structure and
 publish-readiness; `inspect` reports none of that.
 
-The marketplace's automated security baseline (pinned at `70dcc454`,
+The marketplace's automated security baseline (pinned at `b7b29654`,
 `scripts/security-baseline-analysis.mjs`) records five finding rules
 (`cargo-git-unpinned`, `curl-pipe-shell`, `remote-git-execution-unpinned`,
 `sudoers-dangerous-passwordless-command`,

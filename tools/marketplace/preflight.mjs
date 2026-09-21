@@ -3,8 +3,8 @@
 // its outcome will cause on submission.
 //
 // Measured reason this runs before submitting (docs/MEASUREMENTS.md M4): of the
-// 3,608 listed sources with a recorded baseline at the pin, it produced 2,025
-// `passed`, 1,557 `review-required` and 26 `needs-fixes` (counted by
+// 3,619 listed sources with a recorded baseline at the pin, it produced 2,031
+// `passed`, 1,562 `review-required` and 26 `needs-fixes` (counted by
 // registry.mjs baselineFigures, pinned by tests/unit/registry-figures.test.mjs). `review-required` is not a defect and
 // needs no source change, but it does mean a human must look, and it is the
 // single largest determinant of whether a submission waits on a person. An

@@ -1,13 +1,28 @@
 # Changelog
 
-## 0.6.6 (unreleased)
+## 0.6.6
+
+The marketplace pin moves from `70dcc454` (2026-09-21 05:35 UTC) to
+`b7b29654` (2026-09-21 18:18 UTC, "Add OmaStudio plugin (#6843)"), the
+same day as 0.6.5. `omakit doctor` reported `pin.freshness` as a note that
+evening: of the 14 marketplace commits since, one touched `scripts/`.
+5e401552 lets `validateRegistryRepositoryMigrations` in
+`scripts/repository-identity.mjs` accept a migration chain that ends at
+fully retired plugins, and delists `multi-monitor.workspaces`. Omakit does
+not import that module; it is the marketplace's validation of its own
+registry. Policy constants, catalogs, limits, the feedback table, the labels
+and the form are byte-identical, so no verdict changes. The figures follow
+the pin: 3,664 listed sources, 3,619 with a recorded baseline (2,031 passed,
+1,562 review-required, 26 needs-fixes), 3,702 catalog ids, 23 retired; 854
+sources (23.3%) revalidated at least once. Parity is re-proved at the new
+pin over the 30-repository corpus.
 
 The weekly pin-freshness workflow reads `doctor`'s verdict as `doctor` gives
 it: `ok` with unequal commits when only the live-read data files moved, and
 `advice` naming the pinned paths that did. It had failed on every scheduled
 run since 2026-09-14 by demanding equal commits for `ok`. The 0.6.5 notes
-said the pinned checkout is 22 MB; a fresh `omakit pin` at 70dcc454 measures
-19 MB, the 22 MB was a cache that still held the previous pin's objects.
+said the pinned checkout is 22 MB; a fresh `omakit pin` measures 19 MB, the
+22 MB was a cache that still held the previous pin's objects.
 
 ## 0.6.5
 

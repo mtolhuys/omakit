@@ -59,7 +59,7 @@ reviewer has yet looked at a plugin that uses them.
 | 587 of 1,001 security blocker comments in one week raise a process line: an absolute path, a closed environment, a deadline, an output cap, a group ended, argv not a shell string | `omakit add run`: a tested Run block, measured on a real shell and on the stock guest, that does all of it by construction; `inspect` shows each `Run {` site with its deadline |
 | 527 of the same 1,001 raise a state line: no-follow, no check-then-use, an atomic replace, owner and mode checks, a size cap, a schema | `omakit add store`: a Store block carried over from a cache transaction the same review read without a further comment |
 | 39 submissions fell out on the title prefix alone; 11 more are malformed in the body, one by a single word | Generates title and body from the pinned form and has the marketplace's own parser judge them before anything is posted |
-| 1,215 of the 2,916 listings with a recorded baseline needed a human to look because of a capability | Runs the official baseline locally on the exact commit first, and says which capability triggered it |
+| 1,562 of the 3,619 listings with a recorded baseline needed a human to look because of a capability | Runs the official baseline locally on the exact commit first, and says which capability triggered it |
 | 103 issues mention agent-control files, and no automated check reports them | Names every one in the tree with the remedy, as a warning: the marketplace lists plugins that ship them, so it never refuses on it |
 | The 2026-09-12 sample found stale validation in 68/93 readable issues | A read-only validation watch that names the one action which re-runs validation |
 
@@ -67,10 +67,10 @@ Full figures and method: [MEASUREMENTS.md](MEASUREMENTS.md).
 
 ## Verified integration seam
 
-At marketplace commit `70dcc454e9178b8a12e4ebf1be928621fd3e7735`
-(`Add LookAway plugin (#7750)`, baseline version 3, enforcement mode
+At marketplace commit `b7b2965431c52fc6311fdb389bd9f0d6275235c4`
+(`Add OmaStudio plugin (#6843)`, baseline version 3, enforcement mode
 `selective`, marker protocol 4; first verified at `38060f89`, re-verified at
-this commit on 2026-09-21):
+`70dcc454` and at this commit on 2026-09-21):
 
 - `scripts/security-baseline-scanner.mjs` exports
   `runSecurityBaseline(repoUrl, commitSha, options)`.
