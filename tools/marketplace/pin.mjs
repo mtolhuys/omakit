@@ -99,8 +99,62 @@ export const PIN_READS = Object.freeze([
   Object.freeze({ path: "scripts/approve-plugin-update.mjs", imported: false }),
 ])
 
+/**
+ * The read files omakit takes only wording or a label out of, and decides
+ * nothing by: the baseline's rendered details, the failure table a refusal's
+ * reason is mapped through for display, and one label name each from the
+ * two approval scripts. A change to one of these changes what omakit
+ * prints, never whether it passes or refuses. Every other file in
+ * pinnedReadSet() is executed or read for a rule, a limit, a constant or a
+ * parser, so a change there can change a verdict, and `omakit doctor`
+ * grades it advice. The list is a whitelist on purpose: a file that is not
+ * here is treated as verdict-bearing until someone proves otherwise here.
+ */
+export const WORDING_READS = Object.freeze([
+  "scripts/security-baseline-report.mjs",
+  "scripts/submission-feedback.mjs",
+  "scripts/approve-submission.mjs",
+  "scripts/approve-plugin-update.mjs",
+])
+
 /** A static import or re-export of a relative module: `import x from "./y.mjs"`, `export * from "./y.mjs"`, across lines. */
-const RELATIVE_IMPORT = /\bfrom\s+["'](\.\.?\/[^"']+)["']/g
+export const RELATIVE_IMPORT = /\bfrom\s+["'](\.\.?\/[^"']+)["']/g
+
+/**
+ * The import forms RELATIVE_IMPORT does not follow. (A relative `from`
+ * specifier of any kind is followed, a JSON import included, so that needs
+ * no guard; Node's ESM loader requires an extension.) If one of these ever
+ * appears in an executed file of the pinned read set, pinnedReadSet() could
+ * miss a file, and tests/unit/pin.test.mjs fails on the file and line
+ * instead of doctor staying quiet. Measured at pin b7b29654: none of
+ * the 13 executed files uses any of them (the three read as text are not
+ * scanned, since nothing they import is loaded).
+ */
+export const UNFOLLOWED_IMPORTS = Object.freeze([
+  Object.freeze({ form: "dynamic import()", pattern: /\bimport\s*\(/ }),
+  Object.freeze({ form: "side-effect import", pattern: /^\s*import\s+["']/ }),
+  Object.freeze({ form: "require()", pattern: /\brequire\s*\(/ }),
+  Object.freeze({ form: "import.meta.resolve()", pattern: /\bimport\.meta\.resolve\s*\(/ }),
+])
+
+/**
+ * Every line in the read set's executed files that carries an import form
+ * the closure does not follow: `{ path, line, form, text }`, empty when the
+ * closure is complete. Files read as text are not scanned: nothing they
+ * import is loaded. Read as text, like the closure itself.
+ */
+export function unfollowedImports(pinDir, reads = pinnedReadSet(pinDir)) {
+  const found = []
+  for (const { path } of reads.filter((read) => read.imported)) {
+    const lines = readFileSync(join(pinDir, path), "utf8").split("\n")
+    lines.forEach((text, index) => {
+      for (const { form, pattern } of UNFOLLOWED_IMPORTS) {
+        if (pattern.test(text)) found.push({ path, line: index + 1, form, text: text.trim() })
+      }
+    })
+  }
+  return found
+}
 
 /**
  * Every file omakit reads under /scripts/ at the checkout in `pinDir`:

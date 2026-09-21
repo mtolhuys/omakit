@@ -223,12 +223,17 @@ commits a day it always has. The 16 files omakit reads under `scripts/`
 (`pinnedReadSet()`, see `docs/UPSTREAM_CONTRACT.md`) are compared by blob
 id, the form directory by tree id, and the two policy constants by the
 module's text at HEAD. The grade says what the difference can do to a
-verdict: `ok` when nothing in that set moved, `info` when a read file moved
-and both constants read the same (the files are named; verdicts are
-unchanged; there is nothing to do), `advice` when a constant differs, a read
-file is gone at HEAD, or the form moved, with `omakit upgrade` as the
-action when a newer omakit is published and otherwise that the maintainer
-is notified. It never asks you to open an issue: this repository's weekly
+verdict: `ok` when nothing in that set moved; `info` when the only moved
+files are ones omakit takes wording or a label out of (`WORDING_READS`:
+the baseline's rendered details, the failure table, one label from each
+approval script), so what it prints may differ at HEAD and what it decides
+cannot; `advice` when a file omakit executes or reads a rule from moved, a
+read file is gone at HEAD, or the form moved. The two constants are printed
+beside the grade in every case and never soften it: a rule can change
+without its version. On `advice` the action is `omakit upgrade` when a
+newer omakit is published and otherwise that the maintainer is notified,
+and either way that every verdict here is the pin's until then, and the
+marketplace's own run on your issue is the one that counts. It never asks you to open an issue: this repository's weekly
 workflow opens the one there is. Measured (M7): of the three `scripts/`
 commits since the first pin, one changed a file omakit does not read, and
 the earlier tree comparison graded it advice. Offline, or when HEAD cannot

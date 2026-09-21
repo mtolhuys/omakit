@@ -25,6 +25,7 @@ jobs:
       head: ${{ steps.freshness.outputs.head }}
       branch: ${{ steps.freshness.outputs.branch }}
       moved: ${{ steps.freshness.outputs.moved }}
+      verdict_moved: ${{ steps.freshness.outputs.verdict_moved }}
       missing: ${{ steps.freshness.outputs.missing }}
       forms: ${{ steps.freshness.outputs.forms }}
       reads: ${{ steps.freshness.outputs.reads }}
@@ -73,11 +74,14 @@ jobs:
       # those moved (unequal commits are normal here: the registry moves
       # about 140 times a day and is read live; measured on the run of
       # 2026-09-14, this step failed every week by demanding equal commits),
-      # `info` when a read file moved but the verdicts cannot have, `advice`
-      # when a policy constant differs, a read file is gone, or the form
-      # moved. Measured on 2026-09-21 (M7): the tree comparison before this
-      # graded 5e401552, which changed only repository-identity.mjs, as
-      # advice, and the pin moved for a verdict that could not change.
+      # `info` when the only read files that moved are ones omakit takes
+      # wording or a label out of (WORDING_READS in pin.mjs), `advice` when
+      # a file omakit executes or reads a rule from moved (with or without
+      # a policy constant differing: a rule can change without its
+      # version), a read file is gone, or the form moved. Measured on
+      # 2026-09-21 (M7): the tree comparison before this graded 5e401552,
+      # which changed only repository-identity.mjs, as advice, and the pin
+      # moved for a verdict that could not change.
       - name: Read structured freshness evidence
         id: freshness
         shell: bash
@@ -96,6 +100,7 @@ jobs:
           head=$(jq -r "$check | .evidence.marketplaceHead // empty" "$RUNNER_TEMP/doctor.json")
           branch=$(jq -r "$check | .evidence.branch // empty" "$RUNNER_TEMP/doctor.json")
           moved=$(jq -r "$check | (.evidence.moved // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          verdict_moved=$(jq -r "$check | (.evidence.verdictMoved // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           missing=$(jq -r "$check | (.evidence.missing // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           forms=$(jq -r "$check | (.evidence.pinned // []) | map(select(startswith(\"/.github/\"))) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           reads=$(jq -r "$check | .evidence.reads // empty" "$RUNNER_TEMP/doctor.json")
@@ -115,8 +120,8 @@ jobs:
             echo "doctor called the pin current while something it reads moved: $moved $missing $forms" >&2
             exit 1
           fi
-          if [[ "$state" == "info" && ( -z "$moved" || -n "$missing$forms" || "$policy_pin" != "$policy_head" ) ]]; then
-            echo "doctor graded info without a moved read file, or with a difference that can change a verdict" >&2
+          if [[ "$state" == "info" && ( -z "$moved" || -n "$verdict_moved$missing$forms" || "$policy_pin" != "$policy_head" ) ]]; then
+            echo "doctor graded info without a moved read file, or with a difference that can change a verdict: $verdict_moved $missing $forms" >&2
             exit 1
           fi
           if [[ "$state" != "ok" && "$pinned" == "$head" ]]; then
@@ -129,6 +134,7 @@ jobs:
             echo "head=$head"
             echo "branch=$branch"
             echo "moved=$moved"
+            echo "verdict_moved=$verdict_moved"
             echo "missing=$missing"
             echo "forms=$forms"
             echo "reads=$reads"
@@ -155,6 +161,7 @@ jobs:
           HEAD_COMMIT: ${{ needs.inspect.outputs.head }}
           HEAD_BRANCH: ${{ needs.inspect.outputs.branch }}
           MOVED: ${{ needs.inspect.outputs.moved }}
+          VERDICT_MOVED: ${{ needs.inspect.outputs.verdict_moved }}
           MISSING: ${{ needs.inspect.outputs.missing }}
           FORMS: ${{ needs.inspect.outputs.forms }}
           READS: ${{ needs.inspect.outputs.reads }}
@@ -171,9 +178,9 @@ jobs:
             exit 1
           fi
           if [[ "$STATE" == "advice" ]]; then
-            grade="\`advice\`: a verdict omakit gives may differ at HEAD (a policy constant differs, a read file is gone, or the form moved)."
+            grade="\`advice\`: a verdict omakit gives may differ at HEAD (a file it executes or reads a rule from moved, a policy constant differs, a read file is gone, or the form moved)."
           else
-            grade="\`info\`: a file omakit reads moved, and both policy constants read the same at HEAD, so no verdict changes; the pin can follow with the next release."
+            grade="\`info\`: only files omakit takes wording or a label out of moved; what it prints may differ at HEAD, what it decides cannot. The pin can follow with the next release."
           fi
           cat > "$RUNNER_TEMP/issue-body.md" <<EOF
           Something Omakit reads only from its immutable marketplace pin has changed on the marketplace's current \`${HEAD_BRANCH}\`-branch HEAD. \`omakit doctor\` grades it ${grade}
@@ -181,6 +188,7 @@ jobs:
           - Omakit pin: \`${PINNED}\`
           - Marketplace HEAD: \`${HEAD_COMMIT}\`
           - Files omakit reads under \`scripts/\` that moved (of ${READS}): \`${MOVED:-none}\`
+          - Of those, files a verdict can depend on: \`${VERDICT_MOVED:-none}\`
           - Files omakit reads that are gone at HEAD: \`${MISSING:-none}\`
           - Form directory that moved: \`${FORMS:-none}\`
           - Policy constants: ${POLICY_PIN} at the pin, ${POLICY_HEAD} at HEAD

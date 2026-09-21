@@ -45,16 +45,20 @@
 // and the maintainer moved the pin for a verdict that could not change.
 // So under scripts/ the comparison is by blob, over the 16 files
 // pinnedReadSet() names, and the verdict is graded: `ok` when none of them
-// moved, `info` when one did but both policy constants read the same at
-// HEAD, `advice` when a constant differs, a read file is gone at HEAD, or
-// the form directory moved, which is the contract itself. The other two
-// commits (7dd6e56, 40315f2) touched submission.mjs and the policy module,
-// both read, and the forms, so they grade advice either way.
+// moved, `info` when the only moved files are ones omakit takes wording or
+// a label out of (WORDING_READS), `advice` when a file omakit executes or
+// reads a rule from moved, a read file is gone at HEAD, or the form
+// directory moved, which is the contract itself. The two policy constants
+// are read at HEAD as text and printed beside the grade, so a person sees
+// whether the baseline itself changed; they never soften the grade, since
+// a rule can change without its version. The other two commits (7dd6e56,
+// 40315f2) touched submission.mjs and the policy module, both executed,
+// and the forms, so they grade advice either way.
 
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, marketplacePinDir, pinDiskUsage, pinShape, pinnedReadSet, policyConstants, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, WORDING_READS, marketplacePinDir, pinDiskUsage, pinShape, pinnedReadSet, policyConstants, requirePin } from "./pin.mjs"
 import { LIVE_PATHS, headTextUrl } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, getText, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
@@ -170,6 +174,9 @@ function list(items) {
 /** "baseline 3 (selective)". */
 const policyText = (policy) => `baseline ${policy.baselineVersion} (${policy.enforcementMode})`
 
+/** The moved files a verdict can depend on: everything omakit executes or reads a rule from, which is every read outside WORDING_READS. */
+const verdictBearing = (paths) => paths.filter((path) => !WORDING_READS.includes(path))
+
 /**
  * The pin against the marketplace's HEAD, for a user, graded by what the
  * difference can do to a verdict. `comparison` is the answer from
@@ -183,16 +190,19 @@ const policyText = (policy) => `baseline ${policy.baselineVersion} (${policy.enf
  *   ok      nothing omakit reads moved: HEAD moved elsewhere, or only in
  *           the live-read data files, or scripts/ moved in none of the
  *           files omakit reads.
- *   info    a read file moved, and `securityBaselineVersion` and
- *           `securityBaselineEnforcementMode` read the same at HEAD as at
- *           the pin: the verdicts omakit gives are unchanged, and a newer
- *           omakit will carry the pin. Nothing for a user to do.
- *   advice  a policy constant differs, a read file is gone at HEAD, or the
- *           form directory moved (the contract itself): a verdict may
- *           differ at HEAD. The action is `upgrade` (the command, when the
- *           caller found a newer omakit published), else that the
- *           maintainer is notified; never an issue to open, since the
- *           weekly pin-freshness workflow opens the one there is.
+ *   info    the only read files that moved are ones omakit takes wording
+ *           or a label out of (WORDING_READS): what it prints may differ
+ *           at HEAD, what it passes or refuses cannot. A newer omakit will
+ *           carry the pin. Nothing for a user to do.
+ *   advice  a file omakit executes or reads a rule from moved (a verdict
+ *           may differ at HEAD, whether or not the two policy constants
+ *           still read the same, since a rule can change without its
+ *           version), a read file is gone at HEAD, or the form directory
+ *           moved (the contract itself). The action is `upgrade` (the
+ *           command, when the caller found a newer omakit published), else
+ *           that the maintainer is notified; never an issue to open, since
+ *           the weekly pin-freshness workflow opens the one there is. The
+ *           two constants are printed beside the grade in both cases.
  *
  * Null for `comparison` means the comparison was not made, which stays
  * advice: HEAD moved and nothing here can say the pin is fine. Full commits
@@ -211,9 +221,10 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   const headPolicy = (compared && comparison.policyAtHead) || pinPolicy
   const policyDiffers = headPolicy.baselineVersion !== pinPolicy.baselineVersion || headPolicy.enforcementMode !== pinPolicy.enforcementMode
   const formMoved = pinned.includes(FORMS)
+  const verdictMoved = verdictBearing(moved)
   const graded = moved.length > 0 || missing.length > 0 || formMoved
   const state = current ? "ok"
-    : comparison === null || policyDiffers || formMoved || missing.length ? "advice"
+    : comparison === null || policyDiffers || formMoved || missing.length || verdictMoved.length ? "advice"
       : moved.length ? "info"
         : "ok"
 
@@ -222,7 +233,7 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   if (comparison === null) clauses.push("the paths omakit reads were not compared")
   else if (!changed.length) clauses.push("nothing omakit reads moved")
   else {
-    if (moved.length) clauses.push(`moved since the pin: ${list(moved)}`)
+    if (moved.length) clauses.push(`moved since the pin: ${list(moved)}${verdictMoved.length ? "" : " (wording and labels only)"}`)
     if (missing.length) clauses.push(`gone at HEAD: ${list(missing)}`)
     if (formMoved) clauses.push(`the form moved (${asPath(FORMS)}/)`)
     if (pinned.includes("/scripts/") && !moved.length && !missing.length) clauses.push(`scripts/ moved in none of the ${comparison.reads} files omakit reads`)
@@ -233,11 +244,11 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   const detail = current ? `the pin is the marketplace's current ${branch}-branch HEAD` : `${where}; ${clauses.join("; ")}${tail}`
 
   const action = state === "info"
-    ? "Verdicts are unchanged, and a newer omakit will carry the pin; nothing to do."
+    ? `${moved.length === 1 ? "That file is" : "Those files are"} read for wording and labels, not for a pass or a refusal; what omakit prints may differ at HEAD, what it decides cannot. A newer omakit will carry the pin; nothing to do.`
     : state === "advice"
       ? upgrade
-        ? `A newer omakit is published and may carry the pin: run \`${upgrade}\`.`
-        : "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin, and until then every verdict here is the pin's."
+        ? `A newer omakit is published and may carry the pin: run \`${upgrade}\`. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.`
+        : "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts."
       : null
 
   return {
@@ -255,6 +266,7 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
         pinned,
         reads: comparison.reads,
         moved,
+        verdictMoved,
         missing,
         policy: { pin: pinPolicy, head: headPolicy },
       }),

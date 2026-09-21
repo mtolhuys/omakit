@@ -11,7 +11,7 @@ import assert from "node:assert/strict"
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, relative } from "node:path"
-import { ensurePin, PIN_PATHS, PIN_READS, POLICY_MODULE, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, pinnedReadSet, policyConstants, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { ensurePin, PIN_PATHS, PIN_READS, POLICY_MODULE, WORDING_READS, UNFOLLOWED_IMPORTS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, pinnedReadSet, policyConstants, unfollowedImports, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { spawn, spawnSync } from "node:child_process"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
@@ -162,6 +162,51 @@ test("pinnedReadSet follows `from` specifiers by text, inside scripts/ only, and
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+
+test("the closure is complete at this pin: no executed read file carries an import form pinnedReadSet does not follow", () => {
+  // The one way the read set could miss a file is an import the regex does
+  // not see. Measured at pin b7b29654: 0 of the 13 executed files use a
+  // dynamic import(), a side-effect import, require() or
+  // import.meta.resolve(). A marketplace
+  // commit that introduces one fails here, by file and line, at the next
+  // pin bump, instead of doctor staying quiet about a file it does not see.
+  const dir = requirePinForTests()
+  const set = pinnedReadSet(dir)
+  assert.equal(set.filter((read) => read.imported).length, 13)
+  assert.deepEqual(unfollowedImports(dir, set), [], "an import form the closure does not follow appeared in a read file")
+  assert.equal(UNFOLLOWED_IMPORTS.length, 4)
+})
+
+test("unfollowedImports names each unfollowed form by file and line, and scans only executed files", () => {
+  const root = mkdtempSync(join(tmpdir(), "omakit-unfollowed-"))
+  try {
+    mkdirSync(join(root, "scripts"))
+    writeFileSync(join(root, "scripts/a.mjs"), 'import { b } from "./b.mjs"\nconst m = await import("./late.mjs")\nimport "./side.mjs"\nconst r = require("./cjs.cjs")\nconst u = import.meta.resolve("./x.mjs")\nconst dir = import.meta.dirname\n')
+    writeFileSync(join(root, "scripts/b.mjs"), "export const b = 1\n")
+    writeFileSync(join(root, "scripts/t.mjs"), 'const m = await import("./never-loaded.mjs")\n')
+    const reads = [{ path: "scripts/a.mjs", imported: true }, { path: "scripts/t.mjs", imported: false }]
+    const found = unfollowedImports(root, pinnedReadSet(root, reads))
+    assert.deepEqual(found.map((hit) => [hit.path, hit.line, hit.form]), [
+      ["scripts/a.mjs", 2, "dynamic import()"],
+      ["scripts/a.mjs", 3, "side-effect import"],
+      ["scripts/a.mjs", 4, "require()"],
+      ["scripts/a.mjs", 5, "import.meta.resolve()"],
+    ], "import.meta.dirname is not an import, and t.mjs is read as text so its import() is not scanned")
+    assert.deepEqual(unfollowedImports(root, pinnedReadSet(root, [{ path: "scripts/b.mjs", imported: true }])), [])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("WORDING_READS is a subset of the read set, each file one omakit takes only wording or a label from", () => {
+  const set = pinnedReadSet(requirePinForTests()).map((read) => read.path)
+  for (const path of WORDING_READS) assert.ok(set.includes(path), `${path} is in the read set`)
+  assert.deepEqual([...WORDING_READS], ["scripts/security-baseline-report.mjs", "scripts/submission-feedback.mjs", "scripts/approve-submission.mjs", "scripts/approve-plugin-update.mjs"])
+  // The verdict-bearing remainder is the default: 12 of 16 at pin b7b29654,
+  // every file omakit executes for an outcome or reads a rule, a limit, a
+  // constant or a parser from.
+  assert.equal(set.filter((path) => !WORDING_READS.includes(path)).length, 12)
 })
 
 test("the two policy constants are read out of text, the same way for the pin and for HEAD", () => {

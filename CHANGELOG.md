@@ -23,16 +23,28 @@ at the exact commit like the registry files, takes
 `securityBaselineVersion` and `securityBaselineEnforcementMode` out of it
 the way the pin's identity does, and drops it. Three verdicts: `ok` when
 no read file moved (a `scripts/` change elsewhere is said as "in none of
-the 16 files omakit reads"); `info` when one moved and both constants
-read the same at HEAD, the files named, verdicts unchanged, nothing to
-do; `advice` when a constant differs, a read file is gone at HEAD, or the
-form moved, with `omakit upgrade` as the action when a newer omakit is
-published and otherwise that the maintainer is notified. The "open an
+the 16 files omakit reads"); `info` when the only moved files are ones
+omakit takes wording or a label out of (`WORDING_READS`: the baseline's
+rendered details, the failure table, one label from each approval script;
+4 of the 16), the files named as wording only, what omakit prints may
+differ and what it decides cannot; `advice` when a file omakit executes
+or reads a rule from moved, whether or not the two constants still read
+the same (a rule can change without its version), a read file is gone at
+HEAD, or the form moved, with `omakit upgrade` as the action when a newer
+omakit is published and otherwise that the maintainer is notified, and in
+both cases that every verdict is the pin's until then and the
+marketplace's own run on the issue is the one that counts. The constants
+are printed beside every grade and never soften it. The closure's
+completeness is held by the suite: a dynamic `import()`, side-effect
+import, `require()` or `import.meta.resolve()` in an executed read file
+fails `tests/unit/pin.test.mjs` by file and line (0 of 13 at `b7b29654`),
+so the one way the read set could miss a file is a test failure at the
+next pin bump, never a quiet `ok`. The "open an
 issue" instruction is gone: the weekly pin-freshness workflow opens the
 one there is, on `advice` or `info`, and its body names the files, the
 constants at both ends and doctor's line. Offline stays `unknown`. The
 `--json` evidence keeps `changedPaths`, `readLive` and `pinned` and adds
-`reads`, `moved`, `missing` and `policy.{pin,head}`. Measured with
+`reads`, `moved`, `verdictMoved`, `missing` and `policy.{pin,head}`. Measured with
 `b7b29654` as the pin: `70dcc454` taken as HEAD grades `ok` in 4 GETs,
 `38060f89` grades `advice` for the forms in 5, and today's HEAD `ok` in
 the same 3 as before.

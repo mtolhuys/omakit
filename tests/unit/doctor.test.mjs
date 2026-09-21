@@ -58,7 +58,7 @@ test("only the data files moved, or nothing did: ok, no action, and the detail s
   assert.deepEqual(both.evidence, {
     pinCommit: pinned.commit, marketplaceHead: head.commit, branch: "main",
     changedPaths: ["/registry.json", "/site/catalog.json"], readLive: ["/registry.json", "/site/catalog.json"], pinned: [],
-    reads: 16, moved: [], missing: [], policy: { pin: same, head: same },
+    reads: 16, moved: [], verdictMoved: [], missing: [], policy: { pin: same, head: same },
   })
   assert.deepEqual([...LIVE_PATHS], ["registry.json", "site/catalog.json"], "the split is registry.mjs's list, not a second one")
 
@@ -98,26 +98,43 @@ test("scripts/ moved in a file omakit does not read: ok, and the detail says how
   assert.deepEqual(outside.evidence.moved, [])
 })
 
-test("a read file moved and both policy constants read the same: info, the files named, verdicts unchanged, nothing to do", () => {
-  const moved = pinFreshness(pinned, head, compared(["/scripts/"], { moved: ["scripts/github-repository.mjs", "scripts/submission.mjs"] }))
+test("only wording files moved: info, the files named as wording only, what omakit decides cannot differ, nothing to do", () => {
+  const moved = pinFreshness(pinned, head, compared(["/scripts/"], { moved: ["scripts/approve-submission.mjs", "scripts/submission-feedback.mjs"] }))
   assert.equal(moved.state, "info")
-  assert.equal(moved.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/github-repository.mjs and scripts/submission.mjs; baseline 3 (selective) at both")
-  assert.equal(moved.action, "Verdicts are unchanged, and a newer omakit will carry the pin; nothing to do.")
-  assert.deepEqual(moved.evidence.moved, ["scripts/github-repository.mjs", "scripts/submission.mjs"])
+  assert.equal(moved.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/approve-submission.mjs and scripts/submission-feedback.mjs (wording and labels only); baseline 3 (selective) at both")
+  assert.equal(moved.action, "Those files are read for wording and labels, not for a pass or a refusal; what omakit prints may differ at HEAD, what it decides cannot. A newer omakit will carry the pin; nothing to do.")
+  assert.deepEqual(moved.evidence.moved, ["scripts/approve-submission.mjs", "scripts/submission-feedback.mjs"])
+  assert.deepEqual(moved.evidence.verdictMoved, [])
   assert.deepEqual(moved.evidence.policy, { pin: same, head: same })
-  assert.doesNotMatch(`${moved.detail} ${moved.action}`, /issue|UPSTREAM_CONTRACT|parity|evidence/, "no issue to open, and the procedure stays the maintainer's")
+  assert.doesNotMatch(`${moved.detail} ${moved.action}`, /issue|UPSTREAM_CONTRACT|parity|evidence|verdicts are unchanged/i, "no issue to open, and no claim beyond what was measured")
 
-  // The policy module moved, and its constants at HEAD still read the same: info.
+  const one = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json"], { moved: ["scripts/security-baseline-report.mjs"] }))
+  assert.equal(one.state, "info")
+  assert.match(one.action, /^That file is read for wording and labels/)
+  assert.equal(one.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-report.mjs (wording and labels only); baseline 3 (selective) at both (registry.json moved too, and that is read live)")
+})
+
+test("a file omakit executes or reads a rule from moved: advice, even with both policy constants the same, since a rule can change without its version", () => {
+  // 40315f2 as measured: the policy module gained a function, its two
+  // constants unchanged. The baseline it exports may still differ.
   const policy = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json"], { moved: [POLICY_MODULE], policyAtHead: { ...same } }))
-  assert.equal(policy.state, "info")
+  assert.equal(policy.state, "advice")
   assert.equal(policy.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs; baseline 3 (selective) at both (registry.json moved too, and that is read live)")
+  assert.equal(policy.action, "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.")
+  assert.deepEqual(policy.evidence.verdictMoved, [POLICY_MODULE])
+
+  // A wording file and a parser moved together: the parser decides the grade.
+  const mixed = pinFreshness(pinned, head, compared(["/scripts/"], { moved: ["scripts/github-repository.mjs", "scripts/submission-feedback.mjs"] }))
+  assert.equal(mixed.state, "advice")
+  assert.equal(mixed.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/github-repository.mjs and scripts/submission-feedback.mjs; baseline 3 (selective) at both")
+  assert.deepEqual(mixed.evidence.verdictMoved, ["scripts/github-repository.mjs"])
 })
 
 test("a policy constant differs, a read file is gone, or the form moved: advice, and the action is upgrade or that the maintainer is notified", () => {
   const version = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [POLICY_MODULE], policyAtHead: { baselineVersion: "4", enforcementMode: "selective" } }))
   assert.equal(version.state, "advice")
   assert.equal(version.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs; baseline 3 (selective) at the pin, baseline 4 (selective) at HEAD")
-  assert.equal(version.action, "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin, and until then every verdict here is the pin's.")
+  assert.equal(version.action, "The maintainer is notified by the weekly pin-freshness run; a newer omakit will carry the pin. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.")
   assert.deepEqual(version.evidence.policy, { pin: same, head: { baselineVersion: "4", enforcementMode: "selective" } })
 
   const mode = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [POLICY_MODULE], policyAtHead: { baselineVersion: "3", enforcementMode: "strict" } }))
@@ -141,7 +158,7 @@ test("a policy constant differs, a read file is gone, or the form moved: advice,
   const upgrade = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json", "/site/catalog.json", "/.github/ISSUE_TEMPLATE/"], { moved: [POLICY_MODULE, "scripts/submission.mjs"], policyAtHead: { ...same } }), { upgrade: "omakit upgrade" })
   assert.equal(upgrade.state, "advice")
   assert.equal(upgrade.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs and scripts/submission.mjs; the form moved (.github/ISSUE_TEMPLATE/); baseline 3 (selective) at both (registry.json and site/catalog.json moved too, and those are read live)")
-  assert.equal(upgrade.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`.")
+  assert.equal(upgrade.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.")
   for (const check of [version, mode, gone, forms, upgrade]) {
     assert.doesNotMatch(`${check.detail} ${check.action}`, /open an issue|UPSTREAM_CONTRACT|parity|evidence/, "no issue to open: the weekly run opens the one there is")
   }
@@ -163,7 +180,7 @@ test("doctor passes the upgrade it found to pin.freshness, and HEAD unreadable s
   })).checks.find((entry) => entry.id === "pin.freshness")
   const newer = await freshness("9.9.9")
   assert.equal(newer.state, "advice")
-  assert.equal(newer.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`.")
+  assert.equal(newer.action, "A newer omakit is published and may carry the pin: run `omakit upgrade`. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.")
   const newest = await freshness(JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version)
   assert.equal(newest.state, "advice")
   assert.match(newest.action, /^The maintainer is notified by the weekly pin-freshness run/)

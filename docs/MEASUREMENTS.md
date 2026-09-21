@@ -379,6 +379,9 @@ commit's file list) against the read set `pinnedReadSet()` resolves at
 | Of those, touching a file in the read set | 2: 7dd6e56 (`submission.mjs`, and the form), 40315f2 (`security-baseline-policy.mjs` and `plugin-verification.mjs`, and the verify form) |
 | Of those, touching no file in the read set | 1: 5e401552 (`repository-identity.mjs` only) |
 | `securityBaselineVersion` and `securityBaselineEnforcementMode` at `38060f89`, `70dcc454`, `b7b29654` | `3`, `selective` at all three |
+| Of the 16 read files, ones omakit takes only wording or a label out of (`WORDING_READS`) | 4 (`security-baseline-report.mjs`, `submission-feedback.mjs`, `approve-submission.mjs`, `approve-plugin-update.mjs`); the other 12 are executed for an outcome or read for a rule, a limit, a constant or a parser |
+| How the three commits grade under the read-set comparison | 7dd6e56 `advice` (`submission.mjs` is a parser, and the form moved); 40315f2 `advice` (`security-baseline-policy.mjs` is executed, constants unchanged); 5e401552 `ok` |
+| Executed read files (13 of 16) carrying an import form the closure does not follow (dynamic `import()`, side-effect import, `require()`, `import.meta.resolve()`) | 0, held by `tests/unit/pin.test.mjs` at every pin |
 | Pin bumps since `38060f89` | 2 (`70dcc454`, `b7b29654`) |
 | Of those, made for a change outside the read set, with no verdict changed | 1 (`b7b29654`, for 5e401552) |
 | Graded by the blob comparison, with `b7b29654` as the pin and the earlier commit as HEAD | `38060f89`: `advice` (the forms moved; `submission.mjs` and the policy module moved, constants equal), 5 GETs; `70dcc454`: `ok` ("scripts/ moved in none of the 16 files omakit reads"), 4 GETs; HEAD `ff12983b` at 19:21 UTC: `ok` (only the two data files moved), 3 GETs |
