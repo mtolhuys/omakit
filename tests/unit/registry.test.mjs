@@ -14,7 +14,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import {
-  CATALOG_PATH, LIVE_PATHS, REGISTRY_PATH, RegistryError, idUniverse, listingOf, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail, sameRepository,
+  CATALOG_PATH, HEAD_TEXT_PATHS, LIVE_PATHS, REGISTRY_PATH, RegistryError, headTextUrl, idUniverse, listingOf, liveCacheDir, liveFileUrl, liveRegistry, registrySourceDetail, sameRepository,
 } from "../../tools/marketplace/registry.mjs"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
@@ -179,6 +179,20 @@ test("a live file is only ever one of the two data files, at a 40-character comm
     assert.throws(() => liveFileUrl(HEAD, code), (error) => error instanceof RegistryError && /never read from HEAD/.test(error.message), code)
   }
   assert.deepEqual([...LIVE_PATHS], ["registry.json", "site/catalog.json"])
+})
+
+test("the one text read from HEAD is the policy module, at a 40-character commit, for doctor's two constants and nothing else", () => {
+  // Measured on 2026-09-21 (M7): 40315f2 changed the policy module and
+  // left both constants as they were, and the pin moved for it. doctor
+  // reads the module's text at HEAD to compare the two constants; the
+  // builder holds it to that one path, and liveFileUrl still refuses it,
+  // so nothing reads it as data and nothing imports it.
+  assert.deepEqual([...HEAD_TEXT_PATHS], ["scripts/security-baseline-policy.mjs"])
+  assert.equal(headTextUrl(HEAD, "scripts/security-baseline-policy.mjs"), `${RAW}/${HEAD}/scripts/security-baseline-policy.mjs`)
+  assert.throws(() => headTextUrl("main", "scripts/security-baseline-policy.mjs"), (error) => error instanceof RegistryError && /40-character/.test(error.message))
+  for (const path of [REGISTRY_PATH, CATALOG_PATH, OFFICIAL_SUBMISSION_MODULE, "scripts/build-catalog.mjs"]) {
+    assert.throws(() => headTextUrl(HEAD, path), (error) => error instanceof RegistryError && /never read from HEAD as text/.test(error.message), path)
+  }
 })
 
 test("identity.available judges against HEAD's registry and names it; the pin's figures stay the pin's", async () => {

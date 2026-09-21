@@ -4,14 +4,15 @@
 //
 // It fetches only what omakit reads. The marketplace at this commit is 325 MB,
 // of which 168 MB is preview imagery and 151 MB is history, and omakit reads
-// seven files out of it. A blob-filtered, sparsely checked out fetch of just
-// those paths is 15 MB and takes 2 seconds instead of 17. PIN_PATHS below is the
-// whole list, and tests/unit/pin.test.mjs fails if any module starts reading a
-// path outside it, because on a partial clone such a read would quietly reach
-// for the network instead of failing.
+// twenty files out of it, sixteen of them under scripts/ (PIN_READS). A
+// blob-filtered, sparsely checked out fetch of just those paths is 15 MB and
+// takes 2 seconds instead of 17. PIN_PATHS below is the whole list, and
+// tests/unit/pin.test.mjs fails if any module starts reading a path outside
+// it, because on a partial clone such a read would quietly reach for the
+// network instead of failing.
 import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
+import { dirname, join, posix, resolve } from "node:path"
 import { omakitCacheDir } from "./paths.mjs"
 
 /** Raised for every way the pin can be missing or wrong; the code is what the CLI keys its remedy on. */
@@ -52,6 +53,93 @@ export const PIN_PATHS = Object.freeze([
   "/.github/ISSUE_TEMPLATE/",
 ])
 
+/** The policy module, read at the pin for its two constants (readPinIdentity) and at HEAD as text by doctor for the same two. */
+export const POLICY_MODULE = "scripts/security-baseline-policy.mjs"
+
+/**
+ * The files omakit opens under /scripts/, and how. PIN_PATHS fetches the
+ * directory whole because these import each other; this is what is opened
+ * out of it, so `omakit doctor` can tell a change to one of the 34 files
+ * there at the pin that omakit reads from a change to one it does not.
+ * Measured on 2026-09-21 (docs/MEASUREMENTS.md M7): of the three commits
+ * that touched scripts/ since the first pin 38060f89, one touched only
+ * `repository-identity.mjs`, a file omakit neither opens nor imports
+ * through anything it opens, and doctor called the pin behind for it.
+ *
+ * An `imported` file is executed, and what it imports is read with it:
+ * pinnedReadSet() follows the static imports. A file read as text is read
+ * alone, since a constant taken out of its text does not change when its
+ * imports do.
+ *
+ *   submission.mjs                   form.mjs, watch.mjs
+ *   plugin-verification-request.mjs  form.mjs, watch.mjs
+ *   security-baseline-scanner.mjs    run-baseline.mjs
+ *   security-baseline-policy.mjs     preflight.mjs, watch.mjs, review-cost.mjs;
+ *                                    as text here, for readPinIdentity
+ *   security-baseline-report.mjs     preflight.mjs
+ *   security-baseline-record.mjs     watch.mjs
+ *   submission-feedback.mjs          watch.mjs, and as text for its codes
+ *   build-catalog.mjs                registry.mjs, text: it imports sharp
+ *   approve-submission.mjs           watch.mjs, text: one label
+ *   approve-plugin-update.mjs        review-cost.mjs, text: one label
+ *
+ * tests/unit/pin.test.mjs derives this list from the sources and fails on
+ * a read that is not here, or one listed the wrong way round.
+ */
+export const PIN_READS = Object.freeze([
+  Object.freeze({ path: "scripts/submission.mjs", imported: true }),
+  Object.freeze({ path: "scripts/plugin-verification-request.mjs", imported: true }),
+  Object.freeze({ path: "scripts/security-baseline-scanner.mjs", imported: true }),
+  Object.freeze({ path: POLICY_MODULE, imported: true }),
+  Object.freeze({ path: "scripts/security-baseline-report.mjs", imported: true }),
+  Object.freeze({ path: "scripts/security-baseline-record.mjs", imported: true }),
+  Object.freeze({ path: "scripts/submission-feedback.mjs", imported: true }),
+  Object.freeze({ path: "scripts/build-catalog.mjs", imported: false }),
+  Object.freeze({ path: "scripts/approve-submission.mjs", imported: false }),
+  Object.freeze({ path: "scripts/approve-plugin-update.mjs", imported: false }),
+])
+
+/** A static import or re-export of a relative module: `import x from "./y.mjs"`, `export * from "./y.mjs"`, across lines. */
+const RELATIVE_IMPORT = /\bfrom\s+["'](\.\.?\/[^"']+)["']/g
+
+/**
+ * Every file omakit reads under /scripts/ at the checkout in `pinDir`:
+ * PIN_READS, plus, for each imported one, what it imports in turn, found
+ * by regex over `from "./x.mjs"` in the file's text and never by loading
+ * it. Paths relative to the checkout, sorted, each once, with `via` naming
+ * the file that imports it or null for one omakit opens itself. A
+ * specifier that leaves scripts/ (the marketplace's site/ assets) or names
+ * a package (`sharp`) is not followed: PIN_PATHS does not fetch it, so
+ * omakit could not read it. Measured at pin b7b29654: 16 of the 34 files
+ * under scripts/, 10 opened by omakit and 6 imported by those.
+ *
+ * @returns {{ path: string, imported: boolean, via: string|null }[]}
+ */
+export function pinnedReadSet(pinDir, reads = PIN_READS) {
+  const set = new Map()
+  const queue = []
+  for (const read of reads) {
+    set.set(read.path, { path: read.path, imported: read.imported, via: null })
+    if (read.imported) queue.push(read.path)
+  }
+  while (queue.length) {
+    const from = queue.shift()
+    let text
+    try {
+      text = readFileSync(join(pinDir, from), "utf8")
+    } catch (error) {
+      throw new PinError(`cannot read ${from} from the pinned checkout at ${pinDir}: ${error.message}`)
+    }
+    for (const match of text.matchAll(RELATIVE_IMPORT)) {
+      const path = posix.normalize(posix.join(posix.dirname(from), match[1]))
+      if (!path.startsWith("scripts/") || set.has(path)) continue
+      set.set(path, { path, imported: true, via: from })
+      queue.push(path)
+    }
+  }
+  return [...set.values()].sort((a, b) => a.path.localeCompare(b.path))
+}
+
 /**
  * The user-writable pin location: `$XDG_CACHE_HOME/omakit/marketplace`, or
  * `~/.cache/omakit/marketplace`. omakit reads no variable of its own; a test or
@@ -86,14 +174,27 @@ function git(dir, args, options = {}) {
   return execFileSync("git", ["-C", dir, ...args], { timeout: 300_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options })
 }
 
+/**
+ * The two policy constants out of the policy module's text, the way the
+ * pin's identity has always read them: `securityBaselineVersion` and
+ * `securityBaselineEnforcementMode`, or "unknown" where the text has no
+ * such line. Text in, two strings out; the module is not loaded, so the
+ * same read serves doctor for the module at HEAD.
+ */
+export function policyConstants(text) {
+  const source = String(text || "")
+  return {
+    baselineVersion: source.match(/securityBaselineVersion\s*=\s*"?([^";\s]+)"?/)?.[1] || "unknown",
+    enforcementMode: source.match(/securityBaselineEnforcementMode\s*=\s*"([^"]+)"/)?.[1] || "unknown",
+  }
+}
+
 /** Identity of the checkout at `dir`: commit plus the policy constants read from the pinned source. */
 function readPinIdentity(dir) {
   const commit = git(dir, ["rev-parse", "HEAD"]).trim()
-  const policy = git(dir, ["show", `${commit}:scripts/security-baseline-policy.mjs`])
-  const version = policy.match(/securityBaselineVersion\s*=\s*"?([^";\s]+)"?/)?.[1] || "unknown"
-  const mode = policy.match(/securityBaselineEnforcementMode\s*=\s*"([^"]+)"/)?.[1] || "unknown"
+  const { baselineVersion, enforcementMode } = policyConstants(git(dir, ["show", `${commit}:${POLICY_MODULE}`]))
   const dirty = git(dir, ["status", "--porcelain"]).trim().length > 0
-  return { commit, baselineVersion: version, enforcementMode: mode, dirty }
+  return { commit, baselineVersion, enforcementMode, dirty }
 }
 
 /**

@@ -26,7 +26,7 @@
 
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
-import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, POLICY_MODULE, requirePin } from "./pin.mjs"
 import { defaultBranchHead, getJson } from "./github.mjs"
 import { omakitCacheDir } from "./paths.mjs"
 
@@ -34,8 +34,16 @@ export const CATALOG_PATH = "site/catalog.json"
 export const REGISTRY_PATH = "registry.json"
 export const CATALOG_BUILDER_PATH = "scripts/build-catalog.mjs"
 
-/** The only two marketplace files ever read from HEAD. Everything else comes from the pin. */
+/** The only two marketplace files whose content omakit uses from HEAD. Everything else comes from the pin. */
 export const LIVE_PATHS = Object.freeze([REGISTRY_PATH, CATALOG_PATH])
+
+/**
+ * The one file read from HEAD as text and used for nothing: `omakit doctor`
+ * reads the policy module at HEAD to compare its two constants with the
+ * pin's (pin.mjs policyConstants) and drops the text. It is never imported,
+ * never cached and never a source of a rule; the rules stay the pin's.
+ */
+export const HEAD_TEXT_PATHS = Object.freeze([POLICY_MODULE])
 
 export class RegistryError extends Error {
   constructor(code, message) {
@@ -140,7 +148,9 @@ export function sameRepository(a, b) {
  * one explicit 40-character commit on the marketplace's raw file host. Never
  * a branch name, so the two files always come from the same commit and the
  * commit named in the output is the one they came from; never a path outside
- * LIVE_PATHS, so nothing executable can arrive this way.
+ * LIVE_PATHS, so nothing executable can arrive this way. (headTextUrl below
+ * reaches the same host for one module's text, which is compared and never
+ * run.)
  */
 export function liveFileUrl(commit, path) {
   if (!/^[0-9a-f]{40}$/.test(String(commit))) {
@@ -149,6 +159,27 @@ export function liveFileUrl(commit, path) {
   if (!LIVE_PATHS.includes(path)) {
     throw new RegistryError("usage", `${path} is never read from HEAD; only ${LIVE_PATHS.join(" and ")} are`)
   }
+  return rawFileUrl(commit, path)
+}
+
+/**
+ * The same URL shape for the one file doctor reads from HEAD as text:
+ * HEAD_TEXT_PATHS, at a 40-character commit, through the same host and the
+ * same GET call site. Its text is compared and dropped; `liveFileUrl` still
+ * refuses it, so nothing reads it as data.
+ */
+export function headTextUrl(commit, path) {
+  if (!/^[0-9a-f]{40}$/.test(String(commit))) {
+    throw new RegistryError("usage", `a marketplace file is read at a 40-character commit, not "${commit}"`)
+  }
+  if (!HEAD_TEXT_PATHS.includes(path)) {
+    throw new RegistryError("usage", `${path} is never read from HEAD as text; only ${HEAD_TEXT_PATHS.join(" and ")} ${HEAD_TEXT_PATHS.length === 1 ? "is" : "are"}`)
+  }
+  return rawFileUrl(commit, path)
+}
+
+/** The raw file host at one commit; the two builders above are its only callers, and each holds its own path list. */
+function rawFileUrl(commit, path) {
   const raw = MARKETPLACE_PIN.repository.replace(/^https:\/\/github\.com\//, "https://raw.githubusercontent.com/")
   return `${raw}/${commit}/${path}`
 }

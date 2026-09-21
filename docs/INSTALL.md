@@ -201,7 +201,8 @@ that:
   (`GH_TOKEN` and `GITHUB_TOKEN` are honoured by `gh` itself).
 - **Network.** GET only, from one call site, to four hosts: `api.github.com`,
   `github.com` (the public commit feed), `raw.githubusercontent.com` (two
-  registry files at an exact commit) and `registry.npmjs.org` (`upgrade`
+  registry files at an exact commit, and for `doctor` the policy module's
+  text at HEAD, compared and dropped) and `registry.npmjs.org` (`upgrade`
   and `doctor` asking for the newest version). The borrowed credential goes
   to `api.github.com` and nowhere else. `verify` on a local repository
   touches no network at all, proven by a run inside `unshare -rn`

@@ -198,11 +198,13 @@ test("there is exactly one HTTP call site, and it is the read-only one", () => {
 test("every request host is one of the four known ones, and the raw file host is reached only at an explicit commit", () => {
   // The GET-only guarantee says nothing about where a GET goes. Four hosts
   // are known: the API, github.com for the commit feed, the npm registry for
-  // `upgrade`, and raw.githubusercontent.com for the two live registry files.
-  // The last one is a file server: what it hands back at a branch name can
-  // change between two requests, so it may be addressed only through the one
-  // builder that refuses anything but a 40-character commit and anything but
-  // the two data files (tests/unit/registry.test.mjs proves both refusals).
+  // `upgrade`, and raw.githubusercontent.com for the two live registry files
+  // and doctor's one text read of the policy module. The last one is a file
+  // server: what it hands back at a branch name can change between two
+  // requests, so it may be addressed only through the two builders in
+  // registry.mjs, each of which refuses anything but a 40-character commit
+  // and anything but its own path list (tests/unit/registry.test.mjs proves
+  // the refusals).
   // The fifth is the Omarchy ISO origin, reached only by `omakit lab setup`
   // after one consent, for the pinned release, its checksum and its
   // signature, through the same GET call site and never with the credential.
@@ -217,7 +219,7 @@ test("every request host is one of the four known ones, and the raw file host is
     // local-transport.mjs also names the raw host: it answers the official
     // resolver's requests for it from a local clone, and never sends one.
     if (path !== "tools/marketplace/registry.mjs" && path !== "tools/marketplace/local-transport.mjs") {
-      assert.ok(!code.includes(RAW), `${path} names ${RAW}; only registry.mjs may request it, through liveFileUrl()`)
+      assert.ok(!code.includes(RAW), `${path} names ${RAW}; only registry.mjs may request it, through liveFileUrl() and headTextUrl()`)
     }
   }
   const registry = sources.find((source) => source.path === "tools/marketplace/registry.mjs")

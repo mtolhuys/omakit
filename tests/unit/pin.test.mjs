@@ -11,7 +11,7 @@ import assert from "node:assert/strict"
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, relative } from "node:path"
-import { ensurePin, PIN_PATHS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { ensurePin, PIN_PATHS, PIN_READS, POLICY_MODULE, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, pinnedReadSet, policyConstants, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { spawn, spawnSync } from "node:child_process"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
@@ -49,6 +49,128 @@ test("no source file reads a pinned path that the sparse set misses", () => {
       assert.ok(covered(match[1]), `${path} reads ${match[1]} from the pin, which PIN_PATHS does not fetch`)
     }
   }
+})
+
+// --- the read set ---------------------------------------------------------------
+// PIN_PATHS fetches scripts/ whole; PIN_READS says which files in it omakit
+// opens, and how, so `omakit doctor` can compare those blobs against HEAD
+// instead of the directory's tree id. Measured on 2026-09-21 (M7): of the
+// three marketplace commits that touched scripts/ since the first pin,
+// one changed only repository-identity.mjs, which nothing here reaches,
+// and the tree comparison graded it advice. The list is derived from the
+// sources here, so a new read is a visible diff in PIN_READS, and the
+// resolved set at this pin is pinned below, so a new import upstream is a
+// visible diff after a pin bump.
+
+/** Every scripts/ file the sources open out of the pin, and whether any opens it with import(). */
+function readsInSources() {
+  const sources = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if ([".git", ".cache", "node_modules"].includes(entry.name)) continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (entry.name.endsWith(".mjs")) sources.push({ path: relative(REPO_ROOT, path), text: readFileSync(path, "utf8") })
+    }
+  }
+  walk(join(REPO_ROOT, "tools"))
+  const constants = new Map()
+  for (const { text } of sources) {
+    for (const match of text.matchAll(/^(?:export )?const ([A-Z_]+) = "(scripts\/[^"]+)"/gm)) constants.set(match[1], match[2])
+  }
+  const reads = new Map()
+  const note = (path, imported) => reads.set(path, Boolean(reads.get(path)) || imported)
+  for (const { text } of sources) {
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    for (const line of code.split("\n")) {
+      // A path handed to join() as a literal or a constant, or a git object
+      // named as `<commit>:scripts/...` in a template.
+      const named = [
+        ...[...line.matchAll(/join\(\s*[\w.]+\s*,\s*"(scripts\/[^"]+)"\s*\)/g)].map((match) => match[1]),
+        ...[...line.matchAll(/join\(\s*[\w.]+\s*,\s*([A-Z_]+)\s*\)/g)].map((match) => constants.get(match[1])).filter(Boolean),
+        ...[...line.matchAll(/:(scripts\/[\w./-]+)`/g)].map((match) => match[1]),
+        ...[...line.matchAll(/:\$\{([A-Z_]+)\}`/g)].map((match) => constants.get(match[1])).filter(Boolean),
+      ]
+      if (!named.length) continue
+      // Opened with import() on this line, or assigned to a name that a
+      // later import() takes; anything else is a text read.
+      const assigned = line.match(/^\s*const (\w+) = /)?.[1]
+      const imported = /\bimport\(/.test(line) || Boolean(assigned && new RegExp(`import\\((?:pathToFileURL\\()?${assigned}\\b`).test(code))
+      for (const path of named) note(path, imported)
+    }
+  }
+  return reads
+}
+
+test("PIN_READS is what the sources open out of scripts/, each the way it is opened", () => {
+  const derived = readsInSources()
+  const listed = new Map(PIN_READS.map((read) => [read.path, read.imported]))
+  assert.deepEqual([...derived.keys()].sort(), [...listed.keys()].sort(), "a scripts/ file the sources open is in PIN_READS, and nothing else is")
+  for (const [path, imported] of derived) {
+    assert.equal(listed.get(path), imported, `${path} is ${imported ? "imported" : "read as text"} by the sources and listed the other way`)
+  }
+  assert.equal(listed.get(POLICY_MODULE), true, "the policy module is imported, and its constants are read from its text")
+  assert.equal(derived.size, 10, "ten files opened by omakit at this pin")
+})
+
+test("pinnedReadSet at this pin is exactly these files: a new read or a new upstream import is a visible diff here", () => {
+  const dir = requirePinForTests()
+  const set = pinnedReadSet(dir)
+  assert.deepEqual(set, [
+    { path: "scripts/approve-plugin-update.mjs", imported: false, via: null },
+    { path: "scripts/approve-submission.mjs", imported: false, via: null },
+    { path: "scripts/build-catalog.mjs", imported: false, via: null },
+    { path: "scripts/github-repository.mjs", imported: true, via: "scripts/submission.mjs" },
+    { path: "scripts/plugin-verification-request.mjs", imported: true, via: null },
+    { path: "scripts/security-baseline-analysis.mjs", imported: true, via: "scripts/security-baseline-scanner.mjs" },
+    { path: "scripts/security-baseline-error.mjs", imported: true, via: "scripts/security-baseline-scanner.mjs" },
+    { path: "scripts/security-baseline-limits.mjs", imported: true, via: "scripts/security-baseline-analysis.mjs" },
+    { path: "scripts/security-baseline-policy.mjs", imported: true, via: null },
+    { path: "scripts/security-baseline-record.mjs", imported: true, via: null },
+    { path: "scripts/security-baseline-report.mjs", imported: true, via: null },
+    { path: "scripts/security-baseline-scanner.mjs", imported: true, via: null },
+    { path: "scripts/security-baseline-scope.mjs", imported: true, via: "scripts/security-baseline-scanner.mjs" },
+    { path: "scripts/security-github-snapshot.mjs", imported: true, via: "scripts/security-baseline-analysis.mjs" },
+    { path: "scripts/submission-feedback.mjs", imported: true, via: null },
+    { path: "scripts/submission.mjs", imported: true, via: null },
+  ])
+  assert.equal(set.length, 16, "16 of the 34 files under scripts/ at pin b7b29654")
+  assert.equal(readdirSync(join(dir, "scripts")).filter((name) => name.endsWith(".mjs")).length, 34)
+  assert.ok(set.every((read) => covered(read.path)), "every one is inside the sparse set")
+  assert.ok(!set.some((read) => read.path === "scripts/repository-identity.mjs"), "5e401552 changed a file nothing here reaches")
+})
+
+test("pinnedReadSet follows `from` specifiers by text, inside scripts/ only, and never loads a module", () => {
+  const root = mkdtempSync(join(tmpdir(), "omakit-read-set-"))
+  try {
+    mkdirSync(join(root, "scripts"))
+    // a imports b and re-exports c, names a package and a file outside
+    // scripts/, and would throw if it were ever loaded; b and c import each
+    // other; t is read as text and its own import is not followed.
+    writeFileSync(join(root, "scripts/a.mjs"), 'import { b } from "./b.mjs"\nexport * from "./c.mjs"\nimport sharp from "sharp"\nimport { t } from "../site/assets/js/taxonomy.js"\nthrow new Error("loaded")\n')
+    writeFileSync(join(root, "scripts/b.mjs"), "import { c } from './c.mjs'\nexport const b = 1\n")
+    writeFileSync(join(root, "scripts/c.mjs"), 'import {\n  b,\n} from "./b.mjs"\nexport const c = 1\n')
+    writeFileSync(join(root, "scripts/t.mjs"), 'import { d } from "./d.mjs"\nexport const label = "x"\n')
+    const reads = [{ path: "scripts/a.mjs", imported: true }, { path: "scripts/t.mjs", imported: false }]
+    assert.deepEqual(pinnedReadSet(root, reads), [
+      { path: "scripts/a.mjs", imported: true, via: null },
+      { path: "scripts/b.mjs", imported: true, via: "scripts/a.mjs" },
+      { path: "scripts/c.mjs", imported: true, via: "scripts/a.mjs" },
+      { path: "scripts/t.mjs", imported: false, via: null },
+    ])
+    assert.throws(() => pinnedReadSet(root, [{ path: "scripts/missing.mjs", imported: true }]), (error) => error.name === "PinError" && /cannot read scripts\/missing\.mjs/.test(error.message))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("the two policy constants are read out of text, the same way for the pin and for HEAD", () => {
+  const dir = requirePinForTests()
+  const atPin = policyConstants(readFileSync(join(dir, POLICY_MODULE), "utf8"))
+  assert.deepEqual(atPin, { baselineVersion: MARKETPLACE_PIN.baselineVersion, enforcementMode: MARKETPLACE_PIN.enforcementMode })
+  assert.deepEqual(policyConstants('export const securityBaselineVersion = 4;\nexport const securityBaselineEnforcementMode = "strict";'), { baselineVersion: "4", enforcementMode: "strict" })
+  assert.deepEqual(policyConstants("nothing here"), { baselineVersion: "unknown", enforcementMode: "unknown" })
+  assert.deepEqual(policyConstants(null), { baselineVersion: "unknown", enforcementMode: "unknown" })
 })
 
 test("the sparse set is minimal: nothing in it is unused", () => {
