@@ -19,7 +19,7 @@
 
 import { colourEnabled, field, GUTTER, INSPECT_VERDICT, mark, outputColumns, styler, verdict, wrap } from "../marketplace/style.mjs"
 import { withHomeAbbreviated } from "../marketplace/paths.mjs"
-import { PATTERNS, SIZE } from "./patterns.mjs"
+import { boundaryWrites, PATTERNS, SIZE } from "./patterns.mjs"
 
 const NOTHING = "observed nothing of this kind"
 
@@ -209,7 +209,7 @@ function commandLine(process) {
 }
 
 /**
- * The fact at a site, in one line: the write there for the file class, the
+ * The fact at a site, in one line: the write the file class cited there, the
  * host there for the egress class, otherwise the command, then the host,
  * then the write, whichever the site has.
  */
@@ -224,7 +224,9 @@ function factAt(document, at, patternId) {
     return row ? `${row.scheme}://${row.host}${row.tool ? ` via ${row.tool}` : ""}` : ""
   }
   const write = () => {
-    const row = document.observed.writes.find(same)
+    // On a line with two writes, the one the file class cited, not the first.
+    const here = document.observed.writes.filter(same)
+    const row = (patternId === "file-and-state-boundary" ? Object.values(boundaryWrites(here)).flat()[0] : null) ?? here[0]
     return row ? `${row.via} ${row.canonicalPath ?? row.path}` : ""
   }
   const order = patternId === "file-and-state-boundary" ? [write, process, host] : patternId === "network-egress" ? [host, process, write] : [process, host, write]

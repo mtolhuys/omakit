@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.6.8 (unreleased)
+
+`omakit inspect`'s file and state boundary class cites a copy to a
+variable destination. Theme Manager was blocked twice in one review thread
+for `cp "$src" "$dest"` onto a destination the script is handed
+(`install-wallpaper.sh`, 2026-09-11; `install-hook.sh`, 2026-09-22), and
+the class cited neither copy: the extraction gave `$dest` as `unknown`,
+the word for a path it cannot place, and the class admits only
+`not-observed`. A write's `controlledDirectory` now has a fourth value,
+`variable`, for a canonical path that is one variable and nothing else
+(`$dest`, `$2`, `$target/`) and not `$HOME` or an XDG name; any other
+path it cannot place, `$dir/name` included, stays `unknown`. The class
+admits a `variable` row written by `cp`, `mv`, `install` or `ln`, the
+four whose file a planted link redirects (measured on coreutils 9.11:
+`cp` writes through a link to a file, all four write into a linked
+directory), and says it as "N writes by cp to a variable destination, not
+resolvable to a controlled directory", nothing about who set the
+variable. Redirects and `tee` onto a variable are left out, measured
+(`docs/MEASUREMENTS.md` M11, with a record): over 15 plugin trees, 28
+writes by the four verbs against 61 redirects and tees, 24 of them log
+appends; the class's count goes from 96 to 124. At `e05f78f` Theme
+Manager's goes from 7 to 9 with `install-hook.sh:24` among them, and at
+the wallpaper blocker's tree from 4 to 6 with `install-wallpaper.sh:83`.
+On a line with two writes (`printf ... > "$f.tmp" && mv "$f.tmp" "$f"`)
+the default view shows the write the class cited, not the first one. For
+the four verbs, `-t` and `--target-directory` now read that directory as
+the destination; before, the last source was taken for it. `--json`
+consumers that switch on `controlledDirectory` see the new value; the
+contract in `tools/inspect/contract.mjs` holds it to a path of that shape.
+The share and every other figure are unchanged.
+
 ## 0.6.7
 
 `pin.freshness` in `omakit doctor` compares what omakit reads, and grades

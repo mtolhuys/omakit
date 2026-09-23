@@ -56,15 +56,32 @@ function pathResolved(process) {
  * one of them whose destination is one variable (`cp "$src" "$dest"`) is
  * the shape of both file-boundary blockers in one review thread,
  * `install-wallpaper.sh` (`cp -f`, 2026-09-11) and `install-hook.sh`
- * (`cp`, 2026-09-22), and the class matched neither: the path was
- * `unknown`, with 52 of that tree's 54 writes. A redirect or `tee` onto a
- * variable is left out, measured over 15 plugin trees on 2026-09-23: 28
- * writes by these four verbs to a variable, against 61 redirects and tees,
- * 24 of them `>>` appends to a log (docs/MEASUREMENTS.md, M11).
+ * (`cp`, 2026-09-22), and the class cited neither copy: the path was
+ * `unknown`, with 52 of that tree's 54 writes. A link planted at the
+ * destination picks where the file lands for all four, measured on GNU
+ * coreutils 9.11: `cp` writes through a link to a file, and all four put
+ * the file inside a linked directory. A redirect or `tee` onto a variable
+ * is left out, measured over 15 plugin trees on 2026-09-23: 28 writes by
+ * these four verbs to a variable, against 61 redirects and tees, 24 of
+ * them `>>` appends to a log (docs/MEASUREMENTS.md, M11).
  */
 const PLACING = new Set(["cp", "mv", "install", "ln"])
 
-/** Words as a list a person reads: "cp", "cp and ln", "cp, ln and mv". */
+/**
+ * The writes the file and state boundary class cites, by what it cites
+ * them for. Each test reads one row alone, so the report can ask it of the
+ * rows at one site and show the write the class cited there, not another
+ * write on the same line (`printf ... > "$f.tmp" && mv "$f.tmp" "$f"`).
+ */
+export function boundaryWrites(writes) {
+  return {
+    outside: writes.filter((row) => row.controlledDirectory === "not-observed" && row.via !== "mktemp"),
+    placed: writes.filter((row) => row.controlledDirectory === "variable" && PLACING.has(row.via)),
+    unmoded: writes.filter((row) => row.via === "mkdir" && row.mode === null),
+  }
+}
+
+/** Words as a list a person reads, in the order given: "cp", "cp and ln", "mv, cp and ln". */
 const listed = (words) => (words.length > 1 ? `${words.slice(0, -1).join(", ")} and ${words.at(-1)}` : words[0])
 
 const SECRET = /authorization|bearer|token=|api[_-]?key|password|secret=/i
@@ -231,9 +248,7 @@ export const PATTERNS = Object.freeze([
     share: 0.15,
     sample: SAMPLE,
     precondition: ({ writes }) => {
-      const outside = writes.filter((row) => row.controlledDirectory === "not-observed" && row.via !== "mktemp")
-      const placed = writes.filter((row) => row.controlledDirectory === "variable" && PLACING.has(row.via))
-      const unmoded = writes.filter((row) => row.via === "mkdir" && row.mode === null)
+      const { outside, placed, unmoded } = boundaryWrites(writes)
       const parts = []
       if (outside.length) parts.push(`${plural(outside.length, "write")} outside a controlled directory (${sites(outside)})`)
       if (placed.length) parts.push(`${plural(placed.length, "write")} by ${listed([...new Set(placed.map((row) => row.via))])} to a variable destination, not resolvable to a controlled directory (${sites(placed)})`)

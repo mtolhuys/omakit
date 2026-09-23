@@ -164,4 +164,8 @@ that asked for each are in `docs/BLOCKS.md`; the ones that shape the call:
 `omakit inspect` lists an unmodified store block as one row and each
 `Store {}` site as a write under a directory the plugin controls at mode
 0600; a `FileView` write or a shell redirect that remains names a site
-that still keeps state on its own.
+that still keeps state on its own. A `cp`, `mv`, `install` or `ln` to a
+variable destination is not state Store keeps: the file goes wherever
+the variable points (a hook, a wallpaper), and no block covers that yet;
+the review's requirements for the class are in `docs/MEASUREMENTS.md`
+(M11).

@@ -82,8 +82,11 @@ calls; in shell, `>`, `>>`, `tee`, `cp`, `mv`, `mkdir`, `mktemp`, `install`,
 `touch` with the following path; in JS, `writeFile`, `writeFileSync`,
 `appendFile`. Controlled directory: the path's literal prefix, after
 expanding `$HOME`/`~` and the `XDG_*` names, is compared with the four
-prefixes in `docs/INSPECT.md`; a path that starts with a variable is
-`unknown`; `/tmp`, `/var/tmp`, `/dev/shm` are `not-observed`. Mode:
+prefixes in `docs/INSPECT.md`; a path that is one variable and nothing
+else (`$dest`, `$2`, `$target/`) is `variable`, and one that only starts
+with a variable (`$dir/name`) is `unknown`; `/tmp`, `/var/tmp`, `/dev/shm`
+are `not-observed`. For `cp`, `mv`, `install` and `ln` the destination is
+the last operand, or the directory `-t`/`--target-directory` names. Mode:
 `-m`/`--mode` on `mkdir`/`install`, `chmod` on the same path within the file,
 `umask` in the file.
 

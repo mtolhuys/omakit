@@ -86,7 +86,7 @@ function write(row, at, problems) {
   if (!CONTROLLED.has(row.controlledDirectory)) problems.push(`${at}.controlledDirectory is not observed, not-observed, variable or unknown`)
   if ((row.controlledDirectory === "observed") !== isString(row.controlledBy)) problems.push(`${at}.controlledBy names a directory exactly when controlledDirectory is observed`)
   if (row.canonicalPath === null && row.controlledDirectory !== "unknown") problems.push(`${at}.controlledDirectory is decided for a path that could not be read`)
-  if (row.controlledDirectory === "variable" && !/^\$(?:[A-Za-z_]\w*|\d)\/?$/.test(row.canonicalPath ?? "")) problems.push(`${at}.controlledDirectory is variable for a path that is not one variable`)
+  if (row.controlledDirectory === "variable" && (!/^\$(?:[A-Za-z_]\w*|\d)\/?$/.test(row.canonicalPath ?? "") || /^\$(?:HOME|XDG_)/.test(row.canonicalPath))) problems.push(`${at}.controlledDirectory is variable for a path that is not one variable other than $HOME and the XDG names`)
   if (!isBool(row.temp)) problems.push(`${at}.temp is not a boolean`)
   if (!nullOr(isString)(row.mode)) problems.push(`${at}.mode is neither a string nor null`)
   if ((row.via === "block-store") !== (row.block === "store")) problems.push(`${at}.via block-store and block: "store" go together`)

@@ -389,8 +389,10 @@ canonicalPath     string | null   the path's literal prefix after `~`, `$HOME`, 
                   Quickshell.env("X") are read as the XDG names; null when it starts with an expression
 controlledDirectory  "observed" | "not-observed" | "variable" | "unknown"
                   variable: the canonical path is one variable and nothing else ($dest, $2,
-                  $target/), not $HOME or an XDG name, so the directory is decided at run time;
-                  unknown: the path could not be read
+                  $target/), not $HOME or an XDG name; the extraction follows no assignment,
+                  so the write names no directory. unknown: any other path the classification
+                  cannot place, an expression (canonicalPath null), a relative path, or a path
+                  under a variable ($dir/name)
 controlledBy      the controlled prefix the path is under, when observed; otherwise null
 temp              boolean   under /tmp, /var/tmp or /dev/shm
 mode              string | null   -m on mkdir or install, mktemp's own mode, `chmod N` on the same path

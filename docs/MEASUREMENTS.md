@@ -1030,36 +1030,60 @@ script is handed: `install-wallpaper.sh` (`cp -f "$src" "$dest"`, blocked
 2026-09-11, the tree at the parent of its fix `07fcb00`) and
 `install-hook.sh` (`cp "$src" "$dest"`, blocked 2026-09-22 at `e05f78f`). A
 symlink planted at `$dest` sends the copy wherever it points. The class
-matched neither. The extraction read the line and gave the path as
+cited neither copy. The extraction read the line and gave the path as
 `unknown`, the same word it uses for a path it could not read at all, and
 the class admitted only `not-observed`: at `e05f78f` 52 of the 54 writes
 were `unknown`, and the class printed 7 `mkdir`s with no mode, none of them
-the blocked line.
+the blocked line; at the parent of `07fcb00` it printed 4, one of them
+`install-wallpaper.sh:78`, the `mkdir` five lines above the blocked copy.
 
 A path that is one variable and nothing else (`$dest`, `$2`, `$target/`)
 now reads `variable`, and the class admits it for `cp`, `mv`, `install`
-and `ln`, the verbs both blockers used. Redirects and `tee` onto a
-variable are left out, measured over the 15 plugin trees with a manifest
-on the author's desktop on 2026-09-23: of 661 writes, 632
-were `unknown` before; 120 of those read `variable` now. 28 of them are
-`cp`, `mv`, `install` or `ln` (26 sites, 6 trees), and 61 are redirects or
-`tee`, 24 of them `>>` appends to a log. Across the 15 trees the class goes
-from 96 sites to 124. At `e05f78f` it goes from 7 to 9, with
-`install-hook.sh:24` among them, and at the parent of `07fcb00` from 4 to
-6, with `install-wallpaper.sh:83` among them.
+and `ln`. Both blockers were `cp`; the other three are admitted because a
+link planted at the destination picks where their file lands too,
+measured on GNU coreutils 9.11 against a link to a file and a link to a
+directory: `cp` and `cp -f` write through the link to a file, `mv`,
+`install` and `ln` replace it, and all four put the file inside the
+linked directory. A redirect and `tee` write through a link to a file
+too, and are left out for their count, measured over the 15 plugin trees
+with a manifest on the author's desktop on 2026-09-23
+([record](evidence/inspect/2026-09-23-variable-destination.json), counts
+only, no tree named): of 661 writes, 632 were `unknown` before; 120 of
+those read `variable` now. 28 of them are `cp`, `mv`, `install` or `ln`,
+on 26 lines in 6 trees, and 61 are redirects or `tee`, 24 of them `>>`
+appends to a log. Across the 15 trees the class's count goes from 96 to
+124. At `e05f78f` it goes from 7 to 9, with `install-hook.sh:24` among
+them, and at the parent of `07fcb00` from 4 to 6, with
+`install-wallpaper.sh:83` among them.
 
 Limits, stated. `variable` says only that the text names no directory.
-Read by hand from the nearest assignment above each line, of the 28, 4
-take the destination from a positional parameter, 5 from `mktemp`, 16 from
-another assignment in the same file and 3 from none the file shows; the
-extraction follows no assignment, and the observation says "not
-resolvable to a controlled directory" and nothing about who set the
-variable. The earlier blocker's own `dest=$theme_dir/$base` is one of the
-in-file kind, so a rule for positional parameters alone would have missed
-it. Left out on
+Found by a regular expression for the nearest assignment above each line
+and checked by eye, of the 28, 4 take the destination from a positional
+parameter, 5 from `mktemp`, 16 from another assignment in the same file
+and 3 from none the file shows; the extraction follows no assignment, and
+the observation says "not resolvable to a controlled directory" and
+nothing about who set the variable. The earlier blocker's own
+`dest=$theme_dir/$base` is assigned in its file the same way, so a rule
+for positional parameters alone would have missed it. Left out on
 purpose: `apply-icons.sh:24` at `e05f78f`, `> "$state"` with
-`state=${2:-}`, the same shape as the blocked copy but through a redirect.
-The share stays M11's; this entry measures the precondition, not the class.
+`state=${2:-}`, the same shape as the blocked copy but through a
+redirect; and 60 writes by the same four verbs to a path under a variable
+(`cp "$src" "$dir/name"`), which a planted symlink redirects just the
+same and which stay `unknown`, because admitting them would more than
+triple what the class adds. Over the same 15 trees, of the 98 commands by
+the four verbs: none goes to one expansion with an operator (`${dest:?}`,
+`${2:-}`), the form the `variable` shape does not read; none uses `-t`
+or `--target-directory`, whose directory the extraction now reads as the
+destination (before, it took the last source); 8 are `ln -sfn`, which the
+same probe shows a planted link does not redirect (nor `mv -T`, `install
+-T` or `ln -T`; `cp -T` still writes through a link to a file), and none
+of the 8 goes to one variable, so the class cites none; and 7 get no
+write row at all, older gaps in the write extraction: 4 sit behind a
+keyword or a wrapper (`command cp`, `do cp`; `if ! cp` and `sudo cp` are
+missed the same way), and 3 are `install -d` with one directory. None of
+the 7 goes to one variable, so 28 is the whole count here and not a
+floor. The share stays
+M11's; this entry measures the precondition, not the class.
 
 ## M12. How long a plugin's functions are, in listed trees
 

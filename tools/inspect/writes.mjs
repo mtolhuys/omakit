@@ -5,8 +5,9 @@
 // after the `$HOME`, `~` and `XDG_*` idioms are expanded, falls under a
 // directory the plugin controls, and which mode the file shows for it. A
 // path that is one variable and nothing else (`$dest`, `$2`, `$target/`)
-// is said apart from one the text cannot read: its directory is decided
-// at run time, by whatever set the variable.
+// is said apart from any other path the classification cannot place: the
+// write names no directory, and the extraction follows no assignment to
+// find one.
 
 import { basename, blankComments, blocks, closingBracket, lineOf, propertyValue, blankShellExpressions, shellLogicalLines, shellPieces, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
 
@@ -52,8 +53,9 @@ export function canonicalPath(raw) {
 /**
  * Whether a canonical path is under a directory the plugin controls:
  * `variable` when the path is one variable other than `$HOME` and the XDG
- * names, so no directory is written in the text; `unknown` when the path
- * could not be read at all.
+ * names, so the write names no directory; `unknown` for any other path it
+ * cannot place, an expression, a relative path or a path under a variable
+ * (`$dir/name`).
  * @returns {{ controlledDirectory: "observed"|"not-observed"|"variable"|"unknown", controlledBy: string|null, temp: boolean }}
  */
 export function classifyPath(path, pluginId) {
@@ -135,21 +137,31 @@ function pythonWrites(file, pluginId) {
   return rows
 }
 
-/** The words that are not options, and the value of `-m`/`--mode` when one is given. */
-function operands(all) {
+/**
+ * The words that are not options, the value of `-m`/`--mode` when one is
+ * given, and, with `targets`, of `-t`/`--target-directory`: for `cp`, `mv`,
+ * `install` and `ln` that directory is the destination, and every operand
+ * a source.
+ */
+function operands(all, { targets = false } = {}) {
   const words = withoutRedirections(all)
   const out = []
   let mode = null
+  let target = null
   for (let index = 1; index < words.length; index += 1) {
     const word = words[index]
     if (word === "-m" || word === "--mode") {
       mode = words[index + 1] ?? null
       index += 1
     } else if (word.startsWith("--mode=")) mode = word.slice("--mode=".length)
+    else if (targets && (word === "-t" || word === "--target-directory")) {
+      target = words[index + 1] ?? null
+      index += 1
+    } else if (targets && word.startsWith("--target-directory=")) target = word.slice("--target-directory=".length)
     else if (word.startsWith("-") && word !== "-") continue
     else out.push(word)
   }
-  return { operands: out, mode }
+  return { operands: out, mode, target }
 }
 
 function shellWrites(file, pluginId) {
@@ -188,8 +200,9 @@ function shellWrites(file, pluginId) {
         const { operands: paths, mode } = operands(words)
         for (const path of paths) rows.push(row(file, line, path, command, pluginId, mode))
       } else if (["cp", "mv", "install", "ln"].includes(command)) {
-        const { operands: paths, mode } = operands(words)
-        if (paths.length >= 2) rows.push(row(file, line, paths[paths.length - 1], command, pluginId, mode))
+        const { operands: paths, mode, target } = operands(words, { targets: true })
+        if (target !== null && paths.length >= 1) rows.push(row(file, line, target, command, pluginId, mode))
+        else if (paths.length >= 2) rows.push(row(file, line, paths[paths.length - 1], command, pluginId, mode))
       } else if (command === "mktemp") {
         const { operands: paths } = operands(words)
         const template = paths[0] || (words.includes("-p") ? `${words[words.indexOf("-p") + 1]}/tmp.XXXXXX` : "/tmp/tmp.XXXXXX")

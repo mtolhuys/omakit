@@ -1,0 +1,326 @@
+{
+  "measurement": "M11",
+  "date": "2026-09-23",
+  "command": "node bin/omakit inspect <dir> --json --offline --allow-dirty, once at main 5dd9db1 (before) and once with the variable state (after)",
+  "method": "The file-and-state-boundary precondition, before and after controlledDirectory gained variable and the class began admitting it for cp, mv, install and ln. Counts of what the extraction saw, not of what the plugins do. variablePlacing is what the class now admits; variableRedirectOrTee is what it leaves out; placingUnderVariable is a cp, mv, install or ln to a path under a variable ($dir/name), which stays unknown and is not admitted.",
+  "sample": {
+    "plugins": 15,
+    "selection": "every directory under the author's ~/Projects/plugins with a manifest.json at its root, as checked out on 2026-09-23; ten more directories there have no manifest and are not plugins",
+    "identification": "rows carry no repository or commit and are ordered by write count; per-tree observations about named third-party plugins are not published as a list"
+  },
+  "totals": {
+    "writes": 661,
+    "unknownBefore": 632,
+    "unknownAfter": 512,
+    "variable": 120,
+    "variablePlacing": 28,
+    "variablePlacingSites": 26,
+    "variableRedirectOrTee": 61,
+    "variableAppend": 24,
+    "placingUnderVariable": 60,
+    "classSitesBefore": 96,
+    "classSitesAfter": 124,
+    "treesWithVariablePlacing": 6
+  },
+  "admittedOrigin": {
+    "method": "the nearest assignment of the variable above each admitted line in the same file, found by a regular expression and checked by eye; the extraction itself follows no assignment",
+    "positionalParameter": 4,
+    "mktemp": 5,
+    "otherAssignmentInFile": 16,
+    "noAssignmentShown": 3
+  },
+  "blockers": {
+    "plugin": "Theme Manager, the author's own (github.com/mtolhuys/omarchy-theme-manager)",
+    "rows": [
+      {
+        "commit": "e05f78f",
+        "blocked": "2026-09-22",
+        "site": "install-hook.sh:24",
+        "verb": "cp",
+        "writes": 54,
+        "unknownBefore": 52,
+        "unknownAfter": 40,
+        "variable": 12,
+        "classSitesBefore": 7,
+        "classSitesAfter": 9,
+        "citedBefore": false,
+        "citedAfter": true
+      },
+      {
+        "commit": "47d9c22",
+        "parentOf": "07fcb00",
+        "blocked": "2026-09-11",
+        "site": "install-wallpaper.sh:83",
+        "verb": "cp -f",
+        "classSitesBefore": 4,
+        "classSitesAfter": 6,
+        "citedBefore": false,
+        "citedAfter": true
+      }
+    ],
+    "notAdmitted": "apply-icons.sh:24 at e05f78f, a redirect to a variable assigned from the second positional parameter: the blocked shape through a redirect"
+  },
+  "rows": [
+    {
+      "row": 1,
+      "writes": 276,
+      "unknownBefore": 267,
+      "unknownAfter": 207,
+      "variable": 60,
+      "variablePlacing": 15,
+      "variablePlacingSites": 13,
+      "variableRedirectOrTee": 36,
+      "variableAppend": 19,
+      "placingUnderVariable": 24,
+      "classSitesBefore": 47,
+      "classSitesAfter": 62
+    },
+    {
+      "row": 2,
+      "writes": 114,
+      "unknownBefore": 108,
+      "unknownAfter": 108,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 2,
+      "classSitesBefore": 4,
+      "classSitesAfter": 4
+    },
+    {
+      "row": 3,
+      "writes": 86,
+      "unknownBefore": 86,
+      "unknownAfter": 62,
+      "variable": 24,
+      "variablePlacing": 3,
+      "variablePlacingSites": 3,
+      "variableRedirectOrTee": 14,
+      "variableAppend": 4,
+      "placingUnderVariable": 10,
+      "classSitesBefore": 22,
+      "classSitesAfter": 25
+    },
+    {
+      "row": 4,
+      "writes": 56,
+      "unknownBefore": 54,
+      "unknownAfter": 43,
+      "variable": 11,
+      "variablePlacing": 1,
+      "variablePlacingSites": 1,
+      "variableRedirectOrTee": 4,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 7,
+      "classSitesAfter": 8
+    },
+    {
+      "row": 5,
+      "writes": 31,
+      "unknownBefore": 28,
+      "unknownAfter": 18,
+      "variable": 10,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 4,
+      "variableAppend": 1,
+      "placingUnderVariable": 2,
+      "classSitesBefore": 7,
+      "classSitesAfter": 7
+    },
+    {
+      "row": 6,
+      "writes": 27,
+      "unknownBefore": 27,
+      "unknownAfter": 27,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    },
+    {
+      "row": 7,
+      "writes": 22,
+      "unknownBefore": 19,
+      "unknownAfter": 12,
+      "variable": 7,
+      "variablePlacing": 4,
+      "variablePlacingSites": 4,
+      "variableRedirectOrTee": 2,
+      "variableAppend": 0,
+      "placingUnderVariable": 1,
+      "classSitesBefore": 4,
+      "classSitesAfter": 8
+    },
+    {
+      "row": 8,
+      "writes": 22,
+      "unknownBefore": 19,
+      "unknownAfter": 15,
+      "variable": 4,
+      "variablePlacing": 4,
+      "variablePlacingSites": 4,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 15,
+      "classSitesBefore": 0,
+      "classSitesAfter": 4
+    },
+    {
+      "row": 9,
+      "writes": 14,
+      "unknownBefore": 11,
+      "unknownAfter": 8,
+      "variable": 3,
+      "variablePlacing": 1,
+      "variablePlacingSites": 1,
+      "variableRedirectOrTee": 1,
+      "variableAppend": 0,
+      "placingUnderVariable": 6,
+      "classSitesBefore": 4,
+      "classSitesAfter": 5
+    },
+    {
+      "row": 10,
+      "writes": 9,
+      "unknownBefore": 9,
+      "unknownAfter": 8,
+      "variable": 1,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 1,
+      "classSitesAfter": 1
+    },
+    {
+      "row": 11,
+      "writes": 2,
+      "unknownBefore": 2,
+      "unknownAfter": 2,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    },
+    {
+      "row": 12,
+      "writes": 2,
+      "unknownBefore": 2,
+      "unknownAfter": 2,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    },
+    {
+      "row": 13,
+      "writes": 0,
+      "unknownBefore": 0,
+      "unknownAfter": 0,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    },
+    {
+      "row": 14,
+      "writes": 0,
+      "unknownBefore": 0,
+      "unknownAfter": 0,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    },
+    {
+      "row": 15,
+      "writes": 0,
+      "unknownBefore": 0,
+      "unknownAfter": 0,
+      "variable": 0,
+      "variablePlacing": 0,
+      "variablePlacingSites": 0,
+      "variableRedirectOrTee": 0,
+      "variableAppend": 0,
+      "placingUnderVariable": 0,
+      "classSitesBefore": 0,
+      "classSitesAfter": 0
+    }
+  ],
+  "symlinkProbe": {
+    "tool": "GNU coreutils 9.11",
+    "method": "in a scratch directory, a link planted at the destination, once to a file and once to a directory, then the command run and the target read",
+    "linkToAFile": {
+      "writesThrough": [
+        "cp",
+        "cp -f",
+        "cp -T",
+        ">",
+        "tee"
+      ],
+      "replacesTheLink": [
+        "mv",
+        "install",
+        "ln -sf",
+        "cp --remove-destination"
+      ]
+    },
+    "linkToADirectory": {
+      "putsTheFileInside": [
+        "cp",
+        "cp -f",
+        "cp --remove-destination",
+        "mv",
+        "install",
+        "ln",
+        "ln -sf"
+      ],
+      "untouched": [
+        "mv -T",
+        "install -T",
+        "ln -sfn",
+        "ln -sfT",
+        "cp -T",
+        "cp --remove-destination -T",
+        ">",
+        "tee"
+      ]
+    }
+  },
+  "fourVerbCommands": {
+    "method": "shell process rows whose tool, after a wrapper, is cp, mv, install or ln, over the same 15 trees",
+    "total": 98,
+    "targetDirectoryForm": 0,
+    "noTargetOrNoDereferenceForm": 8,
+    "noTargetOrNoDereferenceToOneVariable": 0,
+    "noWriteRow": 7,
+    "noWriteRowBehindAKeywordOrWrapper": 4,
+    "noWriteRowInstallDashD": 3,
+    "noWriteRowToOneVariable": 0
+  }
+}

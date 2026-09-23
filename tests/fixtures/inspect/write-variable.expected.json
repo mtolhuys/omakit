@@ -23,7 +23,7 @@
     "processes": [
       {
         "file": "scripts/install-hook.sh",
-        "line": 8,
+        "line": 9,
         "declaredIn": "shell",
         "id": null,
         "argv": [
@@ -51,7 +51,7 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 9,
+        "line": 10,
         "declaredIn": "shell",
         "id": null,
         "argv": [
@@ -82,7 +82,7 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 10,
+        "line": 11,
         "declaredIn": "shell",
         "id": null,
         "argv": [
@@ -111,7 +111,7 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 11,
+        "line": 12,
         "declaredIn": "shell",
         "id": null,
         "argv": [
@@ -140,12 +140,69 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 12,
+        "line": 13,
         "declaredIn": "shell",
         "id": null,
         "argv": [
           "/usr/bin/date",
           "+%s"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "closedEnvironment": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 14,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "/usr/bin/date",
+          "+%s"
+        ],
+        "argvForm": "string",
+        "expressions": [],
+        "commandText": null,
+        "running": true,
+        "detached": false,
+        "deadline": {
+          "observed": false,
+          "via": null,
+          "ms": null
+        },
+        "output": {
+          "collector": "none",
+          "capObserved": false,
+          "via": null
+        },
+        "shellWrapper": false,
+        "closedEnvironment": false,
+        "pipedFrom": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 14,
+        "declaredIn": "shell",
+        "id": null,
+        "argv": [
+          "/usr/bin/mv",
+          "$dest.tmp",
+          "$dest"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -171,7 +228,7 @@
     "writes": [
       {
         "file": "scripts/install-hook.sh",
-        "line": 9,
+        "line": 10,
         "path": "$dir",
         "canonicalPath": "$dir",
         "via": "mkdir",
@@ -182,7 +239,7 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 10,
+        "line": 11,
         "path": "$dest",
         "canonicalPath": "$dest",
         "via": "cp",
@@ -193,7 +250,7 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 11,
+        "line": 12,
         "path": "$HOME/.config/omarchy/plugins/fixture.write-variable/hook",
         "canonicalPath": "$XDG_CONFIG_HOME/omarchy/plugins/fixture.write-variable/hook",
         "via": "cp",
@@ -204,10 +261,32 @@
       },
       {
         "file": "scripts/install-hook.sh",
-        "line": 12,
+        "line": 13,
         "path": "$stamp",
         "canonicalPath": "$stamp",
         "via": ">",
+        "controlledDirectory": "variable",
+        "controlledBy": null,
+        "temp": false,
+        "mode": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 14,
+        "path": "$dest.tmp",
+        "canonicalPath": "$dest.tmp",
+        "via": ">",
+        "controlledDirectory": "unknown",
+        "controlledBy": null,
+        "temp": false,
+        "mode": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 14,
+        "path": "$dest",
+        "canonicalPath": "$dest",
+        "via": "mv",
         "controlledDirectory": "variable",
         "controlledBy": null,
         "temp": false,
@@ -286,12 +365,12 @@
   },
   "counts": {
     "processes": {
-      "total": 5,
+      "total": 7,
       "qml": 0,
-      "shell": 5
+      "shell": 7
     },
     "hosts": 0,
-    "writes": 4,
+    "writes": 6,
     "timers": 0,
     "functions": 0,
     "notResolvable": 0
@@ -300,15 +379,19 @@
   "patterns": [
     {
       "id": "file-and-state-boundary",
-      "observedCount": 1,
+      "observedCount": 2,
       "sites": [
         {
           "file": "scripts/install-hook.sh",
-          "line": 10
+          "line": 11
+        },
+        {
+          "file": "scripts/install-hook.sh",
+          "line": 14
         }
       ],
-      "observation": "observed 1 write by cp to a variable destination, not resolvable to a controlled directory (scripts/install-hook.sh:10)",
-      "summary": "1 write by cp to a variable destination, not resolvable to a controlled directory",
+      "observation": "observed 2 writes by cp and mv to a variable destination, not resolvable to a controlled directory (scripts/install-hook.sh:11, scripts/install-hook.sh:14)",
+      "summary": "2 writes by cp and mv to a variable destination, not resolvable to a controlled directory",
       "measurement": "M11",
       "share": 0.15
     }

@@ -505,8 +505,13 @@ test("the other patterns, one fixture each", async () => {
   assert.deepEqual(await ids("write-tmp"), ["file-and-state-boundary"])
   assert.deepEqual(await ids("write-state"), [])
   const variable = (await documentFor("write-variable")).document
-  assert.deepEqual(variable.patterns.map((row) => [row.id, row.sites]), [["file-and-state-boundary", [{ file: "scripts/install-hook.sh", line: 10 }]]], "the cp to $dest, and not the cp under the plugin's own directory, the mkdir with a mode or the redirect")
-  assert.equal(variable.patterns[0].summary, "1 write by cp to a variable destination, not resolvable to a controlled directory")
+  assert.deepEqual(variable.patterns.map((row) => [row.id, row.sites]), [["file-and-state-boundary", [{ file: "scripts/install-hook.sh", line: 11 }, { file: "scripts/install-hook.sh", line: 14 }]]], "the cp and the mv to $dest, and not the cp under the plugin's own directory, the mkdir with a mode or a redirect")
+  assert.equal(variable.patterns[0].summary, "2 writes by cp and mv to a variable destination, not resolvable to a controlled directory")
+  const full = renderInspect(variable, { colour: false, full: true }).replace(/\n {8}/g, " ")
+  assert.match(full, /cp \$dest .*under a directory the plugin controls: not resolvable \(\$dest is a variable\)/)
+  const view = renderInspect(variable, { colour: false })
+  assert.match(view, /^ {8}scripts\/install-hook\.sh:11 {2}cp \$dest$/m)
+  assert.match(view, /^ {8}scripts\/install-hook\.sh:14 {2}mv \$dest$/m, "the write the class cited on the line, not the redirect before it")
   assert.deepEqual(await ids("curl-with-caps"), [])
   assert.deepEqual(await ids("curl-without-caps"), ["unbounded-buffering", "environment-trust", "network-egress"])
   assert.deepEqual(await ids("http-host"), ["network-egress"])
@@ -519,11 +524,25 @@ test("the other patterns, one fixture each", async () => {
   assert.deepEqual(await ids("computed-command"), ["process-lifecycle"], "a Process block with no killing Timer and no destruction handler is one with no deadline observed, whatever its argv")
 })
 
+test("the file boundary admits a variable destination for cp, mv, install and ln only, and names the verbs it saw", () => {
+  const boundary = PATTERNS.find((pattern) => pattern.id === "file-and-state-boundary")
+  const write = (line, via, canonicalPath) => ({ file: "a.sh", line, path: canonicalPath, canonicalPath, via, ...classifyPath(canonicalPath, "p"), mode: null })
+  const writes = [
+    write(1, "ln", "$2"), write(2, "cp", "$dest"), write(3, "mv", "$target/"), write(4, "install", "$bin"), write(5, "cp", "$dest"),
+    write(6, "cp", "$dir/name"), write(7, ">", "$state"), write(8, ">>", "$log"), write(9, "tee", "$out"), write(10, "touch", "$file"),
+  ]
+  const found = boundary.precondition({ writes })
+  assert.deepEqual(found.sites.map((entry) => entry.line), [1, 2, 3, 4, 5], "not a path under a variable, not a redirect, tee or touch")
+  assert.equal(found.observation, "observed 5 writes by ln, cp, mv and install to a variable destination, not resolvable to a controlled directory (a.sh:1, a.sh:2, a.sh:3, a.sh:4, a.sh:5)", "each verb once, in the order first seen")
+  assert.deepEqual(boundary.precondition({ writes: writes.slice(5) }).sites, [], "a path under a variable, a redirect, tee or touch alone is not the class")
+})
+
 test("the contract holds variable to a path that is one variable, and a path that could not be read to unknown", async () => {
   const { document } = await documentFor("write-variable")
   const at = (row) => `observed.writes[${document.observed.writes.indexOf(row)}]`
   const copy = document.observed.writes.find((row) => row.via === "cp" && row.controlledDirectory === "variable")
-  for (const [canonicalPath, problem] of [["$dest/hook", "is variable for a path that is not one variable"], [null, "is decided for a path that could not be read"]]) {
+  const notOne = "is variable for a path that is not one variable other than $HOME and the XDG names"
+  for (const [canonicalPath, problem] of [["$dest/hook", notOne], ["$HOME", notOne], ["$XDG_DATA_HOME/", notOne], [null, "is decided for a path that could not be read"]]) {
     const changed = structuredClone(document)
     changed.observed.writes[document.observed.writes.indexOf(copy)].canonicalPath = canonicalPath
     assert.ok(validateInspectDocument(changed, KNOWN).includes(`${at(copy)}.controlledDirectory ${problem}`), String(canonicalPath))
@@ -709,7 +728,7 @@ test("writes: the controlled-directory test on canonical prefixes, and the shell
   // One variable and nothing else is not a path the text failed to read: its directory is decided at run time.
   for (const path of ["$dest", "$2", "$target/"]) assert.deepEqual(classifyPath(path, null), { controlledDirectory: "variable", controlledBy: null, temp: false }, path)
   assert.equal(classifyPath(canonicalPath("\"${dest}\""), null).controlledDirectory, "variable")
-  for (const path of ["$(dirname $dest)", "$dest.log", "$@"]) assert.equal(classifyPath(path, null).controlledDirectory, "unknown", path)
+  for (const path of ["$(dirname $dest)", "$dest.log", "$@", "${dest:-}", "$10"]) assert.equal(classifyPath(path, null).controlledDirectory, "unknown", path)
   assert.equal(classifyPath("$HOME", null).controlledDirectory, "not-observed", "$HOME and the XDG names are read before a variable is")
   assert.equal(classifyPath("$XDG_DATA_HOME", null).controlledDirectory, "not-observed")
   const shell = { path: "i.sh", kind: "shell", text: "umask 077\nmkdir -p -m 700 \"$HOME/.cache/p\"\nt=$(mktemp)\necho x | tee /tmp/a.log >> ~/.local/state/p/log 2>/dev/null\ninstall -m 0644 f /etc/x\ncp a b\nchmod 600 b\n" }
@@ -722,6 +741,13 @@ test("writes: the controlled-directory test on canonical prefixes, and the shell
     [5, "install", "/etc/x", "not-observed", "0644"],
     [6, "cp", "b", "unknown", "chmod 600"],
   ])
+  // -t names the destination directory; every operand is a source, and the last is not the destination.
+  const targets = extractWrites({ path: "t.sh", kind: "shell", text: "cp -t \"$HOME/.local/state/p\" \"$f\"\nmv --target-directory=\"$dir\" a b\ninstall -m 0644 -t /etc a\nln -s \"$f\"\n" }, { pluginId: "p" })
+  assert.deepEqual(targets.map((row) => [row.line, row.via, row.canonicalPath, row.controlledDirectory, row.mode]), [
+    [1, "cp", "$XDG_STATE_HOME/p", "observed", null],
+    [2, "mv", "$dir", "variable", null],
+    [3, "install", "/etc", "not-observed", "0644"],
+  ], "ln with one operand writes in the current directory, a path the text does not give")
   const js = extractWrites({ path: "a.mjs", kind: "js", text: "writeFileSync(join(dir, \"x\"), data)\nappendFile(\"/tmp/y\", d)\n" })
   assert.deepEqual(js.map((row) => [row.via, row.controlledDirectory]), [["writeFileSync", "unknown"], ["appendFile", "not-observed"]])
   const python = extractWrites({ path: "a.py", kind: "python", text: "with open('/tmp/z', 'w') as f:\n  pass\nopen(p, 'r')\n" })
