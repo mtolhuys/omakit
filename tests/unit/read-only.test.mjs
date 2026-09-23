@@ -205,9 +205,10 @@ test("every request host is one of the four known ones, and the raw file host is
   // registry.mjs, each of which refuses anything but a 40-character commit
   // and anything but its own path list (tests/unit/registry.test.mjs proves
   // the refusals).
-  // The fifth is the Omarchy ISO origin, reached only by `omakit lab setup`
-  // after one consent, for the pinned release, its checksum and its
-  // signature, through the same GET call site and never with the credential.
+  // The fifth is the Omarchy ISO origin: the lab's release search reads the
+  // newest releases' checksums and signatures and one byte of each ISO for
+  // its size, and `omakit lab setup` downloads the image after one consent,
+  // all through the same GET call site and never with the credential.
   const HOSTS = new Set(["api.github.com", "github.com", "registry.npmjs.org", "raw.githubusercontent.com", "iso.omarchy.org"])
   const RAW = "raw.githubusercontent.com"
   for (const { path, text } of sources) {

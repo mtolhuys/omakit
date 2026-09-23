@@ -2,8 +2,8 @@
 // asked: the release list on GitHub, newest first by version, and for each
 // the three objects the ISO host must publish whole (the ISO, its .sha256
 // and its detached .sig). Only GETs, through github.mjs's one call site;
-// the ISO's size is read from its response headers and the body is
-// cancelled, so no image is fetched here.
+// the ISO's size is read from a one-byte range request, so no image is
+// fetched here.
 //
 // What it will not do, each measured against a way the lab went wrong or
 // could:
@@ -12,18 +12,20 @@
 //   2026-09-23; nothing looked.
 // - Fall back past a release that could not be read. A newer release is
 //   skipped only when the host answers that an object is not there (404:
-//   tagged, not yet published, as 4.0.0 has no .sha256); a timeout or a
-//   5xx stops the search, because a fallback on a bad connection is the
-//   stale lab again.
+//   tagged, not yet published, as 4.0.0 has no .sha256). Everything else
+//   stops the search with its reason: a timeout, a 5xx, a checksum that
+//   does not read, an ISO whose size is not announced. A fallback on any
+//   of those is the stale lab again.
 // - Take a release older than the floor, whatever the list says.
-// - Accept a signer it does not ship. The .sig names its issuer; one that
-//   is not the pinned fingerprint stops the search before any download,
-//   and the message says so, rather than falling back to an older release
-//   the old key signed.
+// - Accept a signer it does not ship. The .sig names its issuers; one with
+//   none of them the pinned fingerprint stops the search before the ISO is
+//   asked for, rather than falling back to an older release the old key
+//   signed. A .sig with the pinned key among its signers (a rotation that
+//   signs with both) is the pinned key's.
 
 import { getJson, getStream } from "../marketplace/github.mjs"
 import { compareVersions, labPin, releaseOf, VERSION } from "./pin.mjs"
-import { signatureIssuer } from "./verify.mjs"
+import { signatureIssuers, signedByPinned } from "./verify.mjs"
 import { LabError } from "./run.mjs"
 
 /** A sidecar is a few dozen bytes; anything past this is not one. */
@@ -39,10 +41,44 @@ async function read(fetchStream, url, signal) {
   }
 }
 
+/** A sidecar's body, refused past SIDECAR_LIMIT as announced or as it streams, never buffered whole first. */
 async function smallBody(response, url) {
-  const body = Buffer.from(await response.arrayBuffer())
-  if (body.length > SIDECAR_LIMIT) throw new LabError("release-unavailable", `${url} answered ${body.length.toLocaleString("en-US")} B; a sidecar is a few dozen`)
-  return body
+  const tooBig = (bytes) => new LabError("release-unavailable", `${url} answered ${bytes.toLocaleString("en-US")} B or more; a sidecar is a few dozen`)
+  const announced = Number(response.headers?.get?.("content-length"))
+  if (Number.isFinite(announced) && announced > SIDECAR_LIMIT) {
+    try {
+      await response.body?.cancel()
+    } catch {
+      // Nothing left to cancel.
+    }
+    throw tooBig(announced)
+  }
+  if (!response.body?.getReader) {
+    const body = Buffer.from(await response.arrayBuffer())
+    if (body.length > SIDECAR_LIMIT) throw tooBig(body.length)
+    return body
+  }
+  const reader = response.body.getReader()
+  const chunks = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.length
+    if (size > SIDECAR_LIMIT) {
+      await reader.cancel()
+      throw tooBig(size)
+    }
+    chunks.push(Buffer.from(value))
+  }
+  return Buffer.concat(chunks)
+}
+
+/** The ISO's full size from a ranged answer (`Content-Range: bytes 0-0/<size>`), or from Content-Length when the host sent the whole object. */
+function announcedSize(response) {
+  const range = String(response.headers.get("content-range") || "").match(/^bytes\s+\d+-\d+\/(\d+)$/)
+  if (response.status === 206) return range ? Number(range[1]) : NaN
+  return Number(response.headers.get("content-length"))
 }
 
 /**
@@ -60,7 +96,7 @@ export function sidecarDigest(text, fileName) {
  * One release checked on the ISO host, in the order that stops earliest:
  * the checksum, the signature (whose signer is checked before the ISO is
  * asked for, so a release omakit would refuse is never requested), then
- * the ISO's announced size. `{ ok: true, release, signer }` when the three
+ * the ISO's announced size. `{ ok: true, release, signers }` when the three
  * are there and read as they should; `{ ok: false, reason }` when the host
  * says one is not published. A signer other than the pinned one throws
  * `signer-changed`; any other failure throws as it came.
@@ -70,25 +106,25 @@ export async function probeRelease({ pin, name, fetchStream = getStream, signal 
   const checksum = await read(fetchStream, shape.checksumUrl, signal)
   if (!checksum) return { ok: false, reason: `${shape.fileName}.sha256 is not published` }
   const sha256 = sidecarDigest((await smallBody(checksum, shape.checksumUrl)).toString("utf8"), shape.fileName)
-  if (!sha256) return { ok: false, reason: `${shape.fileName}.sha256 does not name ${shape.fileName} with a SHA-256` }
+  if (!sha256) throw new LabError("release-unavailable", `${shape.checksumUrl} is published but does not name ${shape.fileName} with a SHA-256; the lab will not fall back past it to an older release`)
   const signature = await read(fetchStream, shape.signatureUrl, signal)
   if (!signature) return { ok: false, reason: `${shape.fileName}.sig is not published` }
-  const signer = signatureIssuer(await smallBody(signature, shape.signatureUrl))
-  const other = signer.fingerprint ? signer.fingerprint !== pin.releases.signingFingerprint : Boolean(signer.keyId) && !pin.releases.signingFingerprint.endsWith(signer.keyId)
-  if (other) {
-    throw new LabError("signer-changed", `Omarchy ${name} is signed by ${signer.fingerprint || `key ${signer.keyId}`}, not the key omakit ships (${pin.releases.signingFingerprint}); omakit will not prepare it, and will not fall back to an older release the old key signed`, { remedy: "omakit upgrade: a newer omakit carries the new key once it is verified" })
+  const signers = signatureIssuers(await smallBody(signature, shape.signatureUrl))
+  if (signedByPinned(signers, pin.releases.signingFingerprint) === false) {
+    const named = signers.map((signer) => signer.fingerprint || `key ${signer.keyId}`).join(" and ")
+    throw new LabError("signer-changed", `Omarchy ${name} is signed by ${named}, not the key omakit ships (${pin.releases.signingFingerprint}); omakit will not prepare it, and will not fall back to an older release the old key signed`, { remedy: "omakit upgrade: a newer omakit carries the new key once it is verified" })
   }
-  const iso = await read(fetchStream, shape.isoUrl, signal)
+  // One byte of the image, for its size in Content-Range; the rest is never asked for.
+  const iso = await read((url, options) => fetchStream(url, { ...options, rangeEnd: 0 }), shape.isoUrl, signal)
   if (!iso) return { ok: false, reason: `${shape.fileName} is not published` }
-  const bytes = Number(iso.headers.get("content-length"))
-  // The headers are all this needs; the body is the image and stays unread.
+  const bytes = announcedSize(iso)
   try {
     await iso.body?.cancel()
   } catch {
     // A body that is already closed has nothing left to cancel.
   }
-  if (!Number.isSafeInteger(bytes) || bytes <= 0) return { ok: false, reason: `${shape.isoUrl} did not announce its size` }
-  return { ok: true, release: releaseOf(pin, { name, bytes, sha256 }), signer }
+  if (!Number.isSafeInteger(bytes) || bytes <= 0) throw new LabError("release-unavailable", `${shape.isoUrl} is published but its size is not announced; the lab will not fall back past it to an older release`)
+  return { ok: true, release: releaseOf(pin, { name, bytes, sha256 }), signers }
 }
 
 /**

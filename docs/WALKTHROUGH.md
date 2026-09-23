@@ -62,8 +62,8 @@ needs the network for a local repository.
 ## Prove it, if the host can
 
 ```bash
-omakit lab inspect                 # what is pinned, what is on disk, what the host lacks
-omakit lab setup                   # one consent, then the pinned ISO and one base
+omakit lab inspect                 # the newest release, what is on disk, what the host lacks
+omakit lab setup                   # one consent, then the newest ISO and one base
 omakit lab prove run
 ```
 

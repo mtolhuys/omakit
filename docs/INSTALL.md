@@ -199,12 +199,16 @@ that:
   terminal's own `NO_COLOR`, `FORCE_COLOR` and `TERM`. Every one is somebody
   else's convention; omakit reads no variable of its own and never a token
   (`GH_TOKEN` and `GITHUB_TOKEN` are honoured by `gh` itself).
-- **Network.** GET only, from one call site, to four hosts: `api.github.com`,
-  `github.com` (the public commit feed), `raw.githubusercontent.com` (two
-  registry files at an exact commit, and for `doctor` the policy module's
-  text at HEAD, compared and dropped) and `registry.npmjs.org` (`upgrade`
-  and `doctor` asking for the newest version). The borrowed credential goes
-  to `api.github.com` and nowhere else. `verify` on a local repository
+- **Network.** GET only, from one call site, to five hosts: `api.github.com`
+  (and for the lab, Omarchy's release list), `github.com` (the public
+  commit feed), `raw.githubusercontent.com` (two registry files at an exact
+  commit, and for `doctor` the policy module's text at HEAD, compared and
+  dropped), `registry.npmjs.org` (`upgrade` and `doctor` asking for the
+  newest version) and `iso.omarchy.org` (the lab: `inspect`, `prove`,
+  `doctor` and `setup` read the newest release's checksum, signature and
+  size, one byte of its ISO for that; `setup` alone downloads the image,
+  after one consent; `--offline` skips all of it). The borrowed credential
+  goes to `api.github.com` and nowhere else. `verify` on a local repository
   touches no network at all, proven by a run inside `unshare -rn`
   ([evidence/offline/](evidence/offline/)).
 - **No install scripts.** The package has no `postinstall` or any other

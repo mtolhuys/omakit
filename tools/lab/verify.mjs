@@ -73,42 +73,69 @@ export function packagedKey(pin = labPin(), dir = LAB_DIR) {
  * 40DFB630FF42BCFFB047046CF0134EE680CAC571 in a hashed subpacket.
  */
 export function signatureIssuer(input) {
+  return signatureIssuers(input)[0] || { fingerprint: null, keyId: null }
+}
+
+/**
+ * Every signer a detached signature names, one per signature packet: a
+ * `.sig` made during a key rotation can carry the new key's signature and
+ * the old one's, and gpg verifies it when any of them is the trusted key,
+ * so the early check must see them all. An empty list when nothing reads.
+ */
+export function signatureIssuers(input) {
   try {
-    return readIssuer(input)
+    let bytes = Buffer.isBuffer(input) ? input : Buffer.from(input || [])
+    const text = bytes.toString("latin1")
+    if (text.startsWith("-----BEGIN PGP SIGNATURE-----")) {
+      const body = text.split(/\r?\n\r?\n/).slice(1).join("\n").split(/\r?\n/).filter((line) => line && !line.startsWith("=") && !line.startsWith("-----")).join("")
+      bytes = Buffer.from(body, "base64")
+    }
+    const found = []
+    let at = 0
+    while (at < bytes.length && found.length < 16) {
+      const packet = readPacket(bytes, at)
+      if (!packet) break
+      const issuer = packet.tag === 2 ? readIssuer(packet.body) : null
+      if (issuer && (issuer.fingerprint || issuer.keyId)) found.push(issuer)
+      at = packet.next
+    }
+    return found
   } catch {
-    return { fingerprint: null, keyId: null }
+    return []
   }
 }
 
-function readIssuer(input) {
-  const none = { fingerprint: null, keyId: null }
-  let bytes = Buffer.isBuffer(input) ? input : Buffer.from(input || [])
-  const text = bytes.toString("latin1")
-  if (text.startsWith("-----BEGIN PGP SIGNATURE-----")) {
-    const body = text.split(/\r?\n\r?\n/).slice(1).join("\n").split(/\r?\n/).filter((line) => line && !line.startsWith("=") && !line.startsWith("-----")).join("")
-    bytes = Buffer.from(body, "base64")
-  }
-  if (bytes.length < 2 || !(bytes[0] & 0x80)) return none
+/** One OpenPGP packet at `at`, either header format: its tag, body and where the next begins; null when it does not read. */
+function readPacket(bytes, at) {
+  const header = bytes[at]
+  if (header === undefined || !(header & 0x80)) return null
+  let tag
   let offset
   let length
-  if (bytes[0] & 0x40) {
-    if ((bytes[0] & 0x3f) !== 2) return none
-    const first = bytes[1]
-    if (first < 192) [offset, length] = [2, first]
-    else if (first < 224 && bytes.length > 2) [offset, length] = [3, ((first - 192) << 8) + bytes[2] + 192]
-    else if (first === 255 && bytes.length > 5) [offset, length] = [6, bytes.readUInt32BE(2)]
-    else return none
+  if (header & 0x40) {
+    tag = header & 0x3f
+    const first = bytes[at + 1]
+    if (first < 192) [offset, length] = [at + 2, first]
+    else if (first < 224 && bytes.length > at + 2) [offset, length] = [at + 3, ((first - 192) << 8) + bytes[at + 2] + 192]
+    else if (first === 255 && bytes.length > at + 5) [offset, length] = [at + 6, bytes.readUInt32BE(at + 2)]
+    else return null
   } else {
-    if (((bytes[0] >> 2) & 0x0f) !== 2) return none
-    const type = bytes[0] & 3
-    if (type === 0) [offset, length] = [2, bytes[1]]
-    else if (type === 1 && bytes.length > 2) [offset, length] = [3, bytes.readUInt16BE(1)]
-    else if (type === 2 && bytes.length > 4) [offset, length] = [5, bytes.readUInt32BE(1)]
-    else return none
+    tag = (header >> 2) & 0x0f
+    const type = header & 3
+    if (type === 0 && bytes.length > at + 1) [offset, length] = [at + 2, bytes[at + 1]]
+    else if (type === 1 && bytes.length > at + 2) [offset, length] = [at + 3, bytes.readUInt16BE(at + 1)]
+    else if (type === 2 && bytes.length > at + 4) [offset, length] = [at + 5, bytes.readUInt32BE(at + 1)]
+    else return null
   }
-  const packet = bytes.subarray(offset, offset + length)
-  if (packet.length !== length || packet.length < 6 || packet[0] !== 4) return none
-  const out = { ...none }
+  const body = bytes.subarray(offset, offset + length)
+  if (body.length !== length) return null
+  return { tag, body, next: offset + length }
+}
+
+/** The issuer of one version 4 signature packet's body, from its subpackets; null for any other version. */
+function readIssuer(packet) {
+  if (packet.length < 6 || packet[0] !== 4) return null
+  const out = { fingerprint: null, keyId: null }
   const readSubpackets = (start, end) => {
     let at = start
     while (at < end) {
@@ -126,12 +153,24 @@ function readIssuer(input) {
     }
   }
   const hashedLength = packet.readUInt16BE(4)
-  if (6 + hashedLength + 2 > packet.length) return none
+  if (6 + hashedLength + 2 > packet.length) return null
   readSubpackets(6, 6 + hashedLength)
   const unhashedStart = 6 + hashedLength + 2
   const unhashedLength = packet.readUInt16BE(6 + hashedLength)
   if (unhashedStart + unhashedLength <= packet.length) readSubpackets(unhashedStart, unhashedStart + unhashedLength)
   return out
+}
+
+/**
+ * Whether the signers a signature names include the pinned one: `true`
+ * when one does, `false` when every signer it names is another key,
+ * `null` when it names none that can be read (the verdict is then gpg's
+ * alone, over the whole file).
+ */
+export function signedByPinned(issuers, fingerprint) {
+  const named = issuers.filter((issuer) => issuer.fingerprint || issuer.keyId)
+  if (!named.length) return null
+  return named.some((issuer) => issuer.fingerprint ? issuer.fingerprint === fingerprint : fingerprint.endsWith(issuer.keyId))
 }
 
 /**

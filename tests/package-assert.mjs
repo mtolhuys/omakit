@@ -60,8 +60,8 @@ import { pathToFileURL } from "node:url"
 // 12,504 under the same ceiling. At 0.6.9 the lab stopped staring at one
 // Omarchy release: the release lookup (tools/lab/release.mjs), the signer
 // read from the signature packet, the outdated base state and the guard
-// that stops a build's orphaned QEMU took `npm pack --dry-run` to 369,392
-// bytes across 133 files, 10,992 over the 358,400-byte ceiling. The
+// that stops a build's orphaned QEMU took `npm pack --dry-run` to 371,388
+// bytes across 133 files, 12,988 over the 358,400-byte ceiling. The
 // ceiling is raised to 409,600 (400 KiB): what it refuses is an accidental
 // tree, and the 15 MB marketplace pin is still some thirty-seven times it.
 export const MAX_PACKED_BYTES = 409_600

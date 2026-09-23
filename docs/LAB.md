@@ -37,21 +37,23 @@ the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 21 files under
-`tools/lab/`, 206,468 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 369,392 bytes (`npm pack --dry-run` at 0.6.9, held
+`tools/lab/`, 212,533 bytes unpacked, and 23 suite files, 51,479 bytes, in
+a package that packs to 371,388 bytes (`npm pack --dry-run` at 0.6.9, held
 by `tests/package-assert.mjs` under its 409,600-byte ceiling).
 
 No image is fetched implicitly. `inspect`, `prove`, `setup` and `doctor`
 read Omarchy's release list once each (below), so the lab says when a newer
-release is out; that read is a few GETs of metadata and the ISO's response
-headers, never a byte of an image, and `--offline` skips it. `prune` never
+release is out; that read is a few GETs of metadata and one byte of each
+ISO it considers (a range request, for the size), and `--offline` skips it. `prune` never
 touches the network. `setup` is the one path that fetches an image, after
 one consent that states the exact size and the destination, and `--yes` is
 that consent in the command itself for an agent; a pipe without it refuses,
 exit 2, naming `omakit lab setup --yes`, with the plan as the refusal's text.
 A plan that cannot run (no toolchain, too little disk) is refused before
-any consent is asked, and before the release list is read, exit 1,
-`lab-blocked`, and says what blocks it.
+any consent is asked, exit 1, `lab-blocked`, and says what blocks it; what
+no release changes (the host's commands, the toolchain when there is no
+base) is refused before the release list is read, and the disk, which
+depends on the release's size, after.
 
 Nothing here touches the daily session. Every binary the lab's modules
 spawn on the host is on a list `tests/unit/lab.test.mjs` holds them to
@@ -80,11 +82,14 @@ by the list's order), and takes the newest at or above the floor, 4.0.3,
 whose ISO, `.sha256` and `.sig` are all published at
 `https://iso.omarchy.org/omarchy-<version>.iso`. A newer tag whose objects
 are not all there yet (the host answers 404; 4.0.0 never had a `.sha256`)
-is passed over and named; any other failure (a timeout, a 5xx) stops the
-search instead, because a fallback on a bad connection is the stale lab
-again. At most three candidates are read, each for its checksum and
-signature and the ISO's announced size; the ISO's body is cancelled
-unread.
+is passed over and named; anything else stops the search with its reason
+(a timeout, a 5xx, a checksum that does not read, an ISO whose size is not
+announced), because a fallback on any of those is the stale lab again. At
+most three candidates are read, each for its checksum and signature and
+the ISO's size, from a one-byte range request. A base newer than the
+release found (a moment when that release's checksum is being republished,
+or an offline `--from` of an older file) is `ahead`: kept and used, never
+taken back a release, and nothing older is fetched or built over it.
 
 What is fixed, in `tools/lab/pin.json`, is what the trust rests on: the
 signer, `40DFB630FF42BCFFB047046CF0134EE680CAC571` (Omarchy
@@ -98,7 +103,9 @@ pair passed. Here a substituted ISO with a matching substituted checksum
 fails at gpg. The signer is read from the `.sig` packet before anything
 else is asked for: a release signed by any other key stops the search
 (`signer-changed`) and is not replaced by an older one the old key signed,
-and a changed key is a new omakit, never a quiet fallback.
+and a changed key is a new omakit, never a quiet fallback. Every signature
+packet in the `.sig` is read, so one made during a rotation with both keys
+is the pinned key's, as gpg will find.
 
 A file is the release when, in this order, its byte count is the one the
 ISO host announced, its SHA-256 is the one the `.sha256` published, the
@@ -160,9 +167,9 @@ kernel and QEMU. `inspect` and `doctor` judge it against the newest
 release: `ready` (built from it, its guest the release's package),
 `outdated` (a good base of an older release, or of the same release before
 Omarchy republished its ISO: a run uses it, and `setup` builds the newest
-and replaces it once that verifies), `mismatch` (newer than the newest
-published, so withdrawn upstream, or a guest that is not its release's
-package; `setup` replaces it), `invalid` (a disk without a complete
+and replaces it once that verifies), `ahead` (a good base of a newer
+release than the one found: kept, never taken back), `mismatch` (a guest
+that is not its release's package; `setup` replaces it), `invalid` (a disk without a complete
 manifest, or a size other than the recorded one; it will not be booted),
 `missing`. With the release list unread (`--offline`, or no network) the
 base is judged against its own release and the report says the newest was
@@ -360,8 +367,11 @@ Now, when the driver exits for any reason, `setup` stops every QEMU whose
 pidfile is under the build's staging directory and whose command line
 (`/proc/<pid>/cmdline`) names that directory, so a reused pid is never
 taken for it: SIGTERM, which QEMU takes as a clean shutdown, and SIGKILL
-after fifteen seconds. `inspect` shows such a directory as active and
-`prune` refuses to remove it while that QEMU runs.
+after fifteen seconds. A setup that has something to build also stops,
+once it holds the lock, every build QEMU still running under staging,
+which then can only be left by a setup killed before it could (SIGKILL, a
+crash). `inspect` shows such a directory as active, with the pid, and
+`prune` refuses to remove it while that QEMU runs and names the `kill`.
 
 ## The toolchain, honestly
 

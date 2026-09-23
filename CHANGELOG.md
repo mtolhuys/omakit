@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.6.9 (unreleased)
+
+`omakit lab` prepares the newest Omarchy release instead of the one it
+was pinned to. 4.0.4 was published on 2026-09-15; on 2026-09-23 `lab
+setup` still offered 4.0.3, because the lab was pinned to it on
+2026-09-18 and nothing looked. `tools/lab/release.mjs` now reads
+Omarchy's release list each time, sorts by version, and takes the newest
+at or above the floor (4.0.3) whose ISO, `.sha256` and `.sig` are all
+published; a newer tag whose ISO is not up yet (404) is passed over and
+named, and anything else (a timeout, a checksum that does not read, a size
+not announced) stops the search rather than falling back to an older
+release. The search reads one byte of each ISO, for its size, and no more. The trust is the signature:
+a file is the release only when its `.sig` verifies against the packaged
+Omarchy key at the pinned fingerprint, and the signer is read from the
+`.sig` packet before the ISO is even asked for, so a release signed by
+another key stops the search (`signer-changed`) instead of being replaced
+by an older one. `setup` builds the newest release and removes the old
+base and older downloads only after the new base verifies; a base of an
+older release is `outdated`, which a run still uses and `inspect`,
+`doctor` (`lab.release`) and `prove` say out loud, and a good base newer
+than the release found (a checksum being republished, an older `--from`)
+is `ahead` and kept: the lab never goes back a release on its own. `--offline` skips the
+lookup; `--from` names its release by its file name when offline. Fixed on
+the way: an interrupted setup left the toolchain's daemonized QEMU
+running with nothing to stop it and invisible to `prune`; setup now stops
+it and `prune` refuses while it runs. The package ceiling is raised to
+409,600 bytes (371,388 measured).
+
 ## 0.6.8
 
 `omakit inspect`'s file and state boundary class cites a copy to a

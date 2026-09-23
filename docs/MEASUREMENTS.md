@@ -1350,6 +1350,32 @@ measured over the network on this host: the ISO came from a local copy
 (`--from`), and the resumable GET is proven against a local origin in
 `tests/unit/lab.test.mjs`.
 
+### The newest release, 2026-09-23
+
+On 2026-09-23 the lab, pinned to 4.0.3 since 2026-09-18, offered to
+download 4.0.3 eight days after Omarchy published 4.0.4 (tag v4.0.4 at
+2026-09-15 21:39 UTC; `omarchy-4.0.4.iso` at iso.omarchy.org
+`last-modified` 21:35 UTC, with its `.sha256` and `.sig`). From 0.6.9 the
+lab looks up the newest release each time (`docs/LAB.md`). Measured on
+the reference host the same day, by `omakit lab` itself, with this code:
+
+| Figure | Value | Method |
+| --- | --- | --- |
+| The newest release, looked up | Omarchy 4.0.4, 6,185,304,064 B, SHA-256 `ddeded2758c48318d201dfdac905ecb28f570441883f0c052ea3cd5d05acf92d`, signed by `40DFB630FF42BCFFB047046CF0134EE680CAC571` (the same key as 4.0.3), in 1,144 ms | `findNewestRelease()` against api.github.com and iso.omarchy.org: the list, the checksum, the signature packet, and one byte of the ISO for its size (`Content-Range`). |
+| The download, over the network | 6,185,304,064 B in 4m 15.4s | `omakit lab setup`'s own record of the GET; the first download measured over the network on this host (the 2026-09-18 figures above came from `--from`). |
+| The build, pinned toolchain, 4.0.4 | 4m 28.5s (268,502 ms), the installer's screens driven as for 4.0.3 | The build record beside the base (`build.milliseconds`). 4.0.3 took 5m 57.8s on 2026-09-18: one observation each, no spread. |
+| The base | disk 6,482,558,976 B, 6,482,497,536 B allocated, the directory 6,483,267,584 B; 40 GiB virtual | The manifest, and `du -B1` over `base/`. |
+| The guest | `omarchy 4.0.4-1`, kernel 7.2.5-3-omarchy (`linux-omarchy`, the default since omarchy-iso `b507a20`), SSH in 25 s, the session in 11 s, one login round | `pacman -Q omarchy` in the verification boot, and its timings in the manifest. |
+| Setup, from the consent to PREPARED | 9m 50s (08:21:34 to 08:31:24 UTC), the 4.0.3 download (6,260,666,368 B) removed after the promotion | The run's own log. |
+| A Run suite on it | 19 of 19 scenarios, 2m 40.5s, a 446,763,008 B overlay removed, the base unchanged, skew false, `newest` 4.0.4 and `behind` false in the record | `omakit lab prove run`, run `20260923-103949-run`. |
+| A build's QEMU after an interrupted setup | still running 18m 24s after the 09:49 interrupt of a 4.0.3 setup, 34.7% of a core, its QMP socket in `/tmp` | `ps` on the reference host before this change; it was stopped by hand with SIGTERM, and 0.6.9's setup stops such a QEMU itself. |
+
+Limits, stated. One host, one day, one observation of each: the download
+rate is this connection's, and the build time is one run. The
+compatibility of the pinned toolchain with a later release is proven for
+4.0.4 only; the next release is proven by the next build, which fails
+closed and keeps the base there if its installer reads differently.
+
 ## M15. Open submissions whose Repository URL owner is not the issue's author
 
 Measured on 2026-09-20, 20:48:38.905 to 20:48:44.421 UTC, against the

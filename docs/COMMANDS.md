@@ -28,8 +28,8 @@ check, track, prove, and then what keeps the tool itself current.
 | `omakit audit [<plugin>]` | track | installed third-party commits against the commits the marketplace validated |
 | `omakit weigh <plugin>` | track | what a plugin weighs on the shell, measured by restarting it without and with the plugin; asks first |
 | `omakit lab prove <suite>` | prove | a suite in a disposable Omarchy guest, the guest's installed package printed and written: `run`, `store`, `weigh`, `weigh-evidence` |
-| `omakit lab inspect` | prove | what the lab is pinned to, what is on disk and verified, what the host lacks; read-only, fetches nothing |
-| `omakit lab setup` | prove | one consent, then the pinned ISO verified against its SHA-256 and signature, and one base; `--toolchain`, `--from`, `--plugins` |
+| `omakit lab inspect` | prove | the newest Omarchy release and whether the base is behind it, what is on disk and verified, what the host lacks; writes nothing, reads only the release list (`--offline` skips it) |
+| `omakit lab setup` | prove | one consent, then the newest Omarchy ISO verified against its published SHA-256 and the Omarchy signature, and one base; `--toolchain`, `--from`, `--plugins` |
 | `omakit lab prune` | prove | what the lab owns on disk, asked once, removed, the bytes said |
 | `omakit doctor` | current | what is installed, what is pinned, which of the files omakit reads moved at the marketplace's HEAD and whether a verdict can differ for it, and what the lab has |
 | `omakit setup` | current | the environment, the pin, tab completion, and what to try first |

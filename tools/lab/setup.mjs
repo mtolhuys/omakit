@@ -165,6 +165,10 @@ export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKE
   pin = withRelease(pin, release)
   const download = inspectDownload(layout, pin)
   const base = inspectBase(layout, pin)
+  // A good base newer than the release in hand is kept: the lab never goes
+  // back a release on its own (inspect.mjs, `ahead`), and nothing older is
+  // fetched or built over it.
+  if (base.state === "ahead") return done(release, { download, base, ahead: { base: base.manifest.release.name, release: release.name, from: newest.checked ? "newest" : "from" } })
   if (!download.verified) {
     if (from) {
       const source = resolve(from)
@@ -345,7 +349,7 @@ async function verifyAndPromote({ candidate, to, pin, layout, stagingRoot, onPro
  * after fifteen seconds. Runs after the driver exits for any reason, an
  * interrupt included, so no guest outlives the setup that started it.
  */
-async function stopBuildGuests(stagingDir, onLine) {
+export async function stopBuildGuests(stagingDir, onLine = () => {}) {
   for (const guest of buildGuests(stagingDir)) {
     try {
       process.kill(guest.pid, "SIGTERM")
@@ -513,7 +517,7 @@ function fetchPlugins({ plugins, layout, onPhase }) {
  * just verified is never among them. Nothing is removed before the
  * promotion, so a build that fails leaves the old release usable.
  */
-function removeSuperseded({ layout, pin, step, onLine }) {
+export function removeSuperseded({ layout, pin, step, onLine = () => {} }) {
   const removed = []
   for (const entry of step.superseded || []) {
     if (entry.digest === pin.release.sha256 || !existsSync(join(layout.cache, entry.relative))) continue
@@ -539,6 +543,12 @@ export async function setupLab({ plan, consented, onPhase = () => {}, onLine = (
   await acquireLock(layout, { runId: `setup-${stampNow()}`, pid: process.pid, qmpSocket: null, startedAt: new Date().toISOString() })
   const lockId = readJson(join(layout.lock, "holder.json"))?.runId
   try {
+    // With the lock held, no other setup is building, so a build QEMU still
+    // running under staging belongs to one that was killed before it could
+    // stop it (SIGKILL, a crash): an orphan, stopped here before anything else.
+    if (existsSync(layout.staging)) {
+      for (const name of readdirSync(layout.staging).filter((entry) => /^build-\d{8}-\d{6}$/.test(entry)).sort()) await stopBuildGuests(join(layout.staging, name), onLine)
+    }
     labDir(layout.cache, "downloads", pin.release.sha256)
     labDir(layout.cache, "staging")
     const target = join(downloadDir(layout, pin), pin.release.fileName)

@@ -114,8 +114,12 @@ export function inspectDownload(layout, pin = labPin(), { verify = false, stagin
  * - `outdated`: a good base of an older release, or of this release as it
  *   was published before Omarchy replaced the ISO; a run still uses it,
  *   and `setup` builds the newest and replaces it once that verifies.
- * - `mismatch`: a base of a release newer than this one (withdrawn
- *   upstream), or whose guest is not its release's package.
+ * - `ahead`: a good base of a release newer than this one. Kept and used:
+ *   the release search passes a newer tag over on a 404, so a moment when
+ *   its checksum is being republished, or an offline `--from` of an older
+ *   file, would otherwise take a good base back a release and delete the
+ *   newer ISO. The lab never goes back on its own.
+ * - `mismatch`: a base whose guest is not its release's package.
  * Never booted here. `allocatedBytes` is `du -B1` over the directory, the
  * figure prune will recover.
  */
@@ -126,7 +130,8 @@ export function inspectBase(layout, pin = labPin()) {
   out.allocatedBytes = allocatedBytes(dir)
   const manifest = readJson(join(dir, BASE_FILES.manifest))
   const diskThere = existsSync(out.disk)
-  if (!manifest || manifest.state !== "ready" || !manifest.release || !manifest.guest || !manifest.disk) {
+  const named = manifest?.release && VERSION.test(String(manifest.release.name)) && /^[0-9a-f]{64}$/.test(String(manifest.release.sha256)) && Number.isSafeInteger(manifest.release.bytes)
+  if (!manifest || manifest.state !== "ready" || !named || !manifest.guest || !manifest.disk) {
     out.state = "invalid"
     out.reason = diskThere ? `${BASE_FILES.disk} is there (${bytesBoth(out.allocatedBytes)}) but ${BASE_FILES.manifest} is ${manifest ? "incomplete" : "missing"}; it will not be booted` : `a base directory with no disk and ${manifest ? "an incomplete" : "no"} manifest; \`omakit lab prune\` removes it`
     return out
@@ -179,8 +184,8 @@ export function inspectBase(layout, pin = labPin()) {
     out.reason = `Omarchy ${manifest.release.name} as first published (iso ${manifest.release.sha256}); Omarchy has since republished it (iso ${release.sha256}). A run still uses this base; \`omakit lab setup\` rebuilds it from the republished ISO`
     return out
   }
-  out.state = "mismatch"
-  out.reason = `the base is Omarchy ${manifest.release.name}, newer than ${release.name}, the newest release published now (was ${manifest.release.name} withdrawn?); \`omakit lab setup\` replaces it with ${release.name}`
+  out.state = "ahead"
+  out.reason = `Omarchy ${manifest.release.name} (guest omarchy ${manifest.guest.version}), newer than ${release.name}, the release this was held to; kept and used, never taken back a release`
   return out
 }
 
@@ -336,7 +341,7 @@ export async function inspectLab({ env = process.env, pin = labPin(), newest = {
     runsBytes: existsSync(layout.runs) ? allocatedBytes(layout.runs) : 0,
   }
   const missing = []
-  const usable = base.state === "ready" || base.state === "outdated"
+  const usable = ["ready", "outdated", "ahead"].includes(base.state)
   for (const line of host.run) if (line.state !== "ok") missing.push({ what: line.name, cost: line.reason, command: line.remedy })
   // The verified ISO matters for building a base; with a usable base
   // there, a run needs none, and a newer release's ISO is part of what

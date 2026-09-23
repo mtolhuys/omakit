@@ -76,7 +76,6 @@ export function releaseOf(pin, { name, bytes, sha256 }) {
     signingFingerprint: pin.releases.signingFingerprint,
     signingKey: pin.releases.signingKey,
     signingKeySha256: pin.releases.signingKeySha256,
-    expectedGuestVersion: `${name}-<pkgrel>`,
   }
 }
 

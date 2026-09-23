@@ -32,7 +32,7 @@ export function labDoctorChecks(lab) {
   // of a GiB flipped once while another test packed a tarball beside it).
   add("lab.disk", enough, `${Math.floor(lab.free.bytes / 2 ** 30).toLocaleString("en-US")} GiB free on the lab cache's filesystem; a prepared lab measured ${bytesBoth(lab.pin.measured.preparedLabBytes)} with Omarchy ${lab.pin.measured.release} (M14)`, enough ? null : "omakit lab prune, or free the difference")
   checks.push(releaseCheck(lab))
-  const usable = lab.base.state === "ready" || lab.base.state === "outdated"
+  const usable = ["ready", "outdated", "ahead"].includes(lab.base.state)
   // The ISO is what a build needs: with a usable base there it is only
   // advice when a build is ahead, and the release check says when that is.
   const release = lab.pin.release
@@ -58,12 +58,14 @@ export function releaseCheck(lab) {
   const newest = lab.newest || { checked: false, code: "not-asked", reason: "the newest release was not looked up" }
   const evidence = { newest: newest.checked ? newest.release.name : null, tag: newest.checked ? newest.tag : null, base: lab.base.manifest?.release?.name ?? null, code: newest.checked ? null : newest.code }
   if (!newest.checked) {
-    return newest.code === "offline"
-      ? { id: "lab.release", state: "info", detail: "the newest Omarchy release is not looked up (--offline)", action: null, evidence }
-      : { id: "lab.release", state: "unknown", detail: `could not look up the newest Omarchy release: ${newest.reason}`, action: newest.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the checks that need it." : null, evidence }
+    if (newest.code === "offline") return { id: "lab.release", state: "info", detail: "the newest Omarchy release is not looked up (--offline)", action: null, evidence }
+    // Found, and refused: a finding, not a lookup that failed.
+    if (newest.code === "signer-changed") return { id: "lab.release", state: "advice", detail: newest.reason, action: "omakit upgrade: a newer omakit carries Omarchy's new key once it is verified", evidence }
+    return { id: "lab.release", state: "unknown", detail: `could not look up the newest Omarchy release: ${newest.reason}`, action: newest.code === "network-unavailable" ? "Connect to the network, or pass --offline to skip the checks that need it." : null, evidence }
   }
   const name = newest.release.name
   if (lab.base.state === "ready") return { id: "lab.release", state: "ok", detail: `Omarchy ${name} is the newest release, and the lab's base is built from it`, action: null, evidence }
+  if (lab.base.state === "ahead") return { id: "lab.release", state: "info", detail: `the lab's base is Omarchy ${lab.base.manifest.release.name}, newer than ${name}, the newest release published whole now; it is kept`, action: null, evidence }
   if (lab.base.state === "outdated") return { id: "lab.release", state: "advice", detail: `Omarchy ${name} is the newest release; the lab's base is ${lab.base.manifest.release.name}${lab.base.manifest.release.name === name ? " as first published" : ""}, and a run still uses it`, action: "omakit lab setup", evidence }
   return { id: "lab.release", state: "info", detail: `Omarchy ${name} is the newest release; \`omakit lab setup\` prepares it`, action: null, evidence }
 }
@@ -80,7 +82,8 @@ export function renderLab(lab, { colour = colourEnabled(), env = process.env } =
     out.push(...field("release", `Omarchy ${release.name} (${newest.tag}${newest.publishedAt ? `, published ${newest.publishedAt.slice(0, 10)}` : ""}), the newest in ${newest.list.replace(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/releases.*$/, "github.com/$1")} with its ISO, checksum and signature published`, c))
     for (const skipped of newest.skipped || []) out.push(...field("passed over", `${skipped.name}: ${skipped.reason}`, c))
   } else {
-    out.push(...field("release", `not looked up: ${newest.reason}${release ? `; the lab is held to its base's release, Omarchy ${release.name}` : ""}`, c))
+    const why = newest.code === "signer-changed" ? `refused: ${newest.reason}` : `not looked up: ${newest.reason}`
+    out.push(...field("release", `${why}${release ? `; the lab is held to its base's release, Omarchy ${release.name}` : ""}`, c))
   }
   if (release) {
     out.push(...field("iso", release.isoUrl, c))
@@ -100,7 +103,7 @@ export function renderLab(lab, { colour = colourEnabled(), env = process.env } =
   out.push(...wrap(home(lab.toolchain.reason), { indent: GUTTER }, c))
   if (lab.staging.length) {
     out.push(`${mark(lab.staging.some((entry) => entry.alive) ? "info" : "advisory", c)}${c("name", "staging")}`)
-    for (const entry of lab.staging) out.push(...wrap(home(`${entry.name}: ${bytesBoth(entry.allocatedBytes)}${entry.alive ? ", a QEMU answers on its socket" : ", inactive"}`), { indent: GUTTER }, c))
+    for (const entry of lab.staging) out.push(...wrap(home(`${entry.name}: ${bytesBoth(entry.allocatedBytes)}${entry.pids?.length ? `, a build's QEMU still runs (pid ${entry.pids.join(", ")})` : entry.alive ? ", a QEMU answers on its socket" : ", inactive"}`), { indent: GUTTER }, c))
   }
   if (lab.lock.held) {
     out.push(`${mark(lab.lock.alive ? "info" : "advisory", c)}${c("name", "lock")}`)
@@ -156,7 +159,8 @@ export function renderSetupPlan(plan, { colour = colourEnabled(), env = process.
   }
   if (!plan.steps.length) {
     if (plan.stale) out.push(...verdict("advisory", "PREPARED", `the base on disk is Omarchy ${plan.stale.base}, left as it is: the newest release could not be looked up (${plan.stale.reason}). Run \`omakit lab setup\` again with the network.`, c))
-    else out.push(...verdict("pass", "PREPARED", `Omarchy ${plan.pin.release.name}, the newest release: the verified ISO and a ready base are there; nothing to acquire.`, c))
+    else if (plan.ahead) out.push(...verdict("advisory", "PREPARED", `the base on disk is Omarchy ${plan.ahead.base}, newer than ${plan.ahead.release}, ${plan.ahead.from === "newest" ? "the newest release published whole now" : "the release the file named by --from is"}; it is kept, and nothing older is fetched or built over it.`, c))
+    else out.push(...verdict("pass", "PREPARED", `Omarchy ${plan.pin.release.name}, ${plan.newest?.checked ? "the newest release" : "the release the file named by --from is (the newest was not looked up)"}: the verified ISO and a ready base are there; nothing to acquire.`, c))
     return out.join("\n")
   }
   out.push(...section("what setup will do, once you say yes", c))

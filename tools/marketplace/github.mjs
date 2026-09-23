@@ -119,7 +119,7 @@ export const CREDENTIAL_HOST = "api.github.com"
  */
 export const GET_DEADLINE_MS = 20_000
 
-async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
+async function get(url, { accept, signal, rangeFrom = 0, rangeEnd = null } = {}) {
   const { host } = new URL(url)
   // The credential is GitHub's and goes to GitHub's API and nowhere else.
   // Measured before this held: `omakit upgrade` and `doctor` sent the gh
@@ -136,7 +136,9 @@ async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
   // A resumed download asks for the rest of the object; the lab's ISO
   // fetch is the one caller, and a server that ignores the range answers
   // 200 from the start, which the caller handles by starting over.
-  if (rangeFrom > 0) headers.range = `bytes=${rangeFrom}-`
+  // The lab's release search asks for the first byte alone (`rangeEnd` 0)
+  // to read the ISO's size from Content-Range without fetching the image.
+  if (rangeFrom > 0 || rangeEnd !== null) headers.range = `bytes=${rangeFrom}-${rangeEnd ?? ""}`
   let response
   try {
     response = await fetch(url, { method: "GET", headers, redirect: "follow", signal: signal || AbortSignal.timeout(GET_DEADLINE_MS) })
@@ -144,8 +146,12 @@ async function get(url, { accept, signal, rangeFrom = 0 } = {}) {
     // Node reports every transport failure as "fetch failed" with the real
     // reason in `cause`. A person needs the reason, and the CLI keys its
     // remedy on the code, so both are carried out of here.
-    const cause = error?.name === "TimeoutError" ? `no answer within ${GET_DEADLINE_MS / 1000} s` : error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"
     const { host, pathname } = new URL(url)
+    // The caller stopped it (SIGINT, SIGTERM): that is an interrupt, not a
+    // network that did not answer, and the caller has to be able to tell.
+    if (signal?.aborted && signal.reason?.name !== "TimeoutError") throw new GitHubError("interrupted", `interrupted while reading ${pathname} from ${host}`)
+    // A caller's own deadline is the caller's figure; only the default is 20 s.
+    const cause = error?.name === "TimeoutError" ? (signal ? "no answer before the caller's deadline" : `no answer within ${GET_DEADLINE_MS / 1000} s`) : error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"
     throw new GitHubError("network-unavailable", `${host} did not answer (${cause}) while reading ${pathname}`)
   }
   if (!response.ok) {
@@ -178,8 +184,8 @@ export async function getText(url, accept) {
  * same literal method, and the credential stays with api.github.com; the
  * ISO origin (iso.omarchy.org) never sees it.
  */
-export async function getStream(url, { rangeFrom = 0, signal } = {}) {
-  return get(url, { accept: "application/octet-stream", signal, rangeFrom })
+export async function getStream(url, { rangeFrom = 0, rangeEnd = null, signal } = {}) {
+  return get(url, { accept: "application/octet-stream", signal, rangeFrom, rangeEnd })
 }
 
 /** Parse a marketplace issue URL into its parts. */

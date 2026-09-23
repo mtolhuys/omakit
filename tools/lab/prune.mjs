@@ -32,7 +32,7 @@ export async function planPrune({ env = process.env, pin = labPin(), keepIso = f
   const active = staging.filter((entry) => entry.alive)
   const blockers = []
   if (lock.held && lock.alive) blockers.push(`run ${lock.record?.runId || "unknown"} holds the lab (pid ${lock.record?.pid || "?"}${lock.qemuAnswers ? ", its QEMU answers on QMP" : ""})`)
-  for (const entry of active) blockers.push(`a QEMU still answers on ${entry.socket}`)
+  for (const entry of active) blockers.push(entry.pids?.length ? `a build's QEMU still runs in ${entry.dir} (pid ${entry.pids.join(", ")}), left by a setup that ended; stop it with \`kill ${entry.pids.join(" ")}\` (the next setup that builds stops it too)` : `a QEMU still answers on ${entry.socket}`)
   if (existsSync(layout.downloads)) {
     for (const digest of readdirSync(layout.downloads)) {
       // Each download directory says what it holds: its verification
