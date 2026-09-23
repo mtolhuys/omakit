@@ -8,7 +8,8 @@ run costs in disk and time, the honest dependency on the omarchy-iso
 toolchain and its patch, and what the lab does not do, with the condition
 each one needs. The inventory this replaced, with its twenty-two problems, is
 [history/2026-09-18-lab-inventory.md](history/2026-09-18-lab-inventory.md);
-the design it implements is [packaging/LAB_PLAN.md](../packaging/LAB_PLAN.md);
+the plan it was first built to, on 2026-09-13, is in git history
+([the lab plan at 9c667f9](https://github.com/mtolhuys/omakit/blob/9c667f9c08f6cb3ebd1cbc4af072d541cb8279cb/packaging/LAB_PLAN.md)) and this page supersedes it;
 the measurements are M14 in [MEASUREMENTS.md](MEASUREMENTS.md).
 
 ```bash
@@ -37,8 +38,8 @@ the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 21 files under
-`tools/lab/`, 217,061 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 372,500 bytes (`npm pack --dry-run` at 0.6.9, held
+`tools/lab/`, 217,006 bytes unpacked, and 23 suite files, 51,479 bytes, in
+a package that packs to 372,446 bytes (`npm pack --dry-run`, held
 by `tests/package-assert.mjs` under its 409,600-byte ceiling).
 
 No image is fetched implicitly. `inspect`, `prove`, `setup` and `doctor`
@@ -288,9 +289,8 @@ A second pass on the release round's code, the same evening
 ([end-to-end log](evidence/lab/2026-09-18-end-to-end.log)): 2m 53.3s,
 1m 46.7s and 1m 36.8s, every one PROVED. The guest takes 5120 MiB while
 it runs.
-The old harness retained a 1.01 GB overlay per run (packaging/LAB_PLAN.md
-M7); this one keeps
-none.
+The old harness retained a 1.01 GB overlay per run (the lab plan's M7,
+[in git history](https://github.com/mtolhuys/omakit/blob/9c667f9c08f6cb3ebd1cbc4af072d541cb8279cb/packaging/LAB_PLAN.md)); this one keeps none.
 
 ## Setup: what it costs and what it does
 
@@ -474,8 +474,8 @@ bytes, lock state).
 
 ## What the lab does not do
 
-- It does not pass the overlay to QEMU as an unlinked descriptor
-  (`packaging/LAB_PLAN.md`, the per-run overlay rule). The overlay is a
+- It does not pass the overlay to QEMU as an unlinked descriptor (the
+  lab plan's per-run overlay rule, in git history). The overlay is a
   named file under `staging/run-<id>/`, removed by omakit on the normal
   path, on failure, on SIGINT and on SIGTERM; a SIGKILL to omakit leaves
   QEMU running on it, the next `prove` finds the lock held by a QEMU that

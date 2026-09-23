@@ -218,8 +218,8 @@ test("the command surface is exactly the documented scope", () => {
 })
 
 test("the lab ships the ability to acquire a lab, and never an image", () => {
-  // packaging/LAB_PLAN.md, the central boundary: omakit may carry
-  // orchestration code, a reviewed release pin, the Omarchy public signing
+  // docs/LAB.md, the central boundary: omakit may carry orchestration
+  // code, the release lookup's fixed points, the Omarchy public signing
   // key and text fixtures, and never an ISO, a disk image, firmware
   // variables, an overlay, or a compressed or renamed form of one. The
   // tree is walked, not the package list, and every file is sniffed for a

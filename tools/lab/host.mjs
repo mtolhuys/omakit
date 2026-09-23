@@ -1,7 +1,7 @@
 // What the host has and what it lacks, each with its measured reason.
 //
 // Read-only: every probe is a stat, a read of /proc, or a `--version`.
-// Nothing here installs anything (packaging/LAB_PLAN.md: lab-only host
+// Nothing here installs anything (docs/LAB.md: lab-only host
 // capabilities are preflighted and reported, never installed). Measured
 // before this (docs/history/2026-09-18-lab-inventory.md P10, P20): the
 // upstream harness ran `omarchy-pkg-add` for six packages at the top of
@@ -168,7 +168,7 @@ export function probeRunHost({ pin = labPin(), run, env = process.env } = {}) {
 
 /**
  * The vCPU count a run gives the guest: every logical CPU, which is what
- * the toolchain's `-smp $(nproc)` gave the reference build (32, packaging/LAB_PLAN.md M4, M14). A
+ * the toolchain's `-smp $(nproc)` gave the reference build (32, M14). A
  * smaller number would be a guess about what a suite needs, and no run
  * has measured one.
  */

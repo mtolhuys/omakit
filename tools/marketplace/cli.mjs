@@ -747,7 +747,7 @@ async function cmdLab(args) {
         onLine: (line) => {
           spinner.done()
           // The identity block, once the guest has been read: the line
-          // packaging/LAB_PLAN.md says every run prints before its suite.
+          // docs/LAB.md says every run prints before its suite.
           if (line.record) {
             narrate.write(`${withOutputStream(narrate, () => renderRunIdentity(line.record, { colour: colourEnabled(narrate) }))}\n\n`)
             return

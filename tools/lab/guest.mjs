@@ -134,7 +134,7 @@ export async function clearStartupNotifications(guest, { onPhase = () => {} } = 
  * the package or from a linked checkout (`OMARCHY_PATH` in
  * /etc/omarchy.conf; a dev-linked guest names `.local/share/omarchy`).
  * This is the line the old gates never wrote (docs/history/2026-09-18-lab-
- * inventory.md P8), and packaging/LAB_PLAN.md's run identity requires.
+ * inventory.md P8), and docs/LAB.md's run identity requires.
  */
 export function guestIdentity(guest) {
   const read = (command) => sshGuest(guest, command).stdout.trim()

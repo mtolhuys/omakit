@@ -142,7 +142,7 @@ The omarchy-iso toolchain and its patch:
   link, so it resolves "latest"; the checksum it verifies against is the
   sidecar downloaded next to the ISO, so a substituted ISO with a matching
   substituted sidecar passes. The signature (`.sig`) is downloaded by
-  nobody and verified by nobody. `packaging/LAB_PLAN.md` M2 records the
+  nobody and verified by nobody. The lab plan's M2 ([at 9c667f9](https://github.com/mtolhuys/omakit/blob/9c667f9c08f6cb3ebd1cbc4af072d541cb8279cb/packaging/LAB_PLAN.md)) records the
   signer and the digest that the lab must be pinned to.
 - **P14.** The harness needs `magick`, `tesseract` and `socat` for every
   run, though a run from a prepared base uses none of the OCR path (the
@@ -159,7 +159,7 @@ What is measured wrong or not at all:
 - **P16.** The overlay is a named file (`runs/<stamp>/run.qcow2`), removed
   on a clean exit by `--discard-overlay`; a harness killed with SIGKILL
   leaves it, and `bin/lab clean` decides "in use" by `fuser` and a pidfile,
-  which cannot see a QEMU in another PID namespace (`packaging/LAB_PLAN.md`
+  which cannot see a QEMU in another PID namespace (the lab plan's
   M7: 34.2 GB under `test-runs/` on 2026-09-13, one live overlay at 1.01
   GB).
 - **P17.** `wait_for_guest_state ... 900` in the two block gates and

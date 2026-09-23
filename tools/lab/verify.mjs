@@ -5,8 +5,8 @@
 // The signature is the trust: a substituted ISO with a substituted
 // checksum beside it fails here, because only Omarchy's key signs. The
 // digest names the file and catches a download that went wrong. Both,
-// every time, and a mismatch in either fails closed (packaging/LAB_PLAN.md,
-// the acquisition boundary).
+// every time, and a mismatch in either fails closed (docs/LAB.md, the
+// trust anchor).
 // The key is imported into a throwaway GNUPGHOME under the lab, never into
 // the user's keyring: a lab that added keys to ~/.gnupg would be changing
 // the host, and the only host change the lab makes is the lab.

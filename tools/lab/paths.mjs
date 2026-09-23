@@ -29,7 +29,7 @@ export function labStateDir(env = process.env) {
 
 /**
  * The layout under the cache root. One base, not one per release
- * (packaging/LAB_PLAN.md, the one-base rule): a pin update replaces it.
+ * (docs/LAB.md): setup replaces it when a newer release is built.
  */
 export function labLayout(env = process.env) {
   const cache = labCacheDir(env)

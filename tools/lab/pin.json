@@ -33,6 +33,6 @@
     "preparedLabBytes": 12442931200,
     "overlayAfterRunBytes": 610734080,
     "pluginsBytes": 6836224,
-    "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host with Omarchy 4.0.3; packaging/LAB_PLAN.md M4 to M7 are the 2026-09-10 to 2026-09-13 observations it re-measured"
+    "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host with Omarchy 4.0.3, re-measuring the lab plan's observations of 2026-09-10 to 2026-09-13 (M4 to M7, in git history at 9c667f9)"
   }
 }
