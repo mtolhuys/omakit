@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.8 (unreleased)
+## 0.6.8
 
 `omakit inspect`'s file and state boundary class cites a copy to a
 variable destination. Theme Manager was blocked twice in one review thread

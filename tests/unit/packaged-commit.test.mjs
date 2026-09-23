@@ -34,7 +34,7 @@ test("a checkout names HEAD, while a release-shaped archive names its recorded c
   // The release step by hand: `npm run pack:release` records, checks, packs and clears, in that order, and the clear runs whatever pack did.
   const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
   assert.equal(pkg.scripts["pack:release"], "node tools/blocks/record-commit.mjs && node tools/blocks/record-commit.mjs --check && npm pack --ignore-scripts; node tools/blocks/record-commit.mjs --clear")
-  assert.equal(pkg.version, "0.6.7", "the release branch names the release it makes")
+  assert.equal(pkg.version, "0.6.8", "the release branch names the release it makes")
   // --clear on a copy: the record is null again, the explanation kept.
   const copy = mkdtempSync(join(tmpdir(), "omakit-record-"))
   try {
