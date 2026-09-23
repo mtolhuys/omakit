@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.9 (unreleased)
+## 0.6.9
 
 `omakit lab` prepares the newest Omarchy release instead of the one it
 was pinned to. 4.0.4 was published on 2026-09-15; on 2026-09-23 `lab
