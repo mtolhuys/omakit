@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.write-variable",
+  "name": "Fixture: write to a variable destination",
+  "version": "0.0.1",
+  "description": "A copy to a destination the caller passes, beside one under the plugin's own directory.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" }
+}

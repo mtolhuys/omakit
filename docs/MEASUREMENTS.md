@@ -1022,6 +1022,45 @@ review-class sample holds. Any regeneration keeps it that way. No plugin is
 named for it in the README. The record replaces nothing and is replaced by a
 run over the desktop set when one is made.
 
+### A copy to a variable destination, 2026-09-23
+
+One review thread blocked Theme Manager twice on the file and state
+boundary, both times for a write that places a file at a destination the
+script is handed: `install-wallpaper.sh` (`cp -f "$src" "$dest"`, blocked
+2026-09-11, the tree at the parent of its fix `07fcb00`) and
+`install-hook.sh` (`cp "$src" "$dest"`, blocked 2026-09-22 at `e05f78f`). A
+symlink planted at `$dest` sends the copy wherever it points. The class
+matched neither. The extraction read the line and gave the path as
+`unknown`, the same word it uses for a path it could not read at all, and
+the class admitted only `not-observed`: at `e05f78f` 52 of the 54 writes
+were `unknown`, and the class printed 7 `mkdir`s with no mode, none of them
+the blocked line.
+
+A path that is one variable and nothing else (`$dest`, `$2`, `$target/`)
+now reads `variable`, and the class admits it for `cp`, `mv`, `install`
+and `ln`, the verbs both blockers used. Redirects and `tee` onto a
+variable are left out, measured over the 15 plugin trees with a manifest
+on the author's desktop on 2026-09-23: of 661 writes, 632
+were `unknown` before; 120 of those read `variable` now. 28 of them are
+`cp`, `mv`, `install` or `ln` (26 sites, 6 trees), and 61 are redirects or
+`tee`, 24 of them `>>` appends to a log. Across the 15 trees the class goes
+from 96 sites to 124. At `e05f78f` it goes from 7 to 9, with
+`install-hook.sh:24` among them, and at the parent of `07fcb00` from 4 to
+6, with `install-wallpaper.sh:83` among them.
+
+Limits, stated. `variable` says only that the text names no directory.
+Read by hand from the nearest assignment above each line, of the 28, 4
+take the destination from a positional parameter, 5 from `mktemp`, 16 from
+another assignment in the same file and 3 from none the file shows; the
+extraction follows no assignment, and the observation says "not
+resolvable to a controlled directory" and nothing about who set the
+variable. The earlier blocker's own `dest=$theme_dir/$base` is one of the
+in-file kind, so a rule for positional parameters alone would have missed
+it. Left out on
+purpose: `apply-icons.sh:24` at `e05f78f`, `> "$state"` with
+`state=${2:-}`, the same shape as the blocked copy but through a redirect.
+The share stays M11's; this entry measures the precondition, not the class.
+
 ## M12. How long a plugin's functions are, in listed trees
 
 Measured 2026-09-16 over the first 50 distinct repositories in the pinned

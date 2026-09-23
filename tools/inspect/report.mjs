@@ -110,7 +110,9 @@ function writeRow(write, c) {
     ? `observed (${write.controlledBy})`
     : write.controlledDirectory === "not-observed"
       ? `not observed${write.temp ? ` (${write.canonicalPath.split("/").slice(0, 2).join("/")} is shared)` : ""}`
-      : "unknown (path not readable as a literal prefix)"
+      : write.controlledDirectory === "variable"
+        ? `not resolvable (${write.canonicalPath} is a variable)`
+        : "unknown (path not readable as a literal prefix)"
   const notes = [`under a directory the plugin controls: ${where}`]
   if (write.mode) notes.push(`mode ${write.mode}`)
   return row("info", site(write), what, c, [notes.join("; ")])

@@ -116,7 +116,7 @@ holds every `submit` check to a `why` with a figure is extended to hold every
 | --- | --- | --- | --- |
 | `process-lifecycle` | a QML process row with `deadline.observed: false`; not an `execDetached` call, which has no deadline by design, and not a shell line | about 20% of findings | M11 |
 | `unbounded-buffering` | a process row with a collector and `output.capObserved: false` | about 19% | M11 |
-| `file-and-state-boundary` | a write row with `controlledDirectory: "not-observed"`, or a temp path without `mktemp`, or `mkdir` without a mode | about 15% | M11 |
+| `file-and-state-boundary` | a write row with `controlledDirectory: "not-observed"`, or a temp path without `mktemp`, or a `cp`, `mv`, `install` or `ln` row with `controlledDirectory: "variable"`, or `mkdir` without a mode | about 15%; the variable destination is both blockers of one review thread, and 28 writes over 15 plugin trees against 61 redirects and tees left out | M11 |
 | `environment-trust` | a process row whose tool word (after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted, or `curl` without `-q` | about 7% | M11 |
 | `secrets` | an argv element or `console.log` argument matching the secret-shaped list | about 7% | M11 |
 | `supply-chain` | a finding the baseline recorded and does not list as selectively blocking at the pin, which at pin `b7b29654` is exactly `remote-git-execution-unpinned`, `curl-pipe-shell` and `cargo-git-unpinned`; the set is read from the pinned policy through `verify`, so no rule id is written into `tools/inspect/` | about 7% of findings; 21 findings ever recorded across 2,916 baselined listings, 11 and 10 of them these two rules | M11, M4 |

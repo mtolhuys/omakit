@@ -504,6 +504,9 @@ test("the other patterns, one fixture each", async () => {
   const ids = async (name) => (await documentFor(name)).document.patterns.map((row) => row.id)
   assert.deepEqual(await ids("write-tmp"), ["file-and-state-boundary"])
   assert.deepEqual(await ids("write-state"), [])
+  const variable = (await documentFor("write-variable")).document
+  assert.deepEqual(variable.patterns.map((row) => [row.id, row.sites]), [["file-and-state-boundary", [{ file: "scripts/install-hook.sh", line: 10 }]]], "the cp to $dest, and not the cp under the plugin's own directory, the mkdir with a mode or the redirect")
+  assert.equal(variable.patterns[0].summary, "1 write by cp to a variable destination, not resolvable to a controlled directory")
   assert.deepEqual(await ids("curl-with-caps"), [])
   assert.deepEqual(await ids("curl-without-caps"), ["unbounded-buffering", "environment-trust", "network-egress"])
   assert.deepEqual(await ids("http-host"), ["network-egress"])
@@ -516,6 +519,17 @@ test("the other patterns, one fixture each", async () => {
   assert.deepEqual(await ids("computed-command"), ["process-lifecycle"], "a Process block with no killing Timer and no destruction handler is one with no deadline observed, whatever its argv")
 })
 
+test("the contract holds variable to a path that is one variable, and a path that could not be read to unknown", async () => {
+  const { document } = await documentFor("write-variable")
+  const at = (row) => `observed.writes[${document.observed.writes.indexOf(row)}]`
+  const copy = document.observed.writes.find((row) => row.via === "cp" && row.controlledDirectory === "variable")
+  for (const [canonicalPath, problem] of [["$dest/hook", "is variable for a path that is not one variable"], [null, "is decided for a path that could not be read"]]) {
+    const changed = structuredClone(document)
+    changed.observed.writes[document.observed.writes.indexOf(copy)].canonicalPath = canonicalPath
+    assert.ok(validateInspectDocument(changed, KNOWN).includes(`${at(copy)}.controlledDirectory ${problem}`), String(canonicalPath))
+  }
+})
+
 test("a pattern row is two lines: the observation with its sites, then the share, and never a verdict word", async () => {
   const { document } = await documentFor("process-without-deadline")
   const report = renderInspect(document, { colour: false, full: true })
@@ -523,7 +537,7 @@ test("a pattern row is two lines: the observation with its sites, then the share
   assert.match(report, /^ {8}\(Widget\.qml:10\)$/m)
   assert.match(report, /^ {8}about 20 of every 100 review findings in the sample \(M11\)$/m)
   assert.match(report, /^ {8}about 19 of every 100 review findings in the sample \(M11\)$/m)
-  assert.match(report, /^not observed  no write outside a controlled directory, /m)
+  assert.match(report, /^not observed  no write outside a controlled directory or by cp, mv, install/m)
   for (const row of document.patterns) assert.doesNotMatch(row.observation, /\b(?:missing|should|fix)\b/i)
   assert.doesNotMatch(report, /\b(?:missing|should|fix)\b/i)
   const nothing = renderInspect((await documentFor("nothing")).document, { colour: false, full: true })
@@ -692,6 +706,12 @@ test("writes: the controlled-directory test on canonical prefixes, and the shell
   assert.deepEqual(classifyPath("/dev/shm/x", null), { controlledDirectory: "not-observed", controlledBy: null, temp: true })
   assert.deepEqual(classifyPath("$OTHER/x", null).controlledDirectory, "unknown")
   assert.deepEqual(classifyPath("relative/x", null).controlledDirectory, "unknown")
+  // One variable and nothing else is not a path the text failed to read: its directory is decided at run time.
+  for (const path of ["$dest", "$2", "$target/"]) assert.deepEqual(classifyPath(path, null), { controlledDirectory: "variable", controlledBy: null, temp: false }, path)
+  assert.equal(classifyPath(canonicalPath("\"${dest}\""), null).controlledDirectory, "variable")
+  for (const path of ["$(dirname $dest)", "$dest.log", "$@"]) assert.equal(classifyPath(path, null).controlledDirectory, "unknown", path)
+  assert.equal(classifyPath("$HOME", null).controlledDirectory, "not-observed", "$HOME and the XDG names are read before a variable is")
+  assert.equal(classifyPath("$XDG_DATA_HOME", null).controlledDirectory, "not-observed")
   const shell = { path: "i.sh", kind: "shell", text: "umask 077\nmkdir -p -m 700 \"$HOME/.cache/p\"\nt=$(mktemp)\necho x | tee /tmp/a.log >> ~/.local/state/p/log 2>/dev/null\ninstall -m 0644 f /etc/x\ncp a b\nchmod 600 b\n" }
   const rows = extractWrites(shell, { pluginId: "p" })
   assert.deepEqual(rows.map((row) => [row.line, row.via, row.canonicalPath, row.controlledDirectory, row.mode]), [

@@ -206,7 +206,7 @@ ten preconditions says so.
 | --- | --- | --- |
 | process lifecycle | a `Process` block with no observed deadline: no `Timer` whose `onTriggered` calls `kill()` or `signal()` on it or sets its `running` false, no `timeout` in argv, no `Component.onDestruction` that does the same; an `execDetached` call is not one, and a shell line is not one | about 20% |
 | unbounded buffering | `StdioCollector` or `SplitParser` on a process whose argv shows no producer-side cap (`head -c`, `--max-filesize`, `timeout`) | about 19% |
-| file and state boundary | a write whose canonical path is not under `$XDG_STATE_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME/omarchy/plugins/<id>` or `$XDG_RUNTIME_DIR`, `mktemp` excepted; a `mkdir` with no mode | about 15% |
+| file and state boundary | a write whose canonical path is not under `$XDG_STATE_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME/omarchy/plugins/<id>` or `$XDG_RUNTIME_DIR`, `mktemp` excepted; a `cp`, `mv`, `install` or `ln` whose destination is one variable (`$dest`, `$2`, `$target/`), which the text does not resolve to a controlled directory; a `mkdir` with no mode | about 15% |
 | environment trust | a process whose tool word (the first argv word after `sudo`, `env`, `timeout` and the other wrappers) has no slash, shell builtins excepted; `curl` reaching a host without `-q` | about 7% |
 | secrets | an argv element, or a `console.log` argument, matching `Authorization`, `Bearer`, `token=`, `api_key`, `password` or `secret=`; `wl-copy` with a computed argv element | about 7% |
 | supply chain | a finding the baseline recorded and does not list as selectively blocking at the pin (at pin `b7b29654`: `remote-git-execution-unpinned`, `curl-pipe-shell`, `cargo-git-unpinned`, read from the pinned policy, never named in the code); `inspect` prints the baseline's evidence sites and adds nothing | about 7% |
@@ -387,7 +387,10 @@ via               "FileView" | ">" | ">>" | "tee" | "cp" | "mv" | "mkdir" | "mkt
                   | "writeFile" | "writeFileSync" | "appendFile" | "appendFileSync" | "open"
 canonicalPath     string | null   the path's literal prefix after `~`, `$HOME`, `${X}` and
                   Quickshell.env("X") are read as the XDG names; null when it starts with an expression
-controlledDirectory  "observed" | "not-observed" | "unknown"
+controlledDirectory  "observed" | "not-observed" | "variable" | "unknown"
+                  variable: the canonical path is one variable and nothing else ($dest, $2,
+                  $target/), not $HOME or an XDG name, so the directory is decided at run time;
+                  unknown: the path could not be read
 controlledBy      the controlled prefix the path is under, when observed; otherwise null
 temp              boolean   under /tmp, /var/tmp or /dev/shm
 mode              string | null   -m on mkdir or install, mktemp's own mode, `chmod N` on the same path

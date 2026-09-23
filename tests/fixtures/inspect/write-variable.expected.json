@@ -6,10 +6,10 @@
     "dir": "<dir>",
     "commit": "<commit>",
     "repository": {
-      "url": "https://github.com/example/omarchy-plugin-fixture-shell-guards"
+      "url": "https://github.com/example/omarchy-plugin-fixture-write-variable"
     },
     "mode": "author",
-    "pluginId": "fixture.shell-guards",
+    "pluginId": "fixture.write-variable",
     "filesRead": {
       "qml": 1,
       "js": 0,
@@ -22,14 +22,13 @@
   "observed": {
     "processes": [
       {
-        "file": "scripts/guards.sh",
-        "line": 9,
+        "file": "scripts/install-hook.sh",
+        "line": 8,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "command",
-          "-v",
-          "jq"
+          "/usr/bin/dirname",
+          "$dest"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -51,13 +50,15 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/guards.sh",
-        "line": 16,
+        "file": "scripts/install-hook.sh",
+        "line": 9,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "mkdir",
+          "/usr/bin/mkdir",
           "-p",
+          "-m",
+          "0700",
           "$dir"
         ],
         "argvForm": "string",
@@ -80,13 +81,14 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/guards.sh",
-        "line": 17,
+        "file": "scripts/install-hook.sh",
+        "line": 10,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "touch",
-          "$file"
+          "/usr/bin/cp",
+          "$src",
+          "$dest"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -108,14 +110,14 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/guards.sh",
-        "line": 18,
+        "file": "scripts/install-hook.sh",
+        "line": 11,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "chmod",
-          "u+r",
-          "$file"
+          "/usr/bin/cp",
+          "$src",
+          "$HOME/.config/omarchy/plugins/fixture.write-variable/hook"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -137,70 +139,13 @@
         "pipedFrom": null
       },
       {
-        "file": "scripts/guards.sh",
-        "line": 19,
+        "file": "scripts/install-hook.sh",
+        "line": 12,
         "declaredIn": "shell",
         "id": null,
         "argv": [
-          "command",
-          "-v",
-          "jq"
-        ],
-        "argvForm": "string",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": false,
-          "via": null,
-          "ms": null
-        },
-        "output": {
-          "collector": "none",
-          "capObserved": false,
-          "via": null
-        },
-        "shellWrapper": false,
-        "closedEnvironment": false,
-        "pipedFrom": null
-      },
-      {
-        "file": "scripts/guards.sh",
-        "line": 24,
-        "declaredIn": "shell",
-        "id": null,
-        "argv": [
-          "require",
-          "$@"
-        ],
-        "argvForm": "string",
-        "expressions": [],
-        "commandText": null,
-        "running": true,
-        "detached": false,
-        "deadline": {
-          "observed": false,
-          "via": null,
-          "ms": null
-        },
-        "output": {
-          "collector": "none",
-          "capObserved": false,
-          "via": null
-        },
-        "shellWrapper": false,
-        "closedEnvironment": false,
-        "pipedFrom": null
-      },
-      {
-        "file": "scripts/guards.sh",
-        "line": 25,
-        "declaredIn": "shell",
-        "id": null,
-        "argv": [
-          "recover",
-          "$@"
+          "/usr/bin/date",
+          "+%s"
         ],
         "argvForm": "string",
         "expressions": [],
@@ -225,51 +170,52 @@
     "hosts": [],
     "writes": [
       {
-        "file": "scripts/guards.sh",
-        "line": 16,
+        "file": "scripts/install-hook.sh",
+        "line": 9,
         "path": "$dir",
         "canonicalPath": "$dir",
         "via": "mkdir",
         "controlledDirectory": "variable",
         "controlledBy": null,
         "temp": false,
-        "mode": null
+        "mode": "0700"
       },
       {
-        "file": "scripts/guards.sh",
-        "line": 17,
-        "path": "$file",
-        "canonicalPath": "$file",
-        "via": "touch",
+        "file": "scripts/install-hook.sh",
+        "line": 10,
+        "path": "$dest",
+        "canonicalPath": "$dest",
+        "via": "cp",
         "controlledDirectory": "variable",
         "controlledBy": null,
         "temp": false,
-        "mode": "chmod u+r"
+        "mode": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 11,
+        "path": "$HOME/.config/omarchy/plugins/fixture.write-variable/hook",
+        "canonicalPath": "$XDG_CONFIG_HOME/omarchy/plugins/fixture.write-variable/hook",
+        "via": "cp",
+        "controlledDirectory": "observed",
+        "controlledBy": "$XDG_CONFIG_HOME/omarchy/plugins/fixture.write-variable",
+        "temp": false,
+        "mode": null
+      },
+      {
+        "file": "scripts/install-hook.sh",
+        "line": 12,
+        "path": "$stamp",
+        "canonicalPath": "$stamp",
+        "via": ">",
+        "controlledDirectory": "variable",
+        "controlledBy": null,
+        "temp": false,
+        "mode": null
       }
     ],
     "timers": [],
-    "functions": [
-      {
-        "file": "scripts/guards.sh",
-        "line": 4,
-        "name": "require",
-        "kind": "function",
-        "lines": 9,
-        "depth": 0,
-        "branches": 0,
-        "percentile": 59.9
-      },
-      {
-        "file": "scripts/guards.sh",
-        "line": 14,
-        "name": "recover",
-        "kind": "function",
-        "lines": 9,
-        "depth": 0,
-        "branches": 5,
-        "percentile": 83.9
-      }
-    ]
+    "functions": []
   },
   "blocks": [],
   "size": {
@@ -335,19 +281,19 @@
       "depth": 2
     },
     "heavyShare": 0,
-    "score": 10,
+    "score": null,
     "over": []
   },
   "counts": {
     "processes": {
-      "total": 7,
+      "total": 5,
       "qml": 0,
-      "shell": 7
+      "shell": 5
     },
     "hosts": 0,
-    "writes": 2,
+    "writes": 4,
     "timers": 0,
-    "functions": 2,
+    "functions": 0,
     "notResolvable": 0
   },
   "notResolvable": [],
@@ -357,57 +303,20 @@
       "observedCount": 1,
       "sites": [
         {
-          "file": "scripts/guards.sh",
-          "line": 16
+          "file": "scripts/install-hook.sh",
+          "line": 10
         }
       ],
-      "observation": "observed 1 mkdir with no mode (scripts/guards.sh:16)",
-      "summary": "1 mkdir with no mode",
+      "observation": "observed 1 write by cp to a variable destination, not resolvable to a controlled directory (scripts/install-hook.sh:10)",
+      "summary": "1 write by cp to a variable destination, not resolvable to a controlled directory",
       "measurement": "M11",
       "share": 0.15
-    },
-    {
-      "id": "environment-trust",
-      "observedCount": 7,
-      "sites": [
-        {
-          "file": "scripts/guards.sh",
-          "line": 9
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 16
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 17
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 18
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 19
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 24
-        },
-        {
-          "file": "scripts/guards.sh",
-          "line": 25
-        }
-      ],
-      "observation": "observed 7 tools resolved from PATH (jq, mkdir, touch, chmod, require, recover; scripts/guards.sh:9, scripts/guards.sh:16, scripts/guards.sh:17, scripts/guards.sh:18, scripts/guards.sh:19, scripts/guards.sh:24, scripts/guards.sh:25)",
-      "summary": "7 tools resolved from PATH (jq, mkdir, touch, chmod, require, recover)",
-      "measurement": "M11",
-      "share": 0.07
     }
   ],
   "lookedFor": [
     "process-lifecycle",
     "unbounded-buffering",
+    "environment-trust",
     "secrets",
     "supply-chain",
     "network-egress",
@@ -441,16 +350,29 @@
     "official": {
       "schemaVersion": 1,
       "baselineVersion": "3",
-      "repository": "example/omarchy-plugin-fixture-shell-guards",
-      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-shell-guards",
+      "repository": "example/omarchy-plugin-fixture-write-variable",
+      "repoUrl": "https://github.com/example/omarchy-plugin-fixture-write-variable",
       "commitSha": "<commit>",
       "checkedAt": "1970-01-01T00:00:00.000Z",
-      "outcome": "passed",
+      "outcome": "review-required",
       "enforcementMode": "selective",
-      "disposition": "clear",
+      "disposition": "review-required",
       "blocksApproval": false,
       "findings": [],
-      "capabilities": []
+      "capabilities": [
+        {
+          "id": "installer",
+          "title": "Installer or setup path",
+          "why": "Installer code can modify the user environment and needs a maintainer to confirm its documented scope.",
+          "evidence": [
+            {
+              "path": "scripts/install-hook.sh",
+              "line": 1,
+              "snippet": "Installer or setup file"
+            }
+          ]
+        }
+      ]
     },
     "statement": "Official baseline preview over a local snapshot. The marketplace rescans the public commit itself. This is not approval, listing, verification or a security audit."
   }

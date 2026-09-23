@@ -3,7 +3,10 @@
 // or `touch` in shell; `writeFile` and its variants in JavaScript; `open()`
 // for writing in Python. Each row says whether the path's literal prefix,
 // after the `$HOME`, `~` and `XDG_*` idioms are expanded, falls under a
-// directory the plugin controls, and which mode the file shows for it.
+// directory the plugin controls, and which mode the file shows for it. A
+// path that is one variable and nothing else (`$dest`, `$2`, `$target/`)
+// is said apart from one the text cannot read: its directory is decided
+// at run time, by whatever set the variable.
 
 import { basename, blankComments, blocks, closingBracket, lineOf, propertyValue, blankShellExpressions, shellLogicalLines, shellPieces, shellWords, stringLiteral, withoutRedirections } from "./text.mjs"
 
@@ -11,6 +14,8 @@ import { basename, blankComments, blocks, closingBracket, lineOf, propertyValue,
 export const CONTROLLED = Object.freeze(["$XDG_STATE_HOME", "$XDG_CACHE_HOME", "$XDG_RUNTIME_DIR"])
 export const SHARED_TEMP = Object.freeze(["/tmp", "/var/tmp", "/dev/shm"])
 const DEVICES = new Set(["/dev/null", "/dev/stderr", "/dev/stdout", "/dev/tty"])
+/** A canonical path that is one variable expansion, a name or a positional parameter, with at most a trailing slash. */
+const VARIABLE = /^\$(?:[A-Za-z_]\w*|\d)\/?$/
 
 /**
  * A path's literal prefix in canonical form: `~` and `$HOME` idioms,
@@ -45,8 +50,11 @@ export function canonicalPath(raw) {
 }
 
 /**
- * Whether a canonical path is under a directory the plugin controls.
- * @returns {{ controlledDirectory: "observed"|"not-observed"|"unknown", controlledBy: string|null, temp: boolean }}
+ * Whether a canonical path is under a directory the plugin controls:
+ * `variable` when the path is one variable other than `$HOME` and the XDG
+ * names, so no directory is written in the text; `unknown` when the path
+ * could not be read at all.
+ * @returns {{ controlledDirectory: "observed"|"not-observed"|"variable"|"unknown", controlledBy: string|null, temp: boolean }}
  */
 export function classifyPath(path, pluginId) {
   if (path === null || path === undefined) return { controlledDirectory: "unknown", controlledBy: null, temp: false }
@@ -59,6 +67,7 @@ export function classifyPath(path, pluginId) {
     if (path === prefix || path.startsWith(`${prefix}/`)) return { controlledDirectory: "not-observed", controlledBy: null, temp: true }
   }
   if (path.startsWith("/") || path.startsWith("$HOME") || path.startsWith("$XDG_")) return { controlledDirectory: "not-observed", controlledBy: null, temp: false }
+  if (VARIABLE.test(path)) return { controlledDirectory: "variable", controlledBy: null, temp: false }
   return { controlledDirectory: "unknown", controlledBy: null, temp: false }
 }
 
