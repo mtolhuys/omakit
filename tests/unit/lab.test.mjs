@@ -545,6 +545,22 @@ test("the download is a literal GET to a .part file, resumed by byte range, held
     } finally {
       plain.close()
     }
+    // Ctrl-C while the body streams: an interrupt, said as one, the partial kept.
+    const slow = createServer((request, response) => {
+      response.writeHead(200, { "content-length": body.length, "content-type": "application/octet-stream" })
+      response.write(body.subarray(0, 1000))
+    })
+    await new Promise((resolvePromise) => slow.listen(0, "127.0.0.1", resolvePromise))
+    try {
+      rmSync(`${to}.part`, { force: true })
+      const controller = new AbortController()
+      setTimeout(() => controller.abort("SIGINT"), 200)
+      await assert.rejects(downloadRelease({ url: `http://127.0.0.1:${slow.address().port}/small.iso`, to, bytes: body.length, signal: controller.signal }), (error) => error instanceof LabError && error.code === "interrupted" && /resumes/.test(error.remedy))
+      assert.ok(existsSync(`${to}.part`), "the partial stays for the next setup to resume")
+    } finally {
+      slow.closeAllConnections?.()
+      slow.close()
+    }
     // A wrong announced size fails before a byte is written.
     const wrong = await origin(body, { announce: body.length + 1 })
     try {
@@ -917,14 +933,14 @@ test("the guard stops a build's QEMU and nothing else, and the downloads a new b
   }
 })
 
-test("gpg's verdict on a signature made with two keys, one of them the packaged one, is valid; a bad one is not", { skip: spawnSync("gpg", ["--version"], { timeout: 120_000 }).status !== 0 ? "no gpg" : false }, () => {
+test("gpg's verdict on a signature made with two keys, one of them the packaged one, is valid; a bad one is not", { skip: spawnSync("gpg", ["--version"], { timeout: 120_000 }).status !== 0 ? "no gpg" : false }, (t) => {
   const { dir, layout, rm } = scratch()
   try {
     const home = join(dir, "gnupg")
     mkdirSync(home, { recursive: true, mode: 0o700 })
     const env = { ...process.env, GNUPGHOME: home }
     const make = (uid) => spawnSync("gpg", ["--batch", "--quiet", "--pinentry-mode", "loopback", "--passphrase", "", "--quick-generate-key", uid, "ed25519", "sign", "0"], { timeout: 120_000, env }).status === 0
-    if (!make("Old Key <old@example.invalid>") || !make("New Key <new@example.invalid>")) return
+    if (!make("Old Key <old@example.invalid>") || !make("New Key <new@example.invalid>")) return t.skip("gpg could not generate the two test keys here (no agent)")
     const keys = [...spawnSync("gpg", ["--batch", "--with-colons", "--list-keys"], { timeout: 120_000, env, encoding: "utf8" }).stdout.matchAll(/^fpr:+([0-9A-F]{40}):/gm)].map((match) => match[1])
     const [oldKey, newKey] = keys
     const keyFile = join(dir, "old.gpg")

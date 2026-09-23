@@ -43,7 +43,7 @@ import { LAB_DIR, bytesBoth, compareVersions, durationWords, guestIsRelease, lab
 import { allocatedBytes, copyIntoLab, inLab, labDir, labLayout, moveIntoLab, readJson, removeFromLab, stampNow, writeJson } from "./paths.mjs"
 import { BUILD_COMMANDS, VERIFY_COMMANDS, freeBytesAt, probeCommands, probeRunHost } from "./host.mjs"
 import { judgeRelease, packagedKey, sha256File, signatureIssuers, signedByPinned } from "./verify.mjs"
-import { sidecarDigest } from "./release.mjs"
+import { sidecarDigest, smallBody } from "./release.mjs"
 import { BASE_FILES, baseRelease, buildGuests, downloadDir, downloadEntry, inspectBase, inspectDownload, inspectToolchain, toolchainCommand } from "./inspect.mjs"
 import { LabError, acquireLock, freePort, releaseLock, withGuest } from "./run.mjs"
 import { WEIGH_LISTED, listedPlugin } from "./suites.mjs"
@@ -335,14 +335,21 @@ export async function downloadRelease({ url, to, bytes, onProgress = () => {}, s
   const out = createWriteStream(part, { flags: append ? "a" : "w", mode: 0o600 })
   let written = append ? have : 0
   const started = Date.now()
+  const interrupted = () => new LabError("interrupted", "interrupted; the partial download stays and resumes next time", { remedy: "omakit lab setup: the download resumes where it stopped" })
   try {
     for await (const chunk of response.body) {
-      if (signal?.aborted) throw new LabError("interrupted", "interrupted; the partial download stays and resumes next time")
+      if (signal?.aborted) throw interrupted()
       written += chunk.length
       if (written > bytes) throw new LabError("size-mismatch", `${url} sent more than the ${bytes.toLocaleString("en-US")} B it announced`)
       if (!out.write(chunk)) await new Promise((resolvePromise) => out.once("drain", resolvePromise))
       onProgress(written, bytes, Date.now() - started)
     }
+  } catch (error) {
+    // An abort while the body streams ends the loop with the abort's own
+    // reason ("SIGINT", a bare string), not with the check above: it is an
+    // interrupt, said as one, with the exit status the signal gives.
+    if (signal?.aborted && !(error instanceof LabError)) throw interrupted()
+    throw error
   } finally {
     await new Promise((resolvePromise) => out.end(resolvePromise))
   }
@@ -361,8 +368,13 @@ async function fetchSidecars({ pin, dir, layout, fetchStream = getStream, signal
       if (error instanceof GitHubError) throw new LabError(error.code, error.message, { remedy: "check the network, then run `omakit lab setup` again" })
       throw error
     }
-    const body = Buffer.from(await response.arrayBuffer())
-    if (body.length > 4096) throw new LabError("sidecar-mismatch", `${url} answered ${body.length} B; a sidecar is a few dozen`)
+    let body
+    try {
+      body = await smallBody(response, url, "sidecar-mismatch")
+    } catch (error) {
+      if (signal?.aborted && !(error instanceof LabError)) throw new LabError("interrupted", "interrupted while fetching the checksum and signature; what was downloaded stays", { remedy: "omakit lab setup: it picks up where it stopped" })
+      throw error
+    }
     writeFileSync(inLab(layout.cache, `downloads/${pin.release.sha256}/${name}`), body, { mode: 0o600 })
   }
 }

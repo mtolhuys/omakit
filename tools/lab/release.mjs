@@ -41,9 +41,13 @@ async function read(fetchStream, url, signal) {
   }
 }
 
-/** A sidecar's body, refused past SIDECAR_LIMIT as announced or as it streams, never buffered whole first. */
-async function smallBody(response, url) {
-  const tooBig = (bytes) => new LabError("release-unavailable", `${url} answered ${bytes.toLocaleString("en-US")} B or more; a sidecar is a few dozen`)
+/**
+ * A sidecar's body, refused past SIDECAR_LIMIT as announced or as it
+ * streams, never buffered whole first; `code` names the refusal for the
+ * caller (the search's release-unavailable, setup's sidecar-mismatch).
+ */
+export async function smallBody(response, url, code = "release-unavailable") {
+  const tooBig = (bytes) => new LabError(code, `${url} answered ${bytes.toLocaleString("en-US")} B or more; a sidecar is a few dozen`)
   const announced = Number(response.headers?.get?.("content-length"))
   if (Number.isFinite(announced) && announced > SIDECAR_LIMIT) {
     try {

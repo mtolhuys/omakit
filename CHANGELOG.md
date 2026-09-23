@@ -26,7 +26,7 @@ lookup; `--from` names its release by its file name when offline. Fixed on
 the way: an interrupted setup left the toolchain's daemonized QEMU
 running with nothing to stop it and invisible to `prune`; setup now stops
 it and `prune` refuses while it runs. The package ceiling is raised to
-409,600 bytes (372,357 measured).
+409,600 bytes (372,500 measured).
 
 ## 0.6.8
 
