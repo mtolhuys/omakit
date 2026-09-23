@@ -37,8 +37,8 @@ the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
 `tests/fixtures/weigh/`. What ships is measured: 21 files under
-`tools/lab/`, 212,533 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 371,388 bytes (`npm pack --dry-run` at 0.6.9, held
+`tools/lab/`, 216,288 bytes unpacked, and 23 suite files, 51,479 bytes, in
+a package that packs to 372,357 bytes (`npm pack --dry-run` at 0.6.9, held
 by `tests/package-assert.mjs` under its 409,600-byte ceiling).
 
 No image is fetched implicitly. `inspect`, `prove`, `setup` and `doctor`

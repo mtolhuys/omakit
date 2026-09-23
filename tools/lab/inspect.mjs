@@ -50,14 +50,19 @@ export function baseRelease(layout, pin = labPin()) {
 export function downloadEntry(dir, digest) {
   const record = readJson(join(dir, "verified.json"))
   let fileName = record?.fileName || null
+  let partial = null
   if (!fileName && existsSync(dir)) {
     try {
-      fileName = readdirSync(dir).find((name) => /^omarchy-\d+\.\d+\.\d+\.iso$/.test(name)) || null
+      const names = readdirSync(dir)
+      fileName = names.find((name) => /^omarchy-\d+\.\d+\.\d+\.iso$/.test(name)) || null
+      partial = names.find((name) => /^omarchy-\d+\.\d+\.\d+\.iso\.part$/.test(name)) || null
     } catch {
       fileName = null
     }
   }
-  const name = record?.name || (fileName || "").match(/^omarchy-(\d+\.\d+\.\d+)\.iso$/)?.[1] || null
+  // A partial download names its release by its file name too, so a newer
+  // one is never mistaken for an older one.
+  const name = record?.name || (fileName || partial || "").match(/^omarchy-(\d+\.\d+\.\d+)\.iso/)?.[1] || null
   const verified = Boolean(record) && record.sha256 === digest && Boolean(fileName) && existsSync(join(dir, fileName))
   return { name, fileName, record, verified }
 }
@@ -185,7 +190,7 @@ export function inspectBase(layout, pin = labPin()) {
     return out
   }
   out.state = "ahead"
-  out.reason = `Omarchy ${manifest.release.name} (guest omarchy ${manifest.guest.version}), newer than ${release.name}, the release this was held to; kept and used, never taken back a release`
+  out.reason = `Omarchy ${manifest.release.name} (guest omarchy ${manifest.guest.version}), newer than ${release.name}, the release this was held to; kept and used, never taken back a release (if Omarchy withdrew ${manifest.release.name}, \`omakit lab prune\` removes it and \`omakit lab setup\` builds ${release.name})`
   return out
 }
 

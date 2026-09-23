@@ -1357,7 +1357,13 @@ download 4.0.3 eight days after Omarchy published 4.0.4 (tag v4.0.4 at
 2026-09-15 21:39 UTC; `omarchy-4.0.4.iso` at iso.omarchy.org
 `last-modified` 21:35 UTC, with its `.sha256` and `.sig`). From 0.6.9 the
 lab looks up the newest release each time (`docs/LAB.md`). Measured on
-the reference host the same day, by `omakit lab` itself, with this code:
+the reference host the same day by `omakit lab` itself: the setup run
+(download, build, verification boot) on this change's first commit,
+`0f03fb6`, before its two reviews; the lookup, the Run suite and the ISO
+re-verified with gpg on the reviewed code that ships. What the reviews
+changed after the setup run (the `ahead` state, the start-of-setup sweep,
+the one-byte size probe, a rotation-signed `.sig`) is held by
+`tests/unit/lab.test.mjs`, not by a second 6 GB setup.
 
 | Figure | Value | Method |
 | --- | --- | --- |
@@ -1368,6 +1374,7 @@ the reference host the same day, by `omakit lab` itself, with this code:
 | The guest | `omarchy 4.0.4-1`, kernel 7.2.5-3-omarchy (`linux-omarchy`, the default since omarchy-iso `b507a20`), SSH in 25 s, the session in 11 s, one login round | `pacman -Q omarchy` in the verification boot, and its timings in the manifest. |
 | Setup, from the consent to PREPARED | 9m 50s (08:21:34 to 08:31:24 UTC), the 4.0.3 download (6,260,666,368 B) removed after the promotion | The run's own log. |
 | A Run suite on it | 19 of 19 scenarios, 2m 40.5s, a 446,763,008 B overlay removed, the base unchanged, skew false, `newest` 4.0.4 and `behind` false in the record | `omakit lab prove run`, run `20260923-103949-run`. |
+| The ISO re-verified on the shipped code | 6,185,304,064 B, the published SHA-256, the Omarchy signature: verified now | `omakit lab inspect --verify`: the hash and gpg again, through the gpg handling that accepts a rotation-signed `.sig`. |
 | A build's QEMU after an interrupted setup | still running 18m 24s after the 09:49 interrupt of a 4.0.3 setup, 34.7% of a core, its QMP socket in `/tmp` | `ps` on the reference host before this change; it was stopped by hand with SIGTERM, and 0.6.9's setup stops such a QEMU itself. |
 
 Limits, stated. One host, one day, one observation of each: the download

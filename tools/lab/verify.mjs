@@ -189,9 +189,17 @@ export function verifySignature({ file, signature, keyFile, stagingRoot, run = s
     const verified = run("gpg", ["--batch", "--status-fd", "1", "--verify", signature, file], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 600_000 })
     const status = String(verified.stdout || "")
     const valid = status.match(/^\[GNUPG:\] VALIDSIG ([0-9A-F]{40}) /m)
-    if (valid && verified.status === 0) return { state: "valid", fingerprint: valid[1], detail: status.match(/^\[GNUPG:\] GOODSIG \S+ (.+)$/m)?.[1] || null }
-    const bad = status.match(/^\[GNUPG:\] (BADSIG|NO_PUBKEY|ERRSIG|NODATA)\b.*$/m)
-    return { state: bad ? bad[1].toLowerCase() : "invalid", fingerprint: null, detail: (bad?.[0] || String(verified.stderr || "").trim().split("\n")[0] || "gpg did not report a valid signature").trim() }
+    // A .sig made during a key rotation carries a second signature by a key
+    // this keyring does not hold: gpg reports VALIDSIG for the packaged key,
+    // NO_PUBKEY for the other, and exits 2 (gpg 2.4.9). The keyring holds
+    // the packaged key alone, so a VALIDSIG can only be its own; the file is
+    // valid when there is one and no signature failed (BADSIG), whatever
+    // else gpg could not check.
+    const bad = /^\[GNUPG:\] BADSIG\b/m.test(status)
+    const unknownOnly = verified.status === 2 && /^\[GNUPG:\] (?:NO_PUBKEY|ERRSIG)\b/m.test(status)
+    if (valid && !bad && (verified.status === 0 || unknownOnly)) return { state: "valid", fingerprint: valid[1], detail: status.match(/^\[GNUPG:\] GOODSIG \S+ (.+)$/m)?.[1] || null }
+    const failed = status.match(/^\[GNUPG:\] (BADSIG|NO_PUBKEY|ERRSIG|NODATA)\b.*$/m)
+    return { state: failed ? failed[1].toLowerCase() : "invalid", fingerprint: null, detail: (failed?.[0] || String(verified.stderr || "").trim().split("\n")[0] || "gpg did not report a valid signature").trim() }
   } finally {
     removeFromLab(stagingRoot, `gnupg-${process.pid}`)
   }

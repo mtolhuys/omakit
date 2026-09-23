@@ -18,10 +18,11 @@ import { allocatedBytes, inLab, labLayout, writeJson } from "../../tools/lab/pat
 import { qcodesFor, qemuArgs } from "../../tools/lab/qemu.mjs"
 import { BUILD_COMMANDS, kvmContext, probeCommands, probeKvm } from "../../tools/lab/host.mjs"
 import { GUEST_HOST, sshArgs } from "../../tools/lab/guest.mjs"
-import { judgeRelease, sha256File, signatureIssuer, verifySignature } from "../../tools/lab/verify.mjs"
+import { judgeRelease, sha256File, signatureIssuer, signatureIssuers, verifySignature } from "../../tools/lab/verify.mjs"
 import { BASE_FILES, buildGuests, inspectBase, inspectDownload, inspectLab, inspectStaging, inspectToolchain } from "../../tools/lab/inspect.mjs"
 import { CONSENT_QUESTION, disclosureLines, downloadRelease, localRelease, NOT_ASKED, planSetup, removeSuperseded, setupLab, stagedBases, stopBuildGuests } from "../../tools/lab/setup.mjs"
 import { checkNewestRelease, findNewestRelease, sidecarDigest } from "../../tools/lab/release.mjs"
+import { getJson } from "../../tools/marketplace/github.mjs"
 import { acquireLock, LabError, preflightRun, releaseLock } from "../../tools/lab/run.mjs"
 import { planPrune, prune } from "../../tools/lab/prune.mjs"
 import { SUITES, suiteNames, suitePreflight } from "../../tools/lab/suites.mjs"
@@ -161,6 +162,12 @@ function releaseHost(listing, objects) {
     const object = objects[url]
     if (object === undefined || object === 404) throw Object.assign(new Error(`GET ${url} returned 404`), { code: "not-found", status: 404 })
     if (object instanceof Error) throw object
+    if (object.streamed) {
+      // A sidecar sent chunked, no Content-Length: read as it streams.
+      let sent = 0
+      const body = new ReadableStream({ pull(controller) { if (sent >= object.streamed.length) return controller.close(); const chunk = object.streamed.subarray(sent, sent + 1024); sent += chunk.length; controller.enqueue(chunk) } })
+      return { status: 200, headers: new Headers({}), body, arrayBuffer: async () => { log.bodiesRead.push(url); return new ArrayBuffer(0) } }
+    }
     const ranged = object.image && rangeEnd !== null && !object.ignoreRange && object.announce !== undefined
     const headers = new Headers(ranged
       ? { "content-length": "1", "content-range": `bytes 0-0/${object.announce}` }
@@ -229,6 +236,10 @@ test("a newer release not published whole is passed over and named, but a read t
   const huge = releaseHost(listing, { ...published("4.0.5"), [`${iso("4.0.5")}.sha256`]: Buffer.alloc(5000, 97) })
   await assert.rejects(findNewestRelease({ pin, readJson: huge.readJson, fetchStream: huge.fetchStream }), (error) => error.code === "release-unavailable" && /a sidecar is a few dozen/.test(error.message))
   assert.ok(!huge.log.bodiesRead.includes(`${iso("4.0.5")}.sha256`), "refused on its announced size, never buffered")
+  const chunked = releaseHost(listing, { ...published("4.0.5"), [`${iso("4.0.5")}.sha256`]: { streamed: Buffer.alloc(4097, 97) } })
+  await assert.rejects(findNewestRelease({ pin, readJson: chunked.readJson, fetchStream: chunked.fetchStream }), (error) => error.code === "release-unavailable" && /4,097 B or more; a sidecar is a few dozen/.test(error.message), "refused as it streams past 4 KiB")
+  const small = releaseHost([tagged("4.0.5")], { ...published("4.0.5"), [`${iso("4.0.5")}.sha256`]: { streamed: Buffer.from(`${"5".repeat(64)}  omarchy-4.0.5.iso\n`) } })
+  assert.equal((await findNewestRelease({ pin, readJson: small.readJson, fetchStream: small.fetchStream })).release.sha256, "5".repeat(64), "a chunked sidecar that fits is read")
 })
 
 test("the floor holds whatever the list says, a changed signer stops the search before any download, and the check never throws", async () => {
@@ -401,7 +412,7 @@ test("inspect on an empty home reports everything missing with its cost and comm
   }
 })
 
-test("a base is ready for its own release, outdated when a newer one or a republished ISO is out, a mismatch when newer than the newest or not its release's package, invalid when its files disagree", () => {
+test("a base is ready for its own release, outdated when a newer one or a republished ISO is out, ahead when newer than the release in hand, a mismatch when its guest is not its release's package, invalid when its files or record disagree", () => {
   const { env, layout, rm } = scratch()
   try {
     mkdirSync(layout.base, { recursive: true })
@@ -901,6 +912,95 @@ test("the guard stops a build's QEMU and nothing else, and the downloads a new b
     assert.equal(existsSync(join(layout.downloads, RELEASE_403.sha256)), false)
     assert.equal(existsSync(join(layout.downloads, current.sha256)), true, "the release just verified is never among what goes")
     void env
+  } finally {
+    rm()
+  }
+})
+
+test("gpg's verdict on a signature made with two keys, one of them the packaged one, is valid; a bad one is not", { skip: spawnSync("gpg", ["--version"], { timeout: 120_000 }).status !== 0 ? "no gpg" : false }, () => {
+  const { dir, layout, rm } = scratch()
+  try {
+    const home = join(dir, "gnupg")
+    mkdirSync(home, { recursive: true, mode: 0o700 })
+    const env = { ...process.env, GNUPGHOME: home }
+    const make = (uid) => spawnSync("gpg", ["--batch", "--quiet", "--pinentry-mode", "loopback", "--passphrase", "", "--quick-generate-key", uid, "ed25519", "sign", "0"], { timeout: 120_000, env }).status === 0
+    if (!make("Old Key <old@example.invalid>") || !make("New Key <new@example.invalid>")) return
+    const keys = [...spawnSync("gpg", ["--batch", "--with-colons", "--list-keys"], { timeout: 120_000, env, encoding: "utf8" }).stdout.matchAll(/^fpr:+([0-9A-F]{40}):/gm)].map((match) => match[1])
+    const [oldKey, newKey] = keys
+    const keyFile = join(dir, "old.gpg")
+    writeFileSync(keyFile, spawnSync("gpg", ["--batch", "--armor", "--export", oldKey], { timeout: 120_000, env, encoding: "utf8" }).stdout)
+    const file = join(dir, "rotated.iso")
+    writeFileSync(file, Buffer.from("a release signed during a key rotation\n".repeat(100)))
+    assert.equal(spawnSync("gpg", ["--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", "", "-u", newKey, "-u", oldKey, "--detach-sign", "--output", `${file}.sig`, file], { timeout: 120_000, env }).status, 0)
+    assert.deepEqual(signatureIssuers(readFileSync(`${file}.sig`)).map((issuer) => issuer.fingerprint).sort(), [newKey, oldKey].sort(), "both signers read from the packets")
+    mkdirSync(layout.staging, { recursive: true })
+    const both = verifySignature({ file, signature: `${file}.sig`, keyFile, stagingRoot: layout.staging })
+    assert.equal(both.state, "valid", "gpg exits 2 for the key it lacks, and the packaged key's VALIDSIG stands")
+    assert.equal(both.fingerprint, oldKey)
+    writeFileSync(file, Buffer.from("a release signed during a key rotation\n".repeat(100) + "tampered"))
+    assert.notEqual(verifySignature({ file, signature: `${file}.sig`, keyFile, stagingRoot: layout.staging }).state, "valid", "a changed file is BADSIG, whatever the other signature says")
+  } finally {
+    rm()
+  }
+})
+
+test("setup stops a build QEMU a killed setup left before it does anything else, and a Ctrl-C mid-request reads as an interrupt with the caller's own deadline otherwise", async () => {
+  const { env, layout, rm } = scratch()
+  const { spawn } = await import("node:child_process")
+  const build = join(layout.staging, "build-20260923-094524")
+  const runDir = join(build, "test-runs", "omarchy-4.0.3", "runs", "20260923-094524")
+  mkdirSync(runDir, { recursive: true })
+  const orphan = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)", `${build}/test-runs/omarchy-4.0.3/base.qcow2`], { stdio: "ignore" })
+  const server = createServer(() => {})
+  try {
+    await new Promise((resolvePromise) => orphan.once("spawn", resolvePromise))
+    writeFileSync(join(runDir, "qemu.pid"), `${orphan.pid}\n`)
+    const exited = new Promise((resolvePromise) => orphan.once("exit", (code, signal) => resolvePromise(signal)))
+    const lines = []
+    const result = await setupLab({ plan: { pin: withRelease(pin, RELEASE_403), layout, blockers: [], steps: [{ kind: "plugins", plugins: [] }] }, consented: true, repoRoot: REPO_ROOT, onLine: (line) => lines.push(line.text) })
+    assert.equal(await exited, "SIGTERM", "the orphan was stopped with the lock held, before the steps ran")
+    assert.ok(lines.some((line) => line.includes(`stopped the build's QEMU (pid ${orphan.pid})`)))
+    assert.deepEqual(result.done.map((step) => step.kind), ["plugins"])
+    assert.equal(existsSync(layout.downloads), false, "a plan that fetches nothing leaves no download directory")
+    assert.equal(existsSync(layout.lock), false)
+    // The network client: an abort is an interrupt, a caller's deadline is the caller's.
+    await new Promise((resolvePromise) => server.listen(0, "127.0.0.1", resolvePromise))
+    const url = `http://127.0.0.1:${server.address().port}/never`
+    const controller = new AbortController()
+    setTimeout(() => controller.abort("SIGINT"), 50)
+    await assert.rejects(getJson(url, { signal: controller.signal }), (error) => error.code === "interrupted" && /interrupted while reading \/never/.test(error.message))
+    await assert.rejects(getJson(url, { signal: AbortSignal.timeout(50) }), (error) => error.code === "network-unavailable" && /no answer before the caller's deadline/.test(error.message) && !/20 s/.test(error.message))
+    void env
+  } finally {
+    orphan.kill("SIGKILL")
+    server.closeAllConnections?.()
+    server.close()
+    rm()
+  }
+})
+
+test("setup --plugins plans the plugins over a kept base too, and a build of an older release never removes a newer download", () => {
+  const { env, layout, rm } = scratch()
+  try {
+    const release405 = releaseOf(pin, { name: "4.0.5", bytes: 1, sha256: "5".repeat(64) })
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 1, sha256: "4".repeat(64) })
+    writeBase(layout, release405)
+    const ahead = planSetup({ env, newest: found(release404), plugins: true, repoRoot: REPO_ROOT })
+    assert.equal(ahead.base.state, "ahead")
+    assert.deepEqual(ahead.steps.map((step) => step.kind), ["plugins"], "the base is kept and the plugins still come")
+    assert.match(disclosureLines(ahead)[0][1], /^the base there, Omarchy 4\.0\.5, kept: newer than 4\.0\.4$/)
+    const stale = planSetup({ env, newest: { checked: false, code: "network-unavailable", reason: "api.github.com did not answer" }, plugins: true, repoRoot: REPO_ROOT })
+    assert.deepEqual(stale.steps.map((step) => step.kind), ["plugins"])
+    assert.match(disclosureLines(stale)[0][1], /left as it is: the newest release could not be looked up/)
+    // No base; a verified 4.0.5 ISO from an earlier setup, and a 4.0.3 one; the search returns 4.0.4.
+    rmSync(layout.base, { recursive: true })
+    for (const [release, file] of [[release405, "omarchy-4.0.5.iso"], [RELEASE_403, "omarchy-4.0.3.iso.part"]]) {
+      mkdirSync(join(layout.downloads, release.sha256), { recursive: true })
+      writeFileSync(join(layout.downloads, release.sha256, file), "x")
+    }
+    const plan = planSetup({ env, newest: found(release404), repoRoot: REPO_ROOT })
+    const step = plan.steps.find((entry) => entry.kind === "build" || entry.kind === "promote")
+    assert.deepEqual(step.superseded.map((entry) => entry.name), ["4.0.3"], "the partial 4.0.3 goes; the newer 4.0.5 is never removed as an older download")
   } finally {
     rm()
   }

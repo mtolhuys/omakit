@@ -42,7 +42,7 @@ import { getStream, GitHubError } from "../marketplace/github.mjs"
 import { LAB_DIR, bytesBoth, compareVersions, durationWords, guestIsRelease, labPin, releaseOf, withRelease } from "./pin.mjs"
 import { allocatedBytes, copyIntoLab, inLab, labDir, labLayout, moveIntoLab, readJson, removeFromLab, stampNow, writeJson } from "./paths.mjs"
 import { BUILD_COMMANDS, VERIFY_COMMANDS, freeBytesAt, probeCommands, probeRunHost } from "./host.mjs"
-import { judgeRelease, packagedKey, sha256File, signatureIssuer } from "./verify.mjs"
+import { judgeRelease, packagedKey, sha256File, signatureIssuers, signedByPinned } from "./verify.mjs"
 import { sidecarDigest } from "./release.mjs"
 import { BASE_FILES, baseRelease, buildGuests, downloadDir, downloadEntry, inspectBase, inspectDownload, inspectToolchain, toolchainCommand } from "./inspect.mjs"
 import { LabError, acquireLock, freePort, releaseLock, withGuest } from "./run.mjs"
@@ -92,22 +92,29 @@ export function localRelease(pin, file) {
     sha256 = null
   }
   if (!sha256) return { blocker: { what: "the checksum beside --from", cost: `${source}.sha256 is missing or does not name the file with a SHA-256`, command } }
-  let signer = null
+  let signers = null
   try {
-    signer = signatureIssuer(readFileSync(`${source}.sig`))
+    signers = signatureIssuers(readFileSync(`${source}.sig`))
   } catch {
     return { blocker: { what: "the signature beside --from", cost: `${source}.sig is not there; nothing boots a release whose signature was not checked`, command } }
   }
-  if (signer.fingerprint && signer.fingerprint !== pin.releases.signingFingerprint) return { blocker: { what: "the signature beside --from", cost: `${source}.sig is by ${signer.fingerprint}, not the key omakit ships (${pin.releases.signingFingerprint})`, command: "omakit upgrade" } }
+  if (signedByPinned(signers, pin.releases.signingFingerprint) === false) return { blocker: { what: "the signature beside --from", cost: `${source}.sig is by ${signers.map((signer) => signer.fingerprint || `key ${signer.keyId}`).join(" and ")}, not the key omakit ships (${pin.releases.signingFingerprint})`, command: "omakit upgrade" } }
   return { release: releaseOf(pin, { name, bytes: statSync(source).size, sha256 }) }
 }
 
-/** Download directories other than the release's own: what a new base supersedes, removed once it verifies. */
+/**
+ * Download directories a new base supersedes, removed once it verifies:
+ * every one but the release's own, except a newer release's. Never going
+ * back a release holds for the downloads too: with no base, a newer ISO
+ * verified by an earlier setup stays when this one builds an older
+ * release (its checksum was being republished when the search ran).
+ */
 function supersededDownloads(layout, release) {
   if (!existsSync(layout.downloads)) return []
   return readdirSync(layout.downloads)
     .filter((digest) => /^[0-9a-f]{64}$/.test(digest) && digest !== release.sha256)
     .map((digest) => ({ digest, relative: `downloads/${digest}`, name: downloadEntry(join(layout.downloads, digest), digest).name, bytes: allocatedBytes(join(layout.downloads, digest)) }))
+    .filter((entry) => !entry.name || compareVersions(entry.name, release.name) <= 0)
 }
 
 /**
@@ -139,6 +146,22 @@ export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKE
   const own = baseRelease(layout, pin)
   const current = inspectBase(layout, withRelease(pin, own))
   const usable = current.state === "ready"
+  // The listed plugins are asked for whatever the base does: a base kept
+  // as it is (the newest not looked up, or one newer than the newest) is
+  // no reason to leave `prove weigh-evidence` without them.
+  let pluginsPlanned = false
+  const addPlugins = () => {
+    if (!plugins || pluginsPlanned) return
+    pluginsPlanned = true
+    const pinDir = marketplacePinDir(repoRoot)
+    const wanted = []
+    for (const id of WEIGH_LISTED) {
+      const listing = listedPlugin(pinDir, id)
+      if (!listing.ok) blockers.push({ what: `${id} in the pinned catalog`, cost: listing.reason, command: "omakit pin" })
+      else wanted.push({ id, repo: listing.repo, commit: listing.commit, to: join(layout.plugins, id) })
+    }
+    if (wanted.length) steps.push({ kind: "plugins", plugins: wanted, to: layout.plugins, bytes: pin.measured.pluginsBytes || null })
+  }
   const done = (release, extra = {}) => ({ layout, pin: withRelease(pin, release), newest, download: null, base: current, toolchain, free, steps, blockers, needed: 0, afterBytes: 0, ...extra })
   if (!newest.checked && newest.code === "not-asked") {
     // Whatever the newest release turns out to be, a host with no usable
@@ -158,7 +181,10 @@ export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKE
   if (!release) {
     // The newest could not be looked up. A usable base stays as it is and
     // the plan says what was not checked; with none, that is the blocker.
-    if (usable) return done(own, { stale: { base: own.name, reason: newest.reason, code: newest.code } })
+    if (usable) {
+      addPlugins()
+      return done(own, { stale: { base: own.name, reason: newest.reason, code: newest.code } })
+    }
     if (!from) blockers.push({ what: "the newest Omarchy release", cost: `it could not be looked up: ${newest.reason}`, command: "connect to the network and run omakit lab setup again, or omakit lab setup --from <omarchy-X.Y.Z.iso> with its .sha256 and .sig beside it" })
     return done(null)
   }
@@ -168,7 +194,10 @@ export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKE
   // A good base newer than the release in hand is kept: the lab never goes
   // back a release on its own (inspect.mjs, `ahead`), and nothing older is
   // fetched or built over it.
-  if (base.state === "ahead") return done(release, { download, base, ahead: { base: base.manifest.release.name, release: release.name, from: newest.checked ? "newest" : "from" } })
+  if (base.state === "ahead") {
+    addPlugins()
+    return done(release, { download, base, ahead: { base: base.manifest.release.name, release: release.name, from: newest.checked ? "newest" : "from" } })
+  }
   if (!download.verified) {
     if (from) {
       const source = resolve(from)
@@ -196,16 +225,7 @@ export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKE
       steps.push({ kind: "build", toolchain: toolchain.harness, to: layout.base, replacing, superseded, bytes: pin.measured.baseDirectoryBytes, milliseconds: pin.measured.buildMilliseconds })
     }
   }
-  if (plugins) {
-    const pinDir = marketplacePinDir(repoRoot)
-    const wanted = []
-    for (const id of WEIGH_LISTED) {
-      const listing = listedPlugin(pinDir, id)
-      if (!listing.ok) blockers.push({ what: `${id} in the pinned catalog`, cost: listing.reason, command: "omakit pin" })
-      else wanted.push({ id, repo: listing.repo, commit: listing.commit, to: join(layout.plugins, id) })
-    }
-    if (wanted.length) steps.push({ kind: "plugins", plugins: wanted, to: layout.plugins, bytes: pin.measured.pluginsBytes || null })
-  }
+  addPlugins()
   const needed = steps.reduce((sum, step) => sum + (step.kind === "download" ? step.bytes - (step.resumeFrom || 0) : step.kind === "import" ? step.bytes : step.kind === "build" ? step.bytes : 0), 0)
   if (steps.length && free.bytes < needed) blockers.push({ what: "disk", cost: `${bytesBoth(free.bytes)} free at ${free.path}; this setup needs ${bytesBoth(needed)}`, command: "omakit lab prune" })
   // Afterwards: this ISO and a base the size the measured release's was.
@@ -238,6 +258,19 @@ export function disclosureLines(plan) {
   const imported = plan.steps.find((step) => step.kind === "import")
   const build = plan.steps.find((step) => step.kind === "build")
   const plugins = plan.steps.find((step) => step.kind === "plugins")
+  // Plugins alone: the base stays as it is, and the lines say why.
+  if (!plan.steps.some((step) => ["download", "import", "verify", "sidecars", "build", "promote"].includes(step.kind))) {
+    const baseName = plan.base?.manifest?.release?.name
+    lines.push(["Omarchy", plan.stale
+      ? `the base there, Omarchy ${plan.stale.base}, left as it is: the newest release could not be looked up (${plan.stale.reason})`
+      : plan.ahead
+        ? `the base there, Omarchy ${plan.ahead.base}, kept: newer than ${plan.ahead.release}`
+        : `the base there, Omarchy ${baseName || pin.release?.name}, ${plan.newest?.checked ? "the newest release" : "left as it is"}`])
+    if (plugins) lines.push(["plugins", `${plugins.plugins.length} listed plugins at their validated commits, shallow, into ${plugins.to}`])
+    lines.push(["store", plan.layout.cache])
+    lines.push(["on disk", `${bytesBoth(plan.free.bytes)} free now`])
+    return lines
+  }
   const found = plan.newest?.checked
     ? `the newest published (${plan.newest.tag}${plan.newest.publishedAt ? `, ${plan.newest.publishedAt.slice(0, 10)}` : ""}, found now in ${plan.newest.list.replace(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/releases.*$/, "github.com/$1")})`
     : `from the file named by --from; the newest could not be looked up (${plan.newest?.reason || "not asked"})`
@@ -289,6 +322,7 @@ export async function downloadRelease({ url, to, bytes, onProgress = () => {}, s
   try {
     response = await fetchStream(url, { rangeFrom: have, signal })
   } catch (error) {
+    if (error?.code === "interrupted") throw new LabError("interrupted", "interrupted; the partial download stays and resumes next time", { remedy: "omakit lab setup: the download resumes where it stopped" })
     if (error instanceof GitHubError) throw new LabError(error.code, error.message, { remedy: "check the network, then run `omakit lab setup` again; the download resumes" })
     throw error
   }
@@ -319,7 +353,14 @@ export async function downloadRelease({ url, to, bytes, onProgress = () => {}, s
 /** The two sidecars, small, to the download directory; the signature is required, the checksum compared. */
 async function fetchSidecars({ pin, dir, layout, fetchStream = getStream, signal }) {
   for (const [url, name] of [[pin.release.checksumUrl, `${pin.release.fileName}.sha256`], [pin.release.signatureUrl, `${pin.release.fileName}.sig`]]) {
-    const response = await fetchStream(url, { signal })
+    let response
+    try {
+      response = await fetchStream(url, { signal })
+    } catch (error) {
+      if (error?.code === "interrupted") throw new LabError("interrupted", "interrupted while fetching the checksum and signature; what was downloaded stays", { remedy: "omakit lab setup: it picks up where it stopped" })
+      if (error instanceof GitHubError) throw new LabError(error.code, error.message, { remedy: "check the network, then run `omakit lab setup` again" })
+      throw error
+    }
     const body = Buffer.from(await response.arrayBuffer())
     if (body.length > 4096) throw new LabError("sidecar-mismatch", `${url} answered ${body.length} B; a sidecar is a few dozen`)
     writeFileSync(inLab(layout.cache, `downloads/${pin.release.sha256}/${name}`), body, { mode: 0o600 })
@@ -549,9 +590,12 @@ export async function setupLab({ plan, consented, onPhase = () => {}, onLine = (
     if (existsSync(layout.staging)) {
       for (const name of readdirSync(layout.staging).filter((entry) => /^build-\d{8}-\d{6}$/.test(entry)).sort()) await stopBuildGuests(join(layout.staging, name), onLine)
     }
-    labDir(layout.cache, "downloads", pin.release.sha256)
+    // A download directory only for a plan that fetches or imports: a
+    // plugins-only plan over a kept base leaves none behind for a release
+    // it never fetched.
+    if (plan.steps.some((step) => ["download", "import", "sidecars"].includes(step.kind))) labDir(layout.cache, "downloads", pin.release.sha256)
     labDir(layout.cache, "staging")
-    const target = join(downloadDir(layout, pin), pin.release.fileName)
+    const target = pin.release ? join(downloadDir(layout, pin), pin.release.fileName) : null
     for (const step of plan.steps) {
       if (signal?.aborted) throw new LabError("interrupted", "interrupted; what was verified stays verified, what was not stays unverified")
       if (step.kind === "download") {

@@ -247,7 +247,7 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
     onPhase("looking for the newest Omarchy release")
     newest = await checkNewest()
     // An interrupt during the lookup is an interrupt: nothing is booted.
-    if (signal?.aborted || newest.code === "interrupted") throw new LabError("interrupted", "interrupted while looking for the newest release; nothing was booted")
+    if (signal?.aborted || newest.code === "interrupted") throw new LabError("interrupted", "interrupted while looking for the newest release; nothing was booted", { remedy: `omakit lab prove ${suite.name}, when you are ready` })
   }
   const behind = newest.checked ? compareVersions(pin.release.name, newest.release.name) < 0 || (pin.release.name === newest.release.name && pin.release.sha256 !== newest.release.sha256) : null
   const runId = `${stampNow()}-${suite.name}`
