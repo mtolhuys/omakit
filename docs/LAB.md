@@ -36,18 +36,22 @@ form of one; `tests/unit/self-containment.test.mjs` sniffs every file in
 the tree for a disk-image or archive signature, holds `package.json` to no
 install hook, and holds `tools/lab/` to code, the pin, the key, a patch and
 bash, plus the suites' in-guest inputs under `tests/lab/` and
-`tests/fixtures/weigh/`. What ships is measured: 20 files under
-`tools/lab/`, 168,237 bytes unpacked, and 23 suite files, 51,479 bytes, in
-a package that packs to 340,899 bytes (`tests/package-assert.mjs`, the
-release-stamped artifact of 2026-09-19).
+`tests/fixtures/weigh/`. What ships is measured: 21 files under
+`tools/lab/`, 206,468 bytes unpacked, and 23 suite files, 51,479 bytes, in
+a package that packs to 369,392 bytes (`npm pack --dry-run` at 0.6.9, held
+by `tests/package-assert.mjs` under its 409,600-byte ceiling).
 
-Nothing is fetched implicitly. `prove`, `inspect`, `prune` and `doctor`
-never touch the network. `setup` is the one path that fetches bytes, after
+No image is fetched implicitly. `inspect`, `prove`, `setup` and `doctor`
+read Omarchy's release list once each (below), so the lab says when a newer
+release is out; that read is a few GETs of metadata and the ISO's response
+headers, never a byte of an image, and `--offline` skips it. `prune` never
+touches the network. `setup` is the one path that fetches an image, after
 one consent that states the exact size and the destination, and `--yes` is
 that consent in the command itself for an agent; a pipe without it refuses,
 exit 2, naming `omakit lab setup --yes`, with the plan as the refusal's text.
 A plan that cannot run (no toolchain, too little disk) is refused before
-any consent is asked, exit 1, `lab-blocked`, and says what blocks it.
+any consent is asked, and before the release list is read, exit 1,
+`lab-blocked`, and says what blocks it.
 
 Nothing here touches the daily session. Every binary the lab's modules
 spawn on the host is on a list `tests/unit/lab.test.mjs` holds them to
@@ -64,31 +68,57 @@ the tablet and the disk, one network device with SSH forwarded on
 127.0.0.1 and nothing else forwarded. SSH goes to 127.0.0.1 with the
 base's own key, no agent, no forwarding, no known-hosts entry.
 
-## The trust anchor
+## The newest release, and the trust anchor
 
-The release is pinned in `tools/lab/pin.json`: Omarchy 4.0.3, the ISO at
-`https://iso.omarchy.org/omarchy-4.0.3.iso`, 6,260,654,080 B (6.261 GB /
-5.831 GiB), SHA-256
-`03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14`, signed
-by `40DFB630FF42BCFFB047046CF0134EE680CAC571` (Omarchy <pkgs@omarchy.org>),
-the installed guest package expected `omarchy 4.0.3-1`. The public key ships
-as `tools/lab/omarchy.gpg`, 632 bytes of armoured text, itself pinned by
-digest. The lab never resolves "latest" and the pin file refuses a URL that
-does (`tests/unit/lab.test.mjs`).
+The lab prepares the newest Omarchy release, found each time: until 0.6.9
+it was pinned to one release, 4.0.3, and on 2026-09-23 it still offered
+4.0.3 eight days after 4.0.4 was published, because nothing looked.
+`tools/lab/release.mjs` reads the release list at
+`https://api.github.com/repos/omacom/omarchy/releases`, skips drafts,
+pre-releases and anything that is not three numbers, sorts by version (not
+by the list's order), and takes the newest at or above the floor, 4.0.3,
+whose ISO, `.sha256` and `.sig` are all published at
+`https://iso.omarchy.org/omarchy-<version>.iso`. A newer tag whose objects
+are not all there yet (the host answers 404; 4.0.0 never had a `.sha256`)
+is passed over and named; any other failure (a timeout, a 5xx) stops the
+search instead, because a fallback on a bad connection is the stale lab
+again. At most three candidates are read, each for its checksum and
+signature and the ISO's announced size; the ISO's body is cancelled
+unread.
 
-A file is the release when, in this order, its byte count is the pin's,
-its SHA-256 is the pin's, the published `.sha256` sidecar names the same
-digest, and its detached `.sig` verifies in a throwaway keyring (never the
-user's `~/.gnupg`) against the packaged key at the pinned fingerprint. A
+What is fixed, in `tools/lab/pin.json`, is what the trust rests on: the
+signer, `40DFB630FF42BCFFB047046CF0134EE680CAC571` (Omarchy
+<pkgs@omarchy.org>), whose public key ships as `tools/lab/omarchy.gpg`, 632
+bytes of armoured text, itself pinned by digest; the floor; and the two
+URLs. The release list decides which release; the signature decides whether
+a file is it. That answers the inventory's objection to "latest" (P13):
+the old setup scraped a web page for the first ISO link and trusted a
+checksum from the same host with no signature checked, so a substituted
+pair passed. Here a substituted ISO with a matching substituted checksum
+fails at gpg. The signer is read from the `.sig` packet before anything
+else is asked for: a release signed by any other key stops the search
+(`signer-changed`) and is not replaced by an older one the old key signed,
+and a changed key is a new omakit, never a quiet fallback.
+
+A file is the release when, in this order, its byte count is the one the
+ISO host announced, its SHA-256 is the one the `.sha256` published, the
+`.sha256` fetched at verification still names that digest, and its
+detached `.sig` verifies in a throwaway keyring (never the user's
+`~/.gnupg`) against the packaged key at the pinned fingerprint. A
 downloaded file, a file copied with `--from` and a file already on disk are
 judged alike; a mismatch in any step fails closed: the file stays as
 `.part`, nothing is recorded, nothing boots it, and the report says which
-step and both values. A sidecar that disagrees with the pin is named as
-what it is, the object at the versioned URL replaced. The digest is the
-identity the package reviewed; the signature is the independent Omarchy
-authenticity check. A key rotation or a new release is a pin update: a
-reviewed change that verifies the official sidecars, measures the download,
-builds a base, reads the guest version, and records all of it in M14.
+step and both values. A checksum that changed while setup ran is named as
+what it is, the release republished, and `setup` reads it again. The guest
+package a base runs must be its release's (`4.0.4-<rev>` for 4.0.4).
+
+`--from <file>` is the newest release when the list can be read; offline it
+names its own release by its file name (`omarchy-<version>.iso`, at or
+above the floor), with its `.sha256` and `.sig` beside it, and the same
+verification decides. A base keeps working when a newer release is out:
+`prove` runs it and says so, `inspect` and `doctor` name the newer release,
+and `setup` builds it, replacing the old base and the older downloads only
+after the new base verifies.
 
 `inspect` reports the verification as recorded (`verified.json` beside the
 ISO: digest, signer, when) and whether the file's size and mtime still
@@ -99,7 +129,7 @@ now, about 15 s on the reference host (M14).
 
 ```text
 $XDG_CACHE_HOME/omakit/lab/            or ~/.cache/omakit/lab
-  downloads/<sha256>/omarchy-4.0.3.iso  0444, with .sha256, .sig, verified.json
+  downloads/<sha256>/omarchy-<v>.iso   0444, with .sha256, .sig, verified.json (the release it is)
   base/base.qcow2                       0444, the backing file of every run
   base/firmware-vars.template           0444, copied per run, never opened writable
   base/id_ed25519, id_ed25519.pub       the guest's lab key
@@ -120,22 +150,31 @@ throws for a path outside these two roots; `tests/unit/self-containment.test.mjs
 holds every `writeFileSync` under `tools/lab/` to it, and the one rename
 (a verified `.part` promoted, a staged base promoted) to the same guard.
 
-The base manifest records the release (name, digest, URL, embedded build
-date, volume), the signer, the guest (the installed `omarchy` package read
+The base manifest records the release (name, digest, byte count, URL), the
+signer, the guest (the installed `omarchy` package read
 over SSH in a verification boot, the kernel, the hostname), the disk (bytes,
 SHA-256, virtual and allocated bytes), the firmware template's SHA-256, the
 build (duration, the harness digest, the toolchain commit, the
 verification boot's timings), when it was created and by which omakit,
-kernel and QEMU. `inspect` and `doctor` judge it: `ready` (the pin's
-release and guest), `mismatch` (another release; `setup` replaces it),
-`invalid` (a disk without a complete manifest, or a size other than the
-recorded one; it will not be booted), `missing`.
+kernel and QEMU. `inspect` and `doctor` judge it against the newest
+release: `ready` (built from it, its guest the release's package),
+`outdated` (a good base of an older release, or of the same release before
+Omarchy republished its ISO: a run uses it, and `setup` builds the newest
+and replaces it once that verifies), `mismatch` (newer than the newest
+published, so withdrawn upstream, or a guest that is not its release's
+package; `setup` replaces it), `invalid` (a disk without a complete
+manifest, or a size other than the recorded one; it will not be booted),
+`missing`. With the release list unread (`--offline`, or no network) the
+base is judged against its own release and the report says the newest was
+not looked up.
 
 ## A run
 
 `omakit lab prove <suite>`, in order:
 
-1. Preflight, reading only: the base is ready and the pin's; KVM, QEMU,
+1. Preflight, reading only: the base is good for its own release, behind
+   or not (a newer release is said beside the result, never a reason to
+   refuse); KVM, QEMU,
    `qemu-img`, `ssh` and the OVMF firmware are there; the host has one and
    a half times the guest's 5120 MiB; the suite's files are in the
    checkout; the disk has room for one overlay (610,734,080 B, the largest
@@ -160,18 +199,23 @@ recorded one; it will not be booted), `missing`.
 
    ```text
    run           20260918-160936-run
-   release       4.0.3
+   release       Omarchy 4.0.3
+   newest        Omarchy 4.0.4 is out and this base is 4.0.3: the run uses the base there; omakit lab setup builds 4.0.4
    guest         omarchy 4.0.3-1 on 7.2.3-arch1-3
    iso sha256    03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
    base          created 2026-09-18T14:05:40.267Z; 6,182,264,832 B (6.182 GB / 5.758 GiB); disk sha256 c47c74a0...418d38a3
    tested        installed package omarchy 4.0.3-1
-   skew          false: the installed package is the pinned 4.0.3-1
+   skew          false: the installed package is the base's 4.0.3-1
    ```
 
-   `skew` is true when the session runs from a linked checkout
-   (`OMARCHY_PATH` in `/etc/omarchy.conf` names one) or the installed
-   package is not the pin's; it is printed and written, never collapsed
-   into "Omarchy 4.0.3". The old gates never wrote this line, and their
+   The run of 2026-09-18 printed no `newest` line; the one above is what
+   the same base prints since 0.6.9, with 4.0.4 out. The run record and
+   the suite's document carry `newest` and `behind` beside `pin`, and the
+   PROVED line says when a newer release is out. `skew` is true when the
+   session runs from a linked checkout (`OMARCHY_PATH` in
+   `/etc/omarchy.conf` names one) or the installed package is not the
+   base's release's; it is printed and written, never collapsed into
+   "Omarchy 4.0.3". The old gates never wrote this line, and their
    session was in fact dev-linked (inventory P8).
 7. The suite, through the one harness (`tools/lab/harness.sh`): its body is
    a bash file under `tools/lab/suites/` that gets `log`, `ssh_guest`,
@@ -244,23 +288,39 @@ none.
 ## Setup: what it costs and what it does
 
 The disclosure, printed whole before the question, as it read on the
-reference host:
+reference host on 2026-09-23, with the 4.0.3 download of an earlier setup
+still beside it:
 
 ```text
-Omarchy       release 4.0.3; installed guest expected 4.0.3-1
-download      6,260,654,080 B (6.261 GB / 5.831 GiB)
-from          https://iso.omarchy.org/omarchy-4.0.3.iso
-verify        pinned SHA-256
-              03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14
-              and the Omarchy signature 40DFB630FF42BCFFB047046CF0134EE680CAC571
+Omarchy       release 4.0.4, the newest published (v4.0.4, 2026-09-15, found now
+              in github.com/omacom/omarchy); the guest will run omarchy 4.0.4
+download      6,185,304,064 B (6.185 GB / 5.761 GiB)
+from          https://iso.omarchy.org/omarchy-4.0.4.iso
+verify        SHA-256
+              ddeded2758c48318d201dfdac905ecb28f570441883f0c052ea3cd5d05acf92d
+              as published beside it, and the Omarchy signature
+              40DFB630FF42BCFFB047046CF0134EE680CAC571, the key omakit ships
 store         ~/.cache/omakit/lab
-build         5m 57.8s on the reference host (M14); download excluded
+build         5m 57.8s measured with Omarchy 4.0.3 on the reference host (M14);
+              download excluded
+replacing     one older download (4.0.3), 6,260,666,368 B (6.261 GB / 5.831
+              GiB), removed after the new base verifies; until then a run uses
+              what is there
 afterwards    verified ISO, one immutable base, and manifests
-on disk       12,442,931,200 B (12.443 GB / 11.588 GiB) (M14), before evidence;
-              1,317,675,511,808 B (1317.676 GB / 1227.181 GiB) free now
+on disk       about 12,367,568,896 B (12.368 GB / 11.518 GiB): this ISO and a
+              base the size Omarchy 4.0.3's measured (M14), before evidence;
+              1,228,904,902,656 B (1228.905 GB / 1144.507 GiB) free now
 
 Acquire and build this verified base now? [y/N]:
 ```
+
+A newer tag passed over (tagged, its ISO not up yet) is named on a `newer`
+line; with the base already built from the newest release and its ISO
+verified, `setup` prints `PREPARED  Omarchy 4.0.4, the newest release: the
+verified ISO and a ready base are there; nothing to acquire.` With the
+release list unreadable and a good base on disk, it leaves the base as it
+is and says the newest could not be looked up; with no base, that is the
+blocker, and `--from` is the way through without the network.
 
 With `--from <file>` the download line says `0 B` and the file is copied
 (6,260,654,080 B in 4.6 s on the reference host with the source
@@ -271,7 +331,8 @@ verification boot never promoted (an interrupted setup), the build line
 says `none` and the staged base is verified and promoted instead of built
 again. The download is a literal GET to `<name>.part`, resumed by byte
 range on the next run, refused when the server announces a length other
-than the pin's, and never sent the GitHub credential (the transport is the
+than the one it announced when the release was read, and never sent the
+GitHub credential (the transport is the
 one call site in `tools/marketplace/github.mjs`, and `iso.omarchy.org` is
 the fifth host `tests/unit/read-only.test.mjs` allows).
 
@@ -282,11 +343,25 @@ real installer by screendump, OCR and virtual keystrokes, authorises the
 lab's SSH key over a console login, and saves the disk. Measured
 2026-09-18: 5m 57.8s. Then omakit's own driver boots the staged base once,
 reads `pacman -Q omarchy` (35 s to SSH, 11 s to the session), refuses a
-version other than `4.0.3-1` or a dev-linked session, hashes the disk and
+version other than the release's own (`4.0.4-<rev>` for 4.0.4) or a
+dev-linked session, hashes the disk and
 the template, makes both 0444, writes and fsyncs the manifest, and
 promotes with one rename; a superseded base is moved aside first and
-removed after. A build that fails leaves its log under staging and
-promotes nothing; `prune` removes it.
+removed after, and the downloads of older releases with it. A build that
+fails leaves its log under staging and promotes nothing; `prune` removes
+it, and the old base, if there was one, is still the one a run uses.
+
+The toolchain starts its guest with `-daemonize`, so the QEMU of a build
+is not omakit's child. Measured on 2026-09-23: a 4.0.3 setup interrupted
+at 09:49 left its QEMU running, a third of a core, writing the staged
+disk eighteen minutes later, with nothing that would ever stop it, and
+its QMP socket in `/tmp` where `prune`'s liveness check could not see it.
+Now, when the driver exits for any reason, `setup` stops every QEMU whose
+pidfile is under the build's staging directory and whose command line
+(`/proc/<pid>/cmdline`) names that directory, so a reused pid is never
+taken for it: SIGTERM, which QEMU takes as a clean shutdown, and SIGKILL
+after fifteen seconds. `inspect` shows such a directory as active and
+`prune` refuses to remove it while that QEMU runs.
 
 ## The toolchain, honestly
 
@@ -302,6 +377,15 @@ it checks the OVMF firmware is readable, it waits two seconds where
 upstream waits for light text Tesseract loses, and it carries the
 `--host-test`, `--dev-link` and `--discard-overlay` extensions, which the
 lab no longer uses.
+
+The toolchain stays pinned while the release moves: the harness drives
+the installer by what it reads on the screen, so a release whose installer
+reads differently can fail a build. That fails closed, with the build's
+log, and the base there keeps working; a harness that cannot drive the
+newest release is a toolchain update in a new omakit. From 4.0.3 to 4.0.4
+the installer's greeter is unchanged (`omarchy-iso`'s configurator carries
+the same tagline, and its one change before the 4.0.4 ISO, `b507a20`,
+only makes `linux-omarchy` the default kernel).
 
 omakit never fetches the toolchain and never applies the patch: `git
 apply` is a verb this repository's sources may not name

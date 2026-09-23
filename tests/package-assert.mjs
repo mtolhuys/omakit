@@ -57,8 +57,14 @@ import { pathToFileURL } from "node:url"
 // 17,501 under the same ceiling. With the M15 measurement script
 // (tools/marketplace/measure-repository-owner.mjs) and the retry-edit fix
 // of 0.6.4, `npm pack --dry-run` measured 345,896 bytes across 132 files,
-// 12,504 under the same ceiling.
-export const MAX_PACKED_BYTES = 358_400
+// 12,504 under the same ceiling. At 0.6.9 the lab stopped staring at one
+// Omarchy release: the release lookup (tools/lab/release.mjs), the signer
+// read from the signature packet, the outdated base state and the guard
+// that stops a build's orphaned QEMU took `npm pack --dry-run` to 369,392
+// bytes across 133 files, 10,992 over the 358,400-byte ceiling. The
+// ceiling is raised to 409,600 (400 KiB): what it refuses is an accidental
+// tree, and the 15 MB marketplace pin is still some thirty-seven times it.
+export const MAX_PACKED_BYTES = 409_600
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "LICENSE",
@@ -136,6 +142,7 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/lab/prune.mjs",
   "tools/lab/qemu.mjs",
   "tools/lab/qmp-cli.mjs",
+  "tools/lab/release.mjs",
   "tools/lab/report.mjs",
   "tools/lab/run.mjs",
   "tools/lab/setup.mjs",

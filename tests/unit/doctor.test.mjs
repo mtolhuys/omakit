@@ -12,6 +12,10 @@ import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const pinned = { commit: "1".repeat(40), baselineVersion: "3", enforcementMode: "selective" }
 
+
+/** The lab's read of Omarchy's release list, answered without the network: no test here reaches it. */
+const unreadReleases = async () => ({ checked: false, code: "network-unavailable", reason: "not read in tests" })
+
 test("freshness JSON carries both full commits without changing the human detail", () => {
   const head = { commit: "2".repeat(40), branch: "main" }
   const check = pinFreshness(pinned, head)
@@ -176,6 +180,7 @@ test("doctor passes the upgrade it found to pin.freshness, and HEAD unreadable s
     repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env },
     resolveHead: async () => ({ commit: "2".repeat(40), branch: "main" }),
     compare: async () => compared(["/.github/ISSUE_TEMPLATE/"]),
+    newestRelease: unreadReleases,
     latest: async () => ({ version: latest, error: null }),
   })).checks.find((entry) => entry.id === "pin.freshness")
   const newer = await freshness("9.9.9")
@@ -186,7 +191,7 @@ test("doctor passes the upgrade it found to pin.freshness, and HEAD unreadable s
   assert.match(newest.action, /^The maintainer is notified by the weekly pin-freshness run/)
 
   // Unreachable HEAD: unknown, as before, and no paths are named.
-  const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }) })
+  const result = await doctor({ repoRoot: REPO_ROOT, onPhase: () => {}, env: { ...process.env, XDG_CACHE_HOME: undefined }, resolveHead: async () => { throw Object.assign(new Error("no route"), { code: "network-unavailable" }) }, latest: async () => ({ version: null, error: { code: "network-unavailable", message: "no route" } }), newestRelease: unreadReleases })
   const check = result.checks.find((entry) => entry.id === "pin.freshness")
   assert.equal(check.state, "unknown")
   assert.match(check.detail, /could not read the marketplace's HEAD \(network-unavailable\)/)
@@ -296,7 +301,7 @@ test("each path in PIN_PATHS is compared by object id, and each file omakit read
 
 const REGISTRY = "https://registry.npmjs.org"
 const installed = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).version
-const quiet = { onPhase: () => {}, env: { ...process.env }, resolveHead: async () => ({ commit: MARKETPLACE_PIN.commit, branch: "main" }) }
+const quiet = { onPhase: () => {}, env: { ...process.env }, resolveHead: async () => ({ commit: MARKETPLACE_PIN.commit, branch: "main" }), newestRelease: unreadReleases }
 const versionCheck = async (latest) => (await doctor({ repoRoot: REPO_ROOT, ...quiet, latest })).checks.find((check) => check.id === "omakit.version")
 
 test("omakit.source: a checkout names HEAD, a stamped package names its record, an unstamped package is advice that names the release step", async () => {

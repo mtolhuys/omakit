@@ -1322,7 +1322,7 @@ a file time, and the method is named beside it.
 
 | Figure | Value | Method |
 | --- | --- | --- |
-| The pinned release | Omarchy 4.0.3, `omarchy-4.0.3.iso`, 6,260,654,080 B (6.261 GB / 5.831 GiB), SHA-256 `03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14`, signed by `40DFB630FF42BCFFB047046CF0134EE680CAC571` | `packaging/LAB_PLAN.md` M1 and M2, re-verified by `omakit lab setup` on 2026-09-18 (`verified.json` beside the ISO: the byte count, the digest, the sidecar, the signature). |
+| The release measured (pinned until 0.6.9; since then the lab prepares the newest, below) | Omarchy 4.0.3, `omarchy-4.0.3.iso`, 6,260,654,080 B (6.261 GB / 5.831 GiB), SHA-256 `03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14`, signed by `40DFB630FF42BCFFB047046CF0134EE680CAC571` | `packaging/LAB_PLAN.md` M1 and M2, re-verified by `omakit lab setup` on 2026-09-18 (`verified.json` beside the ISO: the byte count, the digest, the sidecar, the signature). |
 | Hashing the ISO in Node | 5,215 ms page-cached | `createHash("sha256")` over 4 MiB reads (`tools/lab/verify.mjs`); `sha256sum` took 5,126 ms on the same cached file, so the tool does not shell out. |
 | The signature check | 9,430 ms | `gpg --verify` in a throwaway keyring, `date +%s%N` around it. |
 | A local ISO into the lab | 4.6 s to copy, 13.1 s to verify | The download directory's birth time (15:56:49.45), the ISO's mtime (15:56:54.01), `verified.json`'s mtime (15:57:07.15). The source was page-cached. |

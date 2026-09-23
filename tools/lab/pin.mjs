@@ -1,11 +1,17 @@
-// The release pin: the one Omarchy release the lab prepares, its exact
-// digest, its signer, and the toolchain that builds a base from it.
+// What the lab holds fixed: where Omarchy's releases are listed and where
+// their ISOs are published, the signer every release must carry, the
+// oldest release it will take, the toolchain that builds a base, and the
+// costs measured on the reference host.
 //
-// Read from tools/lab/pin.json, never from the network: the lab never
-// resolves "latest" (docs/history/2026-09-18-lab-inventory.md P13: the
-// old setup scraped omarchy.org for the first ISO link and verified it
-// against a sidecar downloaded beside it, so a substituted pair passed).
-// Updating the pin is a reviewed change, docs/LAB.md says how.
+// Which release the lab prepares is not in this file: `release.mjs` finds
+// the newest one that is published whole (ISO, checksum, signature) each
+// time `setup` runs, so the lab never stays on an old release unnoticed.
+// The trust is the signature, not the list: a file is the release only
+// when its detached signature verifies against the packaged key at the
+// pinned fingerprint (verify.mjs). The inventory's objection to "latest"
+// (docs/history/2026-09-18-lab-inventory.md P13) was a checksum trusted
+// from the same host as the file with no signature checked at all; that
+// is what the pinned signer answers.
 
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -13,21 +19,81 @@ import { fileURLToPath } from "node:url"
 
 export const LAB_DIR = dirname(fileURLToPath(import.meta.url))
 
+/** A release name the lab takes: three numbers, as Omarchy tags them without the v. */
+export const VERSION = /^(\d+)\.(\d+)\.(\d+)$/
+
 let cached = null
 
-/** The pin, parsed once. `file` is injectable for tests that need a small release. */
+/** The pin, parsed once. `file` is injectable for tests that need their own. */
 export function labPin(file = join(LAB_DIR, "pin.json")) {
   if (file === join(LAB_DIR, "pin.json") && cached) return cached
   const pin = JSON.parse(readFileSync(file, "utf8"))
-  for (const key of ["release", "toolchain", "guest", "measured"]) {
+  for (const key of ["releases", "toolchain", "guest", "measured"]) {
     if (!pin[key] || typeof pin[key] !== "object") throw new Error(`lab pin: no ${key} section in ${file}`)
   }
-  if (!/^[0-9a-f]{64}$/.test(pin.release.sha256)) throw new Error("lab pin: the release sha256 is not 64 hex characters")
-  if (!/^[0-9A-F]{40}$/.test(pin.release.signingFingerprint)) throw new Error("lab pin: the signing fingerprint is not 40 hex characters")
-  if (!Number.isInteger(pin.release.bytes) || pin.release.bytes <= 0) throw new Error("lab pin: the release byte count is not a positive integer")
-  if (/latest/i.test(pin.release.isoUrl)) throw new Error("lab pin: the ISO URL resolves latest; the pin names one release")
+  const { releases } = pin
+  if (!/^https:\/\/api\.github\.com\/repos\/[\w.-]+\/[\w.-]+\/releases(?:\?[\w=&]*)?$/.test(releases.list)) throw new Error("lab pin: the release list is not a GitHub releases URL")
+  if (!/^https:\/\/[\w.-]+\/[\w./-]*\{version\}[\w./-]*\.iso$/.test(releases.iso)) throw new Error("lab pin: the ISO URL is not an https template with {version}")
+  if (/latest/i.test(releases.iso)) throw new Error("lab pin: the ISO URL names latest; a release is found by its version")
+  if (!VERSION.test(releases.floor)) throw new Error("lab pin: the floor is not a release name")
+  if (!Number.isInteger(releases.candidates) || releases.candidates < 1) throw new Error("lab pin: candidates is not a positive integer")
+  if (!/^[0-9A-F]{40}$/.test(releases.signingFingerprint)) throw new Error("lab pin: the signing fingerprint is not 40 hex characters")
+  if (!/^[0-9a-f]{64}$/.test(releases.signingKeySha256)) throw new Error("lab pin: the signing key digest is not 64 hex characters")
   if (file === join(LAB_DIR, "pin.json")) cached = pin
   return pin
+}
+
+/** -1, 0 or 1, by the three numbers; a name that is not a release sorts below every one that is. */
+export function compareVersions(a, b) {
+  const left = String(a).match(VERSION)
+  const right = String(b).match(VERSION)
+  if (!left || !right) return left ? 1 : right ? -1 : 0
+  for (const index of [1, 2, 3]) {
+    const difference = Number(left[index]) - Number(right[index])
+    if (difference) return difference < 0 ? -1 : 1
+  }
+  return 0
+}
+
+/**
+ * One release in the shape the lab reads everywhere: its name, where its
+ * ISO and the two sidecars are, its byte count and digest as published,
+ * and the pinned signer it must carry. `bytes` and `sha256` come from the
+ * host that publishes the release; the signature is what makes them
+ * trusted, and verify.mjs checks it before anything boots the file.
+ */
+export function releaseOf(pin, { name, bytes, sha256 }) {
+  if (!VERSION.test(String(name))) throw new Error(`lab: ${JSON.stringify(name)} is not a release name`)
+  const isoUrl = pin.releases.iso.replace("{version}", name)
+  return {
+    name,
+    fileName: isoUrl.split("/").at(-1),
+    isoUrl,
+    checksumUrl: `${isoUrl}.sha256`,
+    signatureUrl: `${isoUrl}.sig`,
+    bytes,
+    sha256,
+    signingFingerprint: pin.releases.signingFingerprint,
+    signingKey: pin.releases.signingKey,
+    signingKeySha256: pin.releases.signingKeySha256,
+    expectedGuestVersion: `${name}-<pkgrel>`,
+  }
+}
+
+/** The pin with one release in it: what setup, inspect and a run read as `pin.release`. */
+export function withRelease(pin, release) {
+  return { ...pin, release }
+}
+
+/**
+ * Whether an installed `omarchy` package version is this release's: the
+ * release name and one package revision (`4.0.3-1`). The ISO installs the
+ * package it carries, so any other version is a mislabelled release.
+ */
+export function guestIsRelease(version, release) {
+  if (!release || typeof version !== "string") return false
+  const match = version.match(/^(\d+\.\d+\.\d+)-(\d+)$/)
+  return Boolean(match) && match[1] === release.name
 }
 
 /**

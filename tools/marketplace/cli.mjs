@@ -54,6 +54,7 @@ import { addBlock } from "../blocks/add.mjs"
 import { inspectLab } from "../lab/inspect.mjs"
 import { runSuite } from "../lab/run.mjs"
 import { CONSENT_QUESTION, planSetup, recordToolchain, setupLab } from "../lab/setup.mjs"
+import { checkNewestRelease } from "../lab/release.mjs"
 import { planPrune, prune } from "../lab/prune.mjs"
 import { renderLab, renderPrunePlan, renderPruneResult, renderRunIdentity, renderRunResult, renderSetupPlan, renderSetupResult } from "../lab/report.mjs"
 
@@ -101,12 +102,14 @@ const REMEDY = Object.freeze({
   "lab-not-ready": "omakit lab inspect",
   "lab-busy": "omakit lab inspect",
   "iso-mismatch": "omakit lab prune, then omakit lab setup",
-  "size-mismatch": "The object at the pinned URL is not the pinned release; a pin update is a reviewed change, and docs/LAB.md says how.",
-  "sidecar-mismatch": "The published checksum is not the pin's; a pin update is a reviewed change, and docs/LAB.md says how.",
+  "size-mismatch": "omakit lab setup: Omarchy changed the object at the versioned URL since the release was read, and setup reads it again.",
+  "sidecar-mismatch": "omakit lab setup: Omarchy republished the release while setup ran, and setup reads it again.",
   "key-mismatch": "The packaged signing key is not the one the pin names: reinstall omakit from the registry (`omakit upgrade`).",
+  "release-unavailable": "omakit lab inspect names the newest release and why the newer ones were passed over; run it again once Omarchy has published the ISO, its .sha256 and its .sig.",
+  "signer-changed": "omakit upgrade: a newer omakit carries Omarchy's new key once it is verified. Until then the lab keeps the base it has.",
   "toolchain-missing": "omakit lab inspect prints the one command that prepares the toolchain.",
   "toolchain-mismatch": "omakit lab inspect prints the one command that prepares the toolchain.",
-  "guest-mismatch": "omakit lab prune removes the staged base; a pin update is a reviewed change, and docs/LAB.md says how.",
+  "guest-mismatch": "omakit lab prune removes the staged base; an ISO that installs another release's omarchy package is not used as that release.",
   "build-failed": "Read build.log under the lab's staging directory, then omakit lab prune and omakit lab setup again.",
   "qemu-failed": "Read qemu.log in the run directory; omakit lab inspect names what the host lacks.",
   "overlay-failed": "omakit lab inspect: the base must be ready and the disk must have room for one overlay.",
@@ -674,7 +677,7 @@ async function cmdWeigh(args) {
  */
 async function cmdLab(args) {
   const parsed = checkArgs(args, ACCEPTED.lab)
-  const signature = "omakit lab prove <suite> | inspect [--verify] | setup [--from <file>] [--toolchain <dir>] [--plugins] [--yes] | prune [--keep-iso] [--records] [--yes]"
+  const signature = "omakit lab prove <suite> [--offline] | inspect [--verify] [--offline] | setup [--from <file>] [--toolchain <dir>] [--plugins] [--offline] [--yes] | prune [--keep-iso] [--records] [--yes]"
   if (parsed.offending !== null) fail("usage", `${parsed.reason}. Accepted: ${acceptedWords("lab")}.`, 2, signature)
   const [what, suite] = parsed.positionals
   if (!["prove", "inspect", "setup", "prune"].includes(what || "")) fail("usage", `lab needs one of prove, inspect, setup or prune${what ? `, not ${JSON.stringify(what)}` : ""}.`, 2, signature)
@@ -693,6 +696,13 @@ async function cmdLab(args) {
   }
   const listen = () => { for (const signal of Object.keys(SIGNAL_EXIT)) process.on(signal, interrupt) }
   const unlisten = () => { for (const signal of Object.keys(SIGNAL_EXIT)) process.off(signal, interrupt) }
+  // The newest Omarchy release, read from the release list once per
+  // command, with its own deadline so a network that drops packets costs
+  // at most that; --offline skips it and says so.
+  const offline = parsed.options.has("--offline")
+  const newestRelease = async (seconds = 45) => offline
+    ? { checked: false, code: "offline", reason: "--offline" }
+    : checkNewestRelease({ signal: AbortSignal.any([controller.signal, AbortSignal.timeout(seconds * 1000)]) })
   /** A lab error that stopped for a signal carries the signal, so the exit status follows it. */
   const stopped = (error) => {
     if (error?.code === "interrupted" && !error.signal) error.signal = stoppedBy
@@ -703,8 +713,10 @@ async function cmdLab(args) {
     if (suite) fail("usage", `inspect takes no suite, so ${JSON.stringify(suite)} is one argument more than it takes.`, 2, signature)
     let lab
     try {
+      if (!offline) spinner.phase("looking for the newest Omarchy release")
+      const newest = await newestRelease()
       spinner.phase(parsed.options.has("--verify") ? "hashing the ISO and checking its signature" : "reading the lab")
-      lab = await inspectLab({ verify: parsed.options.has("--verify") })
+      lab = await inspectLab({ newest, verify: parsed.options.has("--verify") })
     } catch (error) {
       spinner.done()
       failFrom(error)
@@ -730,6 +742,7 @@ async function cmdLab(args) {
         repoRoot: ROOT,
         options: { runs },
         signal: controller.signal,
+        checkNewest: () => newestRelease(30),
         onPhase: spinner.phase,
         onLine: (line) => {
           spinner.done()
@@ -767,15 +780,30 @@ async function cmdLab(args) {
       failFrom(error)
     }
     let plan
+    const from = parsed.options.get("--from") || null
     try {
-      plan = planSetup({ from: parsed.options.get("--from") || null, plugins: parsed.options.has("--plugins"), repoRoot: ROOT })
+      // First what no release changes: a host that cannot build is told so
+      // before the network is read. Then the newest release, and the plan
+      // that prepares it.
+      plan = planSetup({ from, plugins: parsed.options.has("--plugins"), repoRoot: ROOT })
+      if (!plan.blockers.length) {
+        if (!offline) spinner.phase("looking for the newest Omarchy release")
+        const newest = await newestRelease()
+        spinner.done()
+        // A newer release signed by a key omakit does not ship is a finding,
+        // not a lookup that failed: the lab cannot be brought current, and
+        // the person has to know, whatever base is there.
+        if (!newest.checked && newest.code === "signer-changed") failFrom(Object.assign(new Error(newest.reason), { code: "signer-changed", remedy: "omakit upgrade: a newer omakit carries the new key once it is verified" }))
+        plan = planSetup({ newest, from, plugins: parsed.options.has("--plugins"), repoRoot: ROOT })
+      }
     } catch (error) {
+      spinner.done()
       failFrom(error)
     }
     // The plan is narrated before the question, so the record says what
     // was agreed to; a plan that cannot run is the failure, on stderr.
     if (plan.blockers.length) {
-      refuse(args, plan, (colour) => renderSetupPlan(plan, { colour }), { code: "lab-blocked", message: `setup cannot start: ${plan.blockers.join("; ")}` })
+      refuse(args, plan, (colour) => renderSetupPlan(plan, { colour }), { code: "lab-blocked", message: `setup cannot start: ${plan.blockers.map((item) => item.what).join("; ")} missing` })
       return
     }
     if (!plan.steps.length) return succeed(args, plan, (colour) => renderSetupPlan(plan, { colour }))

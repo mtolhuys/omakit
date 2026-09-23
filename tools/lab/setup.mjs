@@ -6,16 +6,19 @@
 // for automation, and a pipe without it refuses. The plan is computed
 // first and reads only; the disclosure prints it whole; then, in order:
 //
+//   0. The newest release, found by release.mjs before the plan is made:
+//      the newest at or above the floor whose ISO, checksum and signature
+//      are published, signed by the key omakit ships. A setup whose host
+//      cannot build is refused before that read.
 //   1. The ISO, into $XDG_CACHE_HOME/omakit/lab/downloads/<sha256>/: a
-//      literal GET of the pinned URL to a .part file, resumed by byte
-//      range, or a copy of a local file named with --from. Never
-//      "latest": the URL, the byte count, the digest and the signer are
-//      the pin's.
+//      literal GET of the release's versioned URL to a .part file, resumed
+//      by byte range, or a copy of a local file named with --from.
 //   2. Verification, of a downloaded file and of a file already there
-//      alike: the byte count, the SHA-256 against the pin, the published
-//      sidecar against the pin, the detached signature against the
-//      packaged key at the pinned fingerprint. A mismatch fails closed:
-//      the file is left as .part, nothing is recorded, nothing boots it.
+//      alike: the byte count and the SHA-256 against what the release
+//      publishes, the sidecar fetched now against the digest read at the
+//      start, the detached signature against the packaged key at the
+//      pinned fingerprint. A mismatch fails closed: the file is left as
+//      .part, nothing is recorded, nothing boots it.
 //   3. The base, built by the pinned omarchy-iso toolchain's console
 //      driver from the verified ISO, in a staging directory under the lab
 //      (the driver derives its base directory from its own location, so
@@ -23,7 +26,9 @@
 //      checkout: docs/history/2026-09-18-lab-inventory.md P6, P19), then
 //      booted once by the lab's own driver to read the installed
 //      omarchy package, hashed, made read-only, given its manifest, and
-//      promoted with one rename.
+//      promoted with one rename. The base it replaces, and the downloads
+//      of older releases, are removed only after that: until the new base
+//      verifies, a run uses the old one.
 //
 // Never fetched: the toolchain. It is a git checkout at a pinned commit
 // with the packaged patch applied, and the one command that makes it is
@@ -31,14 +36,15 @@
 // harness against the pin.
 
 import { spawn, spawnSync } from "node:child_process"
-import { chmodSync, closeSync, createWriteStream, existsSync, fsyncSync, openSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { chmodSync, closeSync, createWriteStream, existsSync, fsyncSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { getStream, GitHubError } from "../marketplace/github.mjs"
-import { LAB_DIR, bytesBoth, durationWords, labPin } from "./pin.mjs"
+import { LAB_DIR, bytesBoth, compareVersions, durationWords, guestIsRelease, labPin, releaseOf, withRelease } from "./pin.mjs"
 import { allocatedBytes, copyIntoLab, inLab, labDir, labLayout, moveIntoLab, readJson, removeFromLab, stampNow, writeJson } from "./paths.mjs"
 import { BUILD_COMMANDS, VERIFY_COMMANDS, freeBytesAt, probeCommands, probeRunHost } from "./host.mjs"
-import { judgeRelease, packagedKey, sha256File } from "./verify.mjs"
-import { BASE_FILES, downloadDir, inspectBase, inspectDownload, inspectToolchain, toolchainCommand } from "./inspect.mjs"
+import { judgeRelease, packagedKey, sha256File, signatureIssuer } from "./verify.mjs"
+import { sidecarDigest } from "./release.mjs"
+import { BASE_FILES, baseRelease, buildGuests, downloadDir, downloadEntry, inspectBase, inspectDownload, inspectToolchain, toolchainCommand } from "./inspect.mjs"
 import { LabError, acquireLock, freePort, releaseLock, withGuest } from "./run.mjs"
 import { WEIGH_LISTED, listedPlugin } from "./suites.mjs"
 import { marketplacePinDir } from "../marketplace/pin.mjs"
@@ -62,43 +68,128 @@ export function recordToolchain({ dir, env = process.env, pin = labPin() }) {
   return { dir: checkout, sha256 }
 }
 
+/** The newest release, not looked up yet: what the first, network-free plan is made with. */
+export const NOT_ASKED = Object.freeze({ checked: false, code: "not-asked", reason: "the newest release was not looked up" })
+
+/**
+ * The release a local file names when the release list cannot be read:
+ * `omarchy-<version>.iso`, with its `.sha256` and `.sig` beside it, at or
+ * above the floor, signed (by the packet's own word) by the key omakit
+ * ships. Verification still hashes it and runs gpg before anything boots
+ * it; this only names what it claims to be. `{ release }` or `{ blocker }`.
+ */
+export function localRelease(pin, file) {
+  const source = resolve(file)
+  const name = source.split("/").at(-1).match(/^omarchy-(\d+\.\d+\.\d+)\.iso$/)?.[1]
+  const command = "omakit lab setup --from <omarchy-X.Y.Z.iso> with its .sha256 and .sig beside it, or with the network, omakit lab setup"
+  if (!existsSync(source)) return { blocker: { what: "the file named by --from", cost: `${source} is not there`, command } }
+  if (!name) return { blocker: { what: "the file named by --from", cost: `${source} is not named omarchy-<version>.iso, so it names no release; without the network there is nothing else to name one`, command } }
+  if (compareVersions(name, pin.releases.floor) < 0) return { blocker: { what: "the file named by --from", cost: `Omarchy ${name} is older than ${pin.releases.floor}, the oldest release the lab takes`, command } }
+  let sha256 = null
+  try {
+    sha256 = sidecarDigest(readFileSync(`${source}.sha256`, "utf8"), source.split("/").at(-1))
+  } catch {
+    sha256 = null
+  }
+  if (!sha256) return { blocker: { what: "the checksum beside --from", cost: `${source}.sha256 is missing or does not name the file with a SHA-256`, command } }
+  let signer = null
+  try {
+    signer = signatureIssuer(readFileSync(`${source}.sig`))
+  } catch {
+    return { blocker: { what: "the signature beside --from", cost: `${source}.sig is not there; nothing boots a release whose signature was not checked`, command } }
+  }
+  if (signer.fingerprint && signer.fingerprint !== pin.releases.signingFingerprint) return { blocker: { what: "the signature beside --from", cost: `${source}.sig is by ${signer.fingerprint}, not the key omakit ships (${pin.releases.signingFingerprint})`, command: "omakit upgrade" } }
+  return { release: releaseOf(pin, { name, bytes: statSync(source).size, sha256 }) }
+}
+
+/** Download directories other than the release's own: what a new base supersedes, removed once it verifies. */
+function supersededDownloads(layout, release) {
+  if (!existsSync(layout.downloads)) return []
+  return readdirSync(layout.downloads)
+    .filter((digest) => /^[0-9a-f]{64}$/.test(digest) && digest !== release.sha256)
+    .map((digest) => ({ digest, relative: `downloads/${digest}`, name: downloadEntry(join(layout.downloads, digest), digest).name, bytes: allocatedBytes(join(layout.downloads, digest)) }))
+}
+
 /**
  * The plan, reading only: what setup would do on this host, with every
  * size and the destination. `steps` is what the consent covers.
+ *
+ * `newest` is release.mjs's check. With NOT_ASKED the plan holds only what
+ * no release changes (the commands verification needs, and, when there is
+ * no usable base, what a build needs), so a setup that cannot start says
+ * so without a network read. With the newest release found, the plan
+ * prepares it; with the lookup failed, a usable base on disk is left as it
+ * is and the plan says the newest was not checked, and with none there,
+ * that is the blocker.
  */
-export function planSetup({ env = process.env, pin = labPin(), from = null, plugins = false, repoRoot } = {}) {
+export function planSetup({ env = process.env, pin = labPin(), newest = NOT_ASKED, from = null, plugins = false, repoRoot } = {}) {
   const layout = labLayout(env)
-  const download = inspectDownload(layout, pin)
-  const base = inspectBase(layout, pin)
   const toolchain = inspectToolchain(layout, pin)
   const free = freeBytesAt(layout.cache)
   const steps = []
   const blockers = []
+  const buildBlockers = (withBuild) => {
+    for (const line of probeRunHost({ pin, env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+    if (!withBuild) return
+    for (const line of probeCommands(BUILD_COMMANDS, { env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+    if (toolchain.state !== "ready") blockers.push({ what: "the toolchain", cost: toolchain.reason, command: toolchain.state === "unpatched" ? `git -C ${toolchain.dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${toolchain.dir}` : toolchainCommand(pin, join(layout.cache, "toolchain/omarchy-iso")) })
+  }
   for (const line of probeCommands(VERIFY_COMMANDS, { env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
+  // The base against its own release: whether a run can use what is there.
+  const own = baseRelease(layout, pin)
+  const current = inspectBase(layout, withRelease(pin, own))
+  const usable = current.state === "ready"
+  const done = (release, extra = {}) => ({ layout, pin: withRelease(pin, release), newest, download: null, base: current, toolchain, free, steps, blockers, needed: 0, afterBytes: 0, ...extra })
+  if (!newest.checked && newest.code === "not-asked") {
+    // Whatever the newest release turns out to be, a host with no usable
+    // base builds one: those blockers are known before the network.
+    if (!usable) buildBlockers(stagedBases(layout).length === 0)
+    return done(own, { asked: false })
+  }
+  let release = newest.checked ? newest.release : null
+  if (from && newest.checked) {
+    const named = resolve(from).split("/").at(-1).match(/^omarchy-(\d+\.\d+\.\d+)\.iso$/)?.[1]
+    if (named && named !== release.name) blockers.push({ what: "the file named by --from", cost: `${resolve(from)} is Omarchy ${named}; the newest release is ${release.name}, and setup prepares the newest`, command: `omakit lab setup --from <path to ${release.fileName}>, or without --from to download it` })
+  } else if (from) {
+    const local = localRelease(pin, from)
+    if (local.blocker) blockers.push(local.blocker)
+    release = local.release || null
+  }
+  if (!release) {
+    // The newest could not be looked up. A usable base stays as it is and
+    // the plan says what was not checked; with none, that is the blocker.
+    if (usable) return done(own, { stale: { base: own.name, reason: newest.reason, code: newest.code } })
+    if (!from) blockers.push({ what: "the newest Omarchy release", cost: `it could not be looked up: ${newest.reason}`, command: "connect to the network and run omakit lab setup again, or omakit lab setup --from <omarchy-X.Y.Z.iso> with its .sha256 and .sig beside it" })
+    return done(null)
+  }
+  pin = withRelease(pin, release)
+  const download = inspectDownload(layout, pin)
+  const base = inspectBase(layout, pin)
   if (!download.verified) {
     if (from) {
       const source = resolve(from)
-      if (!existsSync(source)) blockers.push({ what: `the file named by --from`, cost: `${source} is not there`, command: "omakit lab setup --from <path to omarchy-4.0.3.iso>" })
-      else steps.push({ kind: "import", from: source, bytes: statSync(source).size, to: join(download.dir, pin.release.fileName), sidecars: { checksum: existsSync(`${source}.sha256`) ? `${source}.sha256` : null, signature: existsSync(`${source}.sig`) ? `${source}.sig` : null } })
+      if (!existsSync(source)) blockers.push({ what: `the file named by --from`, cost: `${source} is not there`, command: `omakit lab setup --from <path to ${release.fileName}>` })
+      else steps.push({ kind: "import", from: source, bytes: statSync(source).size, to: join(download.dir, release.fileName), sidecars: { checksum: existsSync(`${source}.sha256`) ? `${source}.sha256` : null, signature: existsSync(`${source}.sig`) ? `${source}.sig` : null } })
     } else if (download.present) {
       steps.push({ kind: "verify", file: download.iso, bytes: download.bytes })
     } else {
-      steps.push({ kind: "download", url: pin.release.isoUrl, bytes: pin.release.bytes, resumeFrom: download.partial || 0, to: join(download.dir, pin.release.fileName) })
+      steps.push({ kind: "download", url: release.isoUrl, bytes: release.bytes, resumeFrom: download.partial || 0, to: join(download.dir, release.fileName) })
     }
-    steps.push({ kind: "sidecars", bytes: 203, urls: [pin.release.checksumUrl, pin.release.signatureUrl], to: download.dir })
+    steps.push({ kind: "sidecars", bytes: 203, urls: [release.checksumUrl, release.signatureUrl], to: download.dir })
   }
   if (base.state !== "ready") {
-    for (const line of probeRunHost({ pin, env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
-    // A base the toolchain built but a verification boot never promoted
-    // (an interrupted or failed setup) is verified and promoted, not
-    // rebuilt: six minutes and six gigabytes are not spent twice.
-    const staged = stagedBases(layout)
+    // A base the toolchain built for this release but a verification boot
+    // never promoted (an interrupted or failed setup) is verified and
+    // promoted, not rebuilt: six minutes and six gigabytes are not spent
+    // twice. One built from another release is left for prune.
+    const staged = stagedBases(layout, release)
+    buildBlockers(staged.length === 0)
+    const replacing = base.state === "missing" ? null : base
+    const superseded = supersededDownloads(layout, release)
     if (staged.length) {
-      steps.push({ kind: "promote", staged: staged.at(-1), to: layout.base, replacing: base.state === "missing" ? null : base })
+      steps.push({ kind: "promote", staged: staged.at(-1), to: layout.base, replacing, superseded })
     } else {
-      for (const line of probeCommands(BUILD_COMMANDS, { env })) if (line.state !== "ok") blockers.push({ what: line.name, cost: line.reason, command: line.remedy })
-      if (toolchain.state !== "ready") blockers.push({ what: "the toolchain", cost: toolchain.reason, command: toolchain.state === "unpatched" ? `git -C ${toolchain.dir} apply ${join(LAB_DIR, pin.toolchain.patch)} && omakit lab setup --toolchain ${toolchain.dir}` : toolchainCommand(pin, join(layout.cache, "toolchain/omarchy-iso")) })
-      steps.push({ kind: "build", toolchain: toolchain.harness, to: layout.base, replacing: base.state === "missing" ? null : base, bytes: pin.measured.baseDirectoryBytes, milliseconds: pin.measured.buildMilliseconds })
+      steps.push({ kind: "build", toolchain: toolchain.harness, to: layout.base, replacing, superseded, bytes: pin.measured.baseDirectoryBytes, milliseconds: pin.measured.buildMilliseconds })
     }
   }
   if (plugins) {
@@ -113,15 +204,26 @@ export function planSetup({ env = process.env, pin = labPin(), from = null, plug
   }
   const needed = steps.reduce((sum, step) => sum + (step.kind === "download" ? step.bytes - (step.resumeFrom || 0) : step.kind === "import" ? step.bytes : step.kind === "build" ? step.bytes : 0), 0)
   if (steps.length && free.bytes < needed) blockers.push({ what: "disk", cost: `${bytesBoth(free.bytes)} free at ${free.path}; this setup needs ${bytesBoth(needed)}`, command: "omakit lab prune" })
-  return { layout, pin, download, base, toolchain, free, steps, blockers, needed, afterBytes: pin.measured.preparedLabBytes }
+  // Afterwards: this ISO and a base the size the measured release's was.
+  return { layout, pin, newest, download, base, toolchain, free, steps, blockers, needed, afterBytes: release.bytes + pin.measured.baseDirectoryBytes }
 }
 
-/** Staged bases awaiting verification: `staging/base-*` with the four files and no manifest, oldest first. */
-export function stagedBases(layout) {
+/**
+ * Staged bases awaiting verification: `staging/base-*` with the four files
+ * and no manifest, oldest first. With a release, only the ones built from
+ * its ISO: the build record names the ISO it was built from, and a base of
+ * another release would never pass the verification boot's guest check.
+ */
+export function stagedBases(layout, release = null) {
   if (!existsSync(layout.staging)) return []
   return readdirSync(layout.staging).filter((name) => /^base-\d{8}-\d{6}$/.test(name)).sort()
     .map((name) => join(layout.staging, name))
     .filter((dir) => [BASE_FILES.disk, BASE_FILES.vars, BASE_FILES.key, BASE_FILES.publicKey].every((file) => existsSync(join(dir, file))) && !existsSync(join(dir, BASE_FILES.manifest)))
+    .filter((dir) => {
+      if (!release) return true
+      const record = readJson(join(dir, "build", "lab-build.json"))
+      return record?.release?.sha256 === release.sha256 || String(record?.iso || "").includes(`/downloads/${release.sha256}/`)
+    })
 }
 
 /** The lines of the disclosure, exactly as the contract in docs/LAB.md shows them; the consent question follows them. */
@@ -132,24 +234,35 @@ export function disclosureLines(plan) {
   const imported = plan.steps.find((step) => step.kind === "import")
   const build = plan.steps.find((step) => step.kind === "build")
   const plugins = plan.steps.find((step) => step.kind === "plugins")
-  lines.push(["Omarchy", `release ${pin.release.name}; installed guest expected ${pin.release.expectedGuestVersion}`])
+  const found = plan.newest?.checked
+    ? `the newest published (${plan.newest.tag}${plan.newest.publishedAt ? `, ${plan.newest.publishedAt.slice(0, 10)}` : ""}, found now in ${plan.newest.list.replace(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/releases.*$/, "github.com/$1")})`
+    : `from the file named by --from; the newest could not be looked up (${plan.newest?.reason || "not asked"})`
+  lines.push(["Omarchy", `release ${pin.release.name}, ${found}; the guest will run omarchy ${pin.release.name}`])
+  for (const skipped of plan.newest?.skipped || []) lines.push(["newer", `${skipped.name} is tagged and passed over: ${skipped.reason}`])
   if (download) lines.push(["download", `${bytesBoth(download.bytes - download.resumeFrom)}${download.resumeFrom ? ` (resuming at ${download.resumeFrom.toLocaleString("en-US")} of ${download.bytes.toLocaleString("en-US")} B)` : ""}`], ["from", download.url])
   else if (imported) lines.push(["download", "0 B: the file named by --from is copied and verified"], ["from", imported.from])
   else lines.push(["download", "0 B: the ISO on disk is verified"])
-  lines.push(["verify", `pinned SHA-256 ${pin.release.sha256} and the Omarchy signature ${pin.release.signingFingerprint}`])
+  lines.push(["verify", `SHA-256 ${pin.release.sha256} as published beside it, and the Omarchy signature ${pin.release.signingFingerprint}, the key omakit ships`])
   lines.push(["store", plan.layout.cache])
   const promote = plan.steps.find((step) => step.kind === "promote")
+  const replacing = (step, what) => {
+    const parts = []
+    if (step.replacing) parts.push(`the ${step.replacing.state} base there${step.replacing.manifest ? ` (Omarchy ${step.replacing.manifest.release.name}, ${bytesBoth(step.replacing.allocatedBytes)})` : ` (${bytesBoth(step.replacing.allocatedBytes)})`}`)
+    const older = step.superseded || []
+    if (older.length) parts.push(`${older.length === 1 ? "one older download" : `${older.length} older downloads`}${older.some((entry) => entry.name) ? ` (${older.map((entry) => entry.name || entry.digest.slice(0, 12)).join(", ")})` : ""}, ${bytesBoth(older.reduce((sum, entry) => sum + entry.bytes, 0))}`)
+    if (parts.length) lines.push(["replacing", `${parts.join(", and ")}, removed after ${what} verifies; until then a run uses what is there`])
+  }
   if (build) {
-    lines.push(["build", `${durationWords(build.milliseconds)} on the reference host (M14); download excluded`])
-    if (build.replacing) lines.push(["replacing", `the ${build.replacing.state} base there (${bytesBoth(build.replacing.allocatedBytes)}), removed after the new one verifies`])
+    lines.push(["build", `${durationWords(build.milliseconds)} measured with Omarchy ${pin.measured.release} on the reference host (M14); download excluded`])
+    replacing(build, "the new base")
   }
   if (promote) {
     lines.push(["build", `none: the base the toolchain built at ${promote.staged} is booted once, verified and promoted`])
-    if (promote.replacing) lines.push(["replacing", `the ${promote.replacing.state} base there (${bytesBoth(promote.replacing.allocatedBytes)}), removed after the staged one verifies`])
+    replacing(promote, "the staged base")
   }
   if (plugins) lines.push(["plugins", `${plugins.plugins.length} listed plugins at their validated commits, shallow, into ${plugins.to}`])
   lines.push(["afterwards", "verified ISO, one immutable base, and manifests"])
-  lines.push(["on disk", `${bytesBoth(plan.afterBytes)} (M14), before evidence; ${bytesBoth(plan.free.bytes)} free now`])
+  lines.push(["on disk", `about ${bytesBoth(plan.afterBytes)}: this ISO and a base the size Omarchy ${pin.measured.release}'s measured (M14), before evidence; ${bytesBoth(plan.free.bytes)} free now`])
   return lines
 }
 
@@ -157,8 +270,8 @@ export function disclosureLines(plan) {
 export const CONSENT_QUESTION = "Acquire and build this verified base now?"
 
 /**
- * A resumable literal GET of the pinned object to `<to>.part`. The byte
- * count is checked against the pin as it arrives and at the end; a
+ * A resumable literal GET of the release's ISO to `<to>.part`. The byte
+ * count is checked against the release's as it arrives and at the end; a
  * server that answers 200 to a range request restarts the file.
  */
 export async function downloadRelease({ url, to, bytes, onProgress = () => {}, signal, fetchStream = getStream }) {
@@ -179,7 +292,7 @@ export async function downloadRelease({ url, to, bytes, onProgress = () => {}, s
   const expected = append ? bytes - have : bytes
   const length = Number(response.headers.get("content-length"))
   if (Number.isFinite(length) && length > 0 && length !== expected) {
-    throw new LabError("size-mismatch", `${url} announces ${length.toLocaleString("en-US")} B where the pin expects ${expected.toLocaleString("en-US")}; the object at the versioned URL is not the pinned release`)
+    throw new LabError("size-mismatch", `${url} announces ${length.toLocaleString("en-US")} B where ${expected.toLocaleString("en-US")} were expected; the object at the versioned URL changed since the release was read`, { remedy: "omakit lab setup: the release is read again" })
   }
   const out = createWriteStream(part, { flags: append ? "a" : "w", mode: 0o600 })
   let written = append ? have : 0
@@ -188,14 +301,14 @@ export async function downloadRelease({ url, to, bytes, onProgress = () => {}, s
     for await (const chunk of response.body) {
       if (signal?.aborted) throw new LabError("interrupted", "interrupted; the partial download stays and resumes next time")
       written += chunk.length
-      if (written > bytes) throw new LabError("size-mismatch", `${url} sent more than the pinned ${bytes.toLocaleString("en-US")} B`)
+      if (written > bytes) throw new LabError("size-mismatch", `${url} sent more than the ${bytes.toLocaleString("en-US")} B it announced`)
       if (!out.write(chunk)) await new Promise((resolvePromise) => out.once("drain", resolvePromise))
       onProgress(written, bytes, Date.now() - started)
     }
   } finally {
     await new Promise((resolvePromise) => out.end(resolvePromise))
   }
-  if (written !== bytes) throw new LabError("size-mismatch", `${url} ended at ${written.toLocaleString("en-US")} of the pinned ${bytes.toLocaleString("en-US")} B; run setup again to resume`)
+  if (written !== bytes) throw new LabError("size-mismatch", `${url} ended at ${written.toLocaleString("en-US")} of ${bytes.toLocaleString("en-US")} B; run setup again to resume`)
   return { part, bytes: written, milliseconds: Date.now() - started }
 }
 
@@ -216,14 +329,48 @@ async function verifyAndPromote({ candidate, to, pin, layout, stagingRoot, onPro
   const checksum = `${to}.sha256`
   const judged = judgeRelease({ file: candidate, signature: existsSync(signature) ? signature : null, checksum: existsSync(checksum) ? checksum : null, pin, stagingRoot, onProgress })
   if (!judged.ok) {
-    throw new LabError("iso-mismatch", `the file at ${candidate} is not the pinned release: ${judged.reason}; it stays where it is and nothing will boot it`, { remedy: "remove it with `omakit lab prune`, then `omakit lab setup` again" })
+    throw new LabError("iso-mismatch", `the file at ${candidate} is not Omarchy ${pin.release.name} as published: ${judged.reason}; it stays where it is and nothing will boot it`, { remedy: "remove it with `omakit lab prune`, then `omakit lab setup` again" })
   }
-  if (judged.sidecarMatch === false) throw new LabError("sidecar-mismatch", `the published checksum sidecar names ${judged.sidecarSha256}, the pin ${pin.release.sha256}: the object at the versioned URL was replaced, and this file, which matches the pin, is not what the site publishes now`, { remedy: "a pin update is a reviewed change; docs/LAB.md says how" })
+  if (judged.sidecarMatch === false) throw new LabError("sidecar-mismatch", `the checksum published now names ${judged.sidecarSha256}, and ${pin.release.sha256} when setup read the release: Omarchy republished ${pin.release.fileName} while setup ran, and this file is the earlier one`, { remedy: "omakit lab setup: it reads the release again and fetches what is published now" })
   if (candidate !== to) await moveIntoLab(layout.cache, candidate, `downloads/${pin.release.sha256}/${pin.release.fileName}`)
   chmodSync(to, 0o444)
   const st = statSync(to)
-  writeJson(layout.cache, `downloads/${pin.release.sha256}/verified.json`, { schema: 1, sha256: judged.sha256, bytes: st.size, mtimeMs: st.mtimeMs, fingerprint: judged.signature.fingerprint, signer: judged.signature.detail, sidecarSha256: judged.sidecarSha256, verifiedAt: new Date().toISOString() })
+  writeJson(layout.cache, `downloads/${pin.release.sha256}/verified.json`, { schema: 1, name: pin.release.name, fileName: pin.release.fileName, sha256: judged.sha256, bytes: st.size, mtimeMs: st.mtimeMs, fingerprint: judged.signature.fingerprint, signer: judged.signature.detail, sidecarSha256: judged.sidecarSha256, verifiedAt: new Date().toISOString() })
   return { file: to, judged, dir }
+}
+
+/**
+ * Stop what a build left running under `stagingDir` (inspect.mjs
+ * buildGuests): SIGTERM, which QEMU takes as a clean shutdown, then SIGKILL
+ * after fifteen seconds. Runs after the driver exits for any reason, an
+ * interrupt included, so no guest outlives the setup that started it.
+ */
+async function stopBuildGuests(stagingDir, onLine) {
+  for (const guest of buildGuests(stagingDir)) {
+    try {
+      process.kill(guest.pid, "SIGTERM")
+    } catch {
+      continue
+    }
+    const deadline = Date.now() + 15_000
+    let alive = true
+    while (alive && Date.now() < deadline) {
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 250))
+      try {
+        process.kill(guest.pid, 0)
+      } catch {
+        alive = false
+      }
+    }
+    if (alive) {
+      try {
+        process.kill(guest.pid, "SIGKILL")
+      } catch {
+        // Gone between the last check and this one.
+      }
+    }
+    onLine({ state: "info", text: `stopped the build's QEMU (pid ${guest.pid}), which the driver left running` })
+  }
 }
 
 /**
@@ -269,6 +416,7 @@ async function buildBase({ pin, layout, toolchainHarness, iso, onPhase, onLine, 
     })
   })
   const buildMilliseconds = Date.now() - started
+  await stopBuildGuests(stagingDir, onLine)
   if (status !== 0) throw new LabError(signal?.aborted ? "interrupted" : "build-failed", `the toolchain's install driver exited ${status === null ? "on a signal" : status} after ${durationWords(buildMilliseconds)}; its log is ${join(stagingDir, "build.log")}, and nothing was promoted`, { remedy: "read the log, then `omakit lab prune` to remove the staging directory and `omakit lab setup` to build again" })
   const built = join(stagingDir, "test-runs", pin.release.fileName.replace(/\.iso$/, ""))
   for (const name of ["base.qcow2", "OVMF_VARS.4m.fd", "id_ed25519", "id_ed25519.pub"]) {
@@ -285,7 +433,7 @@ async function buildBase({ pin, layout, toolchainHarness, iso, onPhase, onLine, 
   removeFromLab(layout.cache, `staging/${buildId}`)
   // The measured duration travels with the staged base, so a promotion
   // after an interrupted setup still records it.
-  writeJson(layout.cache, `staging/${baseId}/build/lab-build.json`, { buildMilliseconds, harnessSha256: sha256, iso, builtAt: new Date().toISOString() })
+  writeJson(layout.cache, `staging/${baseId}/build/lab-build.json`, { buildMilliseconds, harnessSha256: sha256, iso, release: { name: pin.release.name, sha256: pin.release.sha256 }, builtAt: new Date().toISOString() })
   return { staged, baseId, buildMilliseconds, harnessSha256: sha256, origin: `built ${new Date().toISOString()} by the pinned toolchain harness ${sha256.slice(0, 12)} from the verified ISO` }
 }
 
@@ -294,8 +442,8 @@ async function verifyAndPromoteBase({ staged, baseId, pin, layout, buildMillisec
   onPhase("booting the staged base once to read the installed omarchy package")
   const booted = await withGuest({ baseDir: staged, stagingName: `${baseId}-verify`, logFile: join(staged, "verify-boot.log"), layout, pin, onPhase, signal }, async () => null)
   const version = booted.identity?.version
-  if (version !== pin.release.expectedGuestVersion) {
-    throw new LabError("guest-mismatch", `the staged base runs omarchy ${version || "unknown"} (${booted.identity?.omarchyPackage || "no package read"}); the pin expects ${pin.release.expectedGuestVersion}; the base stays in staging and is not promoted`, { remedy: "`omakit lab prune` removes it; a pin update is a reviewed change, docs/LAB.md says how" })
+  if (!guestIsRelease(version, pin.release)) {
+    throw new LabError("guest-mismatch", `the staged base runs omarchy ${version || "unknown"} (${booted.identity?.omarchyPackage || "no package read"}), not Omarchy ${pin.release.name}'s package; the base stays in staging and is not promoted`, { remedy: "`omakit lab prune` removes it; an ISO that installs another release's package is not used as that release" })
   }
   if (booted.identity.linked) throw new LabError("guest-mismatch", `the staged base is dev-linked to ${booted.identity.omarchyPath}; a base runs the installed package`)
   onPhase("hashing the base disk and the firmware template")
@@ -310,7 +458,7 @@ async function verifyAndPromoteBase({ staged, baseId, pin, layout, buildMillisec
   const manifest = {
     schema: 1,
     state: "ready",
-    release: { name: pin.release.name, sha256: pin.release.sha256, bytes: pin.release.bytes, isoUrl: pin.release.isoUrl, embeddedBuild: pin.release.embeddedBuild, volume: pin.release.volume, iso },
+    release: { name: pin.release.name, sha256: pin.release.sha256, bytes: pin.release.bytes, isoUrl: pin.release.isoUrl, iso },
     signature: { fingerprint: pin.release.signingFingerprint },
     guest: { version, omarchyPackage: booted.identity.omarchyPackage, kernel: booted.identity.kernel, hostname: booted.identity.hostname, readBy: "pacman -Q omarchy over SSH in the verification boot" },
     disk: { file: BASE_FILES.disk, bytes: diskHash.bytes, sha256: diskHash.sha256, virtualBytes: qemuInfo?.["virtual-size"] ?? null, allocatedBytes: allocatedBytes(disk), format: qemuInfo?.format ?? null },
@@ -357,6 +505,23 @@ function fetchPlugins({ plugins, layout, onPhase }) {
     fetched.push({ id: plugin.id, commit: plugin.commit, state: "fetched", bytes: allocatedBytes(dir) })
   }
   return fetched
+}
+
+/**
+ * After a new base is promoted: the downloads of older releases the plan
+ * named, each checked again against the release's own digest so the one
+ * just verified is never among them. Nothing is removed before the
+ * promotion, so a build that fails leaves the old release usable.
+ */
+function removeSuperseded({ layout, pin, step, onLine }) {
+  const removed = []
+  for (const entry of step.superseded || []) {
+    if (entry.digest === pin.release.sha256 || !existsSync(join(layout.cache, entry.relative))) continue
+    removeFromLab(layout.cache, entry.relative)
+    removed.push(entry)
+  }
+  if (removed.length) onLine({ state: "pass", text: `removed ${removed.length === 1 ? "the older download" : `${removed.length} older downloads`} (${removed.map((entry) => entry.name || entry.digest.slice(0, 12)).join(", ")}), ${bytesBoth(removed.reduce((sum, entry) => sum + entry.bytes, 0))}` })
+  return removed
 }
 
 /**
@@ -410,14 +575,16 @@ export async function setupLab({ plan, consented, onPhase = () => {}, onLine = (
         const built = await buildBase({ pin, layout, toolchainHarness: step.toolchain, iso: target, onPhase, onLine, signal, repoRoot })
         onLine({ state: "pass", text: `the toolchain built a base in ${durationWords(built.buildMilliseconds)}` })
         const promoted = await verifyAndPromoteBase({ ...built, pin, layout, iso: target, onPhase, signal })
-        done.push({ kind: "build", milliseconds: built.buildMilliseconds, dir: promoted.dir, guest: promoted.manifest.guest, diskSha256: promoted.manifest.disk.sha256, allocatedBytes: promoted.manifest.disk.allocatedBytes })
+        done.push({ kind: "build", milliseconds: built.buildMilliseconds, dir: promoted.dir, guest: promoted.manifest.guest, diskSha256: promoted.manifest.disk.sha256, allocatedBytes: promoted.manifest.disk.allocatedBytes, release: pin.release.name })
         onLine({ state: "pass", text: `promoted ${promoted.dir}: guest omarchy ${promoted.manifest.guest.version}, disk sha256 ${promoted.manifest.disk.sha256}` })
+        done.push({ kind: "superseded", removed: removeSuperseded({ layout, pin, step, onLine }) })
       } else if (step.kind === "promote") {
         const baseId = step.staged.split("/").at(-1)
         const buildRecord = readJson(join(step.staged, "build", "lab-build.json"))
         const promoted = await verifyAndPromoteBase({ staged: step.staged, baseId, pin, layout, buildMilliseconds: buildRecord?.buildMilliseconds ?? null, origin: `built ${buildRecord?.builtAt || "earlier"} by the pinned toolchain harness ${(buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256).slice(0, 12)} from the verified ISO, promoted ${new Date().toISOString()} after a verification boot`, harnessSha256: buildRecord?.harnessSha256 || pin.toolchain.patchedHarnessSha256, iso: target, onPhase, signal })
-        done.push({ kind: "build", milliseconds: buildRecord?.buildMilliseconds ?? 0, dir: promoted.dir, guest: promoted.manifest.guest, diskSha256: promoted.manifest.disk.sha256, allocatedBytes: promoted.manifest.disk.allocatedBytes })
+        done.push({ kind: "build", milliseconds: buildRecord?.buildMilliseconds ?? 0, dir: promoted.dir, guest: promoted.manifest.guest, diskSha256: promoted.manifest.disk.sha256, allocatedBytes: promoted.manifest.disk.allocatedBytes, release: pin.release.name })
         onLine({ state: "pass", text: `promoted ${promoted.dir}: guest omarchy ${promoted.manifest.guest.version}, disk sha256 ${promoted.manifest.disk.sha256}` })
+        done.push({ kind: "superseded", removed: removeSuperseded({ layout, pin, step, onLine }) })
       } else if (step.kind === "plugins") {
         const fetched = fetchPlugins({ plugins: step.plugins, layout, onPhase })
         done.push({ kind: "plugins", fetched })

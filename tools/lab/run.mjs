@@ -40,10 +40,10 @@ import { spawn, spawnSync } from "node:child_process"
 import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { createServer } from "node:net"
 import { join, resolve } from "node:path"
-import { bytesBoth, labPin } from "./pin.mjs"
+import { bytesBoth, compareVersions, guestIsRelease, labPin, withRelease } from "./pin.mjs"
 import { allocatedBytes, inLab, labDir, labLayout, readJson, removeFromLab, stampNow, writeJson } from "./paths.mjs"
 import { freeBytesAt, guestCpus, probeRunHost } from "./host.mjs"
-import { BASE_FILES, inspectBase, inspectLock } from "./inspect.mjs"
+import { BASE_FILES, baseRelease, inspectBase, inspectLock } from "./inspect.mjs"
 import { press, qemuArgs, qmpExecute, startQemu, typeText } from "./qemu.mjs"
 import { clearStartupNotifications, establishSession, guestIdentity, SESSION_PREAMBLE, sleep, sshGuest, waitForSsh } from "./guest.mjs"
 import { SUITES, suitePreflight } from "./suites.mjs"
@@ -209,13 +209,16 @@ export async function withGuest({ baseDir, stagingName, logFile, layout, pin, on
 
 /**
  * Everything a run needs before a guest boots, or a LabError naming what
- * is missing. Reads only.
+ * is missing. Reads only. The base is held to its own release: a run uses
+ * the base that is there, and whether a newer release is out is the run
+ * record's `newest`, said beside the result, never a reason to refuse.
  */
 export function preflightRun({ suiteName, env = process.env, pin = labPin(), repoRoot, options = {} }) {
   const suite = SUITES[suiteName]
   if (!suite) throw new LabError("usage", `no suite named ${JSON.stringify(suiteName)}; the suites are ${Object.keys(SUITES).join(", ")}`, { remedy: `omakit lab prove <${Object.keys(SUITES).join("|")}>` })
   const layout = labLayout(env)
   const missing = []
+  pin = withRelease(pin, baseRelease(layout, pin))
   const base = inspectBase(layout, pin)
   if (base.state !== "ready") missing.push({ what: `a ready base (${base.state})`, cost: base.reason, command: "omakit lab setup" })
   for (const line of probeRunHost({ pin, env })) if (line.state !== "ok") missing.push({ what: line.name, cost: line.reason, command: line.remedy })
@@ -223,7 +226,7 @@ export function preflightRun({ suiteName, env = process.env, pin = labPin(), rep
   const free = freeBytesAt(layout.cache)
   if (free.bytes < pin.measured.overlayAfterRunBytes) missing.push({ what: "disk for one overlay", cost: `${bytesBoth(free.bytes)} free at ${free.path}; one run's overlay measured ${bytesBoth(pin.measured.overlayAfterRunBytes)} (M14)`, command: "omakit lab prune" })
   if (missing.length) throw new LabError("lab-not-ready", `\`omakit lab prove ${suiteName}\` cannot start: ${missing.length} thing${missing.length === 1 ? " is" : "s are"} missing`, { missing, remedy: missing[0].command })
-  return { suite, layout, base, free }
+  return { suite, layout, base, free, pin }
 }
 
 /**
@@ -232,8 +235,19 @@ export function preflightRun({ suiteName, env = process.env, pin = labPin(), rep
  * Returns the run record; the suite's document is in the run directory,
  * with its provenance.
  */
-export async function runSuite({ suiteName, env = process.env, pin = labPin(), repoRoot, options = {}, onPhase = () => {}, onLine = () => {}, signal }) {
-  const { suite, layout, base } = preflightRun({ suiteName, env, pin, repoRoot, options })
+export async function runSuite({ suiteName, env = process.env, pin = labPin(), repoRoot, options = {}, onPhase = () => {}, onLine = () => {}, signal, checkNewest = null }) {
+  const preflight = preflightRun({ suiteName, env, pin, repoRoot, options })
+  const { suite, layout, base } = preflight
+  pin = preflight.pin
+  // Whether a newer release is out, asked once the run can start, so a
+  // run that cannot start reads nothing from the network. A failed check
+  // is recorded as not checked; it never stops a run.
+  let newest = { checked: false, code: "not-asked", reason: "the newest release was not looked up" }
+  if (checkNewest) {
+    onPhase("looking for the newest Omarchy release")
+    newest = await checkNewest()
+  }
+  const behind = newest.checked ? compareVersions(pin.release.name, newest.release.name) < 0 || (pin.release.name === newest.release.name && pin.release.sha256 !== newest.release.sha256) : null
   const runId = `${stampNow()}-${suite.name}`
   const runDir = labDir(layout.state, "runs", runId)
   const startedAt = new Date()
@@ -242,7 +256,9 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
     runId,
     suite: suite.name,
     startedAt: startedAt.toISOString(),
-    pin: { release: pin.release.name, isoSha256: pin.release.sha256, expectedGuestVersion: pin.release.expectedGuestVersion },
+    pin: { release: pin.release.name, isoSha256: pin.release.sha256, expectedGuestVersion: base.manifest.guest.version },
+    newest: newest.checked ? { release: newest.release.name, isoSha256: newest.release.sha256, tag: newest.tag, publishedAt: newest.publishedAt, checkedAt: newest.checkedAt } : { release: null, code: newest.code, reason: newest.reason },
+    behind,
     base: { dir: base.dir, createdAt: base.manifest.createdAt, allocatedBytes: base.allocatedBytes, diskSha256: base.manifest.disk.sha256, varsSha256: base.manifest.vars.sha256, origin: base.manifest.build?.origin || null },
     guest: null,
     skew: null,
@@ -266,7 +282,7 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
     booted = await withGuest({ baseDir: base.dir, stagingName: `run-${runId}`, logFile: join(runDir, "qemu.log"), layout, pin, onPhase, signal }, async ({ guest, paths, identity }) => {
       record.guest = identity
       record.host.sshPort = guest.port
-      record.skew = identity.linked || identity.version !== pin.release.expectedGuestVersion
+      record.skew = identity.linked || !guestIsRelease(identity.version, pin.release)
       record.testedSource = identity.testedSource
       save()
       onLine({ state: "info", text: `guest omarchy ${identity.version || "unknown"} on ${identity.kernel || "?"}; tested source ${identity.testedSource}; skew ${record.skew}`, record })
@@ -286,7 +302,7 @@ export async function runSuite({ suiteName, env = process.env, pin = labPin(), r
         // files already carried by hand (`where`), plus the identity a
         // reader can check: run id, guest version, pin, skew.
         document.where = `the ${record.skew ? "linked" : "stock"} Omarchy ${identity.version || "?"} guest of omakit lab, run ${runId}`
-        document.lab = { runId, suite: suite.name, guest: identity, skew: record.skew, testedSource: identity.testedSource, pin: record.pin, base: { createdAt: record.base.createdAt, diskSha256: record.base.diskSha256, origin: record.base.origin }, host: record.host, startedAt: record.startedAt }
+        document.lab = { runId, suite: suite.name, guest: identity, skew: record.skew, testedSource: identity.testedSource, pin: record.pin, newest: record.newest, behind: record.behind, base: { createdAt: record.base.createdAt, diskSha256: record.base.diskSha256, origin: record.base.origin }, host: record.host, startedAt: record.startedAt }
         writeJson(layout.state, `runs/${runId}/${suite.document}`, document)
       }
     })

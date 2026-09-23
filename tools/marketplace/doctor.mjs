@@ -68,6 +68,7 @@ import { pathHint } from "./path-hint.mjs"
 import { completionStatus } from "./completion-check.mjs"
 import { inspectLab } from "../lab/inspect.mjs"
 import { labDoctorChecks } from "../lab/report.mjs"
+import { checkNewestRelease } from "../lab/release.mjs"
 
 export function tool(repoRoot) {
   try {
@@ -278,11 +279,12 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
  * @param {{ repoRoot: string, offline?: boolean, env?: object, npmPrefix?: () => string|null,
  *           resolveHead?: typeof defaultBranchHead, latest?: typeof registryLatest, compare?: typeof comparePin }} options
  *   `env` and `npmPrefix` are injectable for tests of the PATH check;
- *   `resolveHead`, `latest` and `compare` for tests of the two checks that
- *   read the network, whose defaults are the tool's one HEAD resolver, its
- *   one registry read and the pin comparison above.
+ *   `resolveHead`, `latest`, `compare` and `newestRelease` for tests of the
+ *   checks that read the network, whose defaults are the tool's one HEAD
+ *   resolver, its one registry read, the pin comparison above and the
+ *   lab's read of Omarchy's release list (tools/lab/release.mjs).
  */
-export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = registryLatest, compare = comparePin }) {
+export async function doctor({ repoRoot, offline = false, onPhase, env = process.env, npmPrefix, resolveHead = defaultBranchHead, latest: latestVersion = registryLatest, compare = comparePin, newestRelease = checkNewestRelease }) {
   // Optional: told what is being read while the network answers. Never
   // affects the result.
   const phase = onPhase || (() => {})
@@ -431,9 +433,15 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
   // the base, each with its measured reason, every one advice and never a
   // problem, because the lab is optional and doctor installs nothing.
   // Read-only: inspectLab creates no directory, verifies nothing online
-  // and starts nothing.
+  // and starts nothing. The one read is Omarchy's release list, so the
+  // lab says when a newer release is out; --offline skips it.
+  let newest = { checked: false, code: "offline", reason: "--offline" }
+  if (!offline) {
+    phase("looking for the newest Omarchy release")
+    newest = await newestRelease({ signal: AbortSignal.timeout(45_000) })
+  }
   phase("reading the lab")
-  for (const check of labDoctorChecks(await inspectLab({ env }))) checks.push(check)
+  for (const check of labDoctorChecks(await inspectLab({ env, newest }))) checks.push(check)
 
   return { checks, problems: checks.filter((check) => check.state === "problem").length }
 }

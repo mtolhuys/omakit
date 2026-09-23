@@ -9,9 +9,9 @@
 
 import { existsSync, lstatSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { bytesBoth, labPin } from "./pin.mjs"
+import { bytesBoth, labPin, withRelease } from "./pin.mjs"
 import { allocatedBytes, labLayout, removeFromLab } from "./paths.mjs"
-import { inspectBase, inspectLock, inspectStaging } from "./inspect.mjs"
+import { baseRelease, downloadEntry, inspectBase, inspectLock, inspectStaging } from "./inspect.mjs"
 import { LabError } from "./run.mjs"
 
 /**
@@ -35,16 +35,19 @@ export async function planPrune({ env = process.env, pin = labPin(), keepIso = f
   for (const entry of active) blockers.push(`a QEMU still answers on ${entry.socket}`)
   if (existsSync(layout.downloads)) {
     for (const digest of readdirSync(layout.downloads)) {
+      // Each download directory says what it holds: its verification
+      // record names the release (a record written before 0.6.9 names only
+      // the digest, and the ISO is the one .iso file in the directory).
       const dir = join(layout.downloads, digest)
-      const verified = digest === pin.release.sha256 && existsSync(join(dir, "verified.json")) && existsSync(join(dir, pin.release.fileName))
+      const { name, fileName, verified } = lstatSync(dir).isDirectory() ? downloadEntry(dir, digest) : { name: null, fileName: null, verified: false }
       if (verified && keepIso) {
-        add(layout.cache, `downloads/${digest}/${pin.release.fileName}.part`, "a partial download beside the verified ISO")
+        add(layout.cache, `downloads/${digest}/${fileName}.part`, "a partial download beside the verified ISO")
         continue
       }
-      add(layout.cache, `downloads/${digest}`, verified ? `the verified ISO of ${pin.release.name} and its record` : digest === pin.release.sha256 ? "the unverified or partial download of the pinned release" : `a download directory of another digest (${digest.slice(0, 12)})`)
+      add(layout.cache, `downloads/${digest}`, verified ? `the verified ISO of ${name ? `Omarchy ${name}` : digest.slice(0, 12)} and its record` : `an unverified or partial download${name ? ` of Omarchy ${name}` : ` (${digest.slice(0, 12)})`}`)
     }
   }
-  const base = inspectBase(layout, pin)
+  const base = inspectBase(layout, withRelease(pin, baseRelease(layout, pin)))
   if (base.state !== "missing") add(layout.cache, "base", `the ${base.state} base${base.manifest ? ` (Omarchy ${base.manifest.release.name}, guest ${base.manifest.guest.version})` : ""}`)
   for (const entry of staging) if (!entry.alive) add(layout.cache, `staging/${entry.name}`, `staging left by ${entry.name}`)
   if (existsSync(layout.plugins)) add(layout.cache, "plugins", "the listed plugins cached for the weigh evidence gate")

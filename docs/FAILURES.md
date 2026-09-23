@@ -109,15 +109,17 @@ is missing and the one command for each.
 | Code | What happened | The one action |
 | --- | --- | --- |
 | `lab-not-ready` | the base, the tools or the firmware are not there yet | `omakit lab inspect` |
-| `lab-blocked` | `setup` cannot start at all: no toolchain, or too little disk | `omakit lab inspect` names what the host lacks, with the one command for each. |
+| `lab-blocked` | `setup` cannot start at all: no toolchain, too little disk, or no base and the newest release could not be looked up | `omakit lab inspect` names what the host lacks, with the one command for each. |
+| `release-unavailable` | none of the newest Omarchy releases has its ISO, `.sha256` and `.sig` all published, or the release list named nothing at or above the lab's floor | `omakit lab inspect` names the newest release and why each newer one was passed over; run it again once Omarchy has published all three. |
+| `signer-changed` | the newest Omarchy release is signed by a key omakit does not ship; the lab will not prepare it and will not fall back to an older release | `omakit upgrade`: a newer omakit carries Omarchy's new key once it is verified. The base you have keeps working. |
 | `lab-busy` | another run holds the lock, or something is still running | `omakit lab inspect` |
-| `iso-mismatch` | the file on disk is not the pinned release, and nothing will boot it | `omakit lab prune`, then `omakit lab setup` |
-| `size-mismatch` | the download ended at a different byte count than the pin's | The object at the pinned URL is not the pinned release; a pin update is a reviewed change, and [LAB.md](LAB.md) says how. |
-| `sidecar-mismatch` | the published checksum is not the pin's | As above: a pin update is a reviewed change. |
+| `iso-mismatch` | the file on disk is not the release as published (size, digest or signature), and nothing will boot it | `omakit lab prune`, then `omakit lab setup` |
+| `size-mismatch` | the download ended at a different byte count than the release announced when setup read it | `omakit lab setup`: Omarchy changed the object at the versioned URL, and setup reads the release again. |
+| `sidecar-mismatch` | the checksum published now is not the one setup read at the start: Omarchy republished the release while it downloaded | As above: `omakit lab setup` reads the release again. |
 | `key-mismatch` | the packaged signing key is not the one the pin names | Reinstall omakit from the registry (`omakit upgrade`). |
 | `toolchain-missing` | the omarchy-iso checkout was not recorded | `omakit lab inspect` prints the one command that prepares the toolchain. |
 | `toolchain-mismatch` | the harness changed between the check and the copy | As above. |
-| `guest-mismatch` | the staged base runs a linked checkout rather than the installed package | `omakit lab prune` removes the staged base. |
+| `guest-mismatch` | the staged base runs a linked checkout, or another release's `omarchy` package than the ISO it was built from | `omakit lab prune` removes the staged base. |
 | `build-failed` | the base build exited without producing the base | Read `build.log` under the lab's staging directory, then prune and set up again. |
 | `qemu-failed` | QEMU did not start | Read `qemu.log` in the run directory; `omakit lab inspect` names what the host lacks. |
 | `overlay-failed` | `qemu-img` could not create the run's overlay | The base must be ready and the disk must have room for one overlay. |

@@ -187,7 +187,7 @@ const ROWS = [
   { name: "add into a read-only directory", command: "add", args: ["add", "run", (mode) => { const dir = pluginDir(`add-readonly-${mode}`); chmodSync(dir, 0o555); readOnly.push(dir); return dir }], exit: 1, code: "EACCES", skip: isRoot && "root writes anywhere" },
   { name: "add with an unknown option", command: "add", args: ["add", "run", "--wat"], exit: 2, code: "usage" },
   // lab
-  { name: "lab inspect on an empty home", command: "lab inspect", args: ["lab", "inspect"], exit: 1, code: "lab-not-ready", env: () => emptyHome("lab-inspect") },
+  { name: "lab inspect on an empty home", command: "lab inspect", args: ["lab", "inspect", "--offline"], exit: 1, code: "lab-not-ready", env: () => emptyHome("lab-inspect") },
   { name: "lab inspect with a suite", command: "lab inspect", args: ["lab", "inspect", "run"], exit: 2, code: "usage" },
   { name: "lab prove on an empty home", command: "lab prove", args: ["lab", "prove", "run"], exit: 1, code: "lab-not-ready", env: () => emptyHome("lab-prove") },
   { name: "lab prove an unknown suite", command: "lab prove", args: ["lab", "prove", "nosuch"], exit: 2, code: "usage", env: () => emptyHome("lab-prove-usage") },

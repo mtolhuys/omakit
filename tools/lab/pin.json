@@ -1,19 +1,13 @@
 {
-  "schema": 1,
-  "release": {
-    "name": "4.0.3",
-    "embeddedBuild": "2026.09.08",
-    "volume": "OMARCHY_202609",
-    "isoUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso",
-    "checksumUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso.sha256",
-    "signatureUrl": "https://iso.omarchy.org/omarchy-4.0.3.iso.sig",
-    "fileName": "omarchy-4.0.3.iso",
-    "bytes": 6260654080,
-    "sha256": "03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14",
+  "schema": 2,
+  "releases": {
+    "list": "https://api.github.com/repos/omacom/omarchy/releases?per_page=30",
+    "iso": "https://iso.omarchy.org/omarchy-{version}.iso",
+    "floor": "4.0.3",
+    "candidates": 3,
     "signingFingerprint": "40DFB630FF42BCFFB047046CF0134EE680CAC571",
     "signingKey": "omarchy.gpg",
-    "signingKeySha256": "15d6aac44df688165b2ea35fe0b23af239bbc66a6909c10a5c219e8d94b707de",
-    "expectedGuestVersion": "4.0.3-1"
+    "signingKeySha256": "15d6aac44df688165b2ea35fe0b23af239bbc66a6909c10a5c219e8d94b707de"
   },
   "toolchain": {
     "repository": "https://github.com/omacom-io/omarchy-iso",
@@ -31,12 +25,14 @@
   },
   "measured": {
     "on": "2026-09-18",
+    "release": "4.0.3",
+    "isoBytes": 6260654080,
     "buildMilliseconds": 357800,
     "baseAllocatedBytes": 6181490688,
     "baseDirectoryBytes": 6182264832,
     "preparedLabBytes": 12442931200,
     "overlayAfterRunBytes": 610734080,
     "pluginsBytes": 6836224,
-    "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host; packaging/LAB_PLAN.md M4 to M7 are the 2026-09-10 to 2026-09-13 observations it re-measured"
+    "source": "docs/MEASUREMENTS.md M14, measured by omakit lab on the reference host with Omarchy 4.0.3; packaging/LAB_PLAN.md M4 to M7 are the 2026-09-10 to 2026-09-13 observations it re-measured"
   }
 }

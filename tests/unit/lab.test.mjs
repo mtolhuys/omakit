@@ -13,23 +13,30 @@ import { createServer as createUnixServer } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { REPO_ROOT } from "./helpers.mjs"
-import { bytesBoth, durationWords, labPin, LAB_DIR } from "../../tools/lab/pin.mjs"
+import { bytesBoth, compareVersions, durationWords, guestIsRelease, labPin, LAB_DIR, releaseOf, withRelease } from "../../tools/lab/pin.mjs"
 import { allocatedBytes, inLab, labLayout, writeJson } from "../../tools/lab/paths.mjs"
 import { qcodesFor, qemuArgs } from "../../tools/lab/qemu.mjs"
 import { BUILD_COMMANDS, kvmContext, probeCommands, probeKvm } from "../../tools/lab/host.mjs"
 import { GUEST_HOST, sshArgs } from "../../tools/lab/guest.mjs"
-import { judgeRelease, sha256File, verifySignature } from "../../tools/lab/verify.mjs"
-import { BASE_FILES, inspectBase, inspectDownload, inspectLab, inspectToolchain } from "../../tools/lab/inspect.mjs"
-import { CONSENT_QUESTION, disclosureLines, downloadRelease, planSetup, setupLab } from "../../tools/lab/setup.mjs"
+import { judgeRelease, sha256File, signatureIssuer, verifySignature } from "../../tools/lab/verify.mjs"
+import { BASE_FILES, buildGuests, inspectBase, inspectDownload, inspectLab, inspectStaging, inspectToolchain } from "../../tools/lab/inspect.mjs"
+import { CONSENT_QUESTION, disclosureLines, downloadRelease, localRelease, NOT_ASKED, planSetup, setupLab, stagedBases } from "../../tools/lab/setup.mjs"
+import { checkNewestRelease, findNewestRelease, sidecarDigest } from "../../tools/lab/release.mjs"
 import { acquireLock, LabError, preflightRun, releaseLock } from "../../tools/lab/run.mjs"
 import { planPrune, prune } from "../../tools/lab/prune.mjs"
 import { SUITES, suiteNames, suitePreflight } from "../../tools/lab/suites.mjs"
-import { labDoctorChecks, renderLab, renderSetupPlan } from "../../tools/lab/report.mjs"
+import { labDoctorChecks, releaseCheck, renderLab, renderSetupPlan } from "../../tools/lab/report.mjs"
 import { ACCEPTED } from "../../tools/marketplace/options.mjs"
 import { LAB_ACTIONS, subcommandsOf } from "../../tools/marketplace/completion.mjs"
 import { COMMANDS } from "../../tools/marketplace/usage.mjs"
 
 const pin = labPin()
+
+/** Omarchy 4.0.3 as published, the release the lab was measured on (M14). */
+const RELEASE_403 = releaseOf(pin, { name: "4.0.3", bytes: 6260654080, sha256: "03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14" })
+
+/** What release.mjs answers when it found `release` as the newest. */
+const found = (release, extra = {}) => ({ checked: true, release, tag: `v${release.name}`, publishedAt: "2026-09-08T19:50:46Z", checkedAt: "2026-09-23T00:00:00.000Z", list: pin.releases.list, skipped: [], ...extra })
 
 function scratch() {
   const dir = mkdtempSync(join(tmpdir(), "omakit-lab-"))
@@ -40,43 +47,202 @@ function scratch() {
 
 const sha256 = (buffer) => createHash("sha256").update(buffer).digest("hex")
 
-/** A small release standing in for the pinned one: a few KiB, its own digest, the real signer fields. */
+/** A small release standing in for a real one: a few KiB, its own digest, the real signer fields. */
 function smallPin(body, overrides = {}) {
-  return { ...pin, release: { ...pin.release, bytes: body.length, sha256: sha256(body), fileName: "small.iso", ...overrides } }
+  return { ...pin, release: { ...RELEASE_403, bytes: body.length, sha256: sha256(body), fileName: "small.iso", ...overrides } }
 }
 
-test("the pin names one release with a 64-character digest, a 40-character signer and no latest, and the packaged key hashes to the pin", () => {
-  assert.equal(pin.release.name, "4.0.3")
-  assert.match(pin.release.sha256, /^[0-9a-f]{64}$/)
-  assert.match(pin.release.signingFingerprint, /^[0-9A-F]{40}$/)
-  assert.equal(pin.release.bytes, 6260654080)
-  assert.doesNotMatch(pin.release.isoUrl, /latest/i)
-  assert.equal(pin.release.isoUrl, "https://iso.omarchy.org/omarchy-4.0.3.iso")
-  assert.equal(sha256File(join(LAB_DIR, pin.release.signingKey)).sha256, pin.release.signingKeySha256)
-  const key = readFileSync(join(LAB_DIR, pin.release.signingKey), "utf8")
+test("the pin names where releases are listed and published, the oldest it takes, the one signer, and never a release of its own", () => {
+  assert.equal(pin.release, undefined, "which release is the newest is looked up, never written down")
+  assert.equal(pin.releases.list, "https://api.github.com/repos/omacom/omarchy/releases?per_page=30")
+  assert.equal(pin.releases.iso, "https://iso.omarchy.org/omarchy-{version}.iso")
+  assert.doesNotMatch(pin.releases.iso, /latest/i)
+  assert.equal(pin.releases.floor, "4.0.3")
+  assert.ok(Number.isInteger(pin.releases.candidates) && pin.releases.candidates >= 2, "a tagged release without its ISO yet is passed over, not the end of the search")
+  assert.match(pin.releases.signingFingerprint, /^[0-9A-F]{40}$/)
+  assert.equal(sha256File(join(LAB_DIR, pin.releases.signingKey)).sha256, pin.releases.signingKeySha256)
+  const key = readFileSync(join(LAB_DIR, pin.releases.signingKey), "utf8")
   assert.match(key, /^-----BEGIN PGP PUBLIC KEY BLOCK-----/, "the packaged key is armoured text, never a binary blob")
-  assert.equal(pin.release.expectedGuestVersion, "4.0.3-1")
+  assert.deepEqual(RELEASE_403, {
+    name: "4.0.3", fileName: "omarchy-4.0.3.iso", isoUrl: "https://iso.omarchy.org/omarchy-4.0.3.iso",
+    checksumUrl: "https://iso.omarchy.org/omarchy-4.0.3.iso.sha256", signatureUrl: "https://iso.omarchy.org/omarchy-4.0.3.iso.sig",
+    bytes: 6260654080, sha256: "03d60bc74306dca51f96e1a84b690871d8d606826b260edd0208962da8507d14",
+    signingFingerprint: pin.releases.signingFingerprint, signingKey: pin.releases.signingKey, signingKeySha256: pin.releases.signingKeySha256,
+    expectedGuestVersion: "4.0.3-<pkgrel>",
+  })
+  assert.throws(() => releaseOf(pin, { name: "latest", bytes: 1, sha256: "0".repeat(64) }), /not a release name/)
   assert.equal(pin.toolchain.commit, "268bac16d351a21d867e37565738f458b11cb06c")
   const patch = readFileSync(join(LAB_DIR, pin.toolchain.patch), "utf8")
   assert.match(patch, /Beautiful, Fun & Agentic Linux by DHH/, "the patch knows the 4.0.3 installer's greeter (inventory P12)")
   assert.match(patch, /^-omarchy-pkg-add /m, "the patch removes the host package install (inventory P10)")
   assert.match(patch, /\+ *--host-test\)/, "the patch carries the host-test extension")
-  for (const key of ["buildMilliseconds", "baseAllocatedBytes", "baseDirectoryBytes", "preparedLabBytes", "overlayAfterRunBytes"]) {
+  assert.equal(pin.measured.release, "4.0.3", "the measured costs say which release they were measured on")
+  for (const key of ["isoBytes", "buildMilliseconds", "baseAllocatedBytes", "baseDirectoryBytes", "preparedLabBytes", "overlayAfterRunBytes"]) {
     assert.ok(Number.isInteger(pin.measured[key]) && pin.measured[key] > 0, `${key} is a measured integer`)
   }
 })
 
-test("a pin that resolves latest, or whose digest is not a digest, is refused at read time", () => {
+test("a pin whose ISO URL names latest, or whose floor, signer or list is malformed, is refused at read time", () => {
   const { dir, rm } = scratch()
   try {
     const file = join(dir, "pin.json")
-    writeFileSync(file, JSON.stringify({ ...pin, release: { ...pin.release, isoUrl: "https://iso.omarchy.org/latest.iso" } }))
-    assert.throws(() => labPin(file), /resolves latest/)
-    writeFileSync(file, JSON.stringify({ ...pin, release: { ...pin.release, sha256: "abc" } }))
-    assert.throws(() => labPin(file), /64 hex/)
+    const write = (releases) => writeFileSync(file, JSON.stringify({ ...pin, releases: { ...pin.releases, ...releases } }))
+    write({ iso: "https://iso.omarchy.org/omarchy-latest-{version}.iso" })
+    assert.throws(() => labPin(file), /names latest/)
+    write({ iso: "https://iso.omarchy.org/omarchy.iso" })
+    assert.throws(() => labPin(file), /template with \{version\}/)
+    write({ floor: "4.0" })
+    assert.throws(() => labPin(file), /floor/)
+    write({ signingFingerprint: "abc" })
+    assert.throws(() => labPin(file), /40 hex/)
+    write({ list: "https://example.com/releases" })
+    assert.throws(() => labPin(file), /GitHub releases URL/)
+    write({})
+    assert.equal(labPin(file).releases.floor, "4.0.3")
   } finally {
     rm()
   }
+})
+
+test("versions compare by their three numbers, and a guest package is its release's by name and one revision", () => {
+  assert.equal(compareVersions("4.0.10", "4.0.9"), 1, "numbers, not strings")
+  assert.equal(compareVersions("4.1.0", "4.0.99"), 1)
+  assert.equal(compareVersions("4.0.3", "4.0.3"), 0)
+  assert.equal(compareVersions("5.0.0", "4.9.9"), 1)
+  assert.equal(compareVersions("not", "4.0.3"), -1, "a name that is not a release sorts below every release")
+  assert.equal(guestIsRelease("4.0.3-1", RELEASE_403), true)
+  assert.equal(guestIsRelease("4.0.3-2", RELEASE_403), true, "a package rebuild is the same release")
+  assert.equal(guestIsRelease("4.0.30-1", RELEASE_403), false)
+  assert.equal(guestIsRelease("4.0.4-1", RELEASE_403), false)
+  assert.equal(guestIsRelease("4.0.3", RELEASE_403), false)
+  assert.equal(guestIsRelease(null, RELEASE_403), false)
+})
+
+/** Omarchy's own 4.0.4 signature, 119 bytes as published at iso.omarchy.org: a v4 EdDSA signature packet. */
+const SIG_404 = Buffer.from("iHUEABYKAB0WIQRA37Yw/0K8/7BHBGzwE07mgMrFcQUCaqm61QAKCRDwE07mgMrFcc7CAP9NZIz0GRINcs4aeiBNx9iuS/vwdFcb1klgY+5rM/vnuwEAlV07M9aud1I/Wrmbt9PGAXRaJiAoyouNOey5hv28JgA=", "base64")
+
+test("the signer is read from the signature packet itself, and anything unreadable is unknown, never a throw", () => {
+  assert.deepEqual(signatureIssuer(SIG_404), { fingerprint: "40DFB630FF42BCFFB047046CF0134EE680CAC571", keyId: "F0134EE680CAC571" })
+  assert.equal(signatureIssuer(SIG_404).fingerprint, pin.releases.signingFingerprint, "4.0.4 is signed by the key omakit ships")
+  const armoured = `-----BEGIN PGP SIGNATURE-----\n\n${SIG_404.toString("base64")}\n=abcd\n-----END PGP SIGNATURE-----\n`
+  assert.deepEqual(signatureIssuer(Buffer.from(armoured)), signatureIssuer(SIG_404), "armoured or binary, the same packet")
+  // The new header format, one-octet length: the same body behind 0xC2.
+  assert.deepEqual(signatureIssuer(Buffer.concat([Buffer.from([0xc2, 0x75]), SIG_404.subarray(2)])), signatureIssuer(SIG_404))
+  for (const broken of [Buffer.alloc(0), Buffer.from([0x88]), Buffer.from([0x88, 0xff, 4]), SIG_404.subarray(0, 40), Buffer.from("not a signature"), Buffer.from([0x88, 0x75, 5, ...SIG_404.subarray(3)])]) {
+    assert.deepEqual(signatureIssuer(broken), { fingerprint: null, keyId: null }, `unreadable: ${broken.toString("hex").slice(0, 20)}`)
+  }
+})
+
+test("a checksum sidecar is read as a digest only when it names the ISO beside it", () => {
+  const digest = "a".repeat(64)
+  assert.equal(sidecarDigest(`${digest}  omarchy-4.0.4.iso\n`, "omarchy-4.0.4.iso"), digest)
+  assert.equal(sidecarDigest(`${"A".repeat(64)} *omarchy-4.0.4.iso`, "omarchy-4.0.4.iso"), digest, "binary mode marker, upper case")
+  assert.equal(sidecarDigest(`${digest}  ./out/omarchy-4.0.4.iso`, "omarchy-4.0.4.iso"), digest)
+  assert.equal(sidecarDigest(`${digest}  omarchy-4.0.3.iso`, "omarchy-4.0.4.iso"), null, "another release's checksum")
+  assert.equal(sidecarDigest(`${digest}`, "omarchy-4.0.4.iso"), null)
+  assert.equal(sidecarDigest("<!doctype html>", "omarchy-4.0.4.iso"), null)
+})
+
+/**
+ * A release host in memory: `listing` is the GitHub answer, `objects` maps
+ * a URL to a body (Buffer), to `{ image: true, announce }` for an ISO whose
+ * headers announce a size (or none), to `404`, or to an Error to throw.
+ * Counts what was read, and whether an ISO body was cancelled rather than read.
+ */
+function releaseHost(listing, objects) {
+  const log = { reads: [], cancelled: [], bodiesRead: [] }
+  const readJson = async (url) => {
+    log.reads.push(url)
+    if (listing instanceof Error) throw listing
+    return listing
+  }
+  const fetchStream = async (url) => {
+    log.reads.push(url)
+    const object = objects[url]
+    if (object === undefined || object === 404) throw Object.assign(new Error(`GET ${url} returned 404`), { code: "not-found", status: 404 })
+    if (object instanceof Error) throw object
+    const headers = new Headers(object.image ? (object.announce === undefined ? {} : { "content-length": String(object.announce) }) : { "content-length": String(object.length) })
+    return {
+      status: 200,
+      headers,
+      arrayBuffer: async () => {
+        log.bodiesRead.push(url)
+        return object.image ? new ArrayBuffer(0) : object.buffer.slice(object.byteOffset, object.byteOffset + object.length)
+      },
+      body: { cancel: async () => { log.cancelled.push(url) } },
+    }
+  }
+  return { readJson, fetchStream, log }
+}
+
+const tagged = (name, extra = {}) => ({ tag_name: `v${name}`, published_at: "2026-09-15T21:39:29Z", draft: false, prerelease: false, ...extra })
+const iso = (name) => `https://iso.omarchy.org/omarchy-${name}.iso`
+/** The three objects of a release published whole, the ISO announcing `bytes`. */
+function published(name, { bytes = 6185304064, digest = "d".repeat(64), sig = SIG_404 } = {}) {
+  return { [`${iso(name)}.sha256`]: Buffer.from(`${digest}  omarchy-${name}.iso\n`), [`${iso(name)}.sig`]: sig, [iso(name)]: { image: true, announce: bytes } }
+}
+
+test("the newest release is the highest version published whole, drafts and pre-releases aside, and the ISO's body is never read", async () => {
+  const listing = [tagged("4.0.2"), tagged("4.0.10"), tagged("4.0.4"), tagged("5.0.0-rc1"), tagged("4.1.0", { draft: true }), tagged("4.2.0", { prerelease: true }), tagged("4.0.4"), { tag_name: 7 }, null, tagged("nightly")]
+  const host = releaseHost(listing, { ...published("4.0.10", { digest: "1".repeat(64) }), ...published("4.0.4") })
+  const newest = await findNewestRelease({ pin, readJson: host.readJson, fetchStream: host.fetchStream, now: () => new Date("2026-09-23T00:00:00Z") })
+  assert.equal(newest.release.name, "4.0.10", "by the numbers, not by the list's order or as strings")
+  assert.equal(newest.release.sha256, "1".repeat(64))
+  assert.equal(newest.release.bytes, 6185304064, "the size the ISO host announces")
+  assert.equal(newest.release.isoUrl, iso("4.0.10"))
+  assert.equal(newest.tag, "v4.0.10")
+  assert.equal(newest.checkedAt, "2026-09-23T00:00:00.000Z")
+  assert.deepEqual(newest.skipped, [])
+  assert.deepEqual(host.log.cancelled, [iso("4.0.10")], "the ISO's headers were read and its body cancelled")
+  assert.ok(!host.log.bodiesRead.includes(iso("4.0.10")), "no byte of an image is read by the search")
+  assert.equal(host.log.reads[0], pin.releases.list)
+})
+
+test("a newer release not published whole is passed over and named, but a read that failed stops the search instead of falling back", async () => {
+  const listing = [tagged("4.0.5"), tagged("4.0.4"), tagged("4.0.3")]
+  // 4.0.5 is tagged and its ISO is not up yet: 4.0.4 is the newest available, and 4.0.5 is named.
+  const waiting = releaseHost(listing, { ...published("4.0.4"), [`${iso("4.0.5")}.sha256`]: Buffer.from(`${"5".repeat(64)}  omarchy-4.0.5.iso`), [`${iso("4.0.5")}.sig`]: SIG_404 })
+  const newest = await findNewestRelease({ pin, readJson: waiting.readJson, fetchStream: waiting.fetchStream })
+  assert.equal(newest.release.name, "4.0.4")
+  assert.deepEqual(newest.skipped, [{ name: "4.0.5", reason: "omarchy-4.0.5.iso is not published" }])
+  // A checksum that names another file is not a publication of this release.
+  const misnamed = releaseHost(listing, { ...published("4.0.4"), [`${iso("4.0.5")}.sha256`]: Buffer.from(`${"5".repeat(64)}  omarchy-4.0.4.iso`) })
+  assert.deepEqual((await findNewestRelease({ pin, readJson: misnamed.readJson, fetchStream: misnamed.fetchStream })).skipped, [{ name: "4.0.5", reason: "omarchy-4.0.5.iso.sha256 does not name omarchy-4.0.5.iso with a SHA-256" }])
+  // No size announced: the download could not be held to one.
+  const sizeless = releaseHost(listing, { ...published("4.0.4"), ...published("4.0.5"), [iso("4.0.5")]: { image: true } })
+  const noSize = await findNewestRelease({ pin, readJson: sizeless.readJson, fetchStream: sizeless.fetchStream })
+  assert.equal(noSize.release.name, "4.0.4")
+  assert.match(noSize.skipped[0].reason, /did not announce its size/)
+  // A timeout on the newest is not "not published": the search stops, and nothing older is offered.
+  const flaky = releaseHost(listing, { ...published("4.0.4"), [`${iso("4.0.5")}.sha256`]: Object.assign(new Error("iso.omarchy.org did not answer (no answer within 20 s)"), { code: "network-unavailable" }) })
+  await assert.rejects(findNewestRelease({ pin, readJson: flaky.readJson, fetchStream: flaky.fetchStream }), (error) => error.code === "network-unavailable")
+  // None of the newest `candidates` published whole: refused, each reason named.
+  const none = releaseHost([tagged("4.0.7"), tagged("4.0.6"), tagged("4.0.5"), tagged("4.0.4")], published("4.0.4"))
+  await assert.rejects(findNewestRelease({ pin, readJson: none.readJson, fetchStream: none.fetchStream }), (error) => error.code === "release-unavailable" && /none of the newest 3 releases is published whole: 4\.0\.7 \(.*\); 4\.0\.6 .*; 4\.0\.5/.test(error.message))
+  // A sidecar that is not a few dozen bytes is not a sidecar.
+  const huge = releaseHost(listing, { ...published("4.0.5"), [`${iso("4.0.5")}.sha256`]: Buffer.alloc(5000, 97) })
+  await assert.rejects(findNewestRelease({ pin, readJson: huge.readJson, fetchStream: huge.fetchStream }), (error) => error.code === "release-unavailable" && /a sidecar is a few dozen/.test(error.message))
+})
+
+test("the floor holds whatever the list says, a changed signer stops the search before any download, and the check never throws", async () => {
+  const old = releaseHost([tagged("4.0.2"), tagged("3.9.9")], {})
+  await assert.rejects(findNewestRelease({ pin, readJson: old.readJson, fetchStream: old.fetchStream }), (error) => error.code === "release-unavailable" && /no release at or above 4\.0\.3; the newest listed is 4\.0\.2/.test(error.message))
+  assert.equal(old.log.reads.length, 1, "nothing below the floor is probed")
+  // 4.0.5 signed by another key: refused, and 4.0.4 (the old key's) is not offered in its place.
+  const other = Buffer.from(SIG_404)
+  other[11] ^= 0xff
+  const rotated = releaseHost([tagged("4.0.5"), tagged("4.0.4")], { ...published("4.0.5", { sig: other }), ...published("4.0.4") })
+  await assert.rejects(findNewestRelease({ pin, readJson: rotated.readJson, fetchStream: rotated.fetchStream }), (error) => error.code === "signer-changed" && /not the key omakit ships/.test(error.message) && /will not fall back/.test(error.message))
+  assert.ok(!rotated.log.reads.includes(iso("4.0.5")), "the ISO of a release signed by another key is not even asked for")
+  assert.ok(!rotated.log.reads.some((url) => url.includes("4.0.4")), "and the older release is not probed as a fallback")
+  // A signature packet omakit cannot read defers to gpg over the whole file, which runs before anything boots.
+  const unreadable = releaseHost([tagged("4.0.4")], published("4.0.4", { sig: Buffer.from("opaque") }))
+  assert.equal((await findNewestRelease({ pin, readJson: unreadable.readJson, fetchStream: unreadable.fetchStream })).release.name, "4.0.4")
+  // The value form, for inspect, doctor and a run.
+  const down = releaseHost(Object.assign(new Error("api.github.com did not answer (ENETUNREACH)"), { code: "network-unavailable" }), {})
+  assert.deepEqual(await checkNewestRelease({ pin, readJson: down.readJson, fetchStream: down.fetchStream }), { checked: false, code: "network-unavailable", reason: "api.github.com did not answer (ENETUNREACH)" })
+  const odd = releaseHost({ message: "Not Found" }, {})
+  assert.equal((await checkNewestRelease({ pin, readJson: odd.readJson, fetchStream: odd.fetchStream })).code, "release-unavailable")
 })
 
 test("bytes are printed in both units, every time, and a duration in minutes and seconds", () => {
@@ -191,7 +357,7 @@ test("the guest is the only target: nothing under tools/lab reaches the host's s
 test("inspect on an empty home reports everything missing with its cost and command, creates nothing, and doctor gets advice lines", async () => {
   const { env, layout, rm } = scratch()
   try {
-    const lab = await inspectLab({ env, run: () => "" })
+    const lab = await inspectLab({ env, run: () => "", newest: found(RELEASE_403) })
     assert.equal(lab.download.present, false)
     assert.equal(lab.base.state, "missing")
     assert.equal(lab.toolchain.state, "missing")
@@ -209,15 +375,23 @@ test("inspect on an empty home reports everything missing with its cost and comm
     assert.match(text, /NOT PREPARED/)
     assert.doesNotMatch(text, //)
     const checks = labDoctorChecks(lab)
-    assert.ok(checks.every((check) => ["ok", "advice"].includes(check.state)), "the lab is optional: advice, never a problem")
+    assert.ok(checks.every((check) => ["ok", "advice", "info"].includes(check.state)), "the lab is optional: advice or information, never a problem")
     assert.ok(checks.some((check) => check.id === "lab.base" && check.state === "advice" && check.action === "omakit lab setup"))
-    assert.ok(checks.some((check) => check.id === "lab.iso" && check.evidence.sha256 === pin.release.sha256))
+    assert.ok(checks.some((check) => check.id === "lab.iso" && check.evidence.sha256 === RELEASE_403.sha256))
+    assert.deepEqual(checks.find((check) => check.id === "lab.release").state, "info", "no base yet: the newest release is named, nothing to do about it here")
+    // The release list unread and nothing on disk: nothing to hold an ISO to, and that is said.
+    const unread = await inspectLab({ env, run: () => "", newest: { checked: false, code: "network-unavailable", reason: "api.github.com did not answer" } })
+    assert.equal(unread.pin.release, null)
+    assert.ok(unread.missing.some((item) => item.what === "the verified ISO" && /could not be looked up \(api\.github\.com did not answer\)/.test(item.cost)))
+    assert.match(renderLab(unread, { colour: false, env }), /not looked up: api\.github\.com did not answer/)
+    assert.equal(labDoctorChecks(unread).find((check) => check.id === "lab.release").state, "unknown")
+    assert.equal(existsSync(layout.cache), false, "still nothing created")
   } finally {
     rm()
   }
 })
 
-test("a base is ready only with a complete manifest for the pinned release and guest; another release is a mismatch; a wrong size is invalid", () => {
+test("a base is ready for its own release, outdated when a newer one or a republished ISO is out, a mismatch when newer than the newest or not its release's package, invalid when its files disagree", () => {
   const { env, layout, rm } = scratch()
   try {
     mkdirSync(layout.base, { recursive: true })
@@ -225,21 +399,38 @@ test("a base is ready only with a complete manifest for the pinned release and g
     writeFileSync(join(layout.base, BASE_FILES.disk), "qcow")
     writeFileSync(join(layout.base, BASE_FILES.vars), "vars")
     writeFileSync(join(layout.base, BASE_FILES.key), "key")
-    const manifest = { state: "ready", release: { name: "4.0.3", sha256: pin.release.sha256 }, guest: { version: "4.0.3-1" }, disk: { bytes: 4, sha256: "x" }, vars: { sha256: "y" }, createdAt: "2026-09-18T00:00:00Z" }
+    const manifest = { state: "ready", release: { name: "4.0.3", sha256: RELEASE_403.sha256, bytes: RELEASE_403.bytes }, guest: { version: "4.0.3-1" }, disk: { bytes: 4, sha256: "x" }, vars: { sha256: "y" }, createdAt: "2026-09-18T00:00:00Z" }
     writeJson(layout.cache, "base/manifest.json", manifest)
-    assert.equal(inspectBase(layout).state, "ready")
-    writeJson(layout.cache, "base/manifest.json", { ...manifest, release: { name: "4.0.4", sha256: "f".repeat(64) } })
-    const mismatch = inspectBase(layout)
-    assert.equal(mismatch.state, "mismatch")
-    assert.match(mismatch.reason, /cached Omarchy 4\.0\.4 .*required 4\.0\.3/)
+    const at = (release) => inspectBase(layout, withRelease(pin, release))
+    assert.equal(at(RELEASE_403).state, "ready")
+    assert.equal(inspectBase(layout).state, "ready", "with no release to compare, a good base is usable")
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 6185304064, sha256: "d".repeat(64) })
+    const outdated = at(release404)
+    assert.equal(outdated.state, "outdated")
+    assert.match(outdated.reason, /Omarchy 4\.0\.3 .*Omarchy 4\.0\.4 is the newest release\. A run still uses this base; `omakit lab setup` builds 4\.0\.4/)
+    const republished = at(releaseOf(pin, { name: "4.0.3", bytes: RELEASE_403.bytes, sha256: "e".repeat(64) }))
+    assert.equal(republished.state, "outdated")
+    assert.match(republished.reason, /republished it/)
+    const withdrawn = at(releaseOf(pin, { name: "4.0.2", bytes: 1, sha256: "f".repeat(64) }))
+    assert.equal(withdrawn.state, "mismatch")
+    assert.match(withdrawn.reason, /newer than 4\.0\.2, the newest release published now/)
     writeJson(layout.cache, "base/manifest.json", { ...manifest, guest: { version: "4.0.2-1" } })
-    assert.equal(inspectBase(layout).state, "mismatch")
+    const wrongGuest = at(RELEASE_403)
+    assert.equal(wrongGuest.state, "mismatch")
+    assert.match(wrongGuest.reason, /another release's package/)
     writeJson(layout.cache, "base/manifest.json", { ...manifest, disk: { bytes: 5, sha256: "x" } })
     const invalid = inspectBase(layout)
     assert.equal(invalid.state, "invalid")
     assert.match(invalid.reason, /will not be booted/)
     const notReady = () => preflightRun({ suiteName: "run", env, repoRoot: REPO_ROOT })
     assert.throws(notReady, (error) => error instanceof LabError && error.code === "lab-not-ready" && error.missing.some((item) => /a ready base \(invalid\)/.test(item.what)))
+    // An outdated base is one a run uses: the run holds the base to its own release.
+    writeJson(layout.cache, "base/manifest.json", manifest)
+    try {
+      preflightRun({ suiteName: "run", env, repoRoot: REPO_ROOT })
+    } catch (error) {
+      assert.ok(!error.missing?.some((item) => /base/.test(item.what)), `a good base of an older release is not what stops a run: ${error.message}`)
+    }
     assert.throws(() => preflightRun({ suiteName: "nosuch", env, repoRoot: REPO_ROOT }), (error) => error.code === "usage" && /run, store, weigh, weigh-evidence/.test(error.message))
   } finally {
     rm()
@@ -261,18 +452,28 @@ test("the toolchain is judged by the harness's hash against the pin, even withou
     // Exercise the minimal GitHub runner from every development host: the
     // toolchain check must coexist with honest host-capability blockers.
     env.PATH = join(dir, "commands-not-installed")
-    const plan = planSetup({ env, repoRoot: REPO_ROOT })
-    assert.ok(plan.blockers.some((item) => item.what === "gpg"), "the simulated runner lacks lab commands")
+    // Before the network: what no release changes, so a host that cannot
+    // build hears so without a read of the release list.
+    const early = planSetup({ env, repoRoot: REPO_ROOT })
+    assert.equal(early.asked, false)
+    assert.deepEqual(early.steps, [])
+    assert.ok(early.blockers.some((item) => item.what === "gpg"), "the simulated runner lacks lab commands")
+    assert.equal(early.blockers.filter((item) => item.what === "the toolchain").length, 1)
+    const plan = planSetup({ env, newest: found(RELEASE_403), repoRoot: REPO_ROOT })
     assert.equal(plan.blockers.filter((item) => item.what === "the toolchain").length, 1)
-    assert.ok(plan.steps.some((step) => step.kind === "download" && step.bytes === pin.release.bytes && step.url === pin.release.isoUrl))
+    assert.ok(plan.steps.some((step) => step.kind === "download" && step.bytes === RELEASE_403.bytes && step.url === RELEASE_403.isoUrl))
     assert.ok(plan.steps.some((step) => step.kind === "build"))
     const lines = disclosureLines(plan)
-    assert.deepEqual(lines[0], ["Omarchy", "release 4.0.3; installed guest expected 4.0.3-1"])
+    assert.deepEqual(lines[0], ["Omarchy", "release 4.0.3, the newest published (v4.0.3, 2026-09-08, found now in github.com/omacom/omarchy); the guest will run omarchy 4.0.3"])
     assert.equal(lines.find(([key]) => key === "download")[1], "6,260,654,080 B (6.261 GB / 5.831 GiB)")
-    assert.equal(lines.find(([key]) => key === "from")[1], pin.release.isoUrl)
-    assert.match(lines.find(([key]) => key === "verify")[1], new RegExp(`${pin.release.sha256}.*${pin.release.signingFingerprint}`))
+    assert.equal(lines.find(([key]) => key === "from")[1], RELEASE_403.isoUrl)
+    assert.match(lines.find(([key]) => key === "verify")[1], new RegExp(`${RELEASE_403.sha256} as published beside it, and the Omarchy signature ${RELEASE_403.signingFingerprint}, the key omakit ships`))
     assert.equal(lines.find(([key]) => key === "store")[1], layout.cache)
-    assert.match(lines.find(([key]) => key === "on disk")[1], /12,442,931,200 B \(12\.443 GB \/ 11\.588 GiB\)/)
+    assert.match(lines.find(([key]) => key === "build")[1], /5m 57\.8s measured with Omarchy 4\.0\.3 on the reference host \(M14\)/)
+    assert.match(lines.find(([key]) => key === "on disk")[1], /^about 12,442,918,912 B \(12\.443 GB \/ 11\.588 GiB\): this ISO and a base the size Omarchy 4\.0\.3's measured \(M14\)/)
+    // A newer tag passed over is named in the disclosure.
+    const passed = disclosureLines(planSetup({ env, newest: found(RELEASE_403, { skipped: [{ name: "4.0.4", reason: "omarchy-4.0.4.iso is not published" }] }), repoRoot: REPO_ROOT }))
+    assert.deepEqual(passed.find(([key]) => key === "newer"), ["newer", "4.0.4 is tagged and passed over: omarchy-4.0.4.iso is not published"])
     assert.equal(CONSENT_QUESTION, "Acquire and build this verified base now?")
     assert.match(renderSetupPlan(plan, { colour: false, env }), new RegExp(`cannot start: ${plan.blockers.length} missing`))
     assert.ok(plan.blockers.every((item) => item.cost && item.command), "every host-specific blocker says why it blocks setup and what to do")
@@ -365,9 +566,9 @@ test("verification fails closed: the byte count, the digest, the sidecar, the si
     assert.equal(ok.signature.fingerprint, signer.fingerprint)
     assert.equal(ok.sidecarMatch, true)
     assert.equal(readdirSync(layout.staging).length, 0, "the throwaway keyring is gone")
-    const wrongSigner = judgeRelease({ file, signature: `${file}.sig`, pin: smallPin(body, { signingFingerprint: pin.release.signingFingerprint }), stagingRoot: layout.staging, keyFile: signer.keyFile })
+    const wrongSigner = judgeRelease({ file, signature: `${file}.sig`, pin: smallPin(body, { signingFingerprint: pin.releases.signingFingerprint }), stagingRoot: layout.staging, keyFile: signer.keyFile })
     assert.equal(wrongSigner.ok, false)
-    assert.match(wrongSigner.reason, /the signature is by .* the pin says 40DFB630/)
+    assert.match(wrongSigner.reason, /the signature is by .*, not the key omakit ships \(40DFB630/)
     const wrongDigest = judgeRelease({ file, signature: `${file}.sig`, pin: smallPin(body, { sha256: "0".repeat(64), signingFingerprint: signer.fingerprint }), stagingRoot: layout.staging, keyFile: signer.keyFile })
     assert.equal(wrongDigest.ok, false)
     assert.equal(wrongDigest.bytesMatch, true)
@@ -415,7 +616,7 @@ test("setup with steps and no consent refuses before a byte moves; an import is 
       mkdirSync(layout.base, { recursive: true })
       for (const name of [BASE_FILES.disk, BASE_FILES.vars, BASE_FILES.key]) writeFileSync(join(layout.base, name), "x")
       writeJson(layout.cache, "base/manifest.json", { state: "ready", release: { name: "4.0.3", sha256: small.release.sha256 }, guest: { version: "4.0.3-1" }, disk: { bytes: 1, sha256: "d" }, vars: { sha256: "v" }, createdAt: "now" })
-      const importPlan = planSetup({ env, pin: small, from: file, repoRoot: REPO_ROOT })
+      const importPlan = planSetup({ env, pin: small, newest: found(small.release), from: file, repoRoot: REPO_ROOT })
       assert.deepEqual(importPlan.blockers, [])
       assert.deepEqual(importPlan.steps.map((step) => step.kind), ["import", "sidecars"])
       await assert.rejects(setupLab({ plan: importPlan, consented: false, repoRoot: REPO_ROOT }), (error) => error.code === "not-confirmed" && error.remedy === "omakit lab setup --yes")
@@ -427,6 +628,8 @@ test("setup with steps and no consent refuses before a byte moves; an import is 
       assert.equal(statSync(stored).mode & 0o777, 0o444, "the verified ISO is read-only")
       const record = JSON.parse(readFileSync(join(layout.downloads, small.release.sha256, "verified.json"), "utf8"))
       assert.equal(record.fingerprint, signer.fingerprint)
+      assert.equal(record.name, "4.0.3", "the record names its release, so prune and a later setup can read it without the network")
+      assert.equal(record.fileName, "small.iso")
       assert.equal(inspectDownload(layout, small).verified, true)
       assert.equal(existsSync(layout.lock), false, "the lock is released")
       // A file that is not the release: refused, left as .part, nothing recorded.
@@ -434,11 +637,11 @@ test("setup with steps and no consent refuses before a byte moves; an import is 
       writeFileSync(bad, Buffer.from("not the release\n".repeat(5000)))
       signer.sign(bad)
       const badPin = smallPin(Buffer.from("not the release\n".repeat(5000)), { sha256: small.release.sha256, signingFingerprint: signer.fingerprint, signingKey: "test.gpg", signingKeySha256: small.release.signingKeySha256, fileName: "bad.iso" })
-      const badPlan = planSetup({ env: { ...env, XDG_CACHE_HOME: join(dir, "cache2") }, pin: badPin, from: bad, repoRoot: REPO_ROOT })
+      const badPlan = planSetup({ env: { ...env, XDG_CACHE_HOME: join(dir, "cache2") }, pin: badPin, newest: found(badPin.release), from: bad, repoRoot: REPO_ROOT })
       mkdirSync(join(dir, "cache2/omakit/lab/base"), { recursive: true })
       for (const name of [BASE_FILES.disk, BASE_FILES.vars, BASE_FILES.key]) writeFileSync(join(dir, "cache2/omakit/lab/base", name), "x")
       writeJson(join(dir, "cache2/omakit/lab"), "base/manifest.json", { state: "ready", release: { name: "4.0.3", sha256: badPin.release.sha256 }, guest: { version: "4.0.3-1" }, disk: { bytes: 1, sha256: "d" }, vars: { sha256: "v" }, createdAt: "now" })
-      const badPlan2 = planSetup({ env: { ...env, XDG_CACHE_HOME: join(dir, "cache2") }, pin: badPin, from: bad, repoRoot: REPO_ROOT })
+      const badPlan2 = planSetup({ env: { ...env, XDG_CACHE_HOME: join(dir, "cache2") }, pin: badPin, newest: found(badPin.release), from: bad, repoRoot: REPO_ROOT })
       assert.deepEqual(badPlan2.blockers, [])
       await assert.rejects(setupLab({ plan: badPlan2, consented: true, repoRoot: REPO_ROOT }), (error) => error.code === "iso-mismatch" && /has digest/.test(error.message))
       const badDir = join(dir, "cache2/omakit/lab/downloads", badPin.release.sha256)
@@ -449,6 +652,164 @@ test("setup with steps and no consent refuses before a byte moves; an import is 
     } finally {
       rmSync(packaged, { force: true })
     }
+  } finally {
+    rm()
+  }
+})
+
+/** A base directory whose manifest names `release` with `guest`, the files a base holds beside it. */
+function writeBase(layout, release, guest = `${release.name}-1`) {
+  mkdirSync(layout.base, { recursive: true })
+  for (const name of [BASE_FILES.disk, BASE_FILES.vars, BASE_FILES.key]) writeFileSync(join(layout.base, name), "x")
+  writeJson(layout.cache, "base/manifest.json", { state: "ready", release: { name: release.name, sha256: release.sha256, bytes: release.bytes }, guest: { version: guest }, disk: { bytes: 1, sha256: "d" }, vars: { sha256: "v" }, createdAt: "2026-09-18T00:00:00Z" })
+}
+
+test("setup prepares the newest release: an outdated base is rebuilt and replaced after, older downloads go with it, and a lookup that failed leaves a usable base alone", () => {
+  const { dir, env, layout, rm } = scratch()
+  try {
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 6185304064, sha256: "d".repeat(64) })
+    writeBase(layout, RELEASE_403)
+    // The 4.0.3 ISO verified beside it, as a 0.6.8 setup left it (a record without a name).
+    mkdirSync(join(layout.downloads, RELEASE_403.sha256), { recursive: true })
+    writeFileSync(join(layout.downloads, RELEASE_403.sha256, RELEASE_403.fileName), Buffer.alloc(4096, 3))
+    writeJson(layout.cache, `downloads/${RELEASE_403.sha256}/verified.json`, { schema: 1, sha256: RELEASE_403.sha256, bytes: 4096 })
+    const plan = planSetup({ env, newest: found(release404), repoRoot: REPO_ROOT })
+    assert.equal(plan.base.state, "outdated")
+    assert.deepEqual(plan.steps.map((step) => step.kind), ["download", "sidecars", "build"])
+    const build = plan.steps.find((step) => step.kind === "build")
+    assert.equal(build.replacing.state, "outdated")
+    assert.deepEqual(build.superseded.map((entry) => entry.digest), [RELEASE_403.sha256])
+    const lines = disclosureLines(plan)
+    assert.match(lines.find(([key]) => key === "replacing")[1], /^the outdated base there \(Omarchy 4\.0\.3, [\d,]+ B .*\), and one older download \(4\.0\.3\), [\d,]+ B .*, removed after the new base verifies; until then a run uses what is there$/, "a record from before 0.6.9 names no release; the ISO in its directory does")
+    assert.equal(plan.steps.find((step) => step.kind === "download").url, "https://iso.omarchy.org/omarchy-4.0.4.iso")
+    // The lookup failed: the 4.0.3 base stays, nothing is planned, and the plan says what was not checked.
+    const stale = planSetup({ env, newest: { checked: false, code: "network-unavailable", reason: "api.github.com did not answer" }, repoRoot: REPO_ROOT })
+    assert.deepEqual(stale.steps, [])
+    assert.equal(stale.blockers.filter((item) => /newest/.test(item.what)).length, 0)
+    assert.deepEqual(stale.stale, { base: "4.0.3", reason: "api.github.com did not answer", code: "network-unavailable" })
+    assert.match(renderSetupPlan(stale, { colour: false, env }).replace(/\n\s+/g, " "), /PREPARED\s+the base on disk is Omarchy 4\.0\.3, left as it is: the newest release could not be looked up \(api\.github\.com did not answer\)/)
+    // Current: nothing to acquire, and the release is named.
+    writeBase(layout, release404)
+    mkdirSync(join(layout.downloads, release404.sha256), { recursive: true })
+    writeFileSync(join(layout.downloads, release404.sha256, release404.fileName), Buffer.alloc(16, 4))
+    const st = statSync(join(layout.downloads, release404.sha256, release404.fileName))
+    writeJson(layout.cache, `downloads/${release404.sha256}/verified.json`, { schema: 1, name: "4.0.4", fileName: release404.fileName, sha256: release404.sha256, bytes: 16, mtimeMs: st.mtimeMs })
+    const current = planSetup({ env, pin: withRelease(pin, null), newest: found({ ...release404, bytes: 16 }), repoRoot: REPO_ROOT })
+    assert.deepEqual(current.steps, [])
+    assert.match(renderSetupPlan(current, { colour: false, env }).replace(/\n\s+/g, " "), /PREPARED\s+Omarchy 4\.0\.4, the newest release: the verified ISO and a ready base are there; nothing to acquire\./)
+    // No base and no release: that is the blocker, with both ways out.
+    rmSync(layout.base, { recursive: true })
+    const nothing = planSetup({ env, newest: { checked: false, code: "network-unavailable", reason: "api.github.com did not answer" }, repoRoot: REPO_ROOT })
+    const blocker = nothing.blockers.find((item) => item.what === "the newest Omarchy release")
+    assert.ok(blocker)
+    assert.match(blocker.cost, /could not be looked up: api\.github\.com did not answer/)
+    assert.match(blocker.command, /--from <omarchy-X\.Y\.Z\.iso> with its \.sha256 and \.sig beside it/)
+    void dir
+  } finally {
+    rm()
+  }
+})
+
+test("--from is the newest release when the list can be read, and offline a file is taken only with its checksum and signature beside it, at or above the floor, by the key omakit ships", () => {
+  const { dir, env, rm } = scratch()
+  try {
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 16, sha256: "d".repeat(64) })
+    const old = join(dir, "omarchy-4.0.3.iso")
+    writeFileSync(old, Buffer.alloc(16))
+    const online = planSetup({ env, newest: found(release404), from: old, repoRoot: REPO_ROOT })
+    assert.ok(online.blockers.some((item) => item.what === "the file named by --from" && /is Omarchy 4\.0\.3; the newest release is 4\.0\.4, and setup prepares the newest/.test(item.cost)))
+    // Offline: the file names its release, and its sidecars say the rest.
+    const file = join(dir, "omarchy-4.0.4.iso")
+    writeFileSync(file, Buffer.alloc(16, 9))
+    assert.match(localRelease(pin, file).blocker.cost, /\.sha256 is missing/)
+    writeFileSync(`${file}.sha256`, `${sha256(Buffer.alloc(16, 9))}  omarchy-4.0.4.iso\n`)
+    assert.match(localRelease(pin, file).blocker.cost, /\.sig is not there/)
+    writeFileSync(`${file}.sig`, SIG_404)
+    const local = localRelease(pin, file)
+    assert.equal(local.release.name, "4.0.4")
+    assert.equal(local.release.sha256, sha256(Buffer.alloc(16, 9)))
+    assert.equal(local.release.bytes, 16)
+    const offline = planSetup({ env, newest: { checked: false, code: "offline", reason: "--offline" }, from: file, repoRoot: REPO_ROOT })
+    assert.ok(offline.steps.some((step) => step.kind === "import" && step.from === file))
+    assert.match(disclosureLines(offline)[0][1], /release 4\.0\.4, from the file named by --from; the newest could not be looked up \(--offline\)/)
+    const rotated = Buffer.from(SIG_404)
+    rotated[11] ^= 0xff
+    writeFileSync(`${file}.sig`, rotated)
+    assert.match(localRelease(pin, file).blocker.cost, /not the key omakit ships/)
+    const below = join(dir, "omarchy-4.0.2.iso")
+    writeFileSync(below, "x")
+    assert.match(localRelease(pin, below).blocker.cost, /older than 4\.0\.3, the oldest release the lab takes/)
+    const renamed = join(dir, "downloaded.iso")
+    writeFileSync(renamed, "x")
+    assert.match(localRelease(pin, renamed).blocker.cost, /names no release/)
+  } finally {
+    rm()
+  }
+})
+
+test("a staged base is promoted only for the release it was built from, and a build's QEMU left running keeps prune off its directory", async () => {
+  const { env, layout, rm } = scratch()
+  try {
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 1, sha256: "d".repeat(64) })
+    const staged = join(layout.staging, "base-20260923-094524")
+    mkdirSync(join(staged, "build"), { recursive: true })
+    for (const name of [BASE_FILES.disk, BASE_FILES.vars, BASE_FILES.key, BASE_FILES.publicKey]) writeFileSync(join(staged, name), "x")
+    // A 0.6.8 build record names only the ISO path, and that path names the digest.
+    writeJson(layout.cache, "staging/base-20260923-094524/build/lab-build.json", { iso: join(layout.downloads, RELEASE_403.sha256, RELEASE_403.fileName) })
+    assert.deepEqual(stagedBases(layout, RELEASE_403), [staged])
+    assert.deepEqual(stagedBases(layout, release404), [], "a 4.0.3 build is never promoted as 4.0.4")
+    writeJson(layout.cache, "staging/base-20260923-094524/build/lab-build.json", { release: { name: "4.0.4", sha256: release404.sha256 } })
+    assert.deepEqual(stagedBases(layout, release404), [staged])
+    // A daemonized build QEMU: its pidfile under the build's directory, its command line naming it.
+    const build = join(layout.staging, "build-20260923-094524")
+    const runDir = join(build, "test-runs", "omarchy-4.0.3", "runs", "20260923-094524")
+    mkdirSync(runDir, { recursive: true })
+    const { spawn } = await import("node:child_process")
+    // A process that holds still with the build's disk on its command line, as the toolchain's QEMU has it.
+    const guest = spawn(process.execPath, ["-e", "setTimeout(() => {}, 30000)", `${build}/test-runs/omarchy-4.0.3/base.qcow2`], { stdio: "ignore" })
+    try {
+      await new Promise((resolvePromise) => guest.once("spawn", resolvePromise))
+      writeFileSync(join(runDir, "qemu.pid"), `${guest.pid}\n`)
+      assert.deepEqual(buildGuests(build).map((entry) => entry.pid), [guest.pid])
+      const staging = await inspectStaging(layout)
+      assert.equal(staging.find((entry) => entry.name === "build-20260923-094524").alive, true)
+      const busy = await planPrune({ env })
+      assert.ok(busy.blockers.length >= 1, "prune will not remove a directory a QEMU is writing to")
+      // A pidfile whose pid is another process (reused) is not taken for the guest.
+      writeFileSync(join(runDir, "qemu.pid"), `${process.pid}\n`)
+      assert.deepEqual(buildGuests(build), [])
+    } finally {
+      guest.kill("SIGKILL")
+    }
+  } finally {
+    rm()
+  }
+})
+
+test("inspect says when the base is behind, without calling it missing, and doctor carries it as one piece of advice", async () => {
+  const { env, layout, rm } = scratch()
+  try {
+    writeBase(layout, RELEASE_403)
+    const release404 = releaseOf(pin, { name: "4.0.4", bytes: 6185304064, sha256: "d".repeat(64) })
+    const lab = await inspectLab({ env, run: () => "", newest: found(release404, { tag: "v4.0.4", publishedAt: "2026-09-15T21:39:29Z" }) })
+    assert.equal(lab.base.state, "outdated")
+    assert.ok(!lab.missing.some((item) => /base|ISO/.test(item.what)), "a run uses an outdated base: it is not missing")
+    assert.equal(lab.behind.base, "4.0.3")
+    assert.equal(lab.behind.newest, "4.0.4")
+    const text = renderLab(lab, { colour: false, env }).replace(/\n\s+/g, " ")
+    assert.match(text, /behind\s+Omarchy 4\.0\.4 is out and the base is 4\.0\.3: a download of 6,185,304,064 B .*the base there stays until the new one verifies → omakit lab setup/, "said even while the host lacks what a run needs")
+    const ready = renderLab({ ...lab, missing: [] }, { colour: false, env }).replace(/\n\s+/g, " ")
+    assert.match(ready, /PREPARED\s+on Omarchy 4\.0\.3, which a run uses; Omarchy 4\.0\.4 is the newest, and `?omakit lab setup`? builds it/)
+    assert.match(text, /Omarchy 4\.0\.4 \(v4\.0\.4, published 2026-09-15\), the newest in github\.com\/omacom\/omarchy/)
+    const checks = labDoctorChecks(lab)
+    const release = checks.find((check) => check.id === "lab.release")
+    assert.equal(release.state, "advice")
+    assert.equal(release.action, "omakit lab setup")
+    assert.match(release.detail, /Omarchy 4\.0\.4 is the newest release; the lab's base is 4\.0\.3, and a run still uses it/)
+    assert.equal(checks.find((check) => check.id === "lab.base").state, "ok", "the base itself is fine; the release check carries the advice once")
+    assert.equal(checks.find((check) => check.id === "lab.iso").state, "info")
+    assert.equal(releaseCheck({ ...lab, newest: { checked: false, code: "offline", reason: "--offline" } }).state, "info")
+    assert.equal(releaseCheck({ ...lab, base: { ...lab.base, state: "ready" }, newest: found(RELEASE_403) }).state, "ok")
   } finally {
     rm()
   }
@@ -478,13 +839,13 @@ test("prune lists what the lab owns with its bytes, refuses while a QEMU answers
   try {
     mkdirSync(join(layout.staging, "run-old"), { recursive: true })
     writeFileSync(join(layout.staging, "run-old/run.qcow2"), Buffer.alloc(65536, 1))
-    mkdirSync(join(layout.downloads, pin.release.sha256), { recursive: true })
-    writeFileSync(join(layout.downloads, pin.release.sha256, `${pin.release.fileName}.part`), Buffer.alloc(8192, 2))
+    mkdirSync(join(layout.downloads, RELEASE_403.sha256), { recursive: true })
+    writeFileSync(join(layout.downloads, RELEASE_403.sha256, `${RELEASE_403.fileName}.part`), Buffer.alloc(8192, 2))
     mkdirSync(layout.runs, { recursive: true })
     writeFileSync(join(layout.runs, "record.json"), "{}")
     const plan = await planPrune({ env })
     assert.deepEqual(plan.blockers, [])
-    assert.deepEqual(plan.targets.map((target) => target.relative).sort(), [`downloads/${pin.release.sha256}`, "staging/run-old"])
+    assert.deepEqual(plan.targets.map((target) => target.relative).sort(), [`downloads/${RELEASE_403.sha256}`, "staging/run-old"])
     assert.ok(plan.total >= 65536 + 8192)
     assert.ok(!plan.targets.some((target) => target.relative === "runs"), "run records stay unless --records")
     const withRecords = await planPrune({ env, runs: true })
@@ -509,7 +870,7 @@ test("prune lists what the lab owns with its bytes, refuses while a QEMU answers
     const result = prune(await planPrune({ env }))
     assert.equal(result.removed.length, 2)
     assert.equal(existsSync(join(layout.staging, "run-old")), false)
-    assert.equal(existsSync(join(layout.downloads, pin.release.sha256)), false)
+    assert.equal(existsSync(join(layout.downloads, RELEASE_403.sha256)), false)
     assert.ok(existsSync(join(layout.runs, "record.json")), "records untouched")
     assert.match(result.words, /^recovered [\d,]+ B .* remain in the lab cache and [\d,]+ B .* in run records$/)
   } finally {
@@ -592,7 +953,7 @@ test("the entry point: an unknown suite is a usage error, a bare lab is one, run
     assert.doesNotMatch(first.stderr + first.stdout, //)
     const second = run(["prove", "run"])
     assert.equal(second.stderr, first.stderr, "byte-identical on a pipe")
-    const inspect = run(["inspect", "--json"])
+    const inspect = run(["inspect", "--offline", "--json"])
     assert.equal(inspect.status, 1)
     const document = JSON.parse(inspect.stdout)
     assert.equal(document.base.state, "missing")

@@ -195,21 +195,27 @@ before it touches a running desktop. What it measures, what it does to
 Omarchy guest ([LAB.md](LAB.md)). `prove <suite>` boots nothing until the
 base is ready, the host can run a guest and the suite's files are there,
 and otherwise names what is missing, what it takes and the one command;
-it fetches nothing, prints the guest's installed `omarchy` package and
-whether the session runs from it before the suite, and writes that
-identity into the document with the run id. `inspect` is read-only: the
-pinned release with its exact size in GB and GiB, its digest and its
-signer, what is on disk and whether it was verified, the toolchain, what
-the host is missing. `setup` is the only path that fetches bytes: one
-consent naming the exact size and the destination before the first byte
-(`--yes` for an agent; a pipe without it refuses), a resumable GET of the
-pinned URL or a copy of `--from <file>`, verified against the pinned
-SHA-256 and the Omarchy signature before anything boots it, then one base
-built by the pinned omarchy-iso toolchain, whose checkout `--toolchain
-<dir>` records and which setup never fetches; `--plugins` adds the listed
-plugins the weigh evidence suite needs. `prune` lists what the lab owns
-with its bytes, asks once, removes only that, and says what it recovered.
-`omakit doctor` gains the lab's lines, advisory.
+it runs the base there, prints the guest's installed `omarchy` package and
+whether the session runs from it before the suite, says when a newer
+Omarchy release is out, and writes that identity into the document with
+the run id. `inspect` writes nothing: the newest Omarchy release with its
+exact size in GB and GiB, its digest and its signer, what is on disk and
+whether it was verified, whether the base is behind, the toolchain, what
+the host is missing. `inspect`, `prove`, `setup` and `doctor` read
+Omarchy's release list for that (`--offline` skips it); no image is read.
+`setup` is the only path that fetches an image, and it prepares the newest
+release: one consent naming the exact size and the destination before the
+first byte (`--yes` for an agent; a pipe without it refuses), a resumable
+GET or a copy of `--from <file>`, verified against the SHA-256 the release
+publishes and the Omarchy signature omakit ships before anything boots
+it, then one base built by the pinned omarchy-iso toolchain, whose
+checkout `--toolchain <dir>` records and which setup never fetches; the
+old base and older downloads are removed only after the new base
+verifies; `--plugins` adds the listed plugins the weigh evidence suite
+needs. `prune` lists what the lab owns with its bytes, asks once, removes
+only that, and says what it recovered. `omakit doctor` gains the lab's
+lines, advisory, with `lab.release` saying whether the lab is on the
+newest release.
 
 ## Keeping the tool current
 
