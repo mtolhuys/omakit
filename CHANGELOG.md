@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.11 (unreleased)
+## 0.6.11
 
 A pin bump is proposed, not typed. `.github/workflows/pin-bump.yml` runs
 weekly and on dispatch; when `omakit doctor` grades the pin `advice`, it
