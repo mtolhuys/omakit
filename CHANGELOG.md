@@ -48,8 +48,11 @@ closure does not follow. The registry figures follow the pin: 4,493
 sources, 4,449 with a baseline (2,451 passed, 1,962 review-required, 36
 needs-fixes), 38 findings, 69 retired ids, 4,532 catalog plugins, and
 1,110 sources (24.7%) whose validated commit was superseded at least
-once. A fresh sparse pin is 23 MB on disk. The package packs to 375,367
-bytes across 133 files, under the unchanged 409,600-byte ceiling.
+once. A fresh sparse pin is 23 MB on disk. Parity is re-proved at the new pin,
+30 of 30 identical at offset 0 with no mismatch or failure
+(`docs/evidence/parity/2026-10-01-local-vs-github.json`). The package
+packs to 375,367 bytes across 133 files, under the unchanged 409,600-byte
+ceiling.
 
 ## 0.6.9
 
