@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { requirePin } from "./pin.mjs"
+import { requirePin, updateLabel as updateLabelOf } from "./pin.mjs"
 import { token, issue, parseIssueUrl, compareCommits } from "./github.mjs"
 import { discoverWatchIssues, repositoryFor } from "./watch.mjs"
 import { repositorySlug } from "./registry.mjs"
@@ -12,8 +12,7 @@ import { submissionContract } from "./form.mjs"
 export async function reviewPolicy(repoRoot) {
   const { dir } = requirePin(repoRoot)
   const policy = await import(pathToFileURL(join(dir, "scripts/security-baseline-policy.mjs")).href)
-  const approval = readFileSync(join(dir, "scripts/approve-plugin-update.mjs"), "utf8")
-  const updateLabel = approval.match(/for \(const required of \["([^"]+)"/)?.[1]
+  const updateLabel = updateLabelOf(readFileSync(join(dir, "scripts/approve-plugin-update.mjs"), "utf8"))
   if (!updateLabel) throw new Error("cannot read the update issue label from the pin")
   const manual = policy.currentSecurityBaselinePolicy.maintainerVerificationOutcome
   return { automated: policy.securityBaselineOutcome([], []), manual, updateLabel, reviewLabel: `security-${manual}` }

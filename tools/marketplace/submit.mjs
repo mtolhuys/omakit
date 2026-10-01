@@ -14,7 +14,7 @@
 import { resolveSubject, SubjectError } from "../subject/resolve.mjs"
 import { requirePin } from "./pin.mjs"
 import { submissionContract, newerCommitChoice, resolveCategory, resolveTags, tagSlug } from "./form.mjs"
-import { idUniverse, checkIdentity, listingOf, baselineFigures, figure, liveRegistry, registrySourceDetail, catalogPresentation, defaultPresentation } from "./registry.mjs"
+import { idUniverse, checkIdentity, listingOf, baselineFigures, figure, liveRegistry, registrySourceDetail, catalogBuilderText, catalogPresentation, defaultPresentation } from "./registry.mjs"
 import { readTree } from "./tree.mjs"
 import { inspectTree } from "./plugin.mjs"
 import { findAgentControl, REMEDY as AGENT_CONTROL_REMEDY } from "./agent-control.mjs"
@@ -283,7 +283,7 @@ export async function submitPreflight(options) {
       error.usage = missing
       throw error
     }
-    const defaults = defaultPresentation(catalogPresentation(pinDir), tree.manifest?.kinds)
+    const defaults = defaultPresentation(catalogPresentation(catalogBuilderText(pinDir)), tree.manifest?.kinds)
     const answers = await options.chooser({ contract, defaults, missing: missing.missing })
     if (answers?.category) chosenCategory = answers.category
     if (answers?.tags) chosenTags = answers.tags

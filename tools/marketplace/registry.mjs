@@ -26,7 +26,7 @@
 
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
-import { MARKETPLACE_PIN, POLICY_MODULE, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, PIN_READS, POLICY_MODULE, catalogPresentation, requirePin, reservedNamespace } from "./pin.mjs"
 import { defaultBranchHead, getJson } from "./github.mjs"
 import { omakitCacheDir } from "./paths.mjs"
 
@@ -38,12 +38,14 @@ export const CATALOG_BUILDER_PATH = "scripts/build-catalog.mjs"
 export const LIVE_PATHS = Object.freeze([REGISTRY_PATH, CATALOG_PATH])
 
 /**
- * The one file read from HEAD as text and used for nothing: `omakit doctor`
- * reads the policy module at HEAD to compare its two constants with the
- * pin's (pin.mjs policyConstants) and drops the text. It is never imported,
- * never cached and never a source of a rule; the rules stay the pin's.
+ * The files read from HEAD as text and used for nothing but a comparison:
+ * `omakit doctor` reads the policy module at HEAD to compare its two
+ * constants with the pin's (pin.mjs policyConstants), and each file
+ * PIN_READS reads as text to compare the values its `readers` take out of
+ * it, and drops the text. None is ever imported, cached or a source of a
+ * rule; the rules stay the pin's.
  */
-export const HEAD_TEXT_PATHS = Object.freeze([POLICY_MODULE])
+export const HEAD_TEXT_PATHS = Object.freeze([POLICY_MODULE, ...PIN_READS.filter((read) => read.readers).map((read) => read.path)])
 
 export class RegistryError extends Error {
   constructor(code, message) {
@@ -62,45 +64,17 @@ function readJson(pinDir, relative) {
 }
 
 /**
- * The reserved namespace as the marketplace states it, read from the pinned
- * `build-catalog.mjs` next to its own `reserved-plugin-id` check. Read, not
- * copied, so a pin update moves it.
+ * The text of the pinned catalog builder, the one file under scripts/ this
+ * module reads: never imported (it imports `sharp`), read for the two
+ * values PIN_READS registers for it, `reservedNamespace` and
+ * `catalogPresentation` (pin.mjs). Those two are re-exported here, where
+ * the checks that use them have always found them.
  */
-export function reservedNamespace(pinDir) {
-  const source = readFileSync(join(pinDir, CATALOG_BUILDER_PATH), "utf8")
-  const match = source.match(/startsWith\("([A-Za-z0-9.\-_]+\.)"\)\s*\)\s*\{\s*\n\s*checkError\("reserved-plugin-id"/)
-    || source.match(/checkError\("reserved-plugin-id",\s*`[^`]*\$\{[^}]*\}:\s*the ([A-Za-z0-9.\-_]+)\.\*\s+namespace is reserved`/)
-  if (!match) {
-    throw new RegistryError(
-      "pin-unreadable",
-      `cannot read the reserved plugin-id namespace from ${CATALOG_BUILDER_PATH} at the pin; refusing to guess it`,
-    )
-  }
-  return match[1].endsWith(".") ? match[1] : `${match[1]}.`
+export function catalogBuilderText(pinDir) {
+  return readFileSync(join(pinDir, CATALOG_BUILDER_PATH), "utf8")
 }
 
-/**
- * How the marketplace itself presents a plugin it lists, read out of the
- * pinned `build-catalog.mjs` rather than copied: `categoryFor(kinds)` maps the
- * manifest's kinds to a category in order of its `if` lines, with a fallback,
- * and the tags are the first three kinds lowercased. `omakit submit` offers
- * these as the default answer when it has to ask for a category and tags, so
- * the default is the marketplace's own choice; a mapping that cannot be read
- * offers no default. tests/unit/registry-figures.test.mjs pins what the
- * mapping is at this commit, so a marketplace that changes it fails the suite
- * until the docs follow.
- *
- * @returns {{ rules: Array<{ kinds: string[], category: string }>, fallback: string|null, tagsFromKinds: boolean }}
- */
-export function catalogPresentation(pinDir) {
-  const source = readFileSync(join(pinDir, CATALOG_BUILDER_PATH), "utf8")
-  const body = source.match(/function categoryFor\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || ""
-  const rules = [...body.matchAll(/if \(((?:kinds\.includes\("[^"]+"\)(?:\s*\|\|\s*)?)+)\) return "([^"]+)";/g)]
-    .map((match) => ({ kinds: [...match[1].matchAll(/"([^"]+)"/g)].map((kind) => kind[1]), category: match[2] }))
-  const fallback = body.match(/\n\s*return "([^"]+)";\s*$/)?.[1] || null
-  const tagsFromKinds = /tags:\s*kinds\.slice\(0,\s*3\)\.map\(\(kind\) => kind\.toLowerCase\(\)\)/.test(source)
-  return { rules, fallback, tagsFromKinds }
-}
+export { catalogPresentation, reservedNamespace }
 
 /**
  * The marketplace's own presentation for a manifest's kinds: the category its
@@ -149,8 +123,8 @@ export function sameRepository(a, b) {
  * a branch name, so the two files always come from the same commit and the
  * commit named in the output is the one they came from; never a path outside
  * LIVE_PATHS, so nothing executable can arrive this way. (headTextUrl below
- * reaches the same host for one module's text, which is compared and never
- * run.)
+ * reaches the same host for the text of the files doctor compares, which is
+ * compared and never run.)
  */
 export function liveFileUrl(commit, path) {
   if (!/^[0-9a-f]{40}$/.test(String(commit))) {
@@ -163,17 +137,17 @@ export function liveFileUrl(commit, path) {
 }
 
 /**
- * The same URL shape for the one file doctor reads from HEAD as text:
+ * The same URL shape for the files doctor reads from HEAD as text:
  * HEAD_TEXT_PATHS, at a 40-character commit, through the same host and the
- * same GET call site. Its text is compared and dropped; `liveFileUrl` still
- * refuses it, so nothing reads it as data.
+ * same GET call site. Their text is compared and dropped; `liveFileUrl`
+ * still refuses them, so nothing reads them as data.
  */
 export function headTextUrl(commit, path) {
   if (!/^[0-9a-f]{40}$/.test(String(commit))) {
     throw new RegistryError("usage", `a marketplace file is read at a 40-character commit, not "${commit}"`)
   }
   if (!HEAD_TEXT_PATHS.includes(path)) {
-    throw new RegistryError("usage", `${path} is never read from HEAD as text; only ${HEAD_TEXT_PATHS.join(" and ")} ${HEAD_TEXT_PATHS.length === 1 ? "is" : "are"}`)
+    throw new RegistryError("usage", `${path} is never read from HEAD as text; only ${HEAD_TEXT_PATHS.join(", ")} are`)
   }
   return rawFileUrl(commit, path)
 }
@@ -371,9 +345,17 @@ export function idUniverse(options = {}) {
     throw new RegistryError("pin-unreadable", "the pinned catalog and registry produced no listed ids or repositories")
   }
 
+  const reservedPrefix = reservedNamespace(catalogBuilderText(pinDir))
+  if (!reservedPrefix) {
+    throw new RegistryError(
+      "pin-unreadable",
+      `cannot read the reserved plugin-id namespace from ${CATALOG_BUILDER_PATH} at the pin; refusing to guess it`,
+    )
+  }
+
   return {
     pinDir,
-    reservedPrefix: reservedNamespace(pinDir),
+    reservedPrefix,
     listedIds,
     retiredIds,
     listedRepositories,

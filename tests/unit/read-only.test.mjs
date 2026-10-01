@@ -229,6 +229,37 @@ test("every request host is one of the four known ones, and the raw file host is
     "liveFileUrl refuses anything but a 40-character commit before it builds a URL")
 })
 
+test("the text doctor reads from HEAD is compared and dropped: one module asks for it, and that module can neither import, evaluate nor write it", () => {
+  // doctor reads the policy module and the files read as text at HEAD
+  // (registry.mjs HEAD_TEXT_PATHS) through headTextUrl() and compares what
+  // omakit reads out of them. Nothing from HEAD may run: the one module
+  // that builds such a URL has no dynamic import(), no eval, no Function
+  // constructor, no vm, no file URL and no file write, and the text a GET
+  // returns goes straight into a reader on the line it arrives.
+  const callers = sources
+    .filter(({ path }) => !path.startsWith("tests/"))
+    .filter(({ text }) => /\bheadTextUrl\(/.test(text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/export function headTextUrl\(/, "")))
+    .map(({ path }) => path)
+  assert.deepEqual(callers, ["tools/marketplace/doctor.mjs"], "only doctor reads a marketplace file from HEAD as text")
+  const doctor = sources.find(({ path }) => path === "tools/marketplace/doctor.mjs").text
+  const code = doctor.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+  for (const [form, pattern] of [
+    ["dynamic import()", /\bimport\s*\(/],
+    ["eval", /\beval\s*\(/],
+    ["the Function constructor", /\bFunction\s*\(/],
+    ["node:vm", /node:vm|\bvm\./],
+    ["a file URL", /pathToFileURL|file:\/\//],
+    ["a file write", /\b(?:writeFile|appendFile|createWriteStream|copyFile|rename)(?:Sync)?\b/],
+  ]) {
+    assert.doesNotMatch(code, pattern, `doctor.mjs carries ${form}`)
+  }
+  const reads = [...code.matchAll(/^.*fetchText\(headTextUrl\(.*$/gm)].map((match) => match[0])
+  assert.equal(reads.length, 2, "the policy module's text and a text-read file's text")
+  for (const line of reads) {
+    assert.match(line, /policyConstants\(await fetchText\(headTextUrl\(|textReadValues\(readers, atPin, blobMoved \? await fetchText\(headTextUrl\(/, `HEAD's text goes straight into a reader: ${line.trim()}`)
+  }
+})
+
 test("no git verb that writes to a remote", () => {
   // Every git invocation's first verb must be one of these. `fetch`, `init`,
   // `remote add` and `checkout` are how the pinned checkout and a reviewer-mode

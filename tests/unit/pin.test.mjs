@@ -11,9 +11,10 @@ import assert from "node:assert/strict"
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, relative } from "node:path"
-import { ensurePin, PIN_PATHS, PIN_READS, POLICY_MODULE, WORDING_READS, UNFOLLOWED_IMPORTS, MARKETPLACE_PIN, pinDiskUsage, pinIsSparse, pinShape, pinnedReadSet, policyConstants, unfollowedImports, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
+import { ensurePin, PIN_PATHS, PIN_READS, POLICY_MODULE, WORDING_READS, UNFOLLOWED_IMPORTS, MARKETPLACE_PIN, catalogPresentation, pinDiskUsage, pinIsSparse, pinShape, pinnedReadSet, policyConstants, reservedNamespace, unfollowedImports, updateLabel, validatedLabel, marketplacePinDir } from "../../tools/marketplace/pin.mjs"
 import { spawn, spawnSync } from "node:child_process"
 import { SUBMIT_FORM_PATH, OFFICIAL_SUBMISSION_MODULE } from "../../tools/marketplace/form.mjs"
+import * as registry from "../../tools/marketplace/registry.mjs"
 import { CATALOG_PATH, REGISTRY_PATH, CATALOG_BUILDER_PATH } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
@@ -111,6 +112,60 @@ test("PIN_READS is what the sources open out of scripts/, each the way it is ope
   }
   assert.equal(listed.get(POLICY_MODULE), true, "the policy module is imported, and its constants are read from its text")
   assert.equal(derived.size, 10, "ten files opened by omakit at this pin")
+})
+
+test("readers are registered for exactly the files read as text, and are the functions the sources call on the pin's text", () => {
+  // doctor compares a text-read file by the values read out of it, with the
+  // function registered here, on the pin's text and on HEAD's. So the
+  // registration must cover every file read as text and nothing executed (an
+  // executed file is compared by blob: any change to it can reach a
+  // verdict), and the function must be the one the module that reads the
+  // file calls, or the comparison would measure something omakit does not
+  // read.
+  for (const read of PIN_READS) {
+    if (read.imported) {
+      assert.equal(read.readers, undefined, `${read.path} is executed and carries no readers`)
+      continue
+    }
+    assert.ok(read.readers && Object.keys(read.readers).length > 0, `${read.path} is read as text and names what is read out of it`)
+    for (const [name, reader] of Object.entries(read.readers)) {
+      assert.equal(typeof reader, "function", `${read.path} ${name}`)
+      assert.equal(reader.name, name, "registered under its own name, so a detail names the function")
+      assert.equal(reader.length, 1, `${name} takes the text and nothing else`)
+    }
+    assert.ok(Object.isFrozen(read.readers))
+  }
+  const readers = Object.fromEntries(PIN_READS.filter((read) => read.readers).map((read) => [read.path, Object.keys(read.readers)]))
+  assert.deepEqual(readers, {
+    "scripts/build-catalog.mjs": ["reservedNamespace", "catalogPresentation"],
+    "scripts/approve-submission.mjs": ["validatedLabel"],
+    "scripts/approve-plugin-update.mjs": ["updateLabel"],
+  })
+  const of = (path) => PIN_READS.find((read) => read.path === path).readers
+  assert.equal(of("scripts/build-catalog.mjs").reservedNamespace, reservedNamespace)
+  assert.equal(of("scripts/build-catalog.mjs").catalogPresentation, catalogPresentation)
+  assert.equal(registry.reservedNamespace, reservedNamespace, "registry.mjs re-exports the registered reader, not a second one")
+  assert.equal(registry.catalogPresentation, catalogPresentation)
+  assert.equal(of("scripts/approve-submission.mjs").validatedLabel, validatedLabel)
+  assert.equal(of("scripts/approve-plugin-update.mjs").updateLabel, updateLabel)
+
+  // Each module that opens a text-read file hands its text to the
+  // registered reader: the call and the open are on one line, so nothing
+  // else is taken out of the text on the way.
+  const calls = {
+    "tools/marketplace/registry.mjs": [/reservedNamespace\(catalogBuilderText\(pinDir\)\)/, /return readFileSync\(join\(pinDir, CATALOG_BUILDER_PATH\), "utf8"\)/],
+    "tools/marketplace/submit.mjs": [/catalogPresentation\(catalogBuilderText\(pinDir\)\)/],
+    "tools/marketplace/watch.mjs": [/validatedLabel\(readFileSync\(join\(pinDir, "scripts\/approve-submission\.mjs"\), "utf8"\)\)/],
+    "tools/marketplace/review-cost.mjs": [/updateLabelOf\(readFileSync\(join\(dir, "scripts\/approve-plugin-update\.mjs"\), "utf8"\)\)/, /import \{ requirePin, updateLabel as updateLabelOf \} from "\.\/pin\.mjs"/],
+  }
+  for (const [path, patterns] of Object.entries(calls)) {
+    const text = readFileSync(join(REPO_ROOT, path), "utf8")
+    for (const pattern of patterns) assert.match(text, pattern, `${path} reads its text-read file through the registered reader`)
+  }
+  for (const path of ["tools/marketplace/registry.mjs", "tools/marketplace/watch.mjs", "tools/marketplace/review-cost.mjs", "tools/marketplace/submit.mjs"]) {
+    const text = readFileSync(join(REPO_ROOT, path), "utf8")
+    assert.doesNotMatch(text, /for \\\(const required of|startsWith\\\("|function categoryFor\\\(/, `${path} parses no text-read file itself`)
+  }
 })
 
 test("pinnedReadSet at this pin is exactly these files: a new read or a new upstream import is a visible diff here", () => {

@@ -393,6 +393,45 @@ a change nothing omakit reads reaches. Under the blob comparison the
 when that blob moved, so the run against today's HEAD costs the same three
 requests it did.
 
+And, measured on 2026-10-01 (UTC) against the marketplace's history to
+`dbb6db20`: every commit since `38060f89` that touched `scripts/` or
+`.github/ISSUE_TEMPLATE/`, graded as a change from its parent (the parent
+as the pin, the commit as HEAD) by the code each release shipped:
+`changedPinPaths` and `pinFreshness` from the `v0.6.6` tag (tree ids),
+`comparePin` and `pinFreshness` from the `v0.6.7` tag (blob ids), and the
+value comparison of 0.6.10, with the read set `pinnedReadSet()` resolves at
+each parent. Every GET was answered from a local blob-filtered clone (`git
+ls-tree` for a tree, `git show` for a text) and counted. Per commit, with
+each comparison's detail: [docs/evidence/pin-freshness/2026-10-01-grades.json](evidence/pin-freshness/2026-10-01-grades.json).
+
+| Commit | Moved in the read set | 0.6.6 tree | 0.6.7 blob | 0.6.10 value | GETs (tree, blob, value) |
+| --- | --- | --- | --- | --- | --- |
+| 40315f2 | `security-baseline-policy.mjs` | `advice` | `advice` | `advice` | 3, 5, 5 |
+| 7dd6e56 | `submission.mjs`, and the form | `advice` | `advice` | `advice` | 3, 4, 4 |
+| 5e401552 | nothing (`repository-identity.mjs`) | `advice` | `ok` | `ok` | 3, 4, 4 |
+| a166e3ac | `build-catalog.mjs`, both values unchanged | `advice` | `advice` | `ok` | 3, 4, 5 |
+| b612419c | `build-catalog.mjs`, both values unchanged | `advice` | `advice` | `ok` | 3, 4, 5 |
+| cb7947ec | `build-catalog.mjs`, both values unchanged | `advice` | `advice` | `ok` | 3, 4, 5 |
+| 74513851 | nothing (`build-explorer-data.mjs`) | `advice` | `ok` | `ok` | 3, 4, 4 |
+
+| Measurement | Value |
+| --- | --- |
+| Commits since `38060f89` touching a file in the read set | 5 (40315f2, 7dd6e56, a166e3ac, b612419c, cb7947ec) |
+| Of those, graded `advice` by the tree comparison (0.6.6), the blob comparison (0.6.7) and the value comparison (0.6.10) | 5, 5 and 2 |
+| Of all 7 commits touching `scripts/` or the forms | 7, 5 and 2 |
+| The two `advice` that remain | 40315f2 (the policy module is executed) and 7dd6e56 (`submission.mjs` is a parser, and the form moved) |
+| `build-catalog.mjs` changes since `b7b29654`, all three on 2026-09-30 | 3 (refresh recovery and logging, a budget-request retry, the built-in install command); `reservedNamespace` and `catalogPresentation` equal at every one |
+| The pin `b7b29654` against HEAD `dbb6db20` | tree `advice`, blob `advice` (the grade `omakit doctor` gave on 2026-09-30), value `ok` in 5 GETs: "scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged" |
+
+So three changes to a file omakit reads two values out of and runs nothing
+from no longer call for a release. 0.6.10 moves the pin anyway, so that
+it carries the marketplace's current code and the figures in M4 and M6
+follow it; the next move of `build-catalog.mjs` that leaves both values as
+they are grades `ok`. A
+value that does change is `advice`, with both values printed, whatever the
+file's class: a label `omakit watch` looks for that the marketplace renamed
+is a wrong answer, not a wording change.
+
 So one pin is right for the code and the rules, which move slowly and must
 never be fetched and executed unreviewed, and wrong for the registry, which is
 stale within hours of any pin. `identity.available` judges "is this id listed,

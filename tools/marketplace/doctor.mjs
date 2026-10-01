@@ -54,11 +54,26 @@
 // a rule can change without its version. The other two commits (7dd6e56,
 // 40315f2) touched submission.mjs and the policy module, both executed,
 // and the forms, so they grade advice either way.
+//
+// Nor is "a file omakit reads moved" the same as "what omakit reads out of
+// it moved", for the three files it reads as text and never runs. Measured
+// on 2026-10-01 (M7, docs/evidence/pin-freshness/2026-10-01-grades.json):
+// build-catalog.mjs, the most edited file under scripts/, moved three times
+// after b7b29654 (a166e3ac, b612419c, cb7947ec), the reserved namespace and
+// the category mapping read out of it the same each time, and the blob
+// comparison graded each advice, a release for nothing. So a text-read file
+// whose blob moved is read once at HEAD and each value its `readers`
+// (PIN_READS) take out of it is compared with the pin's, by the same
+// function; one whose every value is unchanged does not count as moved for
+// the grade (`effective`), and one whose value differs is advice with both
+// values printed. Of the five commits since 38060f89 that touched a file in
+// the read set, the tree comparison and the blob comparison grade five
+// advice and this grades two: 7dd6e56 and 40315f2, as above.
 
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, WORDING_READS, marketplacePinDir, pinDiskUsage, pinShape, pinnedReadSet, policyConstants, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, PIN_READS, POLICY_MODULE, WORDING_READS, marketplacePinDir, pinDiskUsage, pinShape, pinnedReadSet, policyConstants, requirePin } from "./pin.mjs"
 import { LIVE_PATHS, headTextUrl } from "./registry.mjs"
 import { credential, defaultBranchHead, getJson, getText, GitHubError } from "./github.mjs"
 import { compareVersions, NPM_REGISTRY, registryLatest, upgradeCommand } from "./upgrade.mjs"
@@ -93,6 +108,45 @@ function pinObjectId(pinDir, commit, path) {
   return execFileSync("git", ["-C", pinDir, "rev-parse", `${commit}:${path}`], { timeout: 60_000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 }
 
+/** A file's text at a commit in the pinned checkout. Local: the read set's blobs are in the checkout. */
+function pinFileText(pinDir, commit, path) {
+  return execFileSync("git", ["-C", pinDir, "show", `${commit}:${path}`], { timeout: 60_000, encoding: "utf8", maxBuffer: 16 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] })
+}
+
+/**
+ * Each value `readers` takes out of a file, read out of the pin's text and
+ * HEAD's by the same function, and whether the two are the same: equal
+ * when their JSON is, since every reader returns a string, null or plain
+ * data.
+ *
+ * @returns {Record<string, { pin: unknown, head: unknown, same: boolean }>}
+ */
+export function textReadValues(readers, pinText, headText) {
+  return Object.fromEntries(Object.entries(readers).map(([name, read]) => {
+    const pin = read(pinText)
+    const head = read(headText)
+    return [name, { pin, head, same: JSON.stringify(pin) === JSON.stringify(head) }]
+  }))
+}
+
+/**
+ * The text-read files of `reads` (those PIN_READS gives `readers`), each
+ * with whether its blob moved and the values read out of it at both ends.
+ * The pin's text comes from the checkout; HEAD's is fetched once, and only
+ * for a file in `moved`: an identical blob has identical values, so an
+ * unmoved file's values are the pin's at both ends and cost no request.
+ * With nothing moved (a current pin) it reads locally only.
+ */
+export async function textReadsBetween({ pinDir, pinCommit = MARKETPLACE_PIN.commit, headCommit = pinCommit, reads = pinnedReadSet(pinDir), moved = [], fetchText = getText }) {
+  const textReads = {}
+  for (const { path, readers } of PIN_READS.filter((read) => read.readers && reads.some((entry) => entry.path === read.path))) {
+    const atPin = pinFileText(pinDir, pinCommit, path)
+    const blobMoved = moved.includes(path)
+    textReads[path] = { moved: blobMoved, values: textReadValues(readers, atPin, blobMoved ? await fetchText(headTextUrl(headCommit, path)) : atPin) }
+  }
+  return textReads
+}
+
 /** A PIN_PATHS pattern as a path: "/site/catalog.json" -> "site/catalog.json". */
 const asPath = (pattern) => pattern.replace(/^\/|\/$/g, "")
 
@@ -117,10 +171,20 @@ const FORMS = "/.github/ISSUE_TEMPLATE/"
  * `policyAtHead`; otherwise `policyAtHead` is null, because an identical
  * blob has identical constants. The text is never imported.
  *
+ * Each file PIN_READS reads as text is compared by what omakit reads out
+ * of it, under `textReads`: its `readers` run on the pin's text (from the
+ * checkout) and on HEAD's, and each value is returned with both sides and
+ * whether they are the same. HEAD's text is read once through `fetchText`
+ * only when the file's blob moved, one more GET per such file; an
+ * unmoved file's values are the pin's at both ends, and a file gone at
+ * HEAD is in `missing` and not here. The text is compared and dropped,
+ * never imported.
+ *
  * `fetchJson` and `fetchText` are injectable for tests.
  *
  * @returns {Promise<{ changedPaths: string[], reads: number, moved: string[], missing: string[],
- *                     policyAtHead: { baselineVersion: string, enforcementMode: string }|null }>}
+ *                     policyAtHead: { baselineVersion: string, enforcementMode: string }|null,
+ *                     textReads: Record<string, { moved: boolean, values: Record<string, { pin: unknown, head: unknown, same: boolean }> }> }>}
  */
 export async function comparePin({ pinDir, headCommit, pinCommit = MARKETPLACE_PIN.commit, fetchJson = getJson, fetchText = getText, reads = pinnedReadSet(pinDir) }) {
   const match = MARKETPLACE_PIN.repository.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)$/)
@@ -164,7 +228,8 @@ export async function comparePin({ pinDir, headCommit, pinCommit = MARKETPLACE_P
     }
   }
   const policyAtHead = moved.includes(POLICY_MODULE) ? policyConstants(await fetchText(headTextUrl(headCommit, POLICY_MODULE))) : null
-  return { changedPaths, reads: reads.length, moved, missing, policyAtHead }
+  const textReads = await textReadsBetween({ pinDir, pinCommit, headCommit, reads: reads.filter((read) => !missing.includes(read.path)), moved, fetchText })
+  return { changedPaths, reads: reads.length, moved, missing, policyAtHead, textReads }
 }
 
 /** "a", "a and b", "a, b and c". */
@@ -186,24 +251,36 @@ const verdictBearing = (paths) => paths.filter((path) => !WORDING_READS.includes
  * from HEAD, and `pinned`, everything only a new pin can carry; its `moved`
  * and `missing` name the files omakit reads under scripts/ whose blob
  * differs at HEAD; its `policyAtHead` carries the two policy constants
- * there when the policy module moved.
+ * there when the policy module moved; its `textReads` carries, for each
+ * file read as text, the values omakit reads out of it at both ends.
+ *
+ * A file read as text whose blob moved and whose every value reads the
+ * same at HEAD does not count as moved for the grade: omakit takes those
+ * values out of it and nothing else, so the move cannot reach a verdict or
+ * a line. `effective` is `moved` without such files, and the grade is
+ * taken from it; `moved` keeps meaning the blob. Measured on 2026-10-01
+ * (M7): build-catalog.mjs moved three times after b7b29654, the reserved
+ * namespace and the category mapping read the same each time, and the
+ * blob comparison graded the pin advice for it.
  *
  *   ok      nothing omakit reads moved: HEAD moved elsewhere, or only in
  *           the live-read data files, or scripts/ moved in none of the
- *           files omakit reads.
- *   info    the only read files that moved are ones omakit takes wording
+ *           files omakit reads, or only in files read as text whose values
+ *           are unchanged (named, with how many values).
+ *   info    the only read files that count are ones omakit takes wording
  *           or a label out of (WORDING_READS): what it prints may differ
  *           at HEAD, what it passes or refuses cannot. A newer omakit will
  *           carry the pin. Nothing for a user to do.
  *   advice  a file omakit executes or reads a rule from moved (a verdict
  *           may differ at HEAD, whether or not the two policy constants
  *           still read the same, since a rule can change without its
- *           version), a read file is gone at HEAD, or the form directory
- *           moved (the contract itself). The action is `upgrade` (the
- *           command, when the caller found a newer omakit published), else
- *           that the maintainer is notified; never an issue to open, since
- *           the weekly pin-freshness workflow opens the one there is. The
- *           two constants are printed beside the grade in both cases.
+ *           version), a value read out of a text-read file differs (both
+ *           values printed), a read file is gone at HEAD, or the form
+ *           directory moved (the contract itself). The action is `upgrade`
+ *           (the command, when the caller found a newer omakit published),
+ *           else that the maintainer is notified; never an issue to open,
+ *           since the weekly pin-freshness workflow opens the one there is.
+ *           The two constants are printed beside the grade in both cases.
  *
  * Null for `comparison` means the comparison was not made, which stays
  * advice: HEAD moved and nothing here can say the pin is fine. Full commits
@@ -218,15 +295,22 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   const pinned = changed.filter((pattern) => !LIVE_PATHS.includes(asPath(pattern)))
   const moved = compared ? comparison.moved : []
   const missing = compared ? comparison.missing : []
+  const textReads = comparison?.textReads || {}
   const pinPolicy = { baselineVersion: identity.baselineVersion, enforcementMode: identity.enforcementMode }
   const headPolicy = (compared && comparison.policyAtHead) || pinPolicy
   const policyDiffers = headPolicy.baselineVersion !== pinPolicy.baselineVersion || headPolicy.enforcementMode !== pinPolicy.enforcementMode
   const formMoved = pinned.includes(FORMS)
+  // The text-read files that moved, by whether every value read out of them is the same at HEAD.
+  const valuesOf = (path) => Object.entries(textReads[path]?.moved ? textReads[path].values : {})
+  const unchanged = moved.filter((path) => valuesOf(path).length && valuesOf(path).every(([, value]) => value.same))
+  const differing = moved.filter((path) => valuesOf(path).some(([, value]) => !value.same))
+  const effective = moved.filter((path) => !unchanged.includes(path))
   const verdictMoved = verdictBearing(moved)
+  const verdictEffective = verdictBearing(effective)
   const graded = moved.length > 0 || missing.length > 0 || formMoved
   const state = current ? "ok"
-    : comparison === null || policyDiffers || formMoved || missing.length || verdictMoved.length ? "advice"
-      : moved.length ? "info"
+    : comparison === null || policyDiffers || formMoved || missing.length || differing.length || verdictEffective.length ? "advice"
+      : effective.length ? "info"
         : "ok"
 
   const where = `pin ${identity.commit.slice(0, 7)}; marketplace ${branch} at ${head.commit.slice(0, 7)}`
@@ -234,7 +318,14 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   if (comparison === null) clauses.push("the paths omakit reads were not compared")
   else if (!changed.length) clauses.push("nothing omakit reads moved")
   else {
-    if (moved.length) clauses.push(`moved since the pin: ${list(moved)}${verdictMoved.length ? "" : " (wording and labels only)"}`)
+    if (effective.length) clauses.push(`moved since the pin: ${list(effective)}${verdictEffective.length || differing.length ? "" : " (wording and labels only)"}`)
+    for (const path of differing) {
+      for (const [name, value] of valuesOf(path).filter(([, entry]) => !entry.same)) clauses.push(`${name} ${JSON.stringify(value.pin)} at the pin, ${JSON.stringify(value.head)} at HEAD`)
+    }
+    if (unchanged.length) {
+      const count = unchanged.reduce((sum, path) => sum + valuesOf(path).length, 0)
+      clauses.push(`${list(unchanged)} moved, and ${count === 1 ? "the one value" : `the ${count} values`} omakit reads from ${unchanged.length === 1 ? "it" : "them"} ${count === 1 ? "is" : "are"} unchanged`)
+    }
     if (missing.length) clauses.push(`gone at HEAD: ${list(missing)}`)
     if (formMoved) clauses.push(`the form moved (${asPath(FORMS)}/)`)
     if (pinned.includes("/scripts/") && !moved.length && !missing.length) clauses.push(`scripts/ moved in none of the ${comparison.reads} files omakit reads`)
@@ -245,7 +336,7 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
   const detail = current ? `the pin is the marketplace's current ${branch}-branch HEAD` : `${where}; ${clauses.join("; ")}${tail}`
 
   const action = state === "info"
-    ? `${moved.length === 1 ? "That file is" : "Those files are"} read for wording and labels, not for a pass or a refusal; what omakit prints may differ at HEAD, what it decides cannot. A newer omakit will carry the pin; nothing to do.`
+    ? `${effective.length === 1 ? "That file is" : "Those files are"} read for wording and labels, not for a pass or a refusal; what omakit prints may differ at HEAD, what it decides cannot. A newer omakit will carry the pin; nothing to do.`
     : state === "advice"
       ? upgrade
         ? `A newer omakit is published and may carry the pin: run \`${upgrade}\`. Until then every verdict here is the pin's, and the marketplace's own run on your issue is the one that counts.`
@@ -268,7 +359,9 @@ export function pinFreshness(identity, head, comparison = null, { upgrade = null
         reads: comparison.reads,
         moved,
         verdictMoved,
+        effective,
         missing,
+        textReads,
         policy: { pin: pinPolicy, head: headPolicy },
       }),
     },
@@ -396,10 +489,14 @@ export async function doctor({ repoRoot, offline = false, onPhase, env = process
     phase("reading the marketplace's current default-branch HEAD")
     try {
       const head = await resolveHead(MARKETPLACE_PIN.repository)
-      let comparison = { changedPaths: [], reads: pinnedReadSet(dir).length, moved: [], missing: [], policyAtHead: null }
+      let comparison
       if (head.commit !== identity.commit) {
         phase("comparing each file omakit reads between the pin and HEAD")
         comparison = await compare({ pinDir: dir, headCommit: head.commit, pinCommit: identity.commit })
+      } else {
+        // The pin is HEAD: nothing moved, and the values read as text are the pin's, read locally.
+        const reads = pinnedReadSet(dir)
+        comparison = { changedPaths: [], reads: reads.length, moved: [], missing: [], policyAtHead: null, textReads: await textReadsBetween({ pinDir: dir, pinCommit: identity.commit, reads }) }
       }
       checks.push(pinFreshness(identity, head, comparison, { upgrade }))
     } catch (error) {

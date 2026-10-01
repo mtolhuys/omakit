@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.6.10
+
+`pin.freshness` in `omakit doctor` compares what omakit reads out of a
+file it reads as text, not the file's blob. On 2026-09-30 doctor graded
+the pin `advice` because `scripts/build-catalog.mjs` had moved three times
+since `b7b29654` (a166e3ac, b612419c, cb7947ec). omakit never runs that
+file: it reads two values out of its text, the reserved plugin-id
+namespace and the category mapping, and none of the three changed either.
+Measured on 2026-10-01 (`docs/MEASUREMENTS.md` M7,
+`docs/evidence/pin-freshness/2026-10-01-grades.json`), with the code each
+release shipped: of the five marketplace commits since `38060f89` that
+touched a file in the read set, the tree comparison of 0.6.6 and the blob
+comparison of 0.6.7 grade all five `advice`, and the value comparison two
+(40315f2, the policy module; 7dd6e56, `submission.mjs` and the form).
+Each file `PIN_READS` reads as text now carries `readers`, the values
+taken out of it as functions from text to value (`reservedNamespace` and
+`catalogPresentation` from `build-catalog.mjs`, `validatedLabel` from
+`approve-submission.mjs`, `updateLabel` from `approve-plugin-update.mjs`),
+and those are the functions `registry.mjs`, `submit.mjs`, `watch.mjs` and
+`review-cost.mjs` call on the pin's text and doctor calls on the pin's and
+HEAD's. When such a file's blob moved, its text at HEAD is read once
+through `headTextUrl()` at the exact commit, compared and dropped, never
+imported. A file whose every value is unchanged does not count as moved:
+the grade is taken from `effective`, the moved files less those, so it is
+`ok` with "scripts/build-catalog.mjs moved, and the 2 values omakit reads
+from it are unchanged", `info` when what is left is wording only, and
+`advice` otherwise, as before; a value that differs is `advice` with both
+values in the detail. In `--json`, `moved` keeps meaning the blob, and
+the evidence adds `effective` and `textReads` (`{ [path]: { moved,
+values: { [name]: { pin, head, same } } } }`). The weekly pin-freshness
+workflow grades on `effective`, refuses an `ok` or `info` that a moved
+value contradicts, and names in its issue the text-read files that moved
+with every value unchanged.
+
 ## 0.6.9
 
 `omakit lab` prepares the newest Omarchy release instead of the one it

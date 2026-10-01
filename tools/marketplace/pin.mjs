@@ -40,8 +40,9 @@ export const MARKETPLACE_PIN = Object.freeze({
  *   /scripts/                     the official submission parser, baseline
  *                                 scanner, policy, report and record modules,
  *                                 and build-catalog.mjs read as text for the
- *                                 reserved plugin-id namespace. Taken whole
- *                                 because those modules import each other.
+ *                                 reserved plugin-id namespace and the
+ *                                 category mapping. Taken whole because
+ *                                 those modules import each other.
  *   /registry.json                retired plugin ids, listed repositories
  *   /site/catalog.json            listed plugin ids
  *   /.github/ISSUE_TEMPLATE/      the submission form: the whole contract
@@ -83,8 +84,19 @@ export const POLICY_MODULE = "scripts/security-baseline-policy.mjs"
  *   approve-submission.mjs           watch.mjs, text: one label
  *   approve-plugin-update.mjs        review-cost.mjs, text: one label
  *
+ * A file read as text carries `readers`: each value omakit takes out of
+ * it, by name, as a function from the file's text to the value. This is
+ * the one list of what is read out of such a file, and the functions are
+ * the ones the modules above call on the pin's text and the ones `omakit
+ * doctor` calls on the pin's text and on HEAD's, so the two sides of the
+ * comparison cannot read differently. Measured on 2026-10-01 (M7): the
+ * three commits that moved build-catalog.mjs since b7b29654 changed
+ * neither of the two values read out of it, and the blob comparison
+ * graded each of them advice.
+ *
  * tests/unit/pin.test.mjs derives this list from the sources and fails on
- * a read that is not here, or one listed the wrong way round.
+ * a read that is not here, or one listed the wrong way round, and holds
+ * `readers` to exactly the files read as text.
  */
 export const PIN_READS = Object.freeze([
   Object.freeze({ path: "scripts/submission.mjs", imported: true }),
@@ -94,9 +106,9 @@ export const PIN_READS = Object.freeze([
   Object.freeze({ path: "scripts/security-baseline-report.mjs", imported: true }),
   Object.freeze({ path: "scripts/security-baseline-record.mjs", imported: true }),
   Object.freeze({ path: "scripts/submission-feedback.mjs", imported: true }),
-  Object.freeze({ path: "scripts/build-catalog.mjs", imported: false }),
-  Object.freeze({ path: "scripts/approve-submission.mjs", imported: false }),
-  Object.freeze({ path: "scripts/approve-plugin-update.mjs", imported: false }),
+  Object.freeze({ path: "scripts/build-catalog.mjs", imported: false, readers: Object.freeze({ reservedNamespace, catalogPresentation }) }),
+  Object.freeze({ path: "scripts/approve-submission.mjs", imported: false, readers: Object.freeze({ validatedLabel }) }),
+  Object.freeze({ path: "scripts/approve-plugin-update.mjs", imported: false, readers: Object.freeze({ updateLabel }) }),
 ])
 
 /**
@@ -241,6 +253,58 @@ export function policyConstants(text) {
     baselineVersion: source.match(/securityBaselineVersion\s*=\s*"?([^";\s]+)"?/)?.[1] || "unknown",
     enforcementMode: source.match(/securityBaselineEnforcementMode\s*=\s*"([^"]+)"/)?.[1] || "unknown",
   }
+}
+
+// The readers PIN_READS registers for the files read as text. Each takes
+// the file's text and returns the value, or null where the text does not
+// carry it, the way policyConstants() does for the policy module: no file
+// is opened here and no module is loaded, so the same function reads the
+// pin's copy for a check and HEAD's copy for doctor's comparison.
+
+/**
+ * The reserved plugin-id namespace as the marketplace states it in
+ * `build-catalog.mjs`, next to its own `reserved-plugin-id` check, with
+ * its trailing dot. Read, not copied, so a pin update moves it.
+ */
+export function reservedNamespace(text) {
+  const source = String(text || "")
+  const match = source.match(/startsWith\("([A-Za-z0-9.\-_]+\.)"\)\s*\)\s*\{\s*\n\s*checkError\("reserved-plugin-id"/)
+    || source.match(/checkError\("reserved-plugin-id",\s*`[^`]*\$\{[^}]*\}:\s*the ([A-Za-z0-9.\-_]+)\.\*\s+namespace is reserved`/)
+  if (!match) return null
+  return match[1].endsWith(".") ? match[1] : `${match[1]}.`
+}
+
+/**
+ * How the marketplace itself presents a plugin it lists, read out of
+ * `build-catalog.mjs` rather than copied: `categoryFor(kinds)` maps the
+ * manifest's kinds to a category in order of its `if` lines, with a
+ * fallback, and the tags are the first three kinds lowercased. `omakit
+ * submit` offers these as the default answer when it has to ask for a
+ * category and tags, so the default is the marketplace's own choice; a
+ * mapping that cannot be read offers no default. tests/unit/registry-
+ * figures.test.mjs pins what the mapping is at this commit, so a
+ * marketplace that changes it fails the suite until the docs follow.
+ *
+ * @returns {{ rules: Array<{ kinds: string[], category: string }>, fallback: string|null, tagsFromKinds: boolean }}
+ */
+export function catalogPresentation(text) {
+  const source = String(text || "")
+  const body = source.match(/function categoryFor\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || ""
+  const rules = [...body.matchAll(/if \(((?:kinds\.includes\("[^"]+"\)(?:\s*\|\|\s*)?)+)\) return "([^"]+)";/g)]
+    .map((match) => ({ kinds: [...match[1].matchAll(/"([^"]+)"/g)].map((kind) => kind[1]), category: match[2] }))
+  const fallback = body.match(/\n\s*return "([^"]+)";\s*$/)?.[1] || null
+  const tagsFromKinds = /tags:\s*kinds\.slice\(0,\s*3\)\.map\(\(kind\) => kind\.toLowerCase\(\)\)/.test(source)
+  return { rules, fallback, tagsFromKinds }
+}
+
+/** The label `approve-submission.mjs` requires beside `submission` before it approves: the one `omakit watch` reads as validated. */
+export function validatedLabel(text) {
+  return String(text || "").match(/for \(const required of \["submission", "([^"]+)"/)?.[1] || null
+}
+
+/** The first label `approve-plugin-update.mjs` requires: the one an update issue carries, for review cost. */
+export function updateLabel(text) {
+  return String(text || "").match(/for \(const required of \["([^"]+)"/)?.[1] || null
 }
 
 /** Identity of the checkout at `dir`: commit plus the policy constants read from the pinned source. */

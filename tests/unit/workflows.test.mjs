@@ -107,6 +107,19 @@ test("freshness separates the GET-only inspection from this-repository issue wri
   assert.match(source, /elif \[\[ "\$STATE" == "ok" \]\]/)
   assert.match(source, /Files omakit reads under \\`scripts\/\\` that moved/)
   assert.match(source, /Policy constants: \$\{POLICY_PIN\} at the pin, \$\{POLICY_HEAD\} at HEAD/)
+  // Graded on `effective`, the moved files less the text-read ones whose
+  // every value is unchanged (measured 2026-10-01, M7: three moves of
+  // build-catalog.mjs that changed neither value read out of it). The
+  // refusal for ok keys on it, a value that differs is never ok or info,
+  // and the body names the text-read files the grade set aside.
+  assert.match(source, /\.evidence\.effective/)
+  assert.match(source, /\.evidence\.textReads/)
+  assert.match(source, /"\$state" == "ok" && -n "\$effective\$missing\$forms\$text_differs"/)
+  assert.match(source, /doctor called the pin current while something it reads moved: \$effective/)
+  assert.match(source, /doctor counted a text-read file whose values are unchanged as moved/)
+  assert.match(source, /"\$state" == "info" && \( -z "\$effective" \|\| -n "\$verdict_effective\$missing\$forms\$text_differs"/)
+  assert.match(source, /Text-read files that moved with every value unchanged: \\`\$\{TEXT_UNCHANGED:-none\}\\`/)
+  assert.doesNotMatch(source, /"\$state" == "ok" && -n "\$moved/, "the ok refusal no longer keys on the blob")
   assert.match(source, /reconcile-issue:[\s\S]*issues: write/)
   assert.match(source, /\[automation\] Marketplace pin differs from HEAD/)
   assert.match(source, /gh\s+issue\s+create/)

@@ -21,7 +21,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { readFileSync } from "node:fs"
-import { MARKETPLACE_PIN, requirePin } from "./pin.mjs"
+import { MARKETPLACE_PIN, requirePin, validatedLabel } from "./pin.mjs"
 import { authenticatedUser, repositoryIssues, defaultBranchHead, issue, issueComments, parseIssueUrl, token, GitHubError } from "./github.mjs"
 import { liveRegistry } from "./registry.mjs"
 import { reviewPolicy, validatedDocumentationDiff } from "./review-cost.mjs"
@@ -266,8 +266,7 @@ export function validationComment(comments, feedback = []) {
  */
 export async function marketplaceLabels(pinDir) {
   const policy = await import(pathToFileURL(join(pinDir, "scripts/security-baseline-policy.mjs")).href)
-  const approval = readFileSync(join(pinDir, "scripts/approve-submission.mjs"), "utf8")
-  const validated = approval.match(/for \(const required of \["submission", "([^"]+)"/)?.[1]
+  const validated = validatedLabel(readFileSync(join(pinDir, "scripts/approve-submission.mjs"), "utf8"))
   if (!validated) throw new Error("cannot read the validated label from the pin")
   const manual = policy.currentSecurityBaselinePolicy.maintainerVerificationOutcome
   return { blocking: [...policy.securityBaselineBlockingLabels], validated, reviewRequired: `security-${manual}` }

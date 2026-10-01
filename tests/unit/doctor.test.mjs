@@ -5,8 +5,8 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { clearCommit, recordCommit, recordedCommit } from "../../tools/blocks/record-commit.mjs"
-import { comparePin, doctor, pinFreshness } from "../../tools/marketplace/doctor.mjs"
-import { MARKETPLACE_PIN, PIN_PATHS, POLICY_MODULE, pinnedReadSet } from "../../tools/marketplace/pin.mjs"
+import { comparePin, doctor, pinFreshness, textReadValues } from "../../tools/marketplace/doctor.mjs"
+import { MARKETPLACE_PIN, PIN_PATHS, PIN_READS, POLICY_MODULE, pinnedReadSet } from "../../tools/marketplace/pin.mjs"
 import { LIVE_PATHS } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
@@ -62,7 +62,7 @@ test("only the data files moved, or nothing did: ok, no action, and the detail s
   assert.deepEqual(both.evidence, {
     pinCommit: pinned.commit, marketplaceHead: head.commit, branch: "main",
     changedPaths: ["/registry.json", "/site/catalog.json"], readLive: ["/registry.json", "/site/catalog.json"], pinned: [],
-    reads: 16, moved: [], verdictMoved: [], missing: [], policy: { pin: same, head: same },
+    reads: 16, moved: [], verdictMoved: [], effective: [], missing: [], textReads: {}, policy: { pin: same, head: same },
   })
   assert.deepEqual([...LIVE_PATHS], ["registry.json", "site/catalog.json"], "the split is registry.mjs's list, not a second one")
 
@@ -198,6 +198,115 @@ test("doctor passes the upgrade it found to pin.freshness, and HEAD unreadable s
   assert.deepEqual(check.evidence, { pinCommit: MARKETPLACE_PIN.commit, marketplaceHead: null, branch: null })
 })
 
+// --- what is read out of a text-read file, not its blob -------------------------
+// Measured on 2026-10-01 (docs/MEASUREMENTS.md M7): build-catalog.mjs moved
+// three times after b7b29654 (a166e3ac, b612419c, cb7947ec), the reserved
+// namespace and the category mapping read out of it the same each time, and
+// the blob comparison graded the pin advice for each. A file read as text
+// now counts for the grade only when a value read out of it differs, read
+// by the same function at both ends.
+
+const BUILDER = "scripts/build-catalog.mjs"
+const APPROVAL = "scripts/approve-submission.mjs"
+const UPDATE = "scripts/approve-plugin-update.mjs"
+/** A catalog builder as the readers see one: a reserved prefix and a two-line category mapping, made up here. */
+const builder = (prefix, extra = "") => [
+  "function categoryFor(kinds) {",
+  '  if (kinds.includes("gadget")) return "Gadgets";',
+  '  return "Elsewhere";',
+  "}",
+  "export function check(id) {",
+  `  if (id.toLowerCase().startsWith("${prefix}")) {`,
+  `    checkError("reserved-plugin-id", \`\${id}: the ${prefix.slice(0, -1)}.* namespace is reserved\`);`,
+  "  }",
+  "}",
+  "const entry = { tags: kinds.slice(0, 3).map((kind) => kind.toLowerCase()) };",
+  extra,
+].join("\n")
+const approval = (label, extra = "") => `for (const required of ["submission", "${label}"]) {\n  need(required);\n}\n${extra}`
+const update = (label, extra = "") => `for (const required of ["${label}", "submission"]) {\n  need(required);\n}\n${extra}`
+/** A comparePin() textReads entry for one moved text-read file, read by the readers PIN_READS registers for it. */
+const textRead = (path, pinText, headText) => ({ [path]: { moved: true, values: textReadValues(PIN_READS.find((read) => read.path === path).readers, pinText, headText) } })
+
+test("a text-read file moved with every value it is read for unchanged: ok, the file named with how many values, and moved still says the blob", () => {
+  const textReads = textRead(BUILDER, builder("acme."), builder("acme.", "// a retry around the budget request"))
+  assert.deepEqual(textReads[BUILDER].values, {
+    reservedNamespace: { pin: "acme.", head: "acme.", same: true },
+    catalogPresentation: {
+      pin: { rules: [{ kinds: ["gadget"], category: "Gadgets" }], fallback: "Elsewhere", tagsFromKinds: true },
+      head: { rules: [{ kinds: ["gadget"], category: "Gadgets" }], fallback: "Elsewhere", tagsFromKinds: true },
+      same: true,
+    },
+  })
+  const check = pinFreshness(pinned, head, compared(["/scripts/", "/registry.json"], { moved: [BUILDER], textReads }))
+  assert.equal(check.state, "ok")
+  assert.equal(check.action, null)
+  assert.equal(check.detail, "pin 1111111; marketplace main at 2222222; scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 (selective) at both (registry.json moved too, and that is read live)")
+  assert.deepEqual(check.evidence.moved, [BUILDER], "moved keeps meaning the blob")
+  assert.deepEqual(check.evidence.verdictMoved, [BUILDER])
+  assert.deepEqual(check.evidence.effective, [], "the grade is taken from what is left")
+  assert.deepEqual(check.evidence.textReads, textReads)
+
+  // Two such files, and one with a single value.
+  const two = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [APPROVAL, BUILDER], textReads: { ...textReads, ...textRead(APPROVAL, approval("checked"), approval("checked", "// reworded")) } }))
+  assert.equal(two.state, "ok")
+  assert.equal(two.detail, "pin 1111111; marketplace main at 2222222; scripts/approve-submission.mjs and scripts/build-catalog.mjs moved, and the 3 values omakit reads from them are unchanged; baseline 3 (selective) at both")
+  const one = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [UPDATE], textReads: textRead(UPDATE, update("update-request"), update("update-request", "// reworded")) }))
+  assert.equal(one.state, "ok")
+  assert.equal(one.detail, "pin 1111111; marketplace main at 2222222; scripts/approve-plugin-update.mjs moved, and the one value omakit reads from it is unchanged; baseline 3 (selective) at both")
+
+  // Without textReads the file counts as it did in 0.6.7: a verdict-bearing blob moved.
+  assert.equal(pinFreshness(pinned, head, compared(["/scripts/"], { moved: [BUILDER] })).state, "advice")
+})
+
+test("what is left after the subtraction is only wording files: info, and the unchanged text-read file is still named", () => {
+  const check = pinFreshness(pinned, head, compared(["/scripts/"], {
+    moved: [BUILDER, "scripts/security-baseline-report.mjs"],
+    textReads: textRead(BUILDER, builder("acme."), builder("acme.", "// moved")),
+  }))
+  assert.equal(check.state, "info")
+  assert.equal(check.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-report.mjs (wording and labels only); scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 (selective) at both")
+  assert.match(check.action, /^That file is read for wording and labels/)
+  assert.deepEqual(check.evidence.effective, ["scripts/security-baseline-report.mjs"])
+})
+
+test("a value read out of a text-read file differs: advice, both values in the detail, a wording file's label included", () => {
+  const namespace = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [BUILDER], textReads: textRead(BUILDER, builder("acme."), builder("ac.")) }))
+  assert.equal(namespace.state, "advice")
+  assert.equal(namespace.detail, 'pin 1111111; marketplace main at 2222222; moved since the pin: scripts/build-catalog.mjs; reservedNamespace "acme." at the pin, "ac." at HEAD; baseline 3 (selective) at both')
+  assert.match(namespace.action, /^The maintainer is notified by the weekly pin-freshness run/)
+  assert.deepEqual(namespace.evidence.effective, [BUILDER])
+  assert.deepEqual(namespace.evidence.textReads[BUILDER].values.reservedNamespace, { pin: "acme.", head: "ac.", same: false })
+  assert.equal(namespace.evidence.textReads[BUILDER].values.catalogPresentation.same, true)
+
+  // A value HEAD's text no longer carries is a value that differs.
+  const gone = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [BUILDER], textReads: textRead(BUILDER, builder("acme."), "export const nothing = 1\n") }))
+  assert.equal(gone.state, "advice")
+  assert.equal(gone.detail, 'pin 1111111; marketplace main at 2222222; moved since the pin: scripts/build-catalog.mjs; reservedNamespace "acme." at the pin, null at HEAD; catalogPresentation {"rules":[{"kinds":["gadget"],"category":"Gadgets"}],"fallback":"Elsewhere","tagsFromKinds":true} at the pin, {"rules":[],"fallback":null,"tagsFromKinds":false} at HEAD; baseline 3 (selective) at both')
+
+  // approve-submission.mjs is a wording file, and a label it is read for
+  // that differs is still advice: watch would look for a label that is not
+  // there.
+  const label = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [APPROVAL], textReads: textRead(APPROVAL, approval("checked"), approval("approved")) }))
+  assert.equal(label.state, "advice")
+  assert.equal(label.detail, 'pin 1111111; marketplace main at 2222222; moved since the pin: scripts/approve-submission.mjs; validatedLabel "checked" at the pin, "approved" at HEAD; baseline 3 (selective) at both')
+  assert.deepEqual(label.evidence.verdictMoved, [], "the file is still a wording file; the value decides the grade")
+
+  // A verdict-bearing file beside an unchanged text read: advice for the first, the second still named.
+  const mixed = pinFreshness(pinned, head, compared(["/scripts/"], { moved: [BUILDER, POLICY_MODULE], policyAtHead: { ...same }, textReads: textRead(BUILDER, builder("acme."), builder("acme.", "// moved")) }))
+  assert.equal(mixed.state, "advice")
+  assert.equal(mixed.detail, "pin 1111111; marketplace main at 2222222; moved since the pin: scripts/security-baseline-policy.mjs; scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 (selective) at both")
+  assert.deepEqual(mixed.evidence.effective, [POLICY_MODULE])
+})
+
+/** What comparePin() says of the text-read files when none moved: each value the pin's, at both ends. */
+function unmovedTextReads(pinDir) {
+  return Object.fromEntries(PIN_READS.filter((read) => read.readers).map(({ path, readers }) => {
+    const text = readFileSync(join(pinDir, path), "utf8")
+    return [path, { moved: false, values: textReadValues(readers, text, text) }]
+  }))
+}
+
 /** The pin's own object ids, read the way doctor reads them. */
 function pinId(pinDir, path) {
   return execFileSync("git", ["-C", pinDir, "rev-parse", `${MARKETPLACE_PIN.commit}:${path}`], { timeout: 120_000, encoding: "utf8" }).trim()
@@ -251,6 +360,7 @@ test("each path in PIN_PATHS is compared by object id, and each file omakit read
     moved: [POLICY_MODULE, "scripts/submission.mjs"],
     missing: ["scripts/submission-feedback.mjs"],
     policyAtHead: { baselineVersion: "4", enforcementMode: "selective" },
+    textReads: unmovedTextReads(pinDir),
   })
   assert.deepEqual(urls, [
     `${API}/${HEAD}`,
@@ -266,7 +376,7 @@ test("each path in PIN_PATHS is compared by object id, and each file omakit read
   const sameBlobs = { ...trees, [SCRIPTS]: [...reads.map((read) => ({ path: read.path.slice("scripts/".length), type: "blob", sha: pinId(pinDir, read.path) })), { path: "repository-identity.mjs", type: "blob", sha: OTHER }] }
   urls.length = 0
   const outside = await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => { urls.push(url); return { tree: sameBlobs[url.split("/git/trees/")[1]] } }, fetchText: async () => { throw new Error("no policy read when its blob is the pin's") } })
-  assert.deepEqual(outside, { changedPaths: ["/scripts/", "/registry.json"], reads: 16, moved: [], missing: [], policyAtHead: null })
+  assert.deepEqual(outside, { changedPaths: ["/scripts/", "/registry.json"], reads: 16, moved: [], missing: [], policyAtHead: null, textReads: unmovedTextReads(pinDir) })
   assert.equal(urls.length, 4)
 
   // HEAD identical to the pin in every path omakit reads: nothing moved, and
@@ -283,7 +393,7 @@ test("each path in PIN_PATHS is compared by object id, and each file omakit read
     [GITHUB]: trees[GITHUB],
   }
   urls.length = 0
-  assert.deepEqual(await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => { urls.push(url); return { tree: identical[url.split("/git/trees/")[1]] } } }), { changedPaths: [], reads: 16, moved: [], missing: [], policyAtHead: null })
+  assert.deepEqual(await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => { urls.push(url); return { tree: identical[url.split("/git/trees/")[1]] } } }), { changedPaths: [], reads: 16, moved: [], missing: [], policyAtHead: null, textReads: unmovedTextReads(pinDir) })
   assert.equal(urls.length, 3, "three reads for PIN_PATHS as it stands")
 
   // A path that HEAD no longer has counts as changed, and a HEAD that does not
@@ -292,6 +402,61 @@ test("each path in PIN_PATHS is compared by object id, and each file omakit read
   assert.deepEqual((await comparePin({ pinDir, headCommit: HEAD, fetchJson: async (url) => ({ tree: gone[url.split("/git/trees/")[1]] }) })).changedPaths, ["/site/catalog.json"])
   await assert.rejects(() => comparePin({ pinDir, headCommit: HEAD, fetchJson: async () => ({ message: "Not Found" }) }), /did not read as a tree/)
   await assert.rejects(() => comparePin({ pinDir, headCommit: HEAD, fetchJson: async () => { throw Object.assign(new Error("no"), { code: "network-unavailable" }) } }), /no/)
+})
+
+test("a text-read file whose blob moved is read once at HEAD, at the exact commit, and graded by its values", async () => {
+  // HEAD as measured on 2026-10-01, in shape: scripts/ moved in
+  // build-catalog.mjs alone, and the two data files moved. The pin's own
+  // text with a line added stands in for HEAD's: the values read the same,
+  // so the grade is ok. The same text with the namespace changed is advice.
+  const pinDir = requirePinForTests()
+  const reads = pinnedReadSet(pinDir)
+  const HEAD = "d5e6a860".padEnd(40, "0")
+  const OTHER = "f".repeat(40)
+  const SCRIPTS = "4".repeat(40)
+  const SITE = "5".repeat(40)
+  const GITHUB = "6".repeat(40)
+  const RAW = "https://raw.githubusercontent.com/omacom/omarchy-plugin-marketplace"
+  const trees = {
+    [HEAD]: [
+      { path: "scripts", type: "tree", sha: SCRIPTS },
+      { path: "registry.json", type: "blob", sha: OTHER },
+      { path: "site", type: "tree", sha: SITE },
+      { path: ".github", type: "tree", sha: GITHUB },
+    ],
+    [SCRIPTS]: reads.map((read) => ({ path: read.path.slice("scripts/".length), type: "blob", sha: read.path === BUILDER ? OTHER : pinId(pinDir, read.path) })),
+    [SITE]: [{ path: "catalog.json", type: "blob", sha: OTHER }],
+    [GITHUB]: [{ path: "ISSUE_TEMPLATE", type: "tree", sha: pinId(pinDir, ".github/ISSUE_TEMPLATE") }],
+  }
+  const atPin = readFileSync(join(pinDir, BUILDER), "utf8")
+  const prefix = PIN_READS.find((read) => read.path === BUILDER).readers.reservedNamespace(atPin)
+  assert.ok(prefix, "the pin's builder carries the namespace")
+  const run = async (headText) => {
+    const urls = []
+    const comparison = await comparePin({
+      pinDir, headCommit: HEAD,
+      fetchJson: async (url) => { urls.push(url); return { tree: trees[url.split("/git/trees/")[1]] } },
+      fetchText: async (url) => { urls.push(url); return headText },
+    })
+    return { comparison, urls }
+  }
+
+  const equal = await run(`${atPin}\n// a retry around the budget request\n`)
+  assert.deepEqual(equal.comparison.moved, [BUILDER])
+  assert.deepEqual(equal.urls.filter((url) => url.startsWith(RAW)), [`${RAW}/${HEAD}/${BUILDER}`], "one text read, for the one text-read file that moved, at the exact commit")
+  assert.equal(equal.urls.length, 5, "three tree reads, the scripts tree, and the one text")
+  assert.equal(equal.comparison.textReads[BUILDER].moved, true)
+  assert.ok(Object.values(equal.comparison.textReads[BUILDER].values).every((value) => value.same))
+  assert.deepEqual(Object.keys(equal.comparison.textReads).sort(), [UPDATE, APPROVAL, BUILDER].sort(), "every text-read file is listed, moved or not")
+  const ok = pinFreshness({ commit: MARKETPLACE_PIN.commit, ...same }, { commit: HEAD, branch: "main" }, equal.comparison)
+  assert.equal(ok.state, "ok")
+  assert.match(ok.detail, /; scripts\/build-catalog\.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 \(selective\) at both \(registry\.json and site\/catalog\.json moved too, and those are read live\)$/)
+
+  const changed = await run(atPin.split(`"${prefix}"`).join('"elsewhere."'))
+  assert.deepEqual(changed.comparison.textReads[BUILDER].values.reservedNamespace, { pin: prefix, head: "elsewhere.", same: false })
+  const advice = pinFreshness({ commit: MARKETPLACE_PIN.commit, ...same }, { commit: HEAD, branch: "main" }, changed.comparison)
+  assert.equal(advice.state, "advice")
+  assert.match(advice.detail, new RegExp(`; reservedNamespace "${prefix.replace(".", "\\.")}" at the pin, "elsewhere\\." at HEAD;`))
 })
 
 // --- one version check ----------------------------------------------------------

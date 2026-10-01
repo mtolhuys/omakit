@@ -6,7 +6,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { baselineFigures, catalogPresentation, defaultPresentation, figure } from "../../tools/marketplace/registry.mjs"
+import { baselineFigures, catalogBuilderText, catalogPresentation, defaultPresentation, figure } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const pinDir = requirePinForTests()
@@ -53,7 +53,7 @@ test("the presentation the marketplace derives from a manifest's kinds is what b
   // is read from the pinned catalog builder, not copied. This pins what that
   // mapping is at this commit: a marketplace that changes categoryFor() or
   // the tag derivation fails here until the reading and the docs follow.
-  const presentation = catalogPresentation(pinDir)
+  const presentation = catalogPresentation(catalogBuilderText(pinDir))
   assert.deepEqual(presentation, {
     rules: [
       { kinds: ["bar-widget"], category: "Widgets" },

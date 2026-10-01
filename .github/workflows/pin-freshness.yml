@@ -25,6 +25,8 @@ jobs:
       head: ${{ steps.freshness.outputs.head }}
       branch: ${{ steps.freshness.outputs.branch }}
       moved: ${{ steps.freshness.outputs.moved }}
+      effective: ${{ steps.freshness.outputs.effective }}
+      text_unchanged: ${{ steps.freshness.outputs.text_unchanged }}
       verdict_moved: ${{ steps.freshness.outputs.verdict_moved }}
       missing: ${{ steps.freshness.outputs.missing }}
       forms: ${{ steps.freshness.outputs.forms }}
@@ -70,18 +72,24 @@ jobs:
       # doctor compares what omakit reads between the pin and HEAD
       # (docs/UPSTREAM_CONTRACT.md, "What moved since the pin"): the files
       # it reads under scripts/ by blob id, the issue templates by tree id,
-      # the two policy constants by their text at HEAD. `ok` when none of
-      # those moved (unequal commits are normal here: the registry moves
-      # about 140 times a day and is read live; measured on the run of
-      # 2026-09-14, this step failed every week by demanding equal commits),
-      # `info` when the only read files that moved are ones omakit takes
+      # the two policy constants by their text at HEAD, and each file it
+      # reads as text by the values it reads out of it. `effective` is the
+      # moved files less the text-read ones whose every value is unchanged,
+      # and the grade is taken from it: `ok` when it is empty and nothing is
+      # gone and the form did not move (unequal commits are normal here:
+      # the registry moves about 140 times a day and is read live; measured
+      # on the run of 2026-09-14, this step failed every week by demanding
+      # equal commits), `info` when it holds only files omakit takes
       # wording or a label out of (WORDING_READS in pin.mjs), `advice` when
       # a file omakit executes or reads a rule from moved (with or without
       # a policy constant differing: a rule can change without its
-      # version), a read file is gone, or the form moved. Measured on
-      # 2026-09-21 (M7): the tree comparison before this graded 5e401552,
-      # which changed only repository-identity.mjs, as advice, and the pin
-      # moved for a verdict that could not change.
+      # version), a value read out of a text-read file differs, a read file
+      # is gone, or the form moved. Measured (M7): the tree comparison
+      # graded 5e401552, which changed only repository-identity.mjs, as
+      # advice (2026-09-21); the blob comparison graded a166e3ac, b612419c
+      # and cb7947ec, which moved build-catalog.mjs and neither value read
+      # out of it, as advice (2026-10-01). The pin moved, or would have,
+      # for a verdict that could not change.
       - name: Read structured freshness evidence
         id: freshness
         shell: bash
@@ -100,7 +108,12 @@ jobs:
           head=$(jq -r "$check | .evidence.marketplaceHead // empty" "$RUNNER_TEMP/doctor.json")
           branch=$(jq -r "$check | .evidence.branch // empty" "$RUNNER_TEMP/doctor.json")
           moved=$(jq -r "$check | (.evidence.moved // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          effective=$(jq -r "$check | (.evidence.effective // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          text_unchanged=$(jq -r "$check | (.evidence.textReads // {}) | to_entries | map(select(.value.moved and (.value.values | length > 0) and (.value.values | to_entries | all(.value.same)))) | map(.key) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          text_differs=$(jq -r "$check | (.evidence.textReads // {}) | to_entries | map(select(.value.moved and (.value.values | to_entries | any(.value.same | not)))) | map(.key) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          counted_unchanged=$(jq -r "$check | ((.evidence.textReads // {}) | to_entries | map(select(.value.moved and (.value.values | length > 0) and (.value.values | to_entries | all(.value.same)))) | map(.key)) as \$unchanged | (.evidence.effective // []) | map(select(. as \$path | \$unchanged | index(\$path))) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           verdict_moved=$(jq -r "$check | (.evidence.verdictMoved // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
+          verdict_effective=$(jq -r "$check | (.evidence.effective // []) as \$effective | (.evidence.verdictMoved // []) | map(select(. as \$path | \$effective | index(\$path))) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           missing=$(jq -r "$check | (.evidence.missing // []) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           forms=$(jq -r "$check | (.evidence.pinned // []) | map(select(startswith(\"/.github/\"))) | join(\", \")" "$RUNNER_TEMP/doctor.json")
           reads=$(jq -r "$check | .evidence.reads // empty" "$RUNNER_TEMP/doctor.json")
@@ -116,12 +129,16 @@ jobs:
             echo "pin freshness evidence is missing or malformed" >&2
             exit 1
           fi
-          if [[ "$state" == "ok" && -n "$moved$missing$forms" ]]; then
-            echo "doctor called the pin current while something it reads moved: $moved $missing $forms" >&2
+          if [[ "$state" == "ok" && -n "$effective$missing$forms$text_differs" ]]; then
+            echo "doctor called the pin current while something it reads moved: $effective $missing $forms $text_differs" >&2
             exit 1
           fi
-          if [[ "$state" == "info" && ( -z "$moved" || -n "$verdict_moved$missing$forms" || "$policy_pin" != "$policy_head" ) ]]; then
-            echo "doctor graded info without a moved read file, or with a difference that can change a verdict: $verdict_moved $missing $forms" >&2
+          if [[ -n "$counted_unchanged" ]]; then
+            echo "doctor counted a text-read file whose values are unchanged as moved: $counted_unchanged" >&2
+            exit 1
+          fi
+          if [[ "$state" == "info" && ( -z "$effective" || -n "$verdict_effective$missing$forms$text_differs" || "$policy_pin" != "$policy_head" ) ]]; then
+            echo "doctor graded info without a moved read file, or with a difference that can change a verdict: $verdict_effective $missing $forms $text_differs" >&2
             exit 1
           fi
           if [[ "$state" != "ok" && "$pinned" == "$head" ]]; then
@@ -134,6 +151,8 @@ jobs:
             echo "head=$head"
             echo "branch=$branch"
             echo "moved=$moved"
+            echo "effective=$effective"
+            echo "text_unchanged=$text_unchanged"
             echo "verdict_moved=$verdict_moved"
             echo "missing=$missing"
             echo "forms=$forms"
@@ -161,6 +180,8 @@ jobs:
           HEAD_COMMIT: ${{ needs.inspect.outputs.head }}
           HEAD_BRANCH: ${{ needs.inspect.outputs.branch }}
           MOVED: ${{ needs.inspect.outputs.moved }}
+          EFFECTIVE: ${{ needs.inspect.outputs.effective }}
+          TEXT_UNCHANGED: ${{ needs.inspect.outputs.text_unchanged }}
           VERDICT_MOVED: ${{ needs.inspect.outputs.verdict_moved }}
           MISSING: ${{ needs.inspect.outputs.missing }}
           FORMS: ${{ needs.inspect.outputs.forms }}
@@ -178,7 +199,7 @@ jobs:
             exit 1
           fi
           if [[ "$STATE" == "advice" ]]; then
-            grade="\`advice\`: a verdict omakit gives may differ at HEAD (a file it executes or reads a rule from moved, a policy constant differs, a read file is gone, or the form moved)."
+            grade="\`advice\`: a verdict omakit gives may differ at HEAD (a file it executes or reads a rule from moved, a policy constant differs, a value it reads out of a text-read file differs, a read file is gone, or the form moved)."
           else
             grade="\`info\`: only files omakit takes wording or a label out of moved; what it prints may differ at HEAD, what it decides cannot. The pin can follow with the next release."
           fi
@@ -189,6 +210,8 @@ jobs:
           - Marketplace HEAD: \`${HEAD_COMMIT}\`
           - Files omakit reads under \`scripts/\` that moved (of ${READS}): \`${MOVED:-none}\`
           - Of those, files a verdict can depend on: \`${VERDICT_MOVED:-none}\`
+          - Text-read files that moved with every value unchanged: \`${TEXT_UNCHANGED:-none}\`
+          - Files that count for the grade: \`${EFFECTIVE:-none}\`
           - Files omakit reads that are gone at HEAD: \`${MISSING:-none}\`
           - Form directory that moved: \`${FORMS:-none}\`
           - Policy constants: ${POLICY_PIN} at the pin, ${POLICY_HEAD} at HEAD

@@ -3,7 +3,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { submissionContract, assertContractAgrees, resolveCategory, resolveTags, tagSlug, ContractError } from "../../tools/marketplace/form.mjs"
-import { idUniverse, checkIdentity, reservedNamespace } from "../../tools/marketplace/registry.mjs"
+import { catalogBuilderText, idUniverse, checkIdentity, reservedNamespace } from "../../tools/marketplace/registry.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 
 const pinDir = requirePinForTests()
@@ -66,7 +66,7 @@ test("categories and tags resolve to what the form would write", () => {
 })
 
 test("the reserved namespace is read from the pin, not assumed", () => {
-  assert.equal(reservedNamespace(pinDir), "omarchy.")
+  assert.equal(reservedNamespace(catalogBuilderText(pinDir)), "omarchy.")
 })
 
 test("the id universe refuses listed, retired and reserved ids", () => {
