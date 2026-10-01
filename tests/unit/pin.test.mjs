@@ -189,7 +189,7 @@ test("pinnedReadSet at this pin is exactly these files: a new read or a new upst
     { path: "scripts/submission-feedback.mjs", imported: true, via: null },
     { path: "scripts/submission.mjs", imported: true, via: null },
   ])
-  assert.equal(set.length, 16, "16 of the 34 files under scripts/ at pin b7b29654")
+  assert.equal(set.length, 16, "16 of the 34 files under scripts/ at pin b441b4f0, as at b7b29654")
   assert.equal(readdirSync(join(dir, "scripts")).filter((name) => name.endsWith(".mjs")).length, 34)
   assert.ok(set.every((read) => covered(read.path)), "every one is inside the sparse set")
   assert.ok(!set.some((read) => read.path === "scripts/repository-identity.mjs"), "5e401552 changed a file nothing here reaches")
@@ -221,7 +221,7 @@ test("pinnedReadSet follows `from` specifiers by text, inside scripts/ only, and
 
 test("the closure is complete at this pin: no executed read file carries an import form pinnedReadSet does not follow", () => {
   // The one way the read set could miss a file is an import the regex does
-  // not see. Measured at pin b7b29654: 0 of the 13 executed files use a
+  // not see. Measured at pin b441b4f0: 0 of the 13 executed files use a
   // dynamic import(), a side-effect import, require() or
   // import.meta.resolve(). A marketplace
   // commit that introduces one fails here, by file and line, at the next
@@ -258,7 +258,7 @@ test("WORDING_READS is a subset of the read set, each file one omakit takes only
   const set = pinnedReadSet(requirePinForTests()).map((read) => read.path)
   for (const path of WORDING_READS) assert.ok(set.includes(path), `${path} is in the read set`)
   assert.deepEqual([...WORDING_READS], ["scripts/security-baseline-report.mjs", "scripts/submission-feedback.mjs", "scripts/approve-submission.mjs", "scripts/approve-plugin-update.mjs"])
-  // The verdict-bearing remainder is the default: 12 of 16 at pin b7b29654,
+  // The verdict-bearing remainder is the default: 12 of 16 at pin b441b4f0,
   // every file omakit executes for an outcome or reads a rule, a limit, a
   // constant or a parser from.
   assert.equal(set.filter((path) => !WORDING_READS.includes(path)).length, 12)

@@ -220,24 +220,25 @@ policy and does not claim to be; its verdict is labelled `omakit`, not
 
 ## M4. The baseline decides whether a human has to look at all
 
-From `registry.json` at the pin (`b7b29654`, 2026-09-21 18:18 UTC; at pin
-`70dcc454` earlier that day: 3,653 sources, 3,608 with a baseline, 2,025
-passed, 1,557 review-required, 26 needs-fixes; at the first pin `38060f89` of
-2026-09-11: 2,963 sources, 2,916 with a baseline, 1,681 passed, 1,215
-review-required, 20 needs-fixes): 3,664 listed
-sources, of which 3,619 carry a recorded baseline (the rest were listed before the baseline existed or have
-no record):
+From `registry.json` at the pin (`b441b4f0`, 2026-10-01 02:34 UTC; at pin
+`b7b29654` of 2026-09-21 18:18 UTC: 3,664 sources, 3,619 with a baseline,
+2,031 passed, 1,562 review-required, 26 needs-fixes; at pin `70dcc454`
+earlier that day: 3,653 sources, 3,608 with a baseline, 2,025 passed, 1,557
+review-required, 26 needs-fixes; at the first pin `38060f89` of 2026-09-11:
+2,963 sources, 2,916 with a baseline, 1,681 passed, 1,215 review-required, 20
+needs-fixes): 4,493 listed sources, of which 4,449 carry a recorded baseline
+(the rest were listed before the baseline existed or have no record):
 
 | Outcome | Count |
 | --- | --- |
-| `passed` | 2,031 |
-| `review-required` | 1,562 |
-| `needs-fixes` | 26 |
-| Findings ever recorded, total | 27 (`curl-pipe-shell` 12, `remote-git-execution-unpinned` 15) |
+| `passed` | 2,451 |
+| `review-required` | 1,962 |
+| `needs-fixes` | 36 |
+| Findings ever recorded, total | 38 (`curl-pipe-shell` 17, `remote-git-execution-unpinned` 21) |
 
-Capabilities recorded: installer 705, privilege 641, package-manager 624,
-service-management 515, remote-build 478, bundled-executable-binary 34,
-sudoers-modification 29. Sections are numbered M2, M3, M4 and M6 because M1
+Capabilities recorded: installer 928, privilege 817, package-manager 806,
+service-management 666, remote-build 598, sudoers-modification 40,
+bundled-executable-binary 39. Sections are numbered M2, M3, M4 and M6 because M1
 and M5 were population figures that no check cites; their numbers were folded
 into M2 and M6 and the ids were not reused, since checks cite them by number.
 
@@ -279,7 +280,7 @@ and default-branch `commits.atom`, with per-issue sources and unknowns.
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |
-| Listed sources whose validated commit was superseded at least once | 854 of 3,664 (23.3%) at pin `b7b29654`, 1,270 superseded commits, one source revalidated 9 times (at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
+| Listed sources whose validated commit was superseded at least once | 1,110 of 4,493 (24.7%) at pin `b441b4f0`, 1,648 superseded commits, one source revalidated 9 times (at pin `b7b29654`: 854 of 3,664, 23.3%, 1,270 commits; at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
 
 The last row is this repository's own measurement, recomputed from
 `registry.json` at the pin by `tests/unit/registry-figures.test.mjs`; it
@@ -364,7 +365,7 @@ Measured on 2026-09-13 against `omacom/omarchy-plugin-marketplace` at
 | Changes to each of the eleven files omakit reads rules and code from | 1 to 8 in the month |
 | Last change to `submit-plugin.yml` and `scripts/submission.mjs` | 2026-08-30 |
 | Last change to `scripts/build-catalog.mjs` | 2026-09-03 |
-| Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none at the time; by 2026-09-21, two of 863 commits (7dd6e56: the tag `vpn`; 40315f2: standard-installation verification reuses an installer-only review), carried by the pin `70dcc454`; one more by 18:18 UTC that day (5e401552: `repository-identity.mjs`, a migration chain may end at fully retired plugins, a module omakit does not import), carried by the pin `b7b29654` |
+| Changes under `scripts/` or `.github/ISSUE_TEMPLATE/` since the pin `38060f89` (2026-09-11) | none at the time; by 2026-09-21, two of 863 commits (7dd6e56: the tag `vpn`; 40315f2: standard-installation verification reuses an installer-only review), carried by the pin `70dcc454`; one more by 18:18 UTC that day (5e401552: `repository-identity.mjs`, a migration chain may end at fully retired plugins, a module omakit does not import), carried by the pin `b7b29654`; four more of the next 1,280 commits, all on 2026-09-30 (a166e3ac, b612419c, cb7947ec: `build-catalog.mjs`, neither value omakit reads out of it changed; 74513851: `build-explorer-data.mjs`, outside the read set), carried by the pin `b441b4f0` |
 
 And, measured on 2026-09-21 through the commits API (`GET
 /repos/omacom/omarchy-plugin-marketplace/commits?path=scripts`, then each
@@ -422,6 +423,9 @@ each comparison's detail: [docs/evidence/pin-freshness/2026-10-01-grades.json](e
 | The two `advice` that remain | 40315f2 (the policy module is executed) and 7dd6e56 (`submission.mjs` is a parser, and the form moved) |
 | `build-catalog.mjs` changes since `b7b29654`, all three on 2026-09-30 | 3 (refresh recovery and logging, a budget-request retry, the built-in install command); `reservedNamespace` and `catalogPresentation` equal at every one |
 | The pin `b7b29654` against HEAD `dbb6db20` | tree `advice`, blob `advice` (the grade `omakit doctor` gave on 2026-09-30), value `ok` in 5 GETs: "scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged" |
+| Commits from `b7b29654` to the new pin `b441b4f0` (2026-10-01 02:34 UTC) | 1,280, of which 1,268 touched `registry.json`; in the read set only `build-catalog.mjs` moved, the forms' tree is the same; the last 81, after `d7d94a60`, the HEAD this bump was planned at, touched only `registry.json`, `site/` and preview images |
+| The read set at `b441b4f0` | the same 16 of the 34 files under `scripts/` (13 executed, 3 read as text); 0 unfollowed import forms; `securityBaselineVersion` `3` and `securityBaselineEnforcementMode` `selective`; `reservedNamespace`, `catalogPresentation` and both labels equal to `b7b29654`'s |
+| Pin bumps since `38060f89` | 3 (`70dcc454`, `b7b29654`, `b441b4f0`) |
 
 So three changes to a file omakit reads two values out of and runs nothing
 from no longer call for a release. 0.6.10 moves the pin anyway, so that

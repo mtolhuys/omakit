@@ -13,27 +13,27 @@ const pinDir = requirePinForTests()
 const figures = baselineFigures({ pinDir })
 
 test("the baseline outcomes at the pin are the ones the docs cite", () => {
-  assert.equal(figures.sources, 3664)
-  assert.equal(figures.withBaseline, 3619)
-  assert.deepEqual(figures.outcomes, { passed: 2031, "review-required": 1562, "needs-fixes": 26 })
-  assert.equal(figures.findingsTotal, 27)
-  assert.deepEqual(figures.findings, { "curl-pipe-shell": 12, "remote-git-execution-unpinned": 15 })
+  assert.equal(figures.sources, 4493)
+  assert.equal(figures.withBaseline, 4449)
+  assert.deepEqual(figures.outcomes, { passed: 2451, "review-required": 1962, "needs-fixes": 36 })
+  assert.equal(figures.findingsTotal, 38)
+  assert.deepEqual(figures.findings, { "curl-pipe-shell": 17, "remote-git-execution-unpinned": 21 })
   assert.deepEqual(figures.capabilities, {
-    installer: 705,
-    privilege: 641,
-    "package-manager": 624,
-    "service-management": 515,
-    "remote-build": 478,
-    "bundled-executable-binary": 34,
-    "sudoers-modification": 29,
+    installer: 928,
+    privilege: 817,
+    "package-manager": 806,
+    "service-management": 666,
+    "remote-build": 598,
+    "sudoers-modification": 40,
+    "bundled-executable-binary": 39,
   })
-  assert.equal(figures.retiredIds, 23)
-  assert.equal(figures.catalogPlugins, 3702)
+  assert.equal(figures.retiredIds, 69)
+  assert.equal(figures.catalogPlugins, 4532)
 })
 
 test("revalidation is a normal part of a listing's life, measured at the pin", () => {
-  assert.deepEqual(figures.superseded, { sources: 854, commits: 1270, most: 9 })
-  assert.equal(((854 / 3664) * 100).toFixed(1), "23.3")
+  assert.deepEqual(figures.superseded, { sources: 1110, commits: 1648, most: 9 })
+  assert.equal(((1110 / 4493) * 100).toFixed(1), "24.7")
 })
 
 test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figures, formatted the way figure() prints them", () => {
@@ -44,7 +44,7 @@ test("docs/MEASUREMENTS.md M4 and docs/UPSTREAM_CONTRACT.md carry the pin's figu
       assert.ok(text.includes(figure(n)), `${figure(n)} is missing from a document that cites the registry`)
     }
   }
-  assert.equal(figure(2031), "2,031")
+  assert.equal(figure(2451), "2,451")
   assert.equal(figure(26), "26")
 })
 

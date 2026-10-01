@@ -6,7 +6,8 @@
 // of which 168 MB is preview imagery and 151 MB is history, and omakit reads
 // twenty files out of it, sixteen of them under scripts/ (PIN_READS). A
 // blob-filtered, sparsely checked out fetch of just those paths is 15 MB and
-// takes 2 seconds instead of 17. PIN_PATHS below is the whole list, and
+// takes 2 seconds instead of 17; at pin b441b4f0 (2026-10-01) the same fetch
+// was 23 MB on disk in 3.1 seconds. PIN_PATHS below is the whole list, and
 // tests/unit/pin.test.mjs fails if any module starts reading a path outside
 // it, because on a partial clone such a read would quietly reach for the
 // network instead of failing.
@@ -27,8 +28,8 @@ export class PinError extends Error {
 
 export const MARKETPLACE_PIN = Object.freeze({
   repository: "https://github.com/omacom/omarchy-plugin-marketplace",
-  commit: "b7b2965431c52fc6311fdb389bd9f0d6275235c4",
-  commitSubject: "Add OmaStudio plugin (#6843)",
+  commit: "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+  commitSubject: "Add LINE for Omarchy plugin (#9470)",
   baselineVersion: "3",
   enforcementMode: "selective",
 })
@@ -138,9 +139,9 @@ export const RELATIVE_IMPORT = /\bfrom\s+["'](\.\.?\/[^"']+)["']/g
  * no guard; Node's ESM loader requires an extension.) If one of these ever
  * appears in an executed file of the pinned read set, pinnedReadSet() could
  * miss a file, and tests/unit/pin.test.mjs fails on the file and line
- * instead of doctor staying quiet. Measured at pin b7b29654: none of
- * the 13 executed files uses any of them (the three read as text are not
- * scanned, since nothing they import is loaded).
+ * instead of doctor staying quiet. Measured at pins b7b29654 and
+ * b441b4f0: none of the 13 executed files uses any of them (the three read
+ * as text are not scanned, since nothing they import is loaded).
  */
 export const UNFOLLOWED_IMPORTS = Object.freeze([
   Object.freeze({ form: "dynamic import()", pattern: /\bimport\s*\(/ }),
@@ -176,8 +177,8 @@ export function unfollowedImports(pinDir, reads = pinnedReadSet(pinDir)) {
  * the file that imports it or null for one omakit opens itself. A
  * specifier that leaves scripts/ (the marketplace's site/ assets) or names
  * a package (`sharp`) is not followed: PIN_PATHS does not fetch it, so
- * omakit could not read it. Measured at pin b7b29654: 16 of the 34 files
- * under scripts/, 10 opened by omakit and 6 imported by those.
+ * omakit could not read it. Measured at pins b7b29654 and b441b4f0: 16 of
+ * the 34 files under scripts/, 10 opened by omakit and 6 imported by those.
  *
  * @returns {{ path: string, imported: boolean, via: string|null }[]}
  */

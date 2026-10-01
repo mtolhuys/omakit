@@ -34,6 +34,23 @@ workflow grades on `effective`, refuses an `ok` or `info` that a moved
 value contradicts, and names in its issue the text-read files that moved
 with every value unchanged.
 
+The marketplace pin moves to `b441b4f0` (2026-10-01 02:34 UTC, "Add LINE
+for Omarchy plugin (#9470)"), the marketplace's main-branch HEAD when it
+was fetched, 1,280 commits after `b7b29654`. In what omakit reads, only
+`build-catalog.mjs` moved, by the three commits above, and at the new pin
+`reservedNamespace` and `catalogPresentation` return what they returned
+at `b7b29654`; 74513851 changed `build-explorer-data.mjs`, which omakit
+does not read. `securityBaselineVersion` `3` and
+`securityBaselineEnforcementMode` `selective`, the labels, the form and
+every other read file are byte-identical; the read set is the same 16 of
+34 files under `scripts/`, and no executed one carries an import form the
+closure does not follow. The registry figures follow the pin: 4,493
+sources, 4,449 with a baseline (2,451 passed, 1,962 review-required, 36
+needs-fixes), 38 findings, 69 retired ids, 4,532 catalog plugins, and
+1,110 sources (24.7%) whose validated commit was superseded at least
+once. A fresh sparse pin is 23 MB on disk. The package packs to 375,367
+bytes across 133 files, under the unchanged 409,600-byte ceiling.
+
 ## 0.6.9
 
 `omakit lab` prepares the newest Omarchy release instead of the one it
