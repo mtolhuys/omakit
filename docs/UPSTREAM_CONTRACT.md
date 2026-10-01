@@ -93,12 +93,29 @@ A deliberate change, in this order:
 
 1. Change `MARKETPLACE_PIN` in `tools/marketplace/pin.mjs`.
 2. Remove `$XDG_CACHE_HOME/omakit/marketplace` (or `~/.cache/omakit/marketplace` when XDG is unset) and run `omakit pin`.
-3. Run `npm test`. The contract cross-check fails loudly if the form and the
+3. Replace the old commit in `tests/fixtures/inspect/*.expected.json`, run
+   `node tools/marketplace/measure-registry-figures.mjs --write`, which
+   records the new pin's registry figures and renders them into the
+   figures test, M4, M6 and the Registry facts row above, and run
+   `npm test`. The contract cross-check fails loudly if the form and the
    marketplace's own constants disagree at the new commit; the submission tests
    fail if the rendered body is no longer accepted by the official parser.
 4. Run `omakit parity --count 30` and commit its evidence file.
-5. Update the pinned-checkout rows above.
+5. Grade the marketplace commits since the old pin with
+   `node tools/marketplace/measure-pin-grades.mjs --clone <a blob-filtered clone> --since <old pin> --until <new pin>`,
+   update the pinned-checkout rows above and M7, and add the pin history row.
 6. Note any behaviour change in the README.
+
+`.github/workflows/pin-bump.yml` does steps 1 to 4 and the grading in step
+5 when `omakit doctor` grades the pin `advice`, weekly and on dispatch, and
+opens a draft pull request in this repository with the diff of each file
+that counted for the grade quoted, the commits graded, the suite's and
+parity's results, and what is still the maintainer's: the rows, M7, the pin
+history and the README. Its prepare job runs the candidate pin's
+code with a read-only token; its propose job holds `contents: write` and
+`pull-requests: write` here, runs nothing from the checkout or the pin, and
+pushes only a commit confined to the paths a bump touches. No workflow
+merges the pull request, tags or releases.
 
 If a future marketplace revision removes the `fetchImpl` seam, the baseline
 preflight reports that it is unavailable with the reason. Omakit does not imitate

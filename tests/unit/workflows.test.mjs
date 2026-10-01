@@ -17,8 +17,8 @@ const actionPins = Object.freeze({
   "actions/download-artifact": ["3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c", "v8.0.1"],
 })
 
-test("the workflow surface is exactly CI, release and pin freshness", () => {
-  assert.deepEqual(workflowNames, ["ci.yml", "pin-freshness.yml", "release.yml"])
+test("the workflow surface is exactly CI, release, pin freshness and the pin bump", () => {
+  assert.deepEqual(workflowNames, ["ci.yml", "pin-bump.yml", "pin-freshness.yml", "release.yml"])
 })
 
 test("every workflow defaults to read-only and no privileged PR trigger exists", () => {
@@ -127,6 +127,43 @@ test("freshness separates the GET-only inspection from this-repository issue wri
   assert.match(source, /gh\s+issue\s+reopen/)
   assert.match(source, /gh\s+issue\s+close/)
   assert.match(source, /cancel-in-progress: false/)
+})
+
+test("the pin bump prepares without write access and proposes a draft pull request here, which no workflow merges", () => {
+  // Measured (M7, 2026-10-01): the 0.6.6 and 0.6.10 bumps did the same
+  // mechanical edits by hand. The workflow does them, and leaves what needs
+  // judgement, the version, the tag and the release to a person.
+  const source = workflows["pin-bump.yml"]
+  assert.match(source, /\n  schedule:\n/)
+  assert.match(source, /\n  workflow_dispatch:\n/)
+  assert.match(source, /cancel-in-progress: false/)
+  const prepare = source.slice(source.indexOf("\n  prepare:\n"), source.indexOf("\n  propose:\n"))
+  const propose = source.slice(source.indexOf("\n  propose:\n"))
+  // The prepare job runs the candidate pin's code (the suite, parity), so
+  // it inherits the read-only default and asks for nothing more.
+  assert.doesNotMatch(prepare, /\n    permissions:/, "prepare inherits contents: read")
+  assert.match(prepare, /persist-credentials: false/)
+  assert.match(prepare, /\.\/bin\/omakit doctor --json/)
+  assert.match(prepare, /proposed=\$\(\[\[ "\$state" == "advice" \]\]/, "only advice proposes a bump")
+  assert.match(prepare, /node tools\/marketplace\/measure-registry-figures\.mjs --write/)
+  assert.match(prepare, /node tools\/marketplace\/measure-pin-grades\.mjs --clone/)
+  assert.match(prepare, /\.\/bin\/omakit parity --count 30/)
+  assert.match(prepare, /npm test/)
+  assert.match(prepare, /diff -u --label/, "the diff of each file that counted is quoted")
+  assert.match(prepare, /users\.noreply\.github\.com/, "signed by the person whose action ran it, never a [bot] identity")
+  assert.doesNotMatch(source.replace(/^\s*#.*$/gm, ""), /\[bot\]/, "outside the comments")
+  // The propose job holds the write permissions, exactly these two, and
+  // runs nothing from the checkout or the pin.
+  assert.match(propose, /\n    permissions:\n      contents: write\n      pull-requests: write\n\n/)
+  assert.doesNotMatch(propose, /\.\/bin\/omakit|\bnode\b|\bnpm\b/, "propose runs no omakit, node or npm")
+  assert.match(propose, /outside=\$\(git diff --name-only HEAD~1 HEAD \| grep -vE/, "the prepared commit is held to a bump's paths before anything is pushed")
+  assert.match(propose, /\^automation\/pin-\[0-9a-f\]\{8\}\$/)
+  assert.match(propose, /gh\s+pr\s+create --repo "\$GITHUB_REPOSITORY" --base main --head "\$BRANCH" --draft/)
+  // Never merged, tagged, released or published by a workflow, and nothing
+  // is addressed at the marketplace: its address is read from pin.mjs.
+  assert.doesNotMatch(source, /gh\s+pr\s+merge|--auto\b|gh\s+pr\s+review|git\s+tag|gh\s+release|npm\s+publish|--force|force-with-lease/)
+  assert.doesNotMatch(source, /omacom|omarchy-plugin-marketplace/)
+  assert.match(prepare, /MARKETPLACE_PIN\.repository/)
 })
 
 test("workflow GitHub commands can address only this repository", () => {

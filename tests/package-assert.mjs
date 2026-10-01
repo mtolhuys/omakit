@@ -64,6 +64,9 @@ import { pathToFileURL } from "node:url"
 // bytes across 133 files, 14,100 over the 358,400-byte ceiling. The
 // ceiling is raised to 409,600 (400 KiB): what it refuses is an accidental
 // tree, and the 15 MB marketplace pin is still some thirty-seven times it.
+// At 0.6.10, with doctor's value comparison, 375,367 bytes across 133
+// files; with the two pin-bump tools (measure-registry-figures.mjs and
+// measure-pin-grades.mjs), 380,337 bytes across 135, 29,263 under it.
 export const MAX_PACKED_BYTES = 409_600
 
 export const EXPECTED_PACKAGE_PATHS = Object.freeze([
@@ -172,6 +175,8 @@ export const EXPECTED_PACKAGE_PATHS = Object.freeze([
   "tools/marketplace/github.mjs",
   "tools/marketplace/issue.mjs",
   "tools/marketplace/local-transport.mjs",
+  "tools/marketplace/measure-pin-grades.mjs",
+  "tools/marketplace/measure-registry-figures.mjs",
   "tools/marketplace/measure-repository-owner.mjs",
   "tools/marketplace/measure-review-cost.mjs",
   "tools/marketplace/measure-staleness.mjs",

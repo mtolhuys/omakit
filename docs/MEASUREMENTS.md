@@ -220,27 +220,39 @@ policy and does not claim to be; its verdict is labelled `omakit`, not
 
 ## M4. The baseline decides whether a human has to look at all
 
-From `registry.json` at the pin (`b441b4f0`, 2026-10-01 02:34 UTC; at pin
-`b7b29654` of 2026-09-21 18:18 UTC: 3,664 sources, 3,619 with a baseline,
-2,031 passed, 1,562 review-required, 26 needs-fixes; at pin `70dcc454`
-earlier that day: 3,653 sources, 3,608 with a baseline, 2,025 passed, 1,557
-review-required, 26 needs-fixes; at the first pin `38060f89` of 2026-09-11:
-2,963 sources, 2,916 with a baseline, 1,681 passed, 1,215 review-required, 20
-needs-fixes): 4,493 listed sources, of which 4,449 carry a recorded baseline
-(the rest were listed before the baseline existed or have no record):
+<!-- registry-figures:m4 -->
+From `registry.json` at the pin (`b441b4f0`, 2026-10-01 02:34 UTC): 4,493
+listed sources, of which 4,449 carry a recorded baseline (the rest were
+listed before the baseline existed or have no record):
 
 | Outcome | Count |
 | --- | --- |
 | `passed` | 2,451 |
 | `review-required` | 1,962 |
 | `needs-fixes` | 36 |
-| Findings ever recorded, total | 38 (`curl-pipe-shell` 17, `remote-git-execution-unpinned` 21) |
+| Findings ever recorded, total | 38 (`remote-git-execution-unpinned` 21, `curl-pipe-shell` 17) |
 
 Capabilities recorded: installer 928, privilege 817, package-manager 806,
 service-management 666, remote-build 598, sudoers-modification 40,
-bundled-executable-binary 39. Sections are numbered M2, M3, M4 and M6 because M1
-and M5 were population figures that no check cites; their numbers were folded
-into M2 and M6 and the ids were not reused, since checks cite them by number.
+bundled-executable-binary 39.
+
+At the earlier pins, counted the same way from the same two files:
+
+| Pin | Sources | With a baseline | `passed` | `review-required` | `needs-fixes` |
+| --- | --- | --- | --- | --- | --- |
+| `b7b29654` (2026-09-21 18:18 UTC) | 3,664 | 3,619 | 2,031 | 1,562 | 26 |
+| `70dcc454` (2026-09-21 05:35 UTC) | 3,653 | 3,608 | 2,025 | 1,557 | 26 |
+| `38060f89` (2026-09-11 19:38 UTC) | 2,963 | 2,916 | 1,681 | 1,215 | 20 |
+<!-- /registry-figures:m4 -->
+
+The figures above and the superseded row in M6 are rendered from
+[evidence/registry-figures.json](evidence/registry-figures.json) by
+`node tools/marketplace/measure-registry-figures.mjs --write`, which
+records the pin's entry first; `tests/unit/registry-figures.test.mjs`
+fails while any of them is not what the record renders. Sections are numbered M2, M3, M4 and M6
+because M1 and M5 were population figures that no check cites; their numbers
+were folded into M2 and M6 and the ids were not reused, since checks cite
+them by number.
 
 `review-required` is not a defect and needs no source change, but it does mean a
 maintainer must look at the exact commit before it can be listed. It is the
@@ -280,7 +292,7 @@ and default-branch `commits.atom`, with per-issue sources and unknowns.
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |
-| Listed sources whose validated commit was superseded at least once | 1,110 of 4,493 (24.7%) at pin `b441b4f0`, 1,648 superseded commits, one source revalidated 9 times (at pin `b7b29654`: 854 of 3,664, 23.3%, 1,270 commits; at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
+| Listed sources whose validated commit was superseded at least once | 1,110 of 4,493 (24.7%) at pin `b441b4f0`, 1,648 superseded commits, one source revalidated 9 times (at pin `b7b29654`: 854 of 3,664, 23.3%, 1,270 commits; at pin `70dcc454`: 854 of 3,653, 23.4%, 1,270 commits; at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
 
 The last row is this repository's own measurement, recomputed from
 `registry.json` at the pin by `tests/unit/registry-figures.test.mjs`; it
@@ -404,6 +416,11 @@ value comparison of 0.6.10, with the read set `pinnedReadSet()` resolves at
 each parent. Every GET was answered from a local blob-filtered clone (`git
 ls-tree` for a tree, `git show` for a text) and counted. Per commit, with
 each comparison's detail: [docs/evidence/pin-freshness/2026-10-01-grades.json](evidence/pin-freshness/2026-10-01-grades.json).
+`node tools/marketplace/measure-pin-grades.mjs --clone <clone> --since 38060f89 --until dbb6db20`
+reproduces the table with the current code alone (0.6.7's grade is the
+shipped one without the text-read values, 0.6.6's is whether a pinned path
+other than the two data files moved): the same 21 grades and the same
+request counts as the tags' own code.
 
 | Commit | Moved in the read set | 0.6.6 tree | 0.6.7 blob | 0.6.10 value | GETs (tree, blob, value) |
 | --- | --- | --- | --- | --- | --- |

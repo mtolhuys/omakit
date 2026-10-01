@@ -1,0 +1,146 @@
+{
+  "measurement": "M4 and M6",
+  "method": "baselineFigures({ pinDir }) in tools/marketplace/registry.mjs over registry.json and site/catalog.json at each pin, newest first. The entry for the current pin is written by `node tools/marketplace/measure-registry-figures.mjs --write` from the pinned checkout; the three earlier entries were computed on 2026-10-01 the same way from the same two files taken out of the marketplace history at each commit.",
+  "pins": [
+    {
+      "commit": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+      "committedAt": "2026-10-01T02:34:54Z",
+      "figures": {
+        "sources": 4493,
+        "listingValidated": 4493,
+        "withBaseline": 4449,
+        "outcomes": {
+          "passed": 2451,
+          "review-required": 1962,
+          "needs-fixes": 36
+        },
+        "capabilities": {
+          "package-manager": 806,
+          "privilege": 817,
+          "bundled-executable-binary": 39,
+          "service-management": 666,
+          "installer": 928,
+          "remote-build": 598,
+          "sudoers-modification": 40
+        },
+        "findings": {
+          "curl-pipe-shell": 17,
+          "remote-git-execution-unpinned": 21
+        },
+        "findingsTotal": 38,
+        "superseded": {
+          "sources": 1110,
+          "commits": 1648,
+          "most": 9
+        },
+        "retiredIds": 69,
+        "catalogPlugins": 4532
+      }
+    },
+    {
+      "commit": "b7b2965431c52fc6311fdb389bd9f0d6275235c4",
+      "committedAt": "2026-09-21T18:18:40Z",
+      "figures": {
+        "sources": 3664,
+        "listingValidated": 3664,
+        "withBaseline": 3619,
+        "outcomes": {
+          "passed": 2031,
+          "review-required": 1562,
+          "needs-fixes": 26
+        },
+        "capabilities": {
+          "package-manager": 624,
+          "privilege": 641,
+          "bundled-executable-binary": 34,
+          "service-management": 515,
+          "installer": 705,
+          "remote-build": 478,
+          "sudoers-modification": 29
+        },
+        "findings": {
+          "curl-pipe-shell": 12,
+          "remote-git-execution-unpinned": 15
+        },
+        "findingsTotal": 27,
+        "superseded": {
+          "sources": 854,
+          "commits": 1270,
+          "most": 9
+        },
+        "retiredIds": 23,
+        "catalogPlugins": 3702
+      }
+    },
+    {
+      "commit": "70dcc454e9178b8a12e4ebf1be928621fd3e7735",
+      "committedAt": "2026-09-21T05:35:34Z",
+      "figures": {
+        "sources": 3653,
+        "listingValidated": 3653,
+        "withBaseline": 3608,
+        "outcomes": {
+          "passed": 2025,
+          "review-required": 1557,
+          "needs-fixes": 26
+        },
+        "capabilities": {
+          "package-manager": 622,
+          "privilege": 639,
+          "bundled-executable-binary": 34,
+          "service-management": 514,
+          "installer": 702,
+          "remote-build": 476,
+          "sudoers-modification": 29
+        },
+        "findings": {
+          "curl-pipe-shell": 12,
+          "remote-git-execution-unpinned": 15
+        },
+        "findingsTotal": 27,
+        "superseded": {
+          "sources": 854,
+          "commits": 1270,
+          "most": 9
+        },
+        "retiredIds": 22,
+        "catalogPlugins": 3691
+      }
+    },
+    {
+      "commit": "38060f89d2a10b1f9b6b5afe8e226451e8a5b3f6",
+      "committedAt": "2026-09-11T19:38:19Z",
+      "figures": {
+        "sources": 2963,
+        "listingValidated": 2963,
+        "withBaseline": 2916,
+        "outcomes": {
+          "passed": 1681,
+          "review-required": 1215,
+          "needs-fixes": 20
+        },
+        "capabilities": {
+          "package-manager": 468,
+          "privilege": 485,
+          "bundled-executable-binary": 31,
+          "service-management": 382,
+          "installer": 514,
+          "remote-build": 366,
+          "sudoers-modification": 23
+        },
+        "findings": {
+          "curl-pipe-shell": 11,
+          "remote-git-execution-unpinned": 10
+        },
+        "findingsTotal": 21,
+        "superseded": {
+          "sources": 749,
+          "commits": 1108,
+          "most": 9
+        },
+        "retiredIds": 22,
+        "catalogPlugins": 3001
+      }
+    }
+  ]
+}

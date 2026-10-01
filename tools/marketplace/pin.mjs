@@ -179,10 +179,12 @@ export function unfollowedImports(pinDir, reads = pinnedReadSet(pinDir)) {
  * a package (`sharp`) is not followed: PIN_PATHS does not fetch it, so
  * omakit could not read it. Measured at pins b7b29654 and b441b4f0: 16 of
  * the 34 files under scripts/, 10 opened by omakit and 6 imported by those.
+ * `text` reads one file's text by its path; it defaults to the checkout in
+ * `pinDir`, and measure-pin-grades.mjs hands in a commit's blobs instead.
  *
  * @returns {{ path: string, imported: boolean, via: string|null }[]}
  */
-export function pinnedReadSet(pinDir, reads = PIN_READS) {
+export function pinnedReadSet(pinDir, reads = PIN_READS, text = (path) => readFileSync(join(pinDir, path), "utf8")) {
   const set = new Map()
   const queue = []
   for (const read of reads) {
@@ -191,13 +193,13 @@ export function pinnedReadSet(pinDir, reads = PIN_READS) {
   }
   while (queue.length) {
     const from = queue.shift()
-    let text
+    let source
     try {
-      text = readFileSync(join(pinDir, from), "utf8")
+      source = text(from)
     } catch (error) {
       throw new PinError(`cannot read ${from} from the pinned checkout at ${pinDir}: ${error.message}`)
     }
-    for (const match of text.matchAll(RELATIVE_IMPORT)) {
+    for (const match of source.matchAll(RELATIVE_IMPORT)) {
       const path = posix.normalize(posix.join(posix.dirname(from), match[1]))
       if (!path.startsWith("scripts/") || set.has(path)) continue
       set.set(path, { path, imported: true, via: from })

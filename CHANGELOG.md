@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.6.11 (unreleased)
+
+A pin bump is proposed, not typed. `.github/workflows/pin-bump.yml` runs
+weekly and on dispatch; when `omakit doctor` grades the pin `advice`, it
+moves the pin to the marketplace's HEAD with its subject, the inspect
+fixtures and the registry figures, grades each marketplace commit since the
+old pin three ways, runs the suite and the parity proof, and opens a draft
+pull request in this repository quoting the diff of each file that counted
+for the grade. The job that runs the candidate pin's code has a read-only
+token; the one that pushes holds `contents: write` and `pull-requests:
+write` here, runs nothing from the checkout or the pin, and pushes only a
+commit confined to the paths a bump touches. No workflow merges, tags or
+releases. Measured on the 0.6.10 bump: the registry figures alone were
+retyped by hand in nine files, four of which no test read.
+`tools/marketplace/measure-registry-figures.mjs --write` records the
+figures per pin in `docs/evidence/registry-figures.json` (seeded with all
+four pins, computed from the marketplace's history) and renders the
+figures test, M4, M6 and the Registry facts row from that one record;
+`registry.test.mjs` and `submit.test.mjs` read the pin's short commit and
+figures instead of carrying them. `tools/marketplace/measure-pin-grades.mjs`
+reproduces M7's grades from a local clone of the marketplace history with
+the shipped comparison, and gives the same 21 grades over the seven
+commits since `38060f89` as the v0.6.6 and v0.6.7 tags' own code.
+`baselineFigures()` adds `listingValidated`; `pinnedReadSet()` takes an
+optional text reader.
+
 ## 0.6.10
 
 `pin.freshness` in `omakit doctor` compares what omakit reads out of a

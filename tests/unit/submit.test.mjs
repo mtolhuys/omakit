@@ -8,6 +8,7 @@ import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { materialise, GOOD, BAD, NO_ROOT_FILES } from "../fixtures/plugins.mjs"
 import { liveRegistry } from "../../tools/marketplace/registry.mjs"
+import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
 import { heavyShare, PATTERNS, percentile, SIZE, sizeScore, treeRank } from "../../tools/inspect/patterns.mjs"
 import { REPO_ROOT, requirePinForTests } from "./helpers.mjs"
 import { STATUS } from "../../tools/marketplace/style.mjs"
@@ -258,7 +259,7 @@ test("a plugin listed by its own repository is not a failed check: it is listed,
   const { result, check } = await identityOf(withId(LISTED_ID), LISTED_REPO)
   assert.equal(check.verdict, "pass")
   assert.equal(check.remedy, null)
-  assert.equal(check.detail, "listed by this repository since 2026-08-31, verification commit 7f0ea22aee80a4f7f23ade4dede500f61eedba75 (verified, checked 2026-09-16T18:18:57.073Z); registry at the pin b441b4f0 (offline)")
+  assert.equal(check.detail, `listed by this repository since 2026-08-31, verification commit 7f0ea22aee80a4f7f23ade4dede500f61eedba75 (verified, checked 2026-09-16T18:18:57.073Z); registry at the pin ${MARKETPLACE_PIN.commit.slice(0, 8)} (offline)`)
   assert.equal(result.outcome, "listed")
   assert.equal(result.ready, false)
   assert.deepEqual(result.blocking, [])

@@ -373,12 +373,13 @@ export function idUniverse(options = {}) {
 /**
  * The recorded baseline over every listed source, counted from registry.json at
  * the pin. This is the one place the figures cited by `baseline.preflight` and
- * docs/MEASUREMENTS.md M4 come from; tests/unit/registry-figures.test.mjs pins
- * the values, so a pin bump changes the printed number rather than leaving a
- * stale literal behind.
+ * docs/MEASUREMENTS.md M4 come from; measure-registry-figures.mjs records
+ * them per pin and renders the test and the two documents that cite them, so
+ * a pin bump changes the printed number rather than leaving a stale literal
+ * behind.
  *
  * @param {{ repoRoot?: string, pinDir?: string }} [options]
- * @returns {{ sources: number, withBaseline: number, outcomes: Record<string, number>,
+ * @returns {{ sources: number, listingValidated: number, withBaseline: number, outcomes: Record<string, number>,
  *             capabilities: Record<string, number>, findings: Record<string, number>,
  *             findingsTotal: number, superseded: { sources: number, commits: number, most: number },
  *             retiredIds: number, catalogPlugins: number }}
@@ -393,11 +394,13 @@ export function baselineFigures(options = {}) {
   const capabilities = {}
   const findings = {}
   let withBaseline = 0
+  let listingValidated = 0
   let findingsTotal = 0
   let supersededSources = 0
   let supersededCommits = 0
   let most = 0
   for (const source of sources) {
+    if (typeof source?.listingValidatedCommit === "string" && source.listingValidatedCommit) listingValidated += 1
     const baseline = source?.automatedSecurityBaseline
     if (baseline && typeof baseline.outcome === "string") {
       withBaseline += 1
@@ -415,6 +418,7 @@ export function baselineFigures(options = {}) {
   }
   return {
     sources: sources.length,
+    listingValidated,
     withBaseline,
     outcomes,
     capabilities,

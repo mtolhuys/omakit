@@ -125,12 +125,25 @@ test("nothing in this repository writes into a plugin or subject tree", () => {
     // the process fetching, made atomically beside the pin and removed when
     // the fetch is done, so two first runs cannot race in one directory.
     const pinWrites = path === "tools/marketplace/pin.mjs" ? /^join\(lockDir, "holder\.json"\),/ : /$^/
+    // The maintainer's figures tool (measure-registry-figures.mjs --write)
+    // writes, in this checkout, the record under docs/evidence/ and the
+    // three files rendered from it, by the four paths it exports; counted
+    // and named below.
+    const figuresWrites = path === "tools/marketplace/measure-registry-figures.mjs" ? /^join\(repoRoot, file\.path\), file\.next\)/ : /$^/
     for (const match of text.matchAll(/writeFileSync\(\s*(.+)$/gm)) {
       const target = match[1]
       assert.ok(
-        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || commitWrites.test(target) || labWrites.test(target) || pinWrites.test(target),
+        /resolve\(out\)|outFile|join\(out|evidence|\.git\/info|^completionFile,|^join\(liveCache,/.test(target) || weighWrites.test(target) || completionWrites.test(target) || updateWrites.test(target) || blockWrites.test(target) || commitWrites.test(target) || labWrites.test(target) || pinWrites.test(target) || figuresWrites.test(target),
         `${path} writes to ${target.trim()}, which is neither --out, an evidence path, the pin's own .git/info or lock, the live registry cache, the completion script, a block file, a lab path, nor one of the files weigh may write`,
       )
+    }
+    if (path === "tools/marketplace/measure-registry-figures.mjs") {
+      assert.equal((text.match(/writeFileSync\(/g) || []).length, 1, "measure-registry-figures.mjs writes in one place")
+      const named = [...text.matchAll(/\{ path: ([A-Z_]+), now:/g)].map((match) => match[1])
+      assert.deepEqual(named, ["RECORD_PATH", "TEST_PATH", "MEASUREMENTS_PATH", "CONTRACT_PATH"], "and only to the four paths renderAll names")
+      for (const [name, value] of Object.entries({ RECORD_PATH: "docs/evidence/registry-figures.json", TEST_PATH: "tests/unit/registry-figures.test.mjs", MEASUREMENTS_PATH: "docs/MEASUREMENTS.md", CONTRACT_PATH: "docs/UPSTREAM_CONTRACT.md" })) {
+        assert.ok(text.includes(`export const ${name} = "${value}"`), `${name} is ${value}`)
+      }
     }
     if (path === "tools/blocks/add.mjs") {
       assert.equal((text.match(/writeFileSync\(/g) || []).length, 2, "add.mjs writes a block file and the NOTICE, nothing else")

@@ -1,0 +1,348 @@
+name: Marketplace pin bump
+
+on:
+  schedule:
+    - cron: "47 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pin-bump
+  cancel-in-progress: false
+
+# When `omakit doctor` grades the pin advice, the prepare job does steps 4 and
+# 5 of docs/UPSTREAM_CONTRACT.md "Updating the pin" against the marketplace's
+# HEAD: the pin and its subject, the inspect fixtures, the registry figures
+# (measure-registry-figures.mjs --write), each marketplace commit since the
+# pin graded three ways (measure-pin-grades.mjs), the suite and the parity
+# proof. The suite and parity execute the candidate pin's code, so that job
+# holds a read-only token and no write permission. The propose job runs
+# nothing from the checkout or the pin: it applies the prepared commit only
+# if it touches the paths a bump touches, pushes one branch of this
+# repository and opens a draft pull request here, with the diff of each file
+# that counted for the grade quoted. Nothing is addressed at the
+# marketplace; no workflow merges the pull request; the docs that need
+# judgement, the version, the tag and the release stay a person's. Measured
+# (M7, 2026-10-01): the 0.6.6 and 0.6.10 bumps took the same mechanical edits
+# by hand, and the figures alone were retyped in nine files.
+jobs:
+  prepare:
+    name: Prepare the bump without write access
+    runs-on: ubuntu-latest
+    outputs:
+      proposed: ${{ steps.grade.outputs.proposed }}
+      branch: ${{ steps.bump.outputs.branch }}
+
+    steps:
+      - name: Check out the exact revision without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Read the immutable pin identity
+        id: pin
+        shell: bash
+        run: |
+          commit=$(node --input-type=module --eval 'import { MARKETPLACE_PIN } from "./tools/marketplace/pin.mjs"; process.stdout.write(MARKETPLACE_PIN.commit)')
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "MARKETPLACE_PIN.commit is not a full commit: $commit" >&2
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the pinned marketplace checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/omakit/marketplace
+          key: omakit-marketplace-${{ runner.os }}-${{ steps.pin.outputs.commit }}
+
+      - name: Fetch or verify the marketplace pin
+        run: ./bin/omakit pin
+
+      # The grade is doctor's, read the way pin-freshness.yml reads it. Only
+      # advice proposes a bump: info is wording only, and the next release
+      # carries the pin.
+      - name: Grade the pin against HEAD
+        id: grade
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./bin/omakit doctor --json > "$RUNNER_TEMP/doctor.json"
+          check='.checks[] | select(.id == "pin.freshness")'
+          state=$(jq -r "$check | .state" "$RUNNER_TEMP/doctor.json")
+          pinned=$(jq -r "$check | .evidence.pinCommit // empty" "$RUNNER_TEMP/doctor.json")
+          head=$(jq -r "$check | .evidence.marketplaceHead // empty" "$RUNNER_TEMP/doctor.json")
+          detail=$(jq -r "$check | .detail" "$RUNNER_TEMP/doctor.json")
+          echo "pin.freshness: $state; $detail"
+          if [[ ! "$pinned" =~ ^[0-9a-f]{40}$ || ! "$head" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "pin freshness evidence is missing or malformed; nothing to propose" >&2
+            exit 1
+          fi
+          jq -r "$check | (.evidence.effective // [])[]" "$RUNNER_TEMP/doctor.json" > "$RUNNER_TEMP/effective.txt"
+          pin_dir=$(node --input-type=module --eval 'import { marketplacePinDir } from "./tools/marketplace/pin.mjs"; process.stdout.write(marketplacePinDir())')
+          {
+            echo "proposed=$([[ "$state" == "advice" ]] && echo true || echo false)"
+            echo "pin_dir=$pin_dir"
+            echo "state=$state"
+            echo "pinned=$pinned"
+            echo "head=$head"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Keep the pin's copy of each file that counts
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          PIN_DIR: ${{ steps.grade.outputs.pin_dir }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/before"
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            mkdir -p "$RUNNER_TEMP/before/$(dirname "$path")"
+            cp "$PIN_DIR/$path" "$RUNNER_TEMP/before/$path"
+          done < "$RUNNER_TEMP/effective.txt"
+
+      - name: Move the pin to HEAD, with its fixtures and figures
+        id: bump
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          PIN_DIR: ${{ steps.grade.outputs.pin_dir }}
+          PINNED: ${{ steps.grade.outputs.pinned }}
+          HEAD_COMMIT: ${{ steps.grade.outputs.head }}
+        run: |
+          set_pin() {
+            node --input-type=module --eval '
+              import { readFileSync, writeFileSync } from "node:fs"
+              const [commit, subject] = process.argv.slice(1)
+              const file = "tools/marketplace/pin.mjs"
+              const text = readFileSync(file, "utf8")
+              const next = text.replace(/^  commit: "[0-9a-f]{40}",$/m, () => `  commit: ${JSON.stringify(commit)},`)
+                .replace(/^  commitSubject: .*,$/m, () => `  commitSubject: ${JSON.stringify(subject)},`)
+              if (next === text && commit !== subject) process.exit(1)
+              writeFileSync(file, next)
+            ' "$1" "$2"
+          }
+          set_pin "$HEAD_COMMIT" "pending"
+          rm -rf "$PIN_DIR"
+          ./bin/omakit pin
+          subject=$(git -C "$PIN_DIR" log -1 --format=%s)
+          set_pin "$HEAD_COMMIT" "$subject"
+          grep -l "$PINNED" tests/fixtures/inspect/*.expected.json | xargs -r sed -i "s/$PINNED/$HEAD_COMMIT/g"
+          node tools/marketplace/measure-registry-figures.mjs --write > "$RUNNER_TEMP/figures.json"
+          {
+            echo "subject=$subject"
+            echo "branch=automation/pin-${HEAD_COMMIT:0:8}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Quote the diff of each file that counted for the grade
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          PIN_DIR: ${{ steps.grade.outputs.pin_dir }}
+        run: |
+          : > "$RUNNER_TEMP/diffs.md"
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            diff -u --label "$path at the pin" --label "$path at HEAD" "$RUNNER_TEMP/before/$path" "$PIN_DIR/$path" > "$RUNNER_TEMP/one.diff" || true
+            lines=$(wc -l < "$RUNNER_TEMP/one.diff")
+            {
+              echo "#### \`$path\` ($lines diff lines)"
+              echo
+              echo '```diff'
+              head -n 400 "$RUNNER_TEMP/one.diff"
+              echo '```'
+              if [[ "$lines" -gt 400 ]]; then echo; echo "The first 400 lines of $lines are quoted."; fi
+              echo
+            } >> "$RUNNER_TEMP/diffs.md"
+          done < "$RUNNER_TEMP/effective.txt"
+
+      # Step 5: each marketplace commit since the pin that touched scripts/
+      # or the form, graded three ways from a blob-filtered clone of the
+      # history; the address is the one pin.mjs holds.
+      - name: Grade each marketplace commit since the pin
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          PINNED: ${{ steps.grade.outputs.pinned }}
+          HEAD_COMMIT: ${{ steps.grade.outputs.head }}
+        run: |
+          repository=$(node --input-type=module --eval 'import { MARKETPLACE_PIN } from "./tools/marketplace/pin.mjs"; process.stdout.write(MARKETPLACE_PIN.repository)')
+          git clone --quiet --filter=blob:none --no-checkout "$repository" "$RUNNER_TEMP/history"
+          mkdir -p docs/evidence/pin-freshness
+          node tools/marketplace/measure-pin-grades.mjs --clone "$RUNNER_TEMP/history" --since "$PINNED" --until "$HEAD_COMMIT" > "docs/evidence/pin-freshness/$(date -u +%F)-grades-${HEAD_COMMIT:0:8}.json"
+
+      - name: Run the suite at the new pin
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        run: |
+          set +e
+          npm test > "$RUNNER_TEMP/test.tap" 2>&1
+          echo "status=$?" > "$RUNNER_TEMP/test.status"
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/test.tap" || true
+
+      - name: Prove transport parity at the new pin
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          ./bin/omakit parity --count 30 > "$RUNNER_TEMP/parity.txt" 2>&1
+          echo "status=$?" > "$RUNNER_TEMP/parity.status"
+          tail -n 2 "$RUNNER_TEMP/parity.txt"
+          # The runner writes its evidence under docs/evidence/parity/; the
+          # new file there is this run's.
+          git ls-files --others --exclude-standard docs/evidence/parity > "$RUNNER_TEMP/parity.file"
+
+      - name: Commit the bump for review and write the pull request body
+        if: steps.grade.outputs.proposed == 'true'
+        shell: bash
+        env:
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PINNED: ${{ steps.grade.outputs.pinned }}
+          HEAD_COMMIT: ${{ steps.grade.outputs.head }}
+          SUBJECT: ${{ steps.bump.outputs.subject }}
+        run: |
+          # Signed by the person whose action ran this workflow (the dispatch,
+          # or the schedule they set), at their GitHub noreply address: the
+          # commit policy in tests/unit/hygiene.test.mjs refuses a [bot] identity.
+          git config user.name "$ACTOR"
+          git config user.email "$ACTOR_ID+$ACTOR@users.noreply.github.com"
+          git add -A
+          git commit -q -F - <<EOF
+          pin: move from ${PINNED:0:8} to ${HEAD_COMMIT:0:8}, with the fixtures, figures and evidence
+
+          omakit doctor graded the pin advice against the marketplace's
+          main-branch HEAD, which becomes the pin:
+          ${HEAD_COMMIT}
+          ("${SUBJECT}").
+
+          Prepared by the pin-bump workflow:
+          ${RUN_URL}
+          The docs that need judgement, the version, the tag and the release
+          are not in this commit.
+          EOF
+          git format-patch -1 --stdout > "$RUNNER_TEMP/bump.patch"
+          grades=$(ls docs/evidence/pin-freshness/*-grades-${HEAD_COMMIT:0:8}.json)
+          tests=$(grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/test.tap" | sed 's/^# //' | paste -sd ',' - | sed 's/,/, /g')
+          failing=$(grep -E '^not ok ' "$RUNNER_TEMP/test.tap" | sed 's/^not ok [0-9]* - /- /' | head -n 40)
+          evidence=$(head -n 1 "$RUNNER_TEMP/parity.file")
+          parity="did not complete: $(tail -n 1 "$RUNNER_TEMP/parity.txt")"
+          if [[ -n "$evidence" ]]; then
+            parity=$(jq -r --arg file "$evidence" '"identical \(.identical) of \(.corpusSize), \(.mismatches) mismatches, \(.failures) failures; evidence `\($file)`"' "$evidence")
+          fi
+          {
+            echo "\`omakit doctor\` graded the pin \`advice\` against the marketplace's HEAD:"
+            echo
+            echo "> $(jq -r '.checks[] | select(.id == "pin.freshness") | .detail' "$RUNNER_TEMP/doctor.json")"
+            echo
+            echo "This pull request moves the pin from \`${PINNED}\` to \`${HEAD_COMMIT}\` (\"${SUBJECT}\") and does the mechanical part of docs/UPSTREAM_CONTRACT.md \"Updating the pin\": the pin and its subject, the inspect fixtures, the registry figures rendered by \`measure-registry-figures.mjs --write\`, each marketplace commit since the pin graded (\`${grades}\`), the suite and the parity proof. It was prepared by ${RUN_URL} and no workflow merges it."
+            echo
+            echo "### What counted for the grade"
+            echo
+            if [[ -s "$RUNNER_TEMP/diffs.md" ]]; then cat "$RUNNER_TEMP/diffs.md"; else echo "No read file counted: the grade came from the form, a file gone at HEAD, or a policy constant. Doctor's line above names which."; echo; fi
+            echo "### Each marketplace commit since the pin"
+            echo
+            echo "| Commit | Subject | In the read set | Tree (0.6.6) | Blob (0.6.7) | Value |"
+            echo "| --- | --- | --- | --- | --- | --- |"
+            jq -r '.commits[] | "| \(.commit[0:8]) | \(.subject | gsub("\\|"; "/")) | \(if (.inReadSet | length) > 0 then (.inReadSet | join(", ")) else "nothing" end) | \(.tree) | \(.blob) | \(.value) |"' "$grades"
+            echo
+            jq -r '"Of the \(.touchingReadSet) that touched a file in the read set, advice: tree \(.advice.tree), blob \(.advice.blob), value \(.advice.value)."' "$grades"
+            echo
+            echo "### Figures, suite and parity"
+            echo
+            jq -r '.entry.figures | "- Registry at the new pin: \(.sources) sources, \(.withBaseline) with a baseline, \(.findingsTotal) findings, \(.retiredIds) retired ids, \(.catalogPlugins) catalog plugins."' "$RUNNER_TEMP/figures.json"
+            echo "- Suite: ${tests:-no summary}."
+            if [[ -n "$failing" ]]; then echo; echo "$failing"; echo; fi
+            echo "- Parity: ${parity}."
+            echo
+            echo "### Still a person's"
+            echo
+            echo "- [ ] Read the quoted diffs: whether the move changes a verdict is a judgement, not a grade."
+            echo "- [ ] docs/UPSTREAM_CONTRACT.md: the seam header, Verified on, the Commit row and a pin history row naming the commits above and how each grades."
+            echo "- [ ] docs/MEASUREMENTS.md M7, and the figures this does not render: docs/MARKETPLACE.md, docs/HOW.md, docs/INSPECT.md, docs/INSPECT_DESIGN.md, the comment in tools/marketplace/preflight.mjs, the \"Measured at pin\" comments in tools/marketplace/pin.mjs."
+            echo "- [ ] The version, CHANGELOG.md and docs/releases/, then the tag; the release workflow publishes."
+            echo
+            echo "A pull request opened with the workflow token starts no workflow run, so CI has not run on it: close and reopen it, or push to the branch, to start one."
+          } > "$RUNNER_TEMP/body.md"
+          # GitHub refuses a body over 65,536 characters; the diffs are what can make one.
+          if [[ $(wc -c < "$RUNNER_TEMP/body.md") -gt 60000 ]]; then
+            head -c 60000 "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/body.cut"
+            printf '\n\n(The body is cut at 60,000 bytes; the run log has the rest.)\n' >> "$RUNNER_TEMP/body.cut"
+            mv "$RUNNER_TEMP/body.cut" "$RUNNER_TEMP/body.md"
+          fi
+
+      - name: Hand the commit and the body to the propose job
+        if: steps.grade.outputs.proposed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pin-bump
+          path: |
+            ${{ runner.temp }}/bump.patch
+            ${{ runner.temp }}/body.md
+          retention-days: 1
+          if-no-files-found: error
+
+  propose:
+    name: Open the pull request in this repository
+    needs: prepare
+    if: needs.prepare.outputs.proposed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out the revision the bump was prepared on
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Receive the commit and the body
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pin-bump
+          path: ${{ runner.temp }}/pin-bump
+
+      # The prepare job ran the candidate pin's code, so what it hands over is
+      # checked here before anything is pushed: the commit may touch only the
+      # paths a bump touches. A workflow file could not be pushed with this
+      # token in any case.
+      - name: Push one branch and open a draft pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+        run: |
+          if [[ ! "$BRANCH" =~ ^automation/pin-[0-9a-f]{8}$ ]]; then
+            echo "unexpected branch name: $BRANCH" >&2
+            exit 1
+          fi
+          git config user.name "$ACTOR"
+          git config user.email "$ACTOR_ID+$ACTOR@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git am --quiet "$RUNNER_TEMP/pin-bump/bump.patch"
+          outside=$(git diff --name-only HEAD~1 HEAD | grep -vE '^(tools/marketplace/pin\.mjs|tests/fixtures/inspect/[a-z0-9-]+\.expected\.json|tests/unit/registry-figures\.test\.mjs|docs/MEASUREMENTS\.md|docs/UPSTREAM_CONTRACT\.md|docs/evidence/registry-figures\.json|docs/evidence/pin-freshness/[0-9a-z-]+\.json|docs/evidence/parity/[0-9a-z-]+\.json)$' || true)
+          if [[ -n "$outside" ]]; then
+            echo "the prepared commit touches paths a pin bump does not: $outside" >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "$BRANCH is already on the remote; the bump for this HEAD was proposed, nothing is replaced"
+            exit 0
+          fi
+          git push --quiet origin "$BRANCH"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" --draft --title "Marketplace pin: $(git log -1 --format=%s | sed 's/^pin: //')" --body-file "$RUNNER_TEMP/pin-bump/body.md"
