@@ -337,7 +337,7 @@ test("an old in-repository pin is named and never moved silently", () => {
   assert.throws(
     () => ensurePin(root, () => {}, env),
     (error) => error.code === "marketplace-pin-migration-required"
-      && error.message.includes("15 MB")
+      && / MB on disk\)|\(size unknown\)/.test(error.message)
       && error.remedy.includes("mkdir -p --")
       && error.remedy.includes("mv --")
       && error.remedy.includes(old),

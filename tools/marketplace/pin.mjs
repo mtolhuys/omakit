@@ -5,7 +5,7 @@
 // It fetches only what omakit reads. The marketplace at this commit is 325 MB,
 // of which 168 MB is preview imagery and 151 MB is history, and omakit reads
 // twenty files out of it, sixteen of them under scripts/ (PIN_READS). A
-// blob-filtered, sparsely checked out fetch of just those paths is 15 MB and
+// blob-filtered, sparsely checked out fetch of just those paths was 15 MB and
 // takes 2 seconds instead of 17; at pin b441b4f0 (2026-10-01) the same fetch
 // was 23 MB on disk in 3.1 seconds. PIN_PATHS below is the whole list, and
 // tests/unit/pin.test.mjs fails if any module starts reading a path outside
@@ -32,6 +32,9 @@ export const MARKETPLACE_PIN = Object.freeze({
   commitSubject: "Add LINE for Omarchy plugin (#9470)",
   baselineVersion: "3",
   enforcementMode: "selective",
+  // What a fresh sparse fetch of this commit measured on disk, for the one
+  // line `omakit pin` prints before it fetches. A pin bump re-measures it.
+  fetchedMb: 23,
 })
 
 /**
@@ -234,7 +237,7 @@ function pinMigration(repoRoot, env = process.env) {
   if (!existsSync(join(oldDir, ".git")) || existsSync(newDir)) return null
   const remedy = `mkdir -p -- ${shellQuote(dirname(newDir))} && mv -- ${shellQuote(oldDir)} ${shellQuote(newDir)}`
   return new PinError(
-    `the marketplace pin is still at the old in-repository location ${oldDir}; the user-writable location ${newDir} does not exist. Omakit will not move the measured 15 MB checkout without you.`,
+    `the marketplace pin is still at the old in-repository location ${oldDir}; the user-writable location ${newDir} does not exist. Omakit will not move the checkout (${pinDiskUsage(oldDir, env)}) without you.`,
     { code: "marketplace-pin-migration-required", remedy },
   )
 }
@@ -411,7 +414,7 @@ function populatePin(dir, log) {
   mkdirSync(dir, { recursive: true })
   execFileSync("git", ["init", "-q", dir], { timeout: 60_000, encoding: "utf8" })
   git(dir, ["remote", "add", "origin", MARKETPLACE_PIN.repository])
-  log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about 15 MB` })
+  log({ state: "fetching", text: `fetching the pinned marketplace checkout, ${MARKETPLACE_PIN.commit.slice(0, 7)}, about ${MARKETPLACE_PIN.fetchedMb} MB` })
   git(dir, ["config", "core.sparseCheckout", "true"])
   mkdirSync(join(dir, ".git/info"), { recursive: true })
   writeFileSync(join(dir, ".git/info/sparse-checkout"), `${PIN_PATHS.join("\n")}\n`)
@@ -526,7 +529,7 @@ export function ensurePin(repoRoot, log = () => {}, env = process.env, { populat
 export function pinDiskUsage(dir, env = process.env) {
   // -H follows a symlink given on the command line (POSIX; GNU's -D). Measured
   // without it: a checkout reached through a symlink reported 0.0 MB, the size
-  // of the link, while the directory behind it was 15 MB.
+  // of the link, while the directory behind it was 15 MB (at pin 38060f89).
   //
   // The total is read whether or not du exited 0. du exits 1 when a file it
   // listed is gone by the time it reaches it, and still prints the total.

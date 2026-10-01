@@ -136,6 +136,10 @@ jobs:
           ./bin/omakit pin
           subject=$(git -C "$PIN_DIR" log -1 --format=%s)
           set_pin "$HEAD_COMMIT" "$subject"
+          # The size `omakit pin` announces is the one this fresh fetch measured.
+          mb=$(( ($(du -skH "$PIN_DIR" | cut -f1) + 512) / 1024 ))
+          sed -i -E "s/^  fetchedMb: [0-9]+,$/  fetchedMb: ${mb},/" tools/marketplace/pin.mjs
+          grep -q "^  fetchedMb: ${mb},$" tools/marketplace/pin.mjs
           grep -l "$PINNED" tests/fixtures/inspect/*.expected.json | xargs -r sed -i "s/$PINNED/$HEAD_COMMIT/g"
           node tools/marketplace/measure-registry-figures.mjs --write > "$RUNNER_TEMP/figures.json"
           {

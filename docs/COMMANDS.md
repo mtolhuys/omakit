@@ -261,7 +261,7 @@ every rule is read from, installs tab completion for the shell you run it from
 and proves it in a new shell (`docs/INSTALL.md` says what it asks when the
 shell has no loader)
 (bash, zsh or fish, read from `$SHELL`), and tells you what to try first. It is
-idempotent. The fetch takes about 2 seconds and 15 MB, because it takes only the
+idempotent. The fetch takes about 3 seconds and 23 MB at pin `b441b4f0`, because it takes only the
 four paths omakit reads out of that repository rather than the 325 MB it is at
 that commit. The completion script knows the subcommands and their flags,
 completes a directory for `<target>`, and offers the categories and tags the

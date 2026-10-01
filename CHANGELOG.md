@@ -26,6 +26,14 @@ commits since `38060f89` as the v0.6.6 and v0.6.7 tags' own code.
 `baselineFigures()` adds `listingValidated`; `pinnedReadSet()` takes an
 optional text reader.
 
+The size omakit names for the pinned checkout is measured, not remembered.
+The migration refusal measured 15 MB at the first pin and kept saying so
+while a fresh fetch at `b441b4f0` is 23 MB; it now prints the old
+checkout's measured size. The one line `omakit pin` prints before it
+fetches takes its estimate from `MARKETPLACE_PIN.fetchedMb`, which the
+pin-bump workflow re-measures from the fresh fetch it makes, and
+INSTALL.md, COMMANDS.md and WALKTHROUGH.md say 23 MB at this pin.
+
 ## 0.6.10
 
 `pin.freshness` in `omakit doctor` compares what omakit reads out of a
