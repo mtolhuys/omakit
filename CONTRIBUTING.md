@@ -107,6 +107,15 @@ pair that `verify` used to filter out went with it.
 
 ## Commit messages
 
+Dependency proposals are review inputs. For a GitHub Action update, inspect
+the upstream diff at the exact old and new commits, verify the release tag,
+record the workflow impact under `docs/evidence/workflow-actions/`, and update
+the workflow SHA and `actionPins` in `tests/unit/workflows.test.mjs` together.
+If a proposal's commits violate the history rules below, carry its reviewed
+changes into a new pull request from `main` and close the original after the
+replacement merges. Neither the history rule nor the action allowlist is
+relaxed to accept an automated proposal.
+
 Use a short imperative subject that states the measured reason for the change,
 not a list of files or a paraphrase of the diff. For example:
 

@@ -9,12 +9,13 @@ const workflowNames = readdirSync(workflowDir).sort()
 const workflows = Object.fromEntries(workflowNames.map((name) => [name, readFileSync(join(workflowDir, name), "utf8")]))
 const all = Object.values(workflows).join("\n")
 
+// Setup/download changes reviewed in docs/evidence/workflow-actions/2026-10-26.md.
 const actionPins = Object.freeze({
   "actions/checkout": ["3d3c42e5aac5ba805825da76410c181273ba90b1", "v7.0.1"],
-  "actions/setup-node": ["820762786026740c76f36085b0efc47a31fe5020", "v7.0.0"],
+  "actions/setup-node": ["949feb2413d6458794dcd2491c4babbbce0c15c1", "v7.1.0"],
   "actions/cache": ["55cc8345863c7cc4c66a329aec7e433d2d1c52a9", "v6.1.0"],
   "actions/upload-artifact": ["043fb46d1a93c77aae656e7c1c64a875d1fc6a0a", "v7.0.1"],
-  "actions/download-artifact": ["3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c", "v8.0.1"],
+  "actions/download-artifact": ["9000827ccba6bdab643e8b6fd33ac0654aef8333", "v8.0.2"],
 })
 
 test("the workflow surface is exactly CI, release, pin freshness and the pin bump", () => {
