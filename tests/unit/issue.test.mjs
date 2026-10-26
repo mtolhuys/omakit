@@ -2,11 +2,15 @@
 // measured one-word failure class must be reproducible on demand.
 import test from "node:test"
 import assert from "node:assert/strict"
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { submissionContract } from "../../tools/marketplace/form.mjs"
 import { renderIssue, verifyAgainstOfficialParser, NO_RESPONSE, IssueRenderError } from "../../tools/marketplace/issue.mjs"
 import { requirePinForTests } from "./helpers.mjs"
 
-const contract = await submissionContract({ pinDir: requirePinForTests() })
+const pinDir = requirePinForTests()
+const contract = await submissionContract({ pinDir })
+const { classifySubmission } = await import(pathToFileURL(join(pinDir, "scripts/submission.mjs")).href)
 
 const input = {
   pluginName: "Fixture Good",
@@ -80,4 +84,27 @@ test("the measured failure classes are reproduced by the official parser", () =>
   })
   assert.equal(badCategory.ok, false)
   assert.equal(badCategory.code, "submission-category-invalid")
+})
+
+test("CLI intake labelling admits form errors for feedback, never for submission readiness", () => {
+  const valid = renderIssue(contract, input)
+  const malformed = [
+    { ...valid, body: `### ${contract.headingFor.repository}\n\n${input.repositoryUrl}\n` },
+    { ...valid, body: valid.body.replace(`- [X] ${contract.checklist[0].label}`, `- [ ] ${contract.checklist[0].label}`) },
+    { ...valid, body: valid.body.replace("### Suggest a missing tag", "### Suggested a missing tag") },
+    { ...valid, title: contract.titlePrefix },
+  ]
+  for (const issue of [valid, ...malformed]) {
+    for (const hasSubmissionLabel of [false, true]) {
+      // These are upstream decisions returned by the pinned classifier;
+      // the issue exists only in memory and no label is applied here.
+      assert.deepEqual(classifySubmission({ ...issue, hasSubmissionLabel }), {
+        shouldValidate: true, shouldLabel: !hasSubmissionLabel,
+      })
+      assert.equal(verifyAgainstOfficialParser(contract, issue).ok, issue === valid)
+    }
+  }
+  const unrelated = { title: "General question", body: "missing fields" }
+  assert.deepEqual(classifySubmission(unrelated), { shouldValidate: false, shouldLabel: false })
+  assert.equal(verifyAgainstOfficialParser(contract, unrelated).ok, false)
 })

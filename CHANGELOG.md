@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.12
+
+The marketplace pin advances to `bdf24b34`. Malformed CLI submission
+candidates now receive upstream labels so their form errors can publish;
+Omakit still requires strict parser acceptance before reporting readiness.
+Registry figures, inspect fixtures, the measured sparse-fetch estimate and
+M7 are refreshed, with the four upstream commits reviewed, pin grades
+reproduced by the shipped value comparison, and transport parity re-proved
+over 30 repositories. No runtime dependency or marketplace write path is
+added. See [the release notes](docs/releases/0.6.12.md).
+
 ## 0.6.11
 
 A pin bump is proposed, not typed. `.github/workflows/pin-bump.yml` runs

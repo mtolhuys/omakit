@@ -55,7 +55,7 @@ omakit setup
 | `git` | the pin, and reading a subject's tree at an exact commit |
 | `/usr/bin/python3`, on the plugin's machine | the Run and Store blocks a plugin copies start their supervisor and helper there by absolute path; a stock Omarchy 4.0.3 has it, `omakit doctor` reports it as `blocks.python`, and omakit itself does not need it |
 | network, once | `omakit pin`. After that, `submit` and `verify` on a local repository need none at all |
-| 23 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
+| 32 MB on disk | the pinned checkout, in `$XDG_CACHE_HOME/omakit/marketplace`, or `~/.cache/omakit/marketplace` |
 
 `omakit upgrade` updates either install through the installer that made it:
 `npm` for the package, at the exact version the registry names, and a
@@ -71,7 +71,7 @@ and it never edits your rc file for `PATH`.
 
 | Path | What it is | How big |
 | --- | --- | --- |
-| `~/.cache/omakit/marketplace` | the pinned marketplace checkout every rule is read from | 23 MB at pin `b441b4f0`; `omakit doctor` prints the measured size |
+| `~/.cache/omakit/marketplace` | the pinned marketplace checkout every rule is read from | 32 MB at pin `bdf24b34`; `omakit doctor` prints the measured size |
 | `~/.cache/omakit/registry` | the registry and catalog as last read | small |
 | `~/.cache/omakit/lab/` | the lab: the verified ISO, the base, staging, the lock | gigabytes, and only after `omakit lab setup` |
 | `~/.local/state/omakit/weigh/` | the documents `omakit weigh` wrote, and its per-restart timing | small |

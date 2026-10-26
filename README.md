@@ -46,6 +46,8 @@ Omakit needs [Node 22+](package.json) and Git. `omakit setup` prepares the pinne
 
 `omakit inspect <plugin-dir>` shows what the tree does, `omakit verify <plugin-repo>` runs the marketplace's baseline, and `omakit submit <plugin-repo>` runs every submission check and prints a title and body without posting them.
 
+The marketplace pin is `bdf24b34` (2026-10-26). Its workflow labels malformed CLI submission candidates so their form-error report can publish. Omakit still requires its strict parser to accept the generated body, and applies no labels. [Pin review and measurements](docs/UPSTREAM_CONTRACT.md#pin-history).
+
 ![Recorded terminal showing inspect ranking two long functions and listing the review class observed in a fixture](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/inspect.gif)
 
 ![Recorded terminal showing submit refusing a fixture with three blocking checks and printing their remedies](https://raw.githubusercontent.com/mtolhuys/omakit/main/docs/media/submit.gif)

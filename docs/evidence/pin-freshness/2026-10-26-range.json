@@ -1,0 +1,119 @@
+{
+  "measurement": "M7",
+  "measuredAt": "2026-10-26T15:30:59.937Z",
+  "from": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+  "to": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+  "readSet": [
+    "scripts/approve-plugin-update.mjs",
+    "scripts/approve-submission.mjs",
+    "scripts/build-catalog.mjs",
+    "scripts/github-repository.mjs",
+    "scripts/plugin-verification-request.mjs",
+    "scripts/security-baseline-analysis.mjs",
+    "scripts/security-baseline-error.mjs",
+    "scripts/security-baseline-limits.mjs",
+    "scripts/security-baseline-policy.mjs",
+    "scripts/security-baseline-record.mjs",
+    "scripts/security-baseline-report.mjs",
+    "scripts/security-baseline-scanner.mjs",
+    "scripts/security-baseline-scope.mjs",
+    "scripts/security-github-snapshot.mjs",
+    "scripts/submission-feedback.mjs",
+    "scripts/submission.mjs"
+  ],
+  "requests": 6,
+  "tree": "advice",
+  "blob": "advice",
+  "value": "advice",
+  "detail": "pin b441b4f; marketplace default at bdf24b3; moved since the pin: scripts/submission.mjs; scripts/approve-plugin-update.mjs and scripts/build-catalog.mjs moved, and the 3 values omakit reads from them are unchanged; baseline 3 (selective) at both (registry.json and site/catalog.json moved too, and those are read live)",
+  "effective": [
+    "scripts/submission.mjs"
+  ],
+  "textReads": {
+    "scripts/build-catalog.mjs": {
+      "moved": true,
+      "values": {
+        "reservedNamespace": {
+          "pin": "omarchy.",
+          "head": "omarchy.",
+          "same": true
+        },
+        "catalogPresentation": {
+          "pin": {
+            "rules": [
+              {
+                "kinds": [
+                  "bar-widget"
+                ],
+                "category": "Widgets"
+              },
+              {
+                "kinds": [
+                  "overlay",
+                  "panel",
+                  "bar"
+                ],
+                "category": "Desktop"
+              },
+              {
+                "kinds": [
+                  "service"
+                ],
+                "category": "System"
+              }
+            ],
+            "fallback": "Other",
+            "tagsFromKinds": true
+          },
+          "head": {
+            "rules": [
+              {
+                "kinds": [
+                  "bar-widget"
+                ],
+                "category": "Widgets"
+              },
+              {
+                "kinds": [
+                  "overlay",
+                  "panel",
+                  "bar"
+                ],
+                "category": "Desktop"
+              },
+              {
+                "kinds": [
+                  "service"
+                ],
+                "category": "System"
+              }
+            ],
+            "fallback": "Other",
+            "tagsFromKinds": true
+          },
+          "same": true
+        }
+      }
+    },
+    "scripts/approve-submission.mjs": {
+      "moved": false,
+      "values": {
+        "validatedLabel": {
+          "pin": "validated",
+          "head": "validated",
+          "same": true
+        }
+      }
+    },
+    "scripts/approve-plugin-update.mjs": {
+      "moved": true,
+      "values": {
+        "updateLabel": {
+          "pin": "plugin-update",
+          "head": "plugin-update",
+          "same": true
+        }
+      }
+    }
+  }
+}

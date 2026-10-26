@@ -67,6 +67,8 @@ export function renderIssue(contract, input) {
  * Run the marketplace's own submission parser over a rendered issue. The
  * parser comes from the pinned checkout, so this is the marketplace accepting
  * or refusing the body, not Omakit's opinion of it.
+ * The intake classifier also admits malformed CLI candidates for feedback
+ * (M7); its labelling decision must never replace this strict parser.
  *
  * @returns {{ ok: true, submission: object } | { ok: false, code: string, message: string }}
  */

@@ -3,6 +3,41 @@
   "method": "baselineFigures({ pinDir }) in tools/marketplace/registry.mjs over registry.json and site/catalog.json at each pin, newest first. The entry for the current pin is written by `node tools/marketplace/measure-registry-figures.mjs --write` from the pinned checkout; the three earlier entries were computed on 2026-10-01 the same way from the same two files taken out of the marketplace history at each commit.",
   "pins": [
     {
+      "commit": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+      "committedAt": "2026-10-26T12:54:04Z",
+      "figures": {
+        "sources": 5927,
+        "listingValidated": 5927,
+        "withBaseline": 5887,
+        "outcomes": {
+          "passed": 3062,
+          "review-required": 2769,
+          "needs-fixes": 56
+        },
+        "capabilities": {
+          "package-manager": 1184,
+          "privilege": 1232,
+          "remote-build": 843,
+          "bundled-executable-binary": 60,
+          "service-management": 1019,
+          "installer": 1395,
+          "sudoers-modification": 62
+        },
+        "findings": {
+          "curl-pipe-shell": 23,
+          "remote-git-execution-unpinned": 35
+        },
+        "findingsTotal": 58,
+        "superseded": {
+          "sources": 1891,
+          "commits": 3215,
+          "most": 20
+        },
+        "retiredIds": 98,
+        "catalogPlugins": 5968
+      }
+    },
+    {
       "commit": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
       "committedAt": "2026-10-01T02:34:54Z",
       "figures": {

@@ -2,13 +2,15 @@
 // read-only clone at this exact commit in the user's XDG cache; `omakit pin`
 // creates or verifies it.
 //
-// It fetches only what omakit reads. The marketplace at this commit is 325 MB,
-// of which 168 MB is preview imagery and 151 MB is history, and omakit reads
+// It fetches only what omakit reads. In the 2026-09-19 measurement it was
+// 325 MB,
+// of which 168 MB was preview imagery and 151 MB history, and omakit read
 // twenty files out of it, sixteen of them under scripts/ (PIN_READS). A
 // blob-filtered, sparsely checked out fetch of just those paths was 15 MB and
-// takes 2 seconds instead of 17; at pin b441b4f0 (2026-10-01) the same fetch
-// was 23 MB on disk in 3.1 seconds. PIN_PATHS below is the whole list, and
-// tests/unit/pin.test.mjs fails if any module starts reading a path outside
+// took 2 seconds instead of 17; at pin b441b4f0 (2026-10-01) the same fetch
+// was 23 MB on disk in 3.1 seconds. At bdf24b34 (2026-10-26), a fresh
+// fetch occupied 32,612 KiB and took 2.77 seconds (M7). PIN_PATHS is the
+// whole list; tests/unit/pin.test.mjs fails if any module starts reading a path outside
 // it, because on a partial clone such a read would quietly reach for the
 // network instead of failing.
 import { execFileSync, spawnSync } from "node:child_process"
@@ -28,13 +30,13 @@ export class PinError extends Error {
 
 export const MARKETPLACE_PIN = Object.freeze({
   repository: "https://github.com/omacom/omarchy-plugin-marketplace",
-  commit: "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
-  commitSubject: "Add LINE for Omarchy plugin (#9470)",
+  commit: "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+  commitSubject: "Update Beam plugin (#12679)",
   baselineVersion: "3",
   enforcementMode: "selective",
   // What a fresh sparse fetch of this commit measured on disk, for the one
   // line `omakit pin` prints before it fetches. A pin bump re-measures it.
-  fetchedMb: 23,
+  fetchedMb: 32,
 })
 
 /**

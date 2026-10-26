@@ -6,6 +6,8 @@ import assert from "node:assert/strict"
 import { validationWatch, validationVerdict, validationCommentCommit, validationComment, submissionFeedback, sameRepository, resolveWatchSubject, subjectApplies, REFRESH_ACTION } from "../../tools/marketplace/watch.mjs"
 import { parseIssueUrl, GitHubError } from "../../tools/marketplace/github.mjs"
 import { MARKETPLACE_PIN } from "../../tools/marketplace/pin.mjs"
+import { submissionContract } from "../../tools/marketplace/form.mjs"
+import { verifyAgainstOfficialParser } from "../../tools/marketplace/issue.mjs"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -15,6 +17,27 @@ import { GOOD, materialise } from "../fixtures/plugins.mjs"
 const A = "a".repeat(40)
 const B = "b".repeat(40)
 const REPOSITORY = "https://github.com/example/omarchy-plugin-fixture"
+
+test("a labelled malformed CLI candidate reports its form refusal; the label alone proves no validation", async () => {
+  const contract = await submissionContract({ pinDir: requirePinForTests() })
+  const candidate = { title: `${contract.titleTemplate}Fixture`, body: `### ${contract.headingFor.repository}\n\n${REPOSITORY}\n` }
+  const parsed = verifyAgainstOfficialParser(contract, candidate)
+  assert.equal(parsed.ok, false)
+  const feedback = (await submissionFeedback(requirePinForTests())).find((entry) => entry.code === parsed.code)
+  assert.ok(feedback, parsed.code)
+  const comment = { user: { login: "github-actions[bot]", type: "Bot" }, updated_at: "2026-10-26T12:00:00Z",
+    body: `<!-- marketplace-validation -->\n## Marketplace validation\n\n❌ **Validation failed:** ${feedback.reason}\n\n${feedback.action}` }
+  for (const labels of [[], contract.labels]) for (const comments of [[], [comment]]) {
+    const report = await validationWatch({ repoRoot: REPO_ROOT, issueUrl: `${MARKETPLACE_PIN.repository}/issues/1`, github: {
+      issue: async () => ({ ...candidate, labels, state: "open", user: { login: "author" } }),
+      issueComments: async () => comments,
+      defaultBranchHead: async () => ({ commit: A, branch: "main" }),
+    } })
+    assert.equal(report.verdict.state, comments.length ? "refused" : "unknown")
+    assert.equal(report.validated, null)
+    if (comments.length) assert.equal(report.refusal.code, parsed.code)
+  }
+})
 
 test("issue URLs are parsed, and anything else is refused", () => {
   assert.deepEqual(parseIssueUrl("https://github.com/omacom/omarchy-plugin-marketplace/issues/4829"), {

@@ -22,7 +22,7 @@ npm i -g omakit && omakit setup
 ```
 
 `setup` fetches the pinned marketplace checkout that every rule is read from,
-about 3 seconds and 23 MB, and installs completion for your shell. It is
+about 3 seconds and 32 MB, and installs completion for your shell. It is
 idempotent. `omakit doctor` says what this machine lacks and installs nothing;
 [INSTALL.md](INSTALL.md) has the clone route and what a dependency scanner
 sees in the package.

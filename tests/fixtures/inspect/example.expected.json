@@ -458,7 +458,7 @@
   "marketplaceBaseline": {
     "pin": {
       "repository": "https://github.com/omacom/omarchy-plugin-marketplace",
-      "commit": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+      "commit": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
       "baselineVersion": "3",
       "enforcementMode": "selective"
     },

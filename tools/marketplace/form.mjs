@@ -8,12 +8,16 @@
 //
 // Measured reason this is derived rather than copied (docs/MEASUREMENTS.md M2):
 // 39 submissions fell out on the title prefix alone, 14 of them still open and
-// 7 rescued by hand; 11 more open submissions are malformed in the body and get
+// 7 rescued by hand; 11 more open submissions were malformed in the body and got
 // "The validation result could not be published to the issue. A maintainer must
 // review the workflow.", which blames the maintainer for the author's mistake.
 // One of those 11 differs from a valid submission by the single word
 // "Suggested" instead of "Suggest". A contract that drifts from the form by one
 // word reproduces exactly that failure, so the form is the only source.
+// At the current pin CLI candidates also receive a label when parsing fails,
+// so the marketplace can publish the form error (M7, 2026-10-26). Intake and
+// labelling are not proof of readiness: parseCurrentSubmission below remains
+// the judge. Omakit never applies a label itself.
 //
 // The derived contract is then cross-checked against the marketplace's own
 // constants in `scripts/submission.mjs` at the same commit. Both halves must

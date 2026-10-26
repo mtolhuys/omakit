@@ -1,0 +1,296 @@
+{
+  "measurement": "M7",
+  "openedAt": "2026-10-26T15:13:18.206Z",
+  "completedAt": "2026-10-26T15:13:22.462Z",
+  "from": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+  "to": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+  "diff": {
+    "commits": 3095,
+    "files": 2928,
+    "groups": {
+      "AGENTS.md": 1,
+      "PLAN.md": 1,
+      "README.md": 1,
+      "registry.json": 1,
+      "scripts": 6,
+      "site/assets/img/": 2894,
+      "site": 15,
+      "test": 7,
+      "worker": 2
+    },
+    "fullDiffSha256": "31be058ba3ae40a927e7afa62fe8cb363d2404af0b00f259c90cdcdd73bc6f8e",
+    "nonGeneratedPaths": [
+      "AGENTS.md",
+      "PLAN.md",
+      "README.md",
+      "scripts/approve-plugin-update.mjs",
+      "scripts/build-catalog.mjs",
+      "scripts/plugin-verification.mjs",
+      "scripts/submission.mjs",
+      "scripts/validate-plugin-update.mjs",
+      "scripts/verification-subject.mjs",
+      "site/assets/js/app.js",
+      "site/assets/js/develop.js",
+      "site/assets/js/engagement.js",
+      "site/assets/js/explore-search.js",
+      "site/assets/js/explore.js",
+      "site/assets/js/plugin.js",
+      "site/assets/js/publish.js",
+      "site/assets/js/search.js",
+      "site/develop.html",
+      "site/explore.html",
+      "site/index.html",
+      "site/plugin.html",
+      "site/publish.html",
+      "test/automation.test.js",
+      "test/catalog-refresh-graphql.test.js",
+      "test/catalog.test.js",
+      "test/engagement.test.js",
+      "test/explorer.test.js",
+      "test/plugin-verification.test.js",
+      "test/workflow-optimization.test.js",
+      "worker/README.md",
+      "worker/src/index.js"
+    ],
+    "relevantCommits": [
+      {
+        "commit": "1f845b73e7324ee0bde2f7c121032066aa9cc295",
+        "subject": "Label CLI submissions with form errors so their report publishes (#9808)",
+        "changedPaths": [
+          "scripts/submission.mjs",
+          "test/automation.test.js",
+          "test/workflow-optimization.test.js"
+        ],
+        "fullDiffSha256": "84a3275f5c04d5c7ec9109bd4cf4f462f4c0a944eb91835d4e40a96de2769b44"
+      },
+      {
+        "commit": "8be8e3be5fc0a0592cc90b9d37d858177a624a84",
+        "subject": "Resolve verification requests that name a migrated repository (#9594)",
+        "changedPaths": [
+          "AGENTS.md",
+          "scripts/approve-plugin-update.mjs",
+          "scripts/plugin-verification.mjs",
+          "scripts/validate-plugin-update.mjs",
+          "scripts/verification-subject.mjs",
+          "test/plugin-verification.test.js"
+        ],
+        "fullDiffSha256": "22369a1dd893c3e5b5ae02ee00c74ee4172a5cf095acb1b91ba79b53e9af1f11"
+      },
+      {
+        "commit": "74836ff40c4f55f04aafbb401e557deb0a770bd0",
+        "subject": "Spread policy revalidation across catalog refreshes (#9552)",
+        "changedPaths": [
+          "AGENTS.md",
+          "scripts/build-catalog.mjs",
+          "test/catalog-refresh-graphql.test.js"
+        ],
+        "fullDiffSha256": "e359094622e124658ceb8e2f145c7ad8f59bc116d54ea594b2b57af00ae9e9e7"
+      },
+      {
+        "commit": "1ada06331ca46b914197c0a9c6f02210ba63521d",
+        "subject": "Lower the catalog refresh REST reserve to 250 (#9551)",
+        "changedPaths": [
+          "scripts/build-catalog.mjs",
+          "test/catalog-refresh-graphql.test.js"
+        ],
+        "fullDiffSha256": "bbe3f00c4c3655313af1a8362aa6e3590f5e0b8e8a1c45c7b08dad1c533b75ba"
+      }
+    ],
+    "changedReadBlobs": [
+      "scripts/approve-plugin-update.mjs",
+      "scripts/build-catalog.mjs",
+      "scripts/submission.mjs"
+    ],
+    "unchangedReadBlobs": [
+      "scripts/approve-submission.mjs",
+      "scripts/github-repository.mjs",
+      "scripts/plugin-verification-request.mjs",
+      "scripts/security-baseline-analysis.mjs",
+      "scripts/security-baseline-error.mjs",
+      "scripts/security-baseline-limits.mjs",
+      "scripts/security-baseline-policy.mjs",
+      "scripts/security-baseline-record.mjs",
+      "scripts/security-baseline-report.mjs",
+      "scripts/security-baseline-scanner.mjs",
+      "scripts/security-baseline-scope.mjs",
+      "scripts/security-github-snapshot.mjs",
+      "scripts/submission-feedback.mjs"
+    ],
+    "formUnchanged": true
+  },
+  "churn": {
+    "start": "2026-09-26T12:54:04.000Z",
+    "end": "2026-10-26T12:54:04Z",
+    "commits": 3685,
+    "registryOnly": 0,
+    "registryChanged": 3647,
+    "generatedOnly": 1873,
+    "readPathChanges": {
+      "scripts/approve-plugin-update.mjs": 1,
+      "scripts/approve-submission.mjs": 0,
+      "scripts/build-catalog.mjs": 5,
+      "scripts/github-repository.mjs": 0,
+      "scripts/plugin-verification-request.mjs": 0,
+      "scripts/security-baseline-analysis.mjs": 0,
+      "scripts/security-baseline-error.mjs": 0,
+      "scripts/security-baseline-limits.mjs": 0,
+      "scripts/security-baseline-policy.mjs": 0,
+      "scripts/security-baseline-record.mjs": 0,
+      "scripts/security-baseline-report.mjs": 0,
+      "scripts/security-baseline-scanner.mjs": 0,
+      "scripts/security-baseline-scope.mjs": 0,
+      "scripts/security-github-snapshot.mjs": 0,
+      "scripts/submission-feedback.mjs": 0,
+      "scripts/submission.mjs": 1
+    }
+  },
+  "intake": [
+    {
+      "name": "valid",
+      "hasSubmissionLabel": false,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": true
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": true
+      },
+      "parserBefore": true,
+      "parserAfter": true
+    },
+    {
+      "name": "valid",
+      "hasSubmissionLabel": true,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "parserBefore": true,
+      "parserAfter": true
+    },
+    {
+      "name": "missing-fields",
+      "hasSubmissionLabel": false,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": true
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "missing-fields",
+      "hasSubmissionLabel": true,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "unchecked",
+      "hasSubmissionLabel": false,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": true
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "unchecked",
+      "hasSubmissionLabel": true,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "missing-name",
+      "hasSubmissionLabel": false,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": true
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "missing-name",
+      "hasSubmissionLabel": true,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "unrelated",
+      "hasSubmissionLabel": false,
+      "before": {
+        "shouldValidate": false,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": false,
+        "shouldLabel": false
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    },
+    {
+      "name": "unrelated",
+      "hasSubmissionLabel": true,
+      "before": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "after": {
+        "shouldValidate": true,
+        "shouldLabel": false
+      },
+      "parserBefore": false,
+      "parserAfter": false
+    }
+  ],
+  "method": "Full upstream diff and four commit patches inspected before the pin edit. Diff and patch hashes bind the review to exact Git objects. Official intake/parser comparison is read-only. Current grading is recorded separately with the shipped measure-pin-grades.mjs.",
+  "freshPin": {
+    "kib": 32612,
+    "elapsedMs": 2767.6336229999997,
+    "status": 0,
+    "method": "One fresh sparse omakit pin fetch, elapsed monotonic milliseconds around the Node child process; du -sk filesystem allocation afterwards. Not a network byte count or repeatability claim."
+  }
+}

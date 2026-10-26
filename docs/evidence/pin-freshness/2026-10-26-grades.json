@@ -1,0 +1,449 @@
+{
+  "measurement": "M7",
+  "measuredAt": "2026-10-26T15:30:59.649Z",
+  "range": "b441b4f059132b5b7203a7563027f2b3a9adaa1d..bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+  "gradedPaths": [
+    "scripts",
+    ".github/ISSUE_TEMPLATE"
+  ],
+  "method": "Each commit in the range that touched a graded path, graded against its first parent by the shipped comparePin() and pinFreshness(), every request answered from the local clone: tree is 0.6.6's rule (a graded path's object id moved), blob 0.6.7's (pinFreshness without text-read values), value the shipped grade.",
+  "commits": [
+    {
+      "commit": "1ada06331ca46b914197c0a9c6f02210ba63521d",
+      "committedAt": "2026-10-01T15:31:04+02:00",
+      "subject": "Lower the catalog refresh REST reserve to 250 (#9551)",
+      "parent": "a71ae25eedc5693c9816c8eb6447b41d8f51e4aa",
+      "touched": [
+        "scripts/build-catalog.mjs"
+      ],
+      "inReadSet": [
+        "scripts/build-catalog.mjs"
+      ],
+      "requests": 5,
+      "tree": "advice",
+      "blob": "advice",
+      "value": "ok",
+      "detail": "pin a71ae25; marketplace default at 1ada063; scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 (selective) at both",
+      "effective": [],
+      "textReads": {
+        "scripts/build-catalog.mjs": {
+          "moved": true,
+          "values": {
+            "reservedNamespace": {
+              "pin": "omarchy.",
+              "head": "omarchy.",
+              "same": true
+            },
+            "catalogPresentation": {
+              "pin": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "head": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-submission.mjs": {
+          "moved": false,
+          "values": {
+            "validatedLabel": {
+              "pin": "validated",
+              "head": "validated",
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-plugin-update.mjs": {
+          "moved": false,
+          "values": {
+            "updateLabel": {
+              "pin": "plugin-update",
+              "head": "plugin-update",
+              "same": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "commit": "74836ff40c4f55f04aafbb401e557deb0a770bd0",
+      "committedAt": "2026-10-01T15:38:44+02:00",
+      "subject": "Spread policy revalidation across catalog refreshes (#9552)",
+      "parent": "1ada06331ca46b914197c0a9c6f02210ba63521d",
+      "touched": [
+        "scripts/build-catalog.mjs"
+      ],
+      "inReadSet": [
+        "scripts/build-catalog.mjs"
+      ],
+      "requests": 5,
+      "tree": "advice",
+      "blob": "advice",
+      "value": "ok",
+      "detail": "pin 1ada063; marketplace default at 74836ff; scripts/build-catalog.mjs moved, and the 2 values omakit reads from it are unchanged; baseline 3 (selective) at both",
+      "effective": [],
+      "textReads": {
+        "scripts/build-catalog.mjs": {
+          "moved": true,
+          "values": {
+            "reservedNamespace": {
+              "pin": "omarchy.",
+              "head": "omarchy.",
+              "same": true
+            },
+            "catalogPresentation": {
+              "pin": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "head": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-submission.mjs": {
+          "moved": false,
+          "values": {
+            "validatedLabel": {
+              "pin": "validated",
+              "head": "validated",
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-plugin-update.mjs": {
+          "moved": false,
+          "values": {
+            "updateLabel": {
+              "pin": "plugin-update",
+              "head": "plugin-update",
+              "same": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "commit": "8be8e3be5fc0a0592cc90b9d37d858177a624a84",
+      "committedAt": "2026-10-01T21:51:51+02:00",
+      "subject": "Resolve verification requests that name a migrated repository (#9594)",
+      "parent": "09e758a17b9693bad80e16f7442ad7c4a42c45ba",
+      "touched": [
+        "scripts/approve-plugin-update.mjs",
+        "scripts/plugin-verification.mjs",
+        "scripts/validate-plugin-update.mjs",
+        "scripts/verification-subject.mjs"
+      ],
+      "inReadSet": [
+        "scripts/approve-plugin-update.mjs"
+      ],
+      "requests": 5,
+      "tree": "advice",
+      "blob": "info",
+      "value": "ok",
+      "detail": "pin 09e758a; marketplace default at 8be8e3b; scripts/approve-plugin-update.mjs moved, and the one value omakit reads from it is unchanged; baseline 3 (selective) at both",
+      "effective": [],
+      "textReads": {
+        "scripts/build-catalog.mjs": {
+          "moved": false,
+          "values": {
+            "reservedNamespace": {
+              "pin": "omarchy.",
+              "head": "omarchy.",
+              "same": true
+            },
+            "catalogPresentation": {
+              "pin": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "head": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-submission.mjs": {
+          "moved": false,
+          "values": {
+            "validatedLabel": {
+              "pin": "validated",
+              "head": "validated",
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-plugin-update.mjs": {
+          "moved": true,
+          "values": {
+            "updateLabel": {
+              "pin": "plugin-update",
+              "head": "plugin-update",
+              "same": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "commit": "1f845b73e7324ee0bde2f7c121032066aa9cc295",
+      "committedAt": "2026-10-03T11:48:58+02:00",
+      "subject": "Label CLI submissions with form errors so their report publishes (#9808)",
+      "parent": "015ca0285520da31496cc1907da6ddd28afe2c18",
+      "touched": [
+        "scripts/submission.mjs"
+      ],
+      "inReadSet": [
+        "scripts/submission.mjs"
+      ],
+      "requests": 4,
+      "tree": "advice",
+      "blob": "advice",
+      "value": "advice",
+      "detail": "pin 015ca02; marketplace default at 1f845b7; moved since the pin: scripts/submission.mjs; baseline 3 (selective) at both",
+      "effective": [
+        "scripts/submission.mjs"
+      ],
+      "textReads": {
+        "scripts/build-catalog.mjs": {
+          "moved": false,
+          "values": {
+            "reservedNamespace": {
+              "pin": "omarchy.",
+              "head": "omarchy.",
+              "same": true
+            },
+            "catalogPresentation": {
+              "pin": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "head": {
+                "rules": [
+                  {
+                    "kinds": [
+                      "bar-widget"
+                    ],
+                    "category": "Widgets"
+                  },
+                  {
+                    "kinds": [
+                      "overlay",
+                      "panel",
+                      "bar"
+                    ],
+                    "category": "Desktop"
+                  },
+                  {
+                    "kinds": [
+                      "service"
+                    ],
+                    "category": "System"
+                  }
+                ],
+                "fallback": "Other",
+                "tagsFromKinds": true
+              },
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-submission.mjs": {
+          "moved": false,
+          "values": {
+            "validatedLabel": {
+              "pin": "validated",
+              "head": "validated",
+              "same": true
+            }
+          }
+        },
+        "scripts/approve-plugin-update.mjs": {
+          "moved": false,
+          "values": {
+            "updateLabel": {
+              "pin": "plugin-update",
+              "head": "plugin-update",
+              "same": true
+            }
+          }
+        }
+      }
+    }
+  ],
+  "touchingReadSet": 4,
+  "advice": {
+    "tree": 4,
+    "blob": 3,
+    "value": 1
+  },
+  "adviceOverAll": {
+    "commits": 4,
+    "tree": 4,
+    "blob": 3,
+    "value": 1
+  }
+}

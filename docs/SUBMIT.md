@@ -146,6 +146,12 @@ run has no such line to print, because there is no run to repeat.
 
 ## Nothing about the format is written down here
 
+At pin `bdf24b34`, the marketplace labels malformed CLI candidates so the
+workflow can publish their actual form error. Intake does not prove
+readiness: the strict parser still judges the rendered body. The validation
+watch reports the published refusal, or unknown when no validation exists.
+Omakit never applies a label.
+
 The title prefix, the six headings, the nine categories, the fourteen tags and
 the exact text of the five checklist items are all read from
 `.github/ISSUE_TEMPLATE/submit-plugin.yml` in the pinned checkout. The maximum

@@ -19,37 +19,37 @@ const figures = baselineFigures({ pinDir })
 
 // registry-figures:begin rendered from docs/evidence/registry-figures.json by `node tools/marketplace/measure-registry-figures.mjs --write`; change the record, not this block
 const AT_PIN = Object.freeze({
-  "commit": "b441b4f059132b5b7203a7563027f2b3a9adaa1d",
+  "commit": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
   "figures": {
-    "sources": 4493,
-    "listingValidated": 4493,
-    "withBaseline": 4449,
+    "sources": 5927,
+    "listingValidated": 5927,
+    "withBaseline": 5887,
     "outcomes": {
-      "passed": 2451,
-      "review-required": 1962,
-      "needs-fixes": 36
+      "passed": 3062,
+      "review-required": 2769,
+      "needs-fixes": 56
     },
     "capabilities": {
-      "package-manager": 806,
-      "privilege": 817,
-      "bundled-executable-binary": 39,
-      "service-management": 666,
-      "installer": 928,
-      "remote-build": 598,
-      "sudoers-modification": 40
+      "package-manager": 1184,
+      "privilege": 1232,
+      "remote-build": 843,
+      "bundled-executable-binary": 60,
+      "service-management": 1019,
+      "installer": 1395,
+      "sudoers-modification": 62
     },
     "findings": {
-      "curl-pipe-shell": 17,
-      "remote-git-execution-unpinned": 21
+      "curl-pipe-shell": 23,
+      "remote-git-execution-unpinned": 35
     },
-    "findingsTotal": 38,
+    "findingsTotal": 58,
     "superseded": {
-      "sources": 1110,
-      "commits": 1648,
-      "most": 9
+      "sources": 1891,
+      "commits": 3215,
+      "most": 20
     },
-    "retiredIds": 69,
-    "catalogPlugins": 4532
+    "retiredIds": 98,
+    "catalogPlugins": 5968
   }
 })
 // registry-figures:end

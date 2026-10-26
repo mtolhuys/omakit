@@ -164,7 +164,7 @@ verdict or a prediction about another installed set.
 | Submissions that fell out on the title prefix alone | 39 (14 still open, 7 rescued by hand) |
 | Open submissions malformed in the body | 11 |
 | Of those, distance from a valid submission | one case differs by the single word "Suggested" instead of "Suggest" |
-| What a malformed body produces | `❌ The validation result could not be published to the issue. A maintainer must review the workflow.`, which blames the maintainer for the author's mistake |
+| What a malformed body produced in the original measurement | `❌ The validation result could not be published to the issue. A maintainer must review the workflow.`, which blames the maintainer for the author's mistake |
 | Median submission-to-publication, 2026-W33 | 4.9 h |
 | Median submission-to-publication, 2026-W36 | 35.0 h (p90 101 h) |
 | Parked in the author's own court | 464 submissions, median 5.6 days since last activity |
@@ -182,6 +182,11 @@ the pin, and the rendered body is then handed to the marketplace's own
 `parseCurrentSubmission` from the same commit. A contract that drifts from the
 form by one word reproduces exactly the failure above, so the form is the only
 source and the marketplace's own parser is the only judge.
+
+At `bdf24b34`, rechecked on 2026-10-26 (M7), malformed CLI candidates
+receive a label so their specific form error can be published. The generic
+workflow failure above is the historical observation; strict parser
+acceptance remains required.
 
 ## M3. Agent-control files draw review attention, and nothing warns first
 
@@ -221,25 +226,26 @@ policy and does not claim to be; its verdict is labelled `omakit`, not
 ## M4. The baseline decides whether a human has to look at all
 
 <!-- registry-figures:m4 -->
-From `registry.json` at the pin (`b441b4f0`, 2026-10-01 02:34 UTC): 4,493
-listed sources, of which 4,449 carry a recorded baseline (the rest were
+From `registry.json` at the pin (`bdf24b34`, 2026-10-26 12:54 UTC): 5,927
+listed sources, of which 5,887 carry a recorded baseline (the rest were
 listed before the baseline existed or have no record):
 
 | Outcome | Count |
 | --- | --- |
-| `passed` | 2,451 |
-| `review-required` | 1,962 |
-| `needs-fixes` | 36 |
-| Findings ever recorded, total | 38 (`remote-git-execution-unpinned` 21, `curl-pipe-shell` 17) |
+| `passed` | 3,062 |
+| `review-required` | 2,769 |
+| `needs-fixes` | 56 |
+| Findings ever recorded, total | 58 (`remote-git-execution-unpinned` 35, `curl-pipe-shell` 23) |
 
-Capabilities recorded: installer 928, privilege 817, package-manager 806,
-service-management 666, remote-build 598, sudoers-modification 40,
-bundled-executable-binary 39.
+Capabilities recorded: installer 1,395, privilege 1,232, package-manager
+1,184, service-management 1,019, remote-build 843, sudoers-modification 62,
+bundled-executable-binary 60.
 
 At the earlier pins, counted the same way from the same two files:
 
 | Pin | Sources | With a baseline | `passed` | `review-required` | `needs-fixes` |
 | --- | --- | --- | --- | --- | --- |
+| `b441b4f0` (2026-10-01 02:34 UTC) | 4,493 | 4,449 | 2,451 | 1,962 | 36 |
 | `b7b29654` (2026-09-21 18:18 UTC) | 3,664 | 3,619 | 2,031 | 1,562 | 26 |
 | `70dcc454` (2026-09-21 05:35 UTC) | 3,653 | 3,608 | 2,025 | 1,557 | 26 |
 | `38060f89` (2026-09-11 19:38 UTC) | 2,963 | 2,916 | 1,681 | 1,215 | 20 |
@@ -292,7 +298,7 @@ and default-branch `commits.atom`, with per-issue sources and unknowns.
 | Open submissions inspected with no labels left | 13, of which 9 had passed validation and passed the baseline with zero findings and were blocked solely by a validated commit that had fallen behind |
 | Maintainer requests for a fresh validation that never produced one | 46% overall, 77% in the parked group |
 | Hand-written staleness notices by the maintainer | 358 issues |
-| Listed sources whose validated commit was superseded at least once | 1,110 of 4,493 (24.7%) at pin `b441b4f0`, 1,648 superseded commits, one source revalidated 9 times (at pin `b7b29654`: 854 of 3,664, 23.3%, 1,270 commits; at pin `70dcc454`: 854 of 3,653, 23.4%, 1,270 commits; at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
+| Listed sources whose validated commit was superseded at least once | 1,891 of 5,927 (31.9%) at pin `bdf24b34`, 3,215 superseded commits, one source revalidated 20 times (at pin `b441b4f0`: 1,110 of 4,493, 24.7%, 1,648 commits; at pin `b7b29654`: 854 of 3,664, 23.3%, 1,270 commits; at pin `70dcc454`: 854 of 3,653, 23.4%, 1,270 commits; at pin `38060f89`: 749 of 2,963, 25.3%, 1,108 commits) |
 
 The last row is this repository's own measurement, recomputed from
 `registry.json` at the pin by `tests/unit/registry-figures.test.mjs`; it
@@ -479,6 +485,69 @@ than only that HEAD moved, because at this rate HEAD has always moved, and
 grades the difference by what it can do to a verdict (`ok`, `info`, `advice`)
 rather than by whether a directory's tree id moved. Not by
 `baseline.preflight`, whose figures stay the pin's.
+
+### Pin update measured on 2026-10-26, for 0.6.12
+
+The complete `b441b4f0..bdf24b34` diff and these four full commit patches
+were inspected before editing the pin. The [review record](evidence/pin/2026-10-26-upstream-review.json)
+binds the diff and each patch by SHA-256, records changed paths, the dated
+churn measurement and old/new official intake/parser comparisons.
+
+| Commit | Effect and Omakit's reliance |
+| --- | --- |
+| `1ada06331ca46b914197c0a9c6f02210ba63521d` | Temporarily lowers the catalog refresh REST reserve from 500 to 250. Omakit never executes that catalog refresh. |
+| `74836ff40c4f55f04aafbb401e557deb0a770bd0` | Restores the reserve to 500 and spreads policy-only revalidation of unchanged, previously passed sources across refreshes, oldest first. New, changed, failing and registry-changed sources are never deferred. The namespace and presentation Omakit extracts are unchanged. |
+| `8be8e3be5fc0a0592cc90b9d37d858177a624a84` | Resolves a verification/update request's recorded former repository to its listing's canonical repository before upstream access. These execution paths are outside the read closure; the changed approval script is read only for its unchanged update label. |
+| `1f845b73e7324ee0bde2f7c121032066aa9cc295` | Labels malformed CLI candidates so their form-error reports can publish. The strict parser and form are unchanged. Omakit retains strict parser acceptance as the readiness gate; watch reports a form refusal, or unknown without a validation, regardless of the intake label. |
+
+The remaining source diff covers search matching and ordering, anonymous
+engagement quotas, cache references and related tests/docs. Registry,
+catalog, Explorer data and preview changes are data; none of those source
+paths is executed for an Omakit verdict. The baseline policy, rule and
+capability catalogs, limits, feedback and form are byte-identical.
+
+The shipped grader was then run over the four commits, each against its
+parent, and over the complete range. Every tree/text request was answered
+from the local upstream clone; no file from that clone was executed:
+
+```bash
+node tools/marketplace/measure-pin-grades.mjs \
+  --clone /tmp/omakit-upstream-pin-review.git \
+  --since b441b4f059132b5b7203a7563027f2b3a9adaa1d \
+  --until bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882 \
+  > docs/evidence/pin-freshness/2026-10-26-grades.json
+```
+
+| Commit | Tree | Blob | Shipped value comparison | Requests answered from clone |
+| --- | --- | --- | --- | --- |
+| `1ada0633` | `advice` | `advice` | `ok` | 5 |
+| `74836ff4` | `advice` | `advice` | `ok` | 5 |
+| `8be8e3be` | `advice` | `info` | `ok` | 5 |
+| `1f845b73` | `advice` | `advice` | `advice` | 4 |
+
+[Per-commit evidence](evidence/pin-freshness/2026-10-26-grades.json):
+tree grades 4 advice, blob 3 advice, value 1 advice. The
+[whole-range measurement](evidence/pin-freshness/2026-10-26-range.json)
+uses `gradeChange()` from the same module and grades `advice`, with 6
+requests: `submission.mjs` is the only effective moved read. The two
+text-read files moved but all 3 extracted values are unchanged. Baseline
+version `3` and enforcement `selective` remain unchanged.
+
+| Re-measured figure | Result |
+| --- | --- |
+| Range | 3,095 commits, 2,928 changed paths including 2,894 preview paths; 4 commits touching scripts or forms, no form changes |
+| Read closure | 16 of 34 scripts; 10 direct reads (7 imported, 3 text), 6 transitive imports, 13 executed reads, 0 unsupported imports; unchanged from the old pin |
+| Changed read blobs | 3, of which only `submission.mjs` counts for the value grade; the other 13 read blobs are identical |
+| 30 days to target's committer timestamp, 2026-10-26 12:54:04 UTC | 3,685 commits, 3,647 touching registry.json, 0 touching only registry.json, 1,873 touching only registry/catalog/Explorer data. The earlier 4,201/4,293 registry-only figure is historical |
+| Read-file changes in that 30-day window | 5 for build-catalog.mjs, 1 each for submission.mjs and approve-plugin-update.mjs, 0 for the other 13 |
+| Fresh sparse fetch | 2,767.63 ms from a monotonic clock around one `omakit pin` child process; 32,612 KiB afterwards from `du -sk` (31.85 MiB, printed as 32 MB). One observation, filesystem allocation rather than network bytes |
+| Official intake/parser comparison | 5 cases at 2 label states = 10 pairs: valid, missing fields, unchecked item, missing name, unrelated. The 3 malformed unlabelled candidates now request a label; 0 strict-parser acceptance changes |
+| Inspect fixtures | 29 re-run by the unit suite; only marketplaceBaseline.pin.commit changes |
+| Transport parity | 30/30 identical, offset 0, 0 mismatches, 0 failures, 18 passed, 8 review-required, 4 needs-fixes; [evidence](evidence/parity/2026-10-26-local-vs-github.json) |
+
+Registry counts and every capability/finding count are the regenerated M4
+block and M6 row above, sourced from the new pin's entry in
+`evidence/registry-figures.json`. No marketplace state was changed.
 
 ## M8. Tab completion was written, never proven, and the proof is not `complete -p`
 

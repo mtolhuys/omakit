@@ -1,0 +1,520 @@
+{
+  "generator": {
+    "omakitCommit": "134073bfe9da1073721c0a7e9905c15dea0c7176"
+  },
+  "pinnedMarketplaceCommit": "bdf24b347fcb2fb7a0af18104ab68dc6ecbf9882",
+  "corpusSize": 30,
+  "requestedCount": 30,
+  "offset": 0,
+  "strata": {
+    "needs-fixes": 4,
+    "review-required": 8,
+    "passed": 18
+  },
+  "outcomes": {
+    "passed": 18,
+    "review-required": 8,
+    "needs-fixes": 4
+  },
+  "identical": 30,
+  "mismatches": 0,
+  "failures": 0,
+  "ruleTotals": {
+    "remote-git-execution-unpinned": 2,
+    "curl-pipe-shell": 2
+  },
+  "capabilityTotals": {
+    "package-manager": 5,
+    "installer": 8,
+    "remote-build": 3,
+    "privilege": 2,
+    "service-management": 3
+  },
+  "publication": {
+    "perRepositoryDetail": "omitted",
+    "reason": "Findings about a specific third-party plugin are not published. Equality is evidenced by the sha256 digests below, which anyone can recompute from the repository, the commit and the pinned marketplace commit.",
+    "digest": "sha256 of {outcome, disposition, blocksApproval, findings, capabilities}, first 32 hex characters"
+  },
+  "rows": [
+    {
+      "repo": "https://github.com/0-CYBERDYNE-SYSTEMS-0/terminal-theme-studio",
+      "commit": "80f4e347c35e73eaacd5e95270e9b81b7335adff",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 24
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/07dcolem/omarchy-appimages",
+      "commit": "b65928c0a69b09d2bb5558ab7c45bf1b7695154d",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 16
+      },
+      "localDigest": "80ddfce24f2057fba2746f1204506c42",
+      "githubOutcome": "review-required",
+      "githubDigest": "80ddfce24f2057fba2746f1204506c42",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/andreconde21/omarchy-bar-studio",
+      "commit": "71dee6d05c105e8cfc7c68030b336221fe569730",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 4
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/apopovicius/omarchy-wherespace",
+      "commit": "dee2286a339d4db0f9953670cbdd1eb206b7f059",
+      "type": "plugin-source",
+      "registryOutcome": "needs-fixes",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "needs-fixes",
+      "requests": {
+        "api": 3,
+        "raw": 11
+      },
+      "localDigest": "272ea8c616b5f45308bb3031f4f5ab58",
+      "githubOutcome": "needs-fixes",
+      "githubDigest": "272ea8c616b5f45308bb3031f4f5ab58",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/bhanuprassad/omarchy-try",
+      "commit": "13c8732e2b369f1e2be21101da4602555f17e0b5",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 6
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/Bottelet/omarchy-focus-modes",
+      "commit": "4845b856647777f46e39886e8e282d3d9fa19c4e",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 7
+      },
+      "localDigest": "a0acd07b031963ca9ec8f468428991f9",
+      "githubOutcome": "review-required",
+      "githubDigest": "a0acd07b031963ca9ec8f468428991f9",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/cielebak/omarchy-elevenmates",
+      "commit": "e3253d5424e2247f54771efe6c686acb50b161c7",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 8
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/dejan994/omarchy-priority-todos",
+      "commit": "1cc889dd6716ad65ca501e5eb04b25b9fe5d5d58",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 11
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/donnishcomau/snote",
+      "commit": "b1e41227191e91757735420690675243261eaaa7",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 38
+      },
+      "localDigest": "97b61da39c29a5fa23de127d106dd7be",
+      "githubOutcome": "review-required",
+      "githubDigest": "97b61da39c29a5fa23de127d106dd7be",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/emrgim/Cycle",
+      "commit": "6497e73018b0a7c05209b3bf2fc4a586566b4ca4",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 13
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/fiifiofosu/omarchy-android-emulator",
+      "commit": "1d7c22aeb081fb8a9b054b81b2fb4433186411fa",
+      "type": "plugin-source",
+      "registryOutcome": "needs-fixes",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "needs-fixes",
+      "requests": {
+        "api": 3,
+        "raw": 10
+      },
+      "localDigest": "623913d22d90aa8da43f599296ee4c48",
+      "githubOutcome": "needs-fixes",
+      "githubDigest": "623913d22d90aa8da43f599296ee4c48",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/GnussonNet/omarchy-canvas",
+      "commit": "eff94e4b6979579c57cbc0da363a3c8e3171d62b",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 12
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/Hitking/omarchy-jalali-calendar",
+      "commit": "29c8d176fe5cfd39420a2719aa9a6c57779cbfa1",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 22
+      },
+      "localDigest": "45114a8510e7d24a00c9ce7c1367aa77",
+      "githubOutcome": "review-required",
+      "githubDigest": "45114a8510e7d24a00c9ce7c1367aa77",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/ianswope/omarchy-deploys",
+      "commit": "584b4c2eb02a3ec9636224e8063ba313e0d82a41",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 8
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/jobu222/omarchy-bitcoin-pulse",
+      "commit": "62b161b1d360f5938b3181b4d89e2d6d6ba34204",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 4
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/knappkevin/terminal-wallpaper",
+      "commit": "06d53b731915c1032934973d5ec21bc15a1206a4",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 5
+      },
+      "localDigest": "3e1b4d26349bdcaf51b31e72f3ba8ca8",
+      "githubOutcome": "review-required",
+      "githubDigest": "3e1b4d26349bdcaf51b31e72f3ba8ca8",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/kszx11/omarchy-plugin-adv",
+      "commit": "02257696d0881ee245337c5f99154d4d925f267c",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 6
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/lunanoir21/flare-omarchy",
+      "commit": "ab1371f82e843e8a0893a805df4b5d93824d9e23",
+      "type": "plugin-source",
+      "registryOutcome": "needs-fixes",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "needs-fixes",
+      "requests": {
+        "api": 3,
+        "raw": 42
+      },
+      "localDigest": "a62ef42c6f23ba0b3a42925b41e57f08",
+      "githubOutcome": "needs-fixes",
+      "githubDigest": "a62ef42c6f23ba0b3a42925b41e57f08",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/mar1/omarchy-deezer",
+      "commit": "f39397b8382697b5b297a0b3d0aedc49612a2678",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 16
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/mscurtescu/omarchy-island-bar",
+      "commit": "f16f884e52ac030149de9bbbcb664082583f0ecd",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 5
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/nabdalla-prog/Rimuru-timetracker",
+      "commit": "824d78d896c765d5739ee6d83e54b9c9cd7a8924",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 33
+      },
+      "localDigest": "f87691ccf70f3ffc1945b79dc5eca90d",
+      "githubOutcome": "review-required",
+      "githubDigest": "f87691ccf70f3ffc1945b79dc5eca90d",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/OverStyleFR/omarchy-battery-usage",
+      "commit": "f3045c69d9bc0f1aa25da7acd32965431e55bf59",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 9
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/rafaelmehdiyev/omarchy-obsidian-panel",
+      "commit": "ce5c38c2d3d41135707612d94d060c6f581bbdf2",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 7
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/ravivasavan/Omalet",
+      "commit": "8e041ebb146a9be3094e13bc17d07abf480d52f5",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 11
+      },
+      "localDigest": "1250c22a90e36b66e81ad713c15a1c5b",
+      "githubOutcome": "review-required",
+      "githubDigest": "1250c22a90e36b66e81ad713c15a1c5b",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/ryanyogan/omarchy-hydrate",
+      "commit": "dd7dd81468a0782471884a438ef071d85d08778b",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 21
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/SLcode777/omagotchi",
+      "commit": "669ea0b7eac7a78ec408512cb81d8e5082c3c33b",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 9
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/SlowburnAZ/omanomad",
+      "commit": "6f034f722154b5f9ea59ee7c396ce30db00b773e",
+      "type": "plugin-source",
+      "registryOutcome": "needs-fixes",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "needs-fixes",
+      "requests": {
+        "api": 3,
+        "raw": 17
+      },
+      "localDigest": "7d991236093b2f6e57e45e0cb942b798",
+      "githubOutcome": "needs-fixes",
+      "githubDigest": "7d991236093b2f6e57e45e0cb942b798",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/sunny0826/omarchy-quick-fcitx",
+      "commit": "515a620ee4f0a9b81fc187a5e624c2713bcfab0a",
+      "type": "plugin-source",
+      "registryOutcome": "review-required",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "review-required",
+      "requests": {
+        "api": 3,
+        "raw": 7
+      },
+      "localDigest": "a8f2d187eebfbc8edb5ed6f36e753b4d",
+      "githubOutcome": "review-required",
+      "githubDigest": "a8f2d187eebfbc8edb5ed6f36e753b4d",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/theNetworkChuck/omarchy-scripture-scroller",
+      "commit": "a110437e8f11e326e1a85f8cbfa5f37d3eaed86f",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 5
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    },
+    {
+      "repo": "https://github.com/WarmTies/omarchy-binary-clock",
+      "commit": "b2a0ee1d7a3cf5099b95438fd6491dd42faeed64",
+      "type": "plugin-source",
+      "registryOutcome": "passed",
+      "registryOutcomeAtSameCommit": true,
+      "localOutcome": "passed",
+      "requests": {
+        "api": 3,
+        "raw": 6
+      },
+      "localDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "githubOutcome": "passed",
+      "githubDigest": "cd00adc7a79f3aa6e632ef05155e1640",
+      "identical": true
+    }
+  ]
+}

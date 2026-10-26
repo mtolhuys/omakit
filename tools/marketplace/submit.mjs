@@ -205,7 +205,7 @@ export async function submitPreflight(options) {
 
   checks.push(check("plugin.root-license", {
     source: "marketplace-pin",
-    why: "`validateRepositoryDocs` at the pin fails a submission with `license-missing` when no root license or COPYING file exists. Same cost as a missing README: all 2,963 listed sources in the pinned registry satisfied this rule before they were listed, so it is absolute, and it is knowable here in one read of the tree.",
+    why: "`validateRepositoryDocs` at the pin fails a submission with `license-missing` when no root license or COPYING file exists. Same cost as a missing README: M2 measured 464 submissions parked in the author's court, 77% without a fresh validation. A missing file is knowable here in one read of the tree, before it costs that round trip.",
     verdict: Boolean(tree.license),
     detail: tree.license ? `root license: ${tree.license}` : "no root license or COPYING file",
     remedy: "Add a LICENSE (or COPYING) file at the repository root.",
@@ -365,7 +365,7 @@ export async function submitPreflight(options) {
 
   checks.push(check("submission.repository-url", {
     source: "marketplace-pin",
-    why: "The marketplace refuses `submission-repository-invalid` unless the Repository URL field is a public GitHub repository root URL, and it is the field every later step depends on: all 2,963 listed sources in the pinned registry are identified by exactly that URL. Taken from the subject's `origin`, never invented, because a URL typed by hand is a URL that can point at the wrong repository.",
+    why: `The marketplace refuses \`submission-repository-invalid\` unless the Repository URL field is a public GitHub repository root URL, and it is the field every later step depends on: all ${figure(figures.sources)} listed sources in the pinned registry are identified by that URL (M4). Taken from the subject's \`origin\`, never invented, because a URL typed by hand is a URL that can point at the wrong repository.`,
     verdict: Boolean(subject.repository.url),
     detail: subject.repository.url || "the subject has no github.com origin, so no repository URL can be declared",
     remedy: subject.repository.url ? null : "Give the repository a github.com origin remote.",
@@ -373,7 +373,7 @@ export async function submitPreflight(options) {
 
   if (!listing) checks.push(check("submission.headings", {
     source: "marketplace-pin",
-    why: `The six form headings must appear in exact order: ${contract.headings.join(", ")}. 11 open submissions are malformed in the body and receive "The validation result could not be published to the issue. A maintainer must review the workflow.", which blames the maintainer for the author's mistake; one of them differs from a valid submission by the single word "Suggested" instead of "Suggest". The headings are rendered from the form at the pin, never typed.`,
+    why: `The ${contract.headings.length} form headings must appear in exact order: ${contract.headings.join(", ")}. M2 measured 11 malformed open submissions, one differing by the single word "Suggested" instead of "Suggest". M7 rechecked the current pin: CLI candidates are labelled even when their form fails, so the marketplace can publish the actual form error. That intake decision does not make a body valid. The headings are rendered from the form at the pin and checked by its strict parser.`,
     verdict: Boolean(issue),
     detail: issue ? `${contract.headings.length} headings rendered in form order` : "not rendered",
     waitedOn: bodyWaitsOn,
